@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
 
-// Extend Database types to include our RPC function
+// Augment the existing Database type with our RPC function
 declare module '@/integrations/supabase/types' {
   interface Database {
     public: {
@@ -44,8 +45,9 @@ const AdminLogin = () => {
       console.log("User signed in successfully:", user.id);
 
       // Use RPC call to check admin role to avoid recursion
+      type RPCResponse = { data: string[] | null; error: Error | null };
       const { data: adminRoles, error: roleError } = await supabase
-        .rpc('get_user_role', { user_id: user.id });
+        .rpc('get_user_role', { user_id: user.id }) as RPCResponse;
 
       console.log("Admin role check result:", { adminRoles, roleError });
 
