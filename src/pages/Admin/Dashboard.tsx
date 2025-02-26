@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
 
 interface Channel {
@@ -82,6 +82,21 @@ const Dashboard = () => {
     navigate("/admin/login");
   };
 
+  const downloadTemplate = () => {
+    const csvHeader = "video_id,channel_title,channel_url,description,screenshot_url,total_subscribers,total_views,channel_category,channel_type,keywords,country,niche,notes,cpm,potential_revenue,revenue_per_video,revenue_per_month,uses_ai\n";
+    const csvContent = csvHeader + "dQw4w9WgXcQ,Rick Astley,https://youtube.com/rickastley,Official Rick Astley channel,https://example.com/screenshot.jpg,12500000,2000000000,entertainment,entertainment,\"music,pop,80s\",UK,Music,Great engagement,5.50,75000,1500,45000,false";
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "youtube_channels_template.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return <div className="text-center py-12">Loading...</div>;
   }
@@ -94,12 +109,19 @@ const Dashboard = () => {
           <Button onClick={handleLogout} variant="outline">Logout</Button>
         </div>
 
-        <Button 
-          onClick={() => navigate("/admin/channels/new")} 
-          className="mb-6"
-        >
-          <Plus className="mr-2" /> Add New Channel
-        </Button>
+        <div className="flex gap-4 mb-6">
+          <Button 
+            onClick={() => navigate("/admin/channels/new")}
+          >
+            <Plus className="mr-2" /> Add New Channel
+          </Button>
+          <Button
+            variant="outline"
+            onClick={downloadTemplate}
+          >
+            <Download className="mr-2" /> Download CSV Template
+          </Button>
+        </div>
 
         <div className="grid gap-6">
           {channels.map(channel => (
