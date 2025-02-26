@@ -10,6 +10,28 @@ interface CSVUploaderProps {
   onUploadSuccess: () => Promise<void>;
 }
 
+// Define a type that matches Supabase's requirements
+type RequiredChannelFields = {
+  video_id: string;
+  channel_title: string;
+  channel_url: string;
+  channel_category?: ChannelCategory;
+  channel_type?: ChannelType;
+  description?: string | null;
+  screenshot_url?: string | null;
+  total_subscribers?: number | null;
+  total_views?: number | null;
+  keywords?: string[] | null;
+  country?: string | null;
+  niche?: string | null;
+  notes?: string | null;
+  cpm?: number | null;
+  potential_revenue?: number | null;
+  revenue_per_video?: number | null;
+  revenue_per_month?: number | null;
+  uses_ai?: boolean | null;
+};
+
 export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
   const [uploading, setUploading] = useState(false);
 
@@ -38,20 +60,20 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
       const rows = text.split('\n');
       const headers = rows[0].split(',');
       
-      const validChannels: Partial<Channel>[] = [];
+      const validChannels: RequiredChannelFields[] = [];
       const skippedRows: number[] = [];
 
       rows.slice(1).forEach((row, index) => {
         if (!row.trim()) return;
 
         const values = row.split(',');
-        const channel: Partial<Channel> = {};
+        const channel: Partial<RequiredChannelFields> = {};
         
-        headers.forEach((header, index) => {
-          let value = values[index]?.trim();
+        headers.forEach((header, i) => {
+          let value = values[i]?.trim();
           if (value === undefined || value === '') return;
           
-          const headerKey = header.trim() as keyof Channel;
+          const headerKey = header.trim() as keyof RequiredChannelFields;
           
           switch(headerKey) {
             case 'keywords':
@@ -73,20 +95,25 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
               channel[headerKey] = value ? parseFloat(value) : null;
               break;
             case 'channel_category':
-              channel[headerKey] = value as ChannelCategory;
+              if (isValidChannelCategory(value)) {
+                channel[headerKey] = value;
+              }
               break;
             case 'channel_type':
-              channel[headerKey] = value as ChannelType;
+              if (isValidChannelType(value)) {
+                channel[headerKey] = value;
+              }
               break;
             default:
+              // @ts-ignore - we know these are string fields
               channel[headerKey] = value;
           }
         });
 
         if (channel.video_id && channel.channel_title && channel.channel_url) {
-          validChannels.push(channel);
+          validChannels.push(channel as RequiredChannelFields);
         } else {
-          skippedRows.push(index + 1);
+          skippedRows.push(index + 2); // Add 2 to account for 0-based index and header row
         }
       });
 
@@ -115,6 +142,15 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
       setUploading(false);
       event.target.value = '';
     }
+  };
+
+  // Type guard functions
+  const isValidChannelCategory = (value: string): value is ChannelCategory => {
+    return ["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"].includes(value);
+  };
+
+  const isValidChannelType = (value: string): value is ChannelType => {
+    return ["creator", "brand", "media", "other"].includes(value);
   };
 
   return (
