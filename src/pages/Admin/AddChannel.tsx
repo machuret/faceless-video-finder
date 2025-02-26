@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import YouTubeUrlInput from "./components/YouTubeUrlInput";
 import ChannelForm, { ChannelFormData } from "./components/ChannelForm";
+import { useAuth } from "@/context/AuthContext";
 
 const AddChannel = () => {
   const navigate = useNavigate();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [formData, setFormData] = useState<ChannelFormData>({
@@ -23,6 +24,20 @@ const AddChannel = () => {
     start_date: "",
     video_count: "",
   });
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast.error("Please log in to access this page");
+      navigate("/admin/login");
+      return;
+    }
+
+    if (!authLoading && !isAdmin) {
+      toast.error("You don't have permission to access this page");
+      navigate("/");
+      return;
+    }
+  }, [user, isAdmin, authLoading, navigate]);
 
   const fetchYoutubeData = async () => {
     if (!youtubeUrl) return;
@@ -133,6 +148,14 @@ const AddChannel = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  if (authLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user || !isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
