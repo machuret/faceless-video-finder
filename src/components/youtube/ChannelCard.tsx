@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { Channel, ChannelCategory, ChannelType } from "@/types/youtube";
 
 interface ChannelCardProps {
@@ -42,6 +42,30 @@ export const ChannelCard = ({ channel, onDelete, onSave }: ChannelCardProps) => 
   ];
 
   const channelTypes: ChannelType[] = ["creator", "brand", "media", "other"];
+
+  const countries = [
+    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
+    "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
+    "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde",
+    "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros",
+    "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", "Djibouti", "Dominica",
+    "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini",
+    "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada",
+    "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia",
+    "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
+    "Korea, North", "Korea, South", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia",
+    "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta",
+    "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro",
+    "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger",
+    "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Panama", "Papua New Guinea", "Paraguay", "Peru",
+    "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia",
+    "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal",
+    "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia",
+    "South Africa", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+    "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia",
+    "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
+    "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+  ];
 
   return (
     <Card>
@@ -113,14 +137,15 @@ export const ChannelCard = ({ channel, onDelete, onSave }: ChannelCardProps) => 
 
             <div>
               <Label>Description</Label>
-              <Input
+              <RichTextEditor
                 value={editedChannel.description || ""}
-                onChange={(e) =>
+                onChange={(value) =>
                   setEditedChannel({
                     ...editedChannel,
-                    description: e.target.value,
+                    description: value,
                   })
                 }
+                placeholder="Enter channel description..."
               />
             </div>
 
@@ -267,15 +292,26 @@ export const ChannelCard = ({ channel, onDelete, onSave }: ChannelCardProps) => 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Country</Label>
-                <Input
+                <Select
                   value={editedChannel.country || ""}
-                  onChange={(e) =>
+                  onValueChange={(value: string) =>
                     setEditedChannel({
                       ...editedChannel,
-                      country: e.target.value,
+                      country: value,
                     })
                   }
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Niche</Label>
@@ -293,14 +329,15 @@ export const ChannelCard = ({ channel, onDelete, onSave }: ChannelCardProps) => 
 
             <div>
               <Label>Notes</Label>
-              <Input
+              <RichTextEditor
                 value={editedChannel.notes || ""}
-                onChange={(e) =>
+                onChange={(value) =>
                   setEditedChannel({
                     ...editedChannel,
-                    notes: e.target.value,
+                    notes: value,
                   })
                 }
+                placeholder="Enter notes..."
               />
             </div>
 
@@ -319,7 +356,10 @@ export const ChannelCard = ({ channel, onDelete, onSave }: ChannelCardProps) => 
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">{channel.description}</p>
+            <div 
+              className="text-sm text-gray-600 prose prose-sm max-w-none" 
+              dangerouslySetInnerHTML={{ __html: channel.description || "" }}
+            />
             <div className="flex flex-wrap gap-4 text-sm text-gray-500">
               <span>{channel.total_subscribers?.toLocaleString()} subscribers</span>
               <span>{channel.total_views?.toLocaleString()} views</span>
@@ -333,6 +373,12 @@ export const ChannelCard = ({ channel, onDelete, onSave }: ChannelCardProps) => 
               )}
               {channel.uses_ai && <span>Uses AI</span>}
             </div>
+            {channel.notes && (
+              <div 
+                className="text-sm text-gray-600 prose prose-sm max-w-none mt-4" 
+                dangerouslySetInnerHTML={{ __html: channel.notes }}
+              />
+            )}
             {channel.cpm && (
               <div className="text-sm text-gray-500">
                 CPM: ${channel.cpm.toFixed(2)}
