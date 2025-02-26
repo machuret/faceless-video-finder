@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import type { Tables } from "@/integrations/supabase/types";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -30,14 +31,14 @@ const AdminLogin = () => {
       console.log("User signed in successfully:", user.id);
 
       // Check admin role directly from the admin_roles table
-      const { data: adminRoles, error: roleError } = await supabase
+      const { data: adminRole, error: roleError } = await supabase
         .from('admin_roles')
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'admin')
         .single();
 
-      console.log("Admin role check result:", { adminRoles, roleError });
+      console.log("Admin role check result:", { adminRole, roleError });
 
       if (roleError) {
         console.error("Role check error:", roleError);
@@ -45,7 +46,7 @@ const AdminLogin = () => {
         throw new Error(`Error checking admin privileges: ${roleError.message}`);
       }
 
-      if (!adminRoles) {
+      if (!adminRole) {
         console.log("No admin role found for user:", user.id);
         await supabase.auth.signOut();
         throw new Error("Unauthorized - Admin access only");
