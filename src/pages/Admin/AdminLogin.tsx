@@ -7,12 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
-// Define the RPC response type
-type GetUserRoleResponse = {
-  data: string[] | null;
-  error: Error | null;
-};
-
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -35,13 +29,13 @@ const AdminLogin = () => {
 
       console.log("User signed in successfully:", user.id);
 
-      // Use RPC call to check admin role to avoid recursion
-      const response = await supabase.functions.invoke<string[]>('get_user_role', {
-        body: { user_id: user.id }
-      });
-
-      const adminRoles = response.data;
-      const roleError = response.error;
+      // Check admin role directly from the admin_roles table
+      const { data: adminRoles, error: roleError } = await supabase
+        .from('admin_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
 
       console.log("Admin role check result:", { adminRoles, roleError });
 
@@ -51,7 +45,7 @@ const AdminLogin = () => {
         throw new Error(`Error checking admin privileges: ${roleError.message}`);
       }
 
-      if (!adminRoles || !adminRoles.includes('admin')) {
+      if (!adminRoles) {
         console.log("No admin role found for user:", user.id);
         await supabase.auth.signOut();
         throw new Error("Unauthorized - Admin access only");
@@ -62,6 +56,7 @@ const AdminLogin = () => {
     } catch (error) {
       console.error("Login error:", error);
       toast.error(error instanceof Error ? error.message : "Login failed");
+    } finally {
       setLoading(false);
     }
   };
