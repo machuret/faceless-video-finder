@@ -18,12 +18,38 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      // Temporary: Skip authentication and directly navigate to dashboard
-      toast.success("Welcome to admin dashboard!");
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast.success("Successfully logged in");
       navigate("/admin/dashboard");
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Login failed");
+      toast.error(error instanceof Error ? error.message : "Failed to login");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast.success("Check your email to confirm your account");
+    } catch (error) {
+      console.error("Signup error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to sign up");
     } finally {
       setLoading(false);
     }
@@ -43,6 +69,7 @@ const AdminLogin = () => {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -51,15 +78,26 @@ const AdminLogin = () => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
             </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? "Logging in..." : "Login"}
-            </Button>
+            <div className="flex flex-col space-y-2">
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? "Processing..." : "Login"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSignUp}
+                disabled={loading}
+              >
+                Sign Up
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
