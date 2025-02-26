@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pencil, Trash2, Plus, Download } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface Channel {
@@ -24,6 +23,7 @@ const Dashboard = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const fetchChannels = async () => {
     try {
@@ -97,6 +97,56 @@ const Dashboard = () => {
     document.body.removeChild(link);
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const text = await file.text();
+      const rows = text.split('\n');
+      const headers = rows[0].split(',');
+      const channels = rows.slice(1).filter(row => row.trim()).map(row => {
+        const values = row.split(',');
+        const channel: any = {};
+        headers.forEach((header, index) => {
+          let value = values[index]?.trim();
+          if (value === undefined || value === '') return;
+          
+          if (header === 'keywords') {
+            try {
+              value = JSON.parse(value);
+            } catch {
+              value = value.split(',').map(k => k.trim());
+            }
+          } else if (header === 'uses_ai') {
+            value = value.toLowerCase() === 'true';
+          } else if (['total_subscribers', 'total_views', 'cpm', 'potential_revenue', 'revenue_per_video', 'revenue_per_month'].includes(header)) {
+            value = parseFloat(value);
+          }
+          
+          channel[header.trim()] = value;
+        });
+        return channel;
+      });
+
+      const { error } = await supabase
+        .from('youtube_channels')
+        .insert(channels);
+
+      if (error) throw error;
+      
+      await fetchChannels();
+      toast.success(`Successfully uploaded ${channels.length} channels`);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload channels. Please check your CSV format.');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-12">Loading...</div>;
   }
@@ -121,6 +171,22 @@ const Dashboard = () => {
           >
             <Download className="mr-2" /> Download CSV Template
           </Button>
+          <div className="relative">
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileUpload}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              disabled={uploading}
+            />
+            <Button
+              variant="outline"
+              disabled={uploading}
+            >
+              <Upload className="mr-2" />
+              {uploading ? 'Uploading...' : 'Upload CSV'}
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6">
