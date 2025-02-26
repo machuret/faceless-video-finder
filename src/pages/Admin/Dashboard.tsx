@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,12 +11,33 @@ import { toast } from "sonner";
 interface Channel {
   id: string;
   video_id: string;
-  screenshot_url: string;
+  screenshot_url: string | null;
   channel_title: string;
   channel_url: string;
-  description: string;
-  total_views: number;
-  total_subscribers: number;
+  description: string | null;
+  total_views: number | null;
+  total_subscribers: number | null;
+}
+
+interface ChannelInput {
+  video_id: string;
+  channel_title: string;
+  channel_url: string;
+  description?: string | null;
+  screenshot_url?: string | null;
+  total_subscribers?: number | null;
+  total_views?: number | null;
+  channel_category?: string | null;
+  channel_type?: string | null;
+  keywords?: string[] | null;
+  country?: string | null;
+  niche?: string | null;
+  notes?: string | null;
+  cpm?: number | null;
+  potential_revenue?: number | null;
+  revenue_per_video?: number | null;
+  revenue_per_month?: number | null;
+  uses_ai?: boolean | null;
 }
 
 const Dashboard = () => {
@@ -108,24 +130,34 @@ const Dashboard = () => {
       const headers = rows[0].split(',');
       const channels = rows.slice(1).filter(row => row.trim()).map(row => {
         const values = row.split(',');
-        const channel: any = {};
+        const channel: Partial<ChannelInput> = {};
         headers.forEach((header, index) => {
           let value = values[index]?.trim();
           if (value === undefined || value === '') return;
           
-          if (header === 'keywords') {
-            try {
-              value = JSON.parse(value);
-            } catch {
-              value = value.split(',').map(k => k.trim());
-            }
-          } else if (header === 'uses_ai') {
-            value = value.toLowerCase() === 'true';
-          } else if (['total_subscribers', 'total_views', 'cpm', 'potential_revenue', 'revenue_per_video', 'revenue_per_month'].includes(header)) {
-            value = parseFloat(value);
-          }
+          const headerKey = header.trim() as keyof ChannelInput;
           
-          channel[header.trim()] = value;
+          // Convert values based on field type
+          if (headerKey === 'keywords') {
+            try {
+              channel[headerKey] = JSON.parse(value);
+            } catch {
+              channel[headerKey] = value.split(',').map(k => k.trim());
+            }
+          } else if (headerKey === 'uses_ai') {
+            channel[headerKey] = value.toLowerCase() === 'true';
+          } else if ([
+            'total_subscribers',
+            'total_views',
+            'cpm',
+            'potential_revenue',
+            'revenue_per_video',
+            'revenue_per_month'
+          ].includes(headerKey)) {
+            channel[headerKey] = value ? parseFloat(value) : null;
+          } else {
+            channel[headerKey] = value;
+          }
         });
         return channel;
       });
