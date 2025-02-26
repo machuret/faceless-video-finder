@@ -26,13 +26,21 @@ const AdminLogin = () => {
       if (signInError) throw signInError;
       if (!user) throw new Error("No user data returned");
 
+      // Check specifically for admin role
       const { data: adminRole, error: roleError } = await supabase
         .from("admin_roles")
         .select("role")
         .eq("user_id", user.id)
-        .single();
+        .eq("role", "admin")
+        .maybeSingle();
 
-      if (roleError || !adminRole) {
+      if (roleError) {
+        console.error("Role check error:", roleError);
+        await supabase.auth.signOut();
+        throw new Error("Error checking admin privileges");
+      }
+
+      if (!adminRole) {
         await supabase.auth.signOut();
         throw new Error("Unauthorized - Admin access only");
       }
