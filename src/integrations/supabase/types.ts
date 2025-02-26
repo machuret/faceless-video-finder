@@ -14,19 +14,19 @@ export type Database = {
           created_at: string | null
           id: string
           role: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
           role: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
           role?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -44,8 +44,6 @@ export type Database = {
           description: string | null
           id: string
           keywords: string[] | null
-          least_liked_video: string | null
-          most_liked_video: string | null
           niche: string | null
           notes: string | null
           potential_revenue: number | null
@@ -53,14 +51,12 @@ export type Database = {
           revenue_per_video: number | null
           screenshot_url: string | null
           start_date: string | null
-          top_video: string | null
           total_subscribers: number | null
           total_views: number | null
           updated_at: string | null
           uses_ai: boolean | null
           video_count: number | null
           video_id: string
-          worst_video: string | null
         }
         Insert: {
           channel_category?:
@@ -75,8 +71,6 @@ export type Database = {
           description?: string | null
           id?: string
           keywords?: string[] | null
-          least_liked_video?: string | null
-          most_liked_video?: string | null
           niche?: string | null
           notes?: string | null
           potential_revenue?: number | null
@@ -84,14 +78,12 @@ export type Database = {
           revenue_per_video?: number | null
           screenshot_url?: string | null
           start_date?: string | null
-          top_video?: string | null
           total_subscribers?: number | null
           total_views?: number | null
           updated_at?: string | null
           uses_ai?: boolean | null
           video_count?: number | null
           video_id: string
-          worst_video?: string | null
         }
         Update: {
           channel_category?:
@@ -106,8 +98,6 @@ export type Database = {
           description?: string | null
           id?: string
           keywords?: string[] | null
-          least_liked_video?: string | null
-          most_liked_video?: string | null
           niche?: string | null
           notes?: string | null
           potential_revenue?: number | null
@@ -115,14 +105,12 @@ export type Database = {
           revenue_per_video?: number | null
           screenshot_url?: string | null
           start_date?: string | null
-          top_video?: string | null
           total_subscribers?: number | null
           total_views?: number | null
           updated_at?: string | null
           uses_ai?: boolean | null
           video_count?: number | null
           video_id?: string
-          worst_video?: string | null
         }
         Relationships: []
       }
@@ -137,21 +125,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: {
+        Args: {
+          uid: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       channel_category:
-        | "finance"
-        | "tech"
-        | "cooking"
-        | "fitness"
-        | "travel"
-        | "other"
-      channel_type:
-        | "educational"
         | "entertainment"
+        | "education"
         | "gaming"
-        | "lifestyle"
+        | "music"
+        | "news"
+        | "sports"
+        | "technology"
         | "other"
+      channel_type: "creator" | "brand" | "media" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
