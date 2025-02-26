@@ -30,8 +30,14 @@ const AdminLogin = () => {
       console.log("User signed in successfully:", user.id);
 
       // Use RPC call to check admin role to avoid recursion
-      const { data: adminRoles, error: roleError } = await supabase
-        .rpc('get_user_role', { user_id: user.id }) as { data: string[] | null, error: Error | null };
+      // Type the response explicitly
+      interface UserRoleResponse {
+        data: string[] | null;
+        error: Error | null;
+      }
+      
+      const { data: adminRoles, error: roleError }: UserRoleResponse = await supabase
+        .rpc('get_user_role', { user_id: user.id });
 
       console.log("Admin role check result:", { adminRoles, roleError });
 
