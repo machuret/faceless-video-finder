@@ -45,6 +45,11 @@ const AddChannel = () => {
 
       console.log("Received data:", data);
 
+      // Format the date string to YYYY-MM-DD if it exists
+      const formattedStartDate = data.start_date 
+        ? new Date(data.start_date).toISOString().split('T')[0]
+        : "";
+
       setFormData({
         video_id: data.video_id || "",
         channel_title: data.channel_title || "",
@@ -53,7 +58,7 @@ const AddChannel = () => {
         screenshot_url: data.screenshot_url || "",
         total_subscribers: data.total_subscribers?.toString() || "",
         total_views: data.total_views?.toString() || "",
-        start_date: data.start_date || "",
+        start_date: formattedStartDate,
         video_count: data.video_count?.toString() || "",
       });
 
@@ -71,19 +76,25 @@ const AddChannel = () => {
     setLoading(true);
 
     try {
-      console.log("Submitting data:", formData);
+      // Validate required fields
+      if (!formData.video_id || !formData.channel_title || !formData.channel_url) {
+        throw new Error("Please fill in all required fields");
+      }
 
+      // Convert string values to appropriate types
       const dataToSubmit = {
-        video_id: formData.video_id,
-        channel_title: formData.channel_title,
-        channel_url: formData.channel_url,
-        description: formData.description,
-        screenshot_url: formData.screenshot_url,
-        total_subscribers: parseInt(formData.total_subscribers) || null,
-        total_views: parseInt(formData.total_views) || null,
+        video_id: formData.video_id.trim(),
+        channel_title: formData.channel_title.trim(),
+        channel_url: formData.channel_url.trim(),
+        description: formData.description.trim() || null,
+        screenshot_url: formData.screenshot_url.trim() || null,
+        total_subscribers: formData.total_subscribers ? parseInt(formData.total_subscribers) : null,
+        total_views: formData.total_views ? parseInt(formData.total_views) : null,
         start_date: formData.start_date || null,
-        video_count: parseInt(formData.video_count) || null,
+        video_count: formData.video_count ? parseInt(formData.video_count) : null,
       };
+
+      console.log("Submitting data:", dataToSubmit);
 
       const { data, error } = await supabase
         .from("youtube_channels")
@@ -93,6 +104,9 @@ const AddChannel = () => {
 
       if (error) {
         console.error("Insert error:", error);
+        if (error.code === "23505") { // Unique violation
+          throw new Error("This channel has already been added");
+        }
         throw error;
       }
 
