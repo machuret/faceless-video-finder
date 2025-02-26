@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Wand2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { Channel, ChannelCategory, ChannelType } from "@/types/youtube";
+import { toast } from "sonner";
 
 interface ChannelCardProps {
   channel: Channel;
@@ -137,16 +138,56 @@ export const ChannelCard = ({ channel, onDelete, onSave }: ChannelCardProps) => 
 
             <div>
               <Label>Description</Label>
-              <RichTextEditor
-                value={editedChannel.description || ""}
-                onChange={(value) =>
-                  setEditedChannel({
-                    ...editedChannel,
-                    description: value,
-                  })
-                }
-                placeholder="Enter channel description..."
-              />
+              <div className="relative">
+                <RichTextEditor
+                  value={editedChannel.description || ""}
+                  onChange={(value) =>
+                    setEditedChannel({
+                      ...editedChannel,
+                      description: value,
+                    })
+                  }
+                  placeholder="Enter channel description..."
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="absolute top-2 right-2"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(
+                        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-channel-content`,
+                        {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                          },
+                          body: JSON.stringify({
+                            channelTitle: editedChannel.channel_title,
+                            videoId: editedChannel.video_id,
+                          }),
+                        }
+                      );
+
+                      if (!response.ok) throw new Error("Failed to generate content");
+                      
+                      const data = await response.json();
+                      setEditedChannel({
+                        ...editedChannel,
+                        description: data.description,
+                        niche: data.niche,
+                      });
+                      toast.success("Generated description and niche!");
+                    } catch (error) {
+                      toast.error("Failed to generate content");
+                      console.error(error);
+                    }
+                  }}
+                >
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
