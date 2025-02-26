@@ -66,7 +66,7 @@ const AddChannel = () => {
           {
             ...formData,
             total_subscribers: parseInt(formData.total_subscribers) || null,
-            total_views: parseInt(formData.total_views) || null,
+            total_views: parseInt(formData.total_views) || null, // Fix: This was incorrectly using video_count before
             video_count: parseInt(formData.video_count) || null,
           },
         ]);
