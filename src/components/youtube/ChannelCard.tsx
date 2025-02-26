@@ -68,6 +68,8 @@ export const ChannelCard = ({ channel, onDelete, onSave }: ChannelCardProps) => 
     "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
   ];
 
+  const cpmOptions = Array.from({ length: 25 }, (_, i) => i + 1);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -272,17 +274,26 @@ export const ChannelCard = ({ channel, onDelete, onSave }: ChannelCardProps) => 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>CPM</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editedChannel.cpm || ""}
-                  onChange={(e) =>
+                <Select
+                  value={editedChannel.cpm?.toString() || ""}
+                  onValueChange={(value) =>
                     setEditedChannel({
                       ...editedChannel,
-                      cpm: e.target.value ? parseFloat(e.target.value) : null,
+                      cpm: parseInt(value),
                     })
                   }
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select CPM" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cpmOptions.map((value) => (
+                      <SelectItem key={value} value={value.toString()}>
+                        ${value.toFixed(2)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Video Count</Label>

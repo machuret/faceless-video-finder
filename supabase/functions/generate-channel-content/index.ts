@@ -13,6 +13,10 @@ serve(async (req) => {
   try {
     const { channelTitle, videoId } = await req.json();
 
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
     const prompt = `Given a YouTube channel titled "${channelTitle}" with video ID "${videoId}", please provide:
     1. A concise but detailed channel description (2-3 sentences)
     2. The most likely niche category for this channel (1-2 words)
@@ -31,8 +35,15 @@ serve(async (req) => {
           { role: 'system', content: 'You are a YouTube channel analyst. Provide accurate, professional descriptions.' },
           { role: 'user', content: prompt }
         ],
+        temperature: 0.7,
       }),
     });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('OpenAI API error:', error);
+      throw new Error('OpenAI API error');
+    }
 
     const data = await response.json();
     let result;
@@ -52,6 +63,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    console.error('Error in generate-channel-content function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
