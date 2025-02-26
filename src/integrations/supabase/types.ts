@@ -58,6 +58,7 @@ export type Database = {
           total_views: number | null
           updated_at: string | null
           uses_ai: boolean | null
+          video_count: number | null
           video_id: string
           worst_video: string | null
         }
@@ -88,6 +89,7 @@ export type Database = {
           total_views?: number | null
           updated_at?: string | null
           uses_ai?: boolean | null
+          video_count?: number | null
           video_id: string
           worst_video?: string | null
         }
@@ -118,6 +120,7 @@ export type Database = {
           total_views?: number | null
           updated_at?: string | null
           uses_ai?: boolean | null
+          video_count?: number | null
           video_id?: string
           worst_video?: string | null
         }
