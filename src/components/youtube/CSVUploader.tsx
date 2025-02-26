@@ -15,7 +15,7 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
 
   const downloadTemplate = () => {
     const csvHeader = "video_id,channel_title,channel_url,description,screenshot_url,total_subscribers,total_views,channel_category,channel_type,keywords,country,niche,notes,cpm,potential_revenue,revenue_per_video,revenue_per_month,uses_ai\n";
-    const csvContent = csvHeader + "dQw4w9WgXcQ,Rick Astley,https://youtube.com/rickastley,Official Rick Astley channel,https://example.com/screenshot.jpg,12500000,2000000000,entertainment,entertainment,\"music,pop,80s\",UK,Music,Great engagement,5.50,75000,1500,45000,false";
+    const csvContent = csvHeader + "dQw4w9WgXcQ,Rick Astley,https://youtube.com/rickastley,Official Rick Astley channel,https://example.com/screenshot.jpg,12500000,2000000000,entertainment,creator,\"music,pop,80s\",UK,Music,Great engagement,5.50,75000,1500,45000,false";
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -38,7 +38,7 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
       const rows = text.split('\n');
       const headers = rows[0].split(',');
       
-      const validChannels: Array<Required<Pick<Channel, 'channel_title' | 'channel_url' | 'video_id'>> & Partial<Channel>> = [];
+      const validChannels: Partial<Channel>[] = [];
       const skippedRows: number[] = [];
 
       rows.slice(1).forEach((row, index) => {
@@ -83,9 +83,8 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
           }
         });
 
-        // Check if the row has all required fields
         if (channel.video_id && channel.channel_title && channel.channel_url) {
-          validChannels.push(channel as Required<Pick<Channel, 'channel_title' | 'channel_url' | 'video_id'>> & Partial<Channel>);
+          validChannels.push(channel);
         } else {
           skippedRows.push(index + 1);
         }

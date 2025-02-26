@@ -1,6 +1,6 @@
 
-export type ChannelCategory = "finance" | "tech" | "cooking" | "fitness" | "travel" | "other";
-export type ChannelType = "educational" | "entertainment" | "gaming" | "lifestyle" | "other";
+export type ChannelCategory = "entertainment" | "education" | "gaming" | "music" | "news" | "sports" | "technology" | "other";
+export type ChannelType = "creator" | "brand" | "media" | "other";
 
 export interface Channel {
   id: string;
@@ -22,4 +22,8 @@ export interface Channel {
   revenue_per_video?: number | null;
   revenue_per_month?: number | null;
   uses_ai?: boolean | null;
+  start_date?: string | null;
+  video_count?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
