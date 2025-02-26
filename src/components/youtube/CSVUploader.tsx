@@ -37,7 +37,7 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
       const text = await file.text();
       const rows = text.split('\n');
       const headers = rows[0].split(',');
-      const channels = rows.slice(1).filter(row => row.trim()).map(row => {
+      const channels = rows.slice(1).filter(row => row.trim()).map((row, index) => {
         const values = row.split(',');
         const channel: Partial<Channel> = {};
         
@@ -77,9 +77,15 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
           }
         });
 
-        // Ensure required fields are present
-        if (!channel.channel_title || !channel.channel_url || !channel.video_id) {
-          throw new Error('Missing required fields');
+        // Check required fields with specific error messages
+        if (!channel.video_id) {
+          throw new Error(`Row ${index + 1}: Missing video_id`);
+        }
+        if (!channel.channel_title) {
+          throw new Error(`Row ${index + 1}: Missing channel_title`);
+        }
+        if (!channel.channel_url) {
+          throw new Error(`Row ${index + 1}: Missing channel_url`);
         }
 
         return channel as Required<Pick<Channel, 'channel_title' | 'channel_url' | 'video_id'>> & Partial<Channel>;
@@ -95,7 +101,8 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
       toast.success(`Successfully uploaded ${channels.length} channels`);
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload channels. Please check your CSV format.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload channels';
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
       event.target.value = '';
