@@ -1,8 +1,10 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import type { Channel, ChannelCategory, ChannelType } from "@/types/youtube";
 
 interface CSVUploaderProps {
   onUploadSuccess: () => Promise<void>;
@@ -37,35 +39,50 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
       const headers = rows[0].split(',');
       const channels = rows.slice(1).filter(row => row.trim()).map(row => {
         const values = row.split(',');
-        const channel: Record<string, any> = {};
+        const channel: Partial<Channel> = {};
+        
         headers.forEach((header, index) => {
           let value = values[index]?.trim();
           if (value === undefined || value === '') return;
           
-          const headerKey = header.trim();
+          const headerKey = header.trim() as keyof Channel;
           
-          if (headerKey === 'keywords') {
-            try {
-              channel[headerKey] = JSON.parse(value);
-            } catch {
-              channel[headerKey] = value.split(',').map(k => k.trim());
-            }
-          } else if (headerKey === 'uses_ai') {
-            channel[headerKey] = value.toLowerCase() === 'true';
-          } else if ([
-            'total_subscribers',
-            'total_views',
-            'cpm',
-            'potential_revenue',
-            'revenue_per_video',
-            'revenue_per_month'
-          ].includes(headerKey)) {
-            channel[headerKey] = value ? parseFloat(value) : null;
-          } else {
-            channel[headerKey] = value;
+          switch(headerKey) {
+            case 'keywords':
+              try {
+                channel[headerKey] = JSON.parse(value);
+              } catch {
+                channel[headerKey] = value.split(',').map(k => k.trim());
+              }
+              break;
+            case 'uses_ai':
+              channel[headerKey] = value.toLowerCase() === 'true';
+              break;
+            case 'total_subscribers':
+            case 'total_views':
+            case 'cpm':
+            case 'potential_revenue':
+            case 'revenue_per_video':
+            case 'revenue_per_month':
+              channel[headerKey] = value ? parseFloat(value) : null;
+              break;
+            case 'channel_category':
+              channel[headerKey] = value as ChannelCategory;
+              break;
+            case 'channel_type':
+              channel[headerKey] = value as ChannelType;
+              break;
+            default:
+              channel[headerKey] = value;
           }
         });
-        return channel;
+
+        // Ensure required fields are present
+        if (!channel.channel_title || !channel.channel_url || !channel.video_id) {
+          throw new Error('Missing required fields');
+        }
+
+        return channel as Required<Pick<Channel, 'channel_title' | 'channel_url' | 'video_id'>> & Partial<Channel>;
       });
 
       const { error } = await supabase
