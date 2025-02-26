@@ -1,17 +1,26 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // If user is already logged in and is admin, redirect to dashboard
+    if (user && isAdmin) {
+      navigate("/admin/dashboard");
+    }
+  }, [user, isAdmin, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,8 +34,8 @@ const AdminLogin = () => {
 
       if (error) throw error;
 
+      // After successful login, AuthContext will automatically check admin status
       toast.success("Successfully logged in");
-      navigate("/admin/dashboard");
     } catch (error) {
       console.error("Login error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to login");
