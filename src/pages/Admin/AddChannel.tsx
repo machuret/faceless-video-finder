@@ -34,10 +34,14 @@ const AddChannel = () => {
 
       if (error) throw error;
 
+      if (!data) throw new Error("No data received from YouTube API");
+
+      console.log("Received data:", data); // Debug log
+
       setFormData({
-        video_id: data.video_id,
-        channel_title: data.channel_title,
-        channel_url: data.channel_url,
+        video_id: data.video_id || "",
+        channel_title: data.channel_title || "",
+        channel_url: data.channel_url || "",
         description: data.description || "",
         screenshot_url: data.screenshot_url || "",
         total_subscribers: data.total_subscribers?.toString() || "",
@@ -60,22 +64,33 @@ const AddChannel = () => {
     setLoading(true);
 
     try {
+      console.log("Submitting data:", formData); // Debug log
+
+      const dataToSubmit = {
+        video_id: formData.video_id,
+        channel_title: formData.channel_title,
+        channel_url: formData.channel_url,
+        description: formData.description,
+        screenshot_url: formData.screenshot_url,
+        total_subscribers: formData.total_subscribers ? parseInt(formData.total_subscribers) : null,
+        total_views: formData.total_views ? parseInt(formData.total_views) : null,
+        start_date: formData.start_date || null,
+        video_count: formData.video_count ? parseInt(formData.video_count) : null,
+      };
+
       const { error } = await supabase
         .from("youtube_channels")
-        .insert([
-          {
-            ...formData,
-            total_subscribers: parseInt(formData.total_subscribers) || null,
-            total_views: parseInt(formData.total_views) || null, // Fix: This was incorrectly using video_count before
-            video_count: parseInt(formData.video_count) || null,
-          },
-        ]);
+        .insert([dataToSubmit]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Insert error:", error); // Debug log
+        throw error;
+      }
 
       toast.success("Channel added successfully");
       navigate("/admin/dashboard");
     } catch (error) {
+      console.error("Submit error:", error); // Debug log
       toast.error(error instanceof Error ? error.message : "Failed to add channel");
     } finally {
       setLoading(false);
@@ -121,7 +136,7 @@ const AddChannel = () => {
               <div>
                 <Input
                   name="video_id"
-                  placeholder="Video ID"
+                  placeholder="Channel ID"
                   value={formData.video_id}
                   onChange={handleChange}
                   required
