@@ -7,6 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
+// Extend Database types to include our RPC function
+declare module '@/integrations/supabase/types' {
+  interface Database {
+    public: {
+      Functions: {
+        get_user_role: {
+          Args: { user_id: string };
+          Returns: string[];
+        };
+      };
+    };
+  }
+}
+
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -30,13 +44,7 @@ const AdminLogin = () => {
       console.log("User signed in successfully:", user.id);
 
       // Use RPC call to check admin role to avoid recursion
-      // Type the response explicitly
-      interface UserRoleResponse {
-        data: string[] | null;
-        error: Error | null;
-      }
-      
-      const { data: adminRoles, error: roleError }: UserRoleResponse = await supabase
+      const { data: adminRoles, error: roleError } = await supabase
         .rpc('get_user_role', { user_id: user.id });
 
       console.log("Admin role check result:", { adminRoles, roleError });
