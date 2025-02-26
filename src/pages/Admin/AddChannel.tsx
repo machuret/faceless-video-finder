@@ -19,6 +19,8 @@ const AddChannel = () => {
     screenshot_url: "",
     total_subscribers: "",
     total_views: "",
+    start_date: "",
+    video_count: "",
   });
 
   const fetchYoutubeData = async () => {
@@ -40,6 +42,8 @@ const AddChannel = () => {
         screenshot_url: data.screenshot_url || "",
         total_subscribers: data.total_subscribers?.toString() || "",
         total_views: data.total_views?.toString() || "",
+        start_date: data.start_date || "",
+        video_count: data.video_count?.toString() || "",
       });
 
       toast.success("Channel data fetched successfully");
@@ -63,6 +67,7 @@ const AddChannel = () => {
             ...formData,
             total_subscribers: parseInt(formData.total_subscribers) || null,
             total_views: parseInt(formData.total_views) || null,
+            video_count: parseInt(formData.video_count) || null,
           },
         ]);
 
@@ -158,6 +163,15 @@ const AddChannel = () => {
               </div>
               <div>
                 <Input
+                  name="start_date"
+                  placeholder="Start Date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <Input
                   name="total_subscribers"
                   placeholder="Total Subscribers"
                   type="number"
@@ -171,6 +185,15 @@ const AddChannel = () => {
                   placeholder="Total Views"
                   type="number"
                   value={formData.total_views}
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <Input
+                  name="video_count"
+                  placeholder="Number of Videos"
+                  type="number"
+                  value={formData.video_count}
                   onChange={handleChange}
                 />
               </div>

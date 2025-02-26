@@ -7,6 +7,7 @@ interface YouTubeResponse {
     snippet: {
       title: string;
       description: string;
+      publishedAt: string;
       thumbnails: {
         default: { url: string };
       };
@@ -15,6 +16,7 @@ interface YouTubeResponse {
     statistics: {
       viewCount: string;
       subscriberCount: string;
+      videoCount: string;
     };
   }>;
 }
@@ -51,7 +53,7 @@ Deno.serve(async (req) => {
       channelId = channelIdMatch![1];
     }
 
-    // Get channel details
+    // Get channel details with statistics
     const response = await fetch(
       `https://youtube.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${Deno.env.get('YOUTUBE_API_KEY')}`
     );
@@ -71,6 +73,8 @@ Deno.serve(async (req) => {
       screenshot_url: channel.snippet.thumbnails.default.url,
       total_subscribers: parseInt(channel.statistics.subscriberCount),
       total_views: parseInt(channel.statistics.viewCount),
+      start_date: new Date(channel.snippet.publishedAt).toISOString().split('T')[0],
+      video_count: parseInt(channel.statistics.videoCount),
     };
 
     return new Response(JSON.stringify(channelData), {
