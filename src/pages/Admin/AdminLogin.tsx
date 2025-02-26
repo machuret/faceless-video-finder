@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import type { Tables } from "@/integrations/supabase/types";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -19,44 +18,12 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      // First, attempt to sign in
-      const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) throw signInError;
-      if (!user) throw new Error("No user data returned");
-
-      console.log("User signed in successfully:", user.id);
-
-      // Check admin role directly from the admin_roles table
-      const { data: adminRole, error: roleError } = await supabase
-        .from('admin_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .single();
-
-      console.log("Admin role check result:", { adminRole, roleError });
-
-      if (roleError) {
-        console.error("Role check error:", roleError);
-        await supabase.auth.signOut();
-        throw new Error(`Error checking admin privileges: ${roleError.message}`);
-      }
-
-      if (!adminRole) {
-        console.log("No admin role found for user:", user.id);
-        await supabase.auth.signOut();
-        throw new Error("Unauthorized - Admin access only");
-      }
-
-      toast.success("Welcome back, admin!");
+      // Temporary: Skip authentication and directly navigate to dashboard
+      toast.success("Welcome to admin dashboard!");
       navigate("/admin/dashboard");
     } catch (error) {
       console.error("Login error:", error);
-      toast.error(error instanceof Error ? error.message : "Login failed");
+      toast.error("Login failed");
     } finally {
       setLoading(false);
     }
@@ -76,7 +43,6 @@ const AdminLogin = () => {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
               />
             </div>
             <div className="space-y-2">
@@ -85,7 +51,6 @@ const AdminLogin = () => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
               />
             </div>
             <Button

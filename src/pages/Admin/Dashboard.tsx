@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -25,28 +25,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
 
-  useEffect(() => {
-    checkAdmin();
-    fetchChannels();
-  }, []);
-
-  const checkAdmin = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/admin/login");
-      return;
-    }
-
-    const { data: adminRole } = await supabase
-      .from("admin_roles")
-      .select("*")
-      .single();
-
-    if (!adminRole) {
-      navigate("/admin/login");
-    }
-  };
-
   const fetchChannels = async () => {
     try {
       const { data, error } = await supabase
@@ -62,6 +40,10 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
+  useState(() => {
+    fetchChannels();
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this channel?")) return;
@@ -96,8 +78,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
     navigate("/admin/login");
   };
 
