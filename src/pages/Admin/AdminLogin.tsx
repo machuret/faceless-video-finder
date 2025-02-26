@@ -18,29 +18,36 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // First, try to sign in
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
 
-      // Check if user is admin
+      if (!authData.user) {
+        throw new Error("No user data returned");
+      }
+
+      // Then check if user has admin role
       const { data: adminRole, error: roleError } = await supabase
         .from("admin_roles")
         .select("*")
+        .eq("user_id", authData.user.id)
         .single();
 
       if (roleError || !adminRole) {
+        // If not admin, sign out and throw error
         await supabase.auth.signOut();
-        throw new Error("Unauthorized access");
+        throw new Error("Unauthorized access - Admin privileges required");
       }
 
       toast.success("Logged in successfully");
       navigate("/admin/dashboard");
     } catch (error) {
+      console.error("Login error:", error);
       toast.error(error instanceof Error ? error.message : "Login failed");
-    } finally {
       setLoading(false);
     }
   };
