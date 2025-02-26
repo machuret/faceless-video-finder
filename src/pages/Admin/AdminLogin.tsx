@@ -18,36 +18,38 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      // First, try to sign in
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) throw authError;
+      if (signInError) throw signInError;
+      if (!user) throw new Error("No user data returned");
 
-      if (!authData.user) {
-        throw new Error("No user data returned");
-      }
-
-      // Then check if user has admin role
+      // Check if user has admin role
       const { data: adminRole, error: roleError } = await supabase
         .from("admin_roles")
-        .select("*")
-        .eq("user_id", authData.user.id)
-        .single();
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      if (roleError || !adminRole) {
-        // If not admin, sign out and throw error
-        await supabase.auth.signOut();
-        throw new Error("Unauthorized access - Admin privileges required");
+      if (roleError) {
+        console.error("Role check error:", roleError);
+        throw new Error("Error checking admin privileges");
       }
 
-      toast.success("Logged in successfully");
+      if (!adminRole) {
+        await supabase.auth.signOut();
+        throw new Error("Unauthorized - Admin access only");
+      }
+
+      toast.success("Welcome back, admin!");
       navigate("/admin/dashboard");
     } catch (error) {
       console.error("Login error:", error);
       toast.error(error instanceof Error ? error.message : "Login failed");
+      await supabase.auth.signOut();
+    } finally {
       setLoading(false);
     }
   };
