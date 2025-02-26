@@ -30,27 +30,40 @@ Deno.serve(async (req) => {
   try {
     const { url } = await req.json();
     
-    // Extract video ID or channel ID from URL
-    const videoIdMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu.be\/)([^&\n?#]+)/);
-    const channelIdMatch = url.match(/(?:youtube\.com\/)(?:channel\/|c\/)([^&\n?#]+)/);
+    // Extract channel ID from URL - support more URL formats
+    const channelIdPatterns = [
+      /youtube\.com\/channel\/([^\/\?\&]+)/,      // /channel/ID
+      /youtube\.com\/c\/([^\/\?\&]+)/,            // /c/custom-name
+      /youtube\.com\/@([^\/\?\&]+)/,              // /@username
+      /youtube\.com\/user\/([^\/\?\&]+)/          // /user/username (legacy)
+    ];
+
+    let channelId = null;
     
-    if (!videoIdMatch && !channelIdMatch) {
-      throw new Error('Invalid YouTube URL');
+    // Try to find channel ID from URL patterns
+    for (const pattern of channelIdPatterns) {
+      const match = url.match(pattern);
+      if (match) {
+        channelId = match[1];
+        break;
+      }
     }
 
-    const videoId = videoIdMatch?.[1];
-    let channelId;
+    // If no channel ID found directly, try to get it from video
+    if (!channelId) {
+      const videoIdMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu.be\/)([^&\n?#]+)/);
+      if (videoIdMatch) {
+        const videoId = videoIdMatch[1];
+        const videoResponse = await fetch(
+          `https://youtube.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${Deno.env.get('YOUTUBE_API_KEY')}`
+        );
+        const videoData = await videoResponse.json();
+        channelId = videoData.items?.[0]?.snippet?.channelId;
+      }
+    }
 
-    // If we have a video ID, first get the channel ID from the video
-    if (videoId) {
-      const videoResponse = await fetch(
-        `https://youtube.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${Deno.env.get('YOUTUBE_API_KEY')}`
-      );
-      const videoData = await videoResponse.json();
-      channelId = videoData.items?.[0]?.snippet?.channelId;
-      if (!channelId) throw new Error('Could not find channel ID');
-    } else {
-      channelId = channelIdMatch![1];
+    if (!channelId) {
+      throw new Error('Could not extract channel ID from URL');
     }
 
     // Get channel details with statistics
@@ -66,9 +79,9 @@ Deno.serve(async (req) => {
 
     const channel = data.items[0];
     const channelData = {
-      video_id: videoId || '',
+      video_id: channelId, // Use channel ID as video_id since it's required
       channel_title: channel.snippet.title,
-      channel_url: `https://youtube.com/channel/${channel.id}`,
+      channel_url: `https://youtube.com/channel/${channelId}`,
       description: channel.snippet.description,
       screenshot_url: channel.snippet.thumbnails.default.url,
       total_subscribers: parseInt(channel.statistics.subscriberCount),
