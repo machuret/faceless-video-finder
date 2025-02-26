@@ -9,7 +9,120 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      admin_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      youtube_channels: {
+        Row: {
+          channel_category:
+            | Database["public"]["Enums"]["channel_category"]
+            | null
+          channel_title: string
+          channel_type: Database["public"]["Enums"]["channel_type"] | null
+          channel_url: string
+          country: string | null
+          cpm: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          keywords: string[] | null
+          least_liked_video: string | null
+          most_liked_video: string | null
+          niche: string | null
+          notes: string | null
+          potential_revenue: number | null
+          revenue_per_month: number | null
+          revenue_per_video: number | null
+          screenshot_url: string | null
+          start_date: string | null
+          top_video: string | null
+          total_subscribers: number | null
+          total_views: number | null
+          updated_at: string | null
+          uses_ai: boolean | null
+          video_id: string
+          worst_video: string | null
+        }
+        Insert: {
+          channel_category?:
+            | Database["public"]["Enums"]["channel_category"]
+            | null
+          channel_title: string
+          channel_type?: Database["public"]["Enums"]["channel_type"] | null
+          channel_url: string
+          country?: string | null
+          cpm?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          least_liked_video?: string | null
+          most_liked_video?: string | null
+          niche?: string | null
+          notes?: string | null
+          potential_revenue?: number | null
+          revenue_per_month?: number | null
+          revenue_per_video?: number | null
+          screenshot_url?: string | null
+          start_date?: string | null
+          top_video?: string | null
+          total_subscribers?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+          uses_ai?: boolean | null
+          video_id: string
+          worst_video?: string | null
+        }
+        Update: {
+          channel_category?:
+            | Database["public"]["Enums"]["channel_category"]
+            | null
+          channel_title?: string
+          channel_type?: Database["public"]["Enums"]["channel_type"] | null
+          channel_url?: string
+          country?: string | null
+          cpm?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          least_liked_video?: string | null
+          most_liked_video?: string | null
+          niche?: string | null
+          notes?: string | null
+          potential_revenue?: number | null
+          revenue_per_month?: number | null
+          revenue_per_video?: number | null
+          screenshot_url?: string | null
+          start_date?: string | null
+          top_video?: string | null
+          total_subscribers?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+          uses_ai?: boolean | null
+          video_id?: string
+          worst_video?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +131,19 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      channel_category:
+        | "finance"
+        | "tech"
+        | "cooking"
+        | "fitness"
+        | "travel"
+        | "other"
+      channel_type:
+        | "educational"
+        | "entertainment"
+        | "gaming"
+        | "lifestyle"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
