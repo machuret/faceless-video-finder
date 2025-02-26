@@ -34,13 +34,13 @@ const AddChannel = () => {
       });
 
       if (error) {
-        console.error('Function error:', error);
-        throw error;
+        console.error('Edge Function error:', error);
+        throw new Error(`Failed to fetch YouTube data: ${error.message}`);
       }
 
       if (!data) {
         console.error('No data received');
-        throw new Error("No data received from YouTube API");
+        throw new Error("No data received from YouTube API. Please check if the URL is correct.");
       }
 
       console.log("Received data:", data);
@@ -65,7 +65,9 @@ const AddChannel = () => {
       toast.success("Channel data fetched successfully");
     } catch (error) {
       console.error('Fetch error:', error);
-      toast.error(error instanceof Error ? error.message : "Failed to fetch channel data");
+      toast.error(error instanceof Error 
+        ? `Failed to fetch channel data: ${error.message}` 
+        : "Failed to fetch channel data. Please check the URL and try again.");
     } finally {
       setLoading(false);
     }
@@ -78,7 +80,7 @@ const AddChannel = () => {
     try {
       // Validate required fields
       if (!formData.video_id || !formData.channel_title || !formData.channel_url) {
-        throw new Error("Please fill in all required fields");
+        throw new Error("Please fill in all required fields: Channel ID, Title, and URL");
       }
 
       // Convert string values to appropriate types
@@ -105,17 +107,23 @@ const AddChannel = () => {
       if (error) {
         console.error("Insert error:", error);
         if (error.code === "23505") { // Unique violation
-          throw new Error("This channel has already been added");
+          throw new Error("This channel has already been added to the database");
+        } else if (error.code === "42501") { // Permission denied
+          throw new Error("You don't have permission to add channels. Please check your login status.");
+        } else if (error.code === "42P17") { // Recursion in policy
+          throw new Error("There's an issue with database permissions. Please contact the administrator.");
         }
-        throw error;
+        throw new Error(`Database error: ${error.message}`);
       }
 
       console.log("Insert successful:", data);
-      toast.success("Channel added successfully");
+      toast.success("Channel added successfully!");
       navigate("/admin/dashboard");
     } catch (error) {
       console.error("Submit error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to add channel");
+      toast.error(error instanceof Error 
+        ? `Failed to add channel: ${error.message}` 
+        : "An unexpected error occurred while adding the channel");
     } finally {
       setLoading(false);
     }
