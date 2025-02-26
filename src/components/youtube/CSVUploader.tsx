@@ -37,7 +37,13 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
       const text = await file.text();
       const rows = text.split('\n');
       const headers = rows[0].split(',');
-      const channels = rows.slice(1).filter(row => row.trim()).map((row, index) => {
+      
+      const validChannels: Array<Required<Pick<Channel, 'channel_title' | 'channel_url' | 'video_id'>> & Partial<Channel>> = [];
+      const skippedRows: number[] = [];
+
+      rows.slice(1).forEach((row, index) => {
+        if (!row.trim()) return;
+
         const values = row.split(',');
         const channel: Partial<Channel> = {};
         
@@ -77,28 +83,31 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
           }
         });
 
-        // Check required fields with specific error messages
-        if (!channel.video_id) {
-          throw new Error(`Row ${index + 1}: Missing video_id`);
+        // Check if the row has all required fields
+        if (channel.video_id && channel.channel_title && channel.channel_url) {
+          validChannels.push(channel as Required<Pick<Channel, 'channel_title' | 'channel_url' | 'video_id'>> & Partial<Channel>);
+        } else {
+          skippedRows.push(index + 1);
         }
-        if (!channel.channel_title) {
-          throw new Error(`Row ${index + 1}: Missing channel_title`);
-        }
-        if (!channel.channel_url) {
-          throw new Error(`Row ${index + 1}: Missing channel_url`);
-        }
-
-        return channel as Required<Pick<Channel, 'channel_title' | 'channel_url' | 'video_id'>> & Partial<Channel>;
       });
+
+      if (validChannels.length === 0) {
+        throw new Error('No valid channels found in the CSV file');
+      }
 
       const { error } = await supabase
         .from('youtube_channels')
-        .insert(channels);
+        .insert(validChannels);
 
       if (error) throw error;
       
       await onUploadSuccess();
-      toast.success(`Successfully uploaded ${channels.length} channels`);
+      
+      if (skippedRows.length > 0) {
+        toast.warning(`Uploaded ${validChannels.length} channels. Skipped rows: ${skippedRows.join(', ')}`);
+      } else {
+        toast.success(`Successfully uploaded ${validChannels.length} channels`);
+      }
     } catch (error) {
       console.error('Upload error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload channels';
