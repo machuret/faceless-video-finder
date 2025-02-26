@@ -18,6 +18,7 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
+      // First, attempt to sign in
       const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -26,21 +27,26 @@ const AdminLogin = () => {
       if (signInError) throw signInError;
       if (!user) throw new Error("No user data returned");
 
-      // Check specifically for admin role
+      console.log("User signed in successfully:", user.id);
+
+      // Check for admin role
       const { data: adminRole, error: roleError } = await supabase
         .from("admin_roles")
-        .select("role")
+        .select("*")
         .eq("user_id", user.id)
         .eq("role", "admin")
         .maybeSingle();
 
+      console.log("Admin role check result:", { adminRole, roleError });
+
       if (roleError) {
         console.error("Role check error:", roleError);
         await supabase.auth.signOut();
-        throw new Error("Error checking admin privileges");
+        throw new Error(`Error checking admin privileges: ${roleError.message}`);
       }
 
       if (!adminRole) {
+        console.log("No admin role found for user:", user.id);
         await supabase.auth.signOut();
         throw new Error("Unauthorized - Admin access only");
       }
