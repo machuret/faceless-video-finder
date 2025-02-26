@@ -10,6 +10,7 @@ import { toast } from "sonner";
 const AddChannel = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [formData, setFormData] = useState({
     video_id: "",
     channel_title: "",
@@ -19,6 +20,36 @@ const AddChannel = () => {
     total_subscribers: "",
     total_views: "",
   });
+
+  const fetchYoutubeData = async () => {
+    if (!youtubeUrl) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+        body: { url: youtubeUrl }
+      });
+
+      if (error) throw error;
+
+      setFormData({
+        video_id: data.video_id,
+        channel_title: data.channel_title,
+        channel_url: data.channel_url,
+        description: data.description || "",
+        screenshot_url: data.screenshot_url || "",
+        total_subscribers: data.total_subscribers?.toString() || "",
+        total_views: data.total_views?.toString() || "",
+      });
+
+      toast.success("Channel data fetched successfully");
+    } catch (error) {
+      console.error('Fetch error:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to fetch channel data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +95,23 @@ const AddChannel = () => {
             </div>
           </CardHeader>
           <CardContent>
+            <div className="space-y-4 mb-6">
+              <div>
+                <Input
+                  placeholder="Paste YouTube URL here"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                />
+              </div>
+              <Button 
+                onClick={fetchYoutubeData} 
+                disabled={loading || !youtubeUrl}
+                className="w-full"
+              >
+                {loading ? "Fetching data..." : "Fetch Channel Data"}
+              </Button>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Input
