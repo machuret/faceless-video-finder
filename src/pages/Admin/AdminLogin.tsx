@@ -26,21 +26,13 @@ const AdminLogin = () => {
       if (signInError) throw signInError;
       if (!user) throw new Error("No user data returned");
 
-      // Check if user has admin role using the new RLS policy
       const { data: adminRole, error: roleError } = await supabase
         .from("admin_roles")
         .select("role")
         .eq("user_id", user.id)
-        .eq("role", "admin")
         .single();
 
-      if (roleError) {
-        console.error("Role check error:", roleError);
-        await supabase.auth.signOut();
-        throw new Error("Error checking admin privileges");
-      }
-
-      if (!adminRole) {
+      if (roleError || !adminRole) {
         await supabase.auth.signOut();
         throw new Error("Unauthorized - Admin access only");
       }
@@ -50,6 +42,7 @@ const AdminLogin = () => {
     } catch (error) {
       console.error("Login error:", error);
       toast.error(error instanceof Error ? error.message : "Login failed");
+    } finally {
       setLoading(false);
     }
   };
