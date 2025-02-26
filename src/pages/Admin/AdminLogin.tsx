@@ -29,15 +29,11 @@ const AdminLogin = () => {
 
       console.log("User signed in successfully:", user.id);
 
-      // Check for admin role
-      const { data: adminRole, error: roleError } = await supabase
-        .from("admin_roles")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+      // Use RPC call to check admin role to avoid recursion
+      const { data: adminRoles, error: roleError } = await supabase
+        .rpc('get_user_role', { user_id: user.id });
 
-      console.log("Admin role check result:", { adminRole, roleError });
+      console.log("Admin role check result:", { adminRoles, roleError });
 
       if (roleError) {
         console.error("Role check error:", roleError);
@@ -45,7 +41,7 @@ const AdminLogin = () => {
         throw new Error(`Error checking admin privileges: ${roleError.message}`);
       }
 
-      if (!adminRole) {
+      if (!adminRoles || !adminRoles.includes('admin')) {
         console.log("No admin role found for user:", user.id);
         await supabase.auth.signOut();
         throw new Error("Unauthorized - Admin access only");
@@ -56,7 +52,6 @@ const AdminLogin = () => {
     } catch (error) {
       console.error("Login error:", error);
       toast.error(error instanceof Error ? error.message : "Login failed");
-    } finally {
       setLoading(false);
     }
   };
