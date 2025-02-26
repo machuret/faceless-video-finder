@@ -4,14 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import YouTubeUrlInput from "./components/YouTubeUrlInput";
+import ChannelForm, { ChannelFormData } from "./components/ChannelForm";
 
 const AddChannel = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ChannelFormData>({
     video_id: "",
     channel_title: "",
     channel_url: "",
@@ -124,107 +125,18 @@ const AddChannel = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4 mb-6">
-              <div>
-                <Input
-                  placeholder="Paste YouTube URL here"
-                  value={youtubeUrl}
-                  onChange={(e) => setYoutubeUrl(e.target.value)}
-                />
-              </div>
-              <Button 
-                onClick={fetchYoutubeData} 
-                disabled={loading || !youtubeUrl}
-                className="w-full"
-              >
-                {loading ? "Fetching data..." : "Fetch Channel Data"}
-              </Button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Input
-                  name="video_id"
-                  placeholder="Channel ID"
-                  value={formData.video_id}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div>
-                <Input
-                  name="channel_title"
-                  placeholder="Channel Title"
-                  value={formData.channel_title}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div>
-                <Input
-                  name="channel_url"
-                  placeholder="Channel URL"
-                  value={formData.channel_url}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div>
-                <Input
-                  name="description"
-                  placeholder="Description"
-                  value={formData.description}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Input
-                  name="screenshot_url"
-                  placeholder="Screenshot URL"
-                  value={formData.screenshot_url}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Input
-                  name="start_date"
-                  placeholder="Start Date"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Input
-                  name="total_subscribers"
-                  placeholder="Total Subscribers"
-                  type="number"
-                  value={formData.total_subscribers}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Input
-                  name="total_views"
-                  placeholder="Total Views"
-                  type="number"
-                  value={formData.total_views}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Input
-                  name="video_count"
-                  placeholder="Number of Videos"
-                  type="number"
-                  value={formData.video_count}
-                  onChange={handleChange}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Adding Channel..." : "Add Channel"}
-              </Button>
-            </form>
+            <YouTubeUrlInput
+              youtubeUrl={youtubeUrl}
+              loading={loading}
+              onUrlChange={setYoutubeUrl}
+              onFetch={fetchYoutubeData}
+            />
+            <ChannelForm
+              formData={formData}
+              loading={loading}
+              onChange={handleChange}
+              onSubmit={handleSubmit}
+            />
           </CardContent>
         </Card>
       </div>
