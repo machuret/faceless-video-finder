@@ -59,6 +59,41 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
     onChange(mockEvent);
   };
 
+  // Handler for channel type changes (to track UI channel type)
+  const handleChannelTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    // Get the UI channel type value
+    const uiChannelType = e.target.value;
+    
+    // Update the metadata to store the UI channel type
+    const currentMetadata = editForm.metadata || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      ui_channel_type: uiChannelType
+    };
+    
+    // Create events for both changes
+    const channelTypeEvent = {
+      target: {
+        name: "channel_type",
+        value: "other" // Always store as "other" in the database
+      }
+    } as React.ChangeEvent<HTMLSelectElement>;
+    
+    const metadataEvent = {
+      target: {
+        name: "metadata",
+        value: updatedMetadata
+      }
+    } as unknown as React.ChangeEvent<HTMLInputElement>;
+    
+    // Apply both changes
+    onChange(channelTypeEvent);
+    onChange(metadataEvent);
+    
+    console.log("Updated channel type:", uiChannelType);
+    console.log("Updated metadata:", updatedMetadata);
+  };
+
   // Refresh video stats handler
   const handleRefreshStats = async () => {
     setIsLoadingStats(true);
@@ -175,7 +210,11 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
         {/* Categories Section */}
         <div>
           <h3 className="text-lg font-semibold mb-4">Categories & Classification</h3>
-          <ChannelCategories editForm={editForm} onChange={onChange} />
+          <ChannelCategories 
+            editForm={editForm} 
+            onChange={onChange} 
+            onTypeChange={handleChannelTypeChange}
+          />
         </div>
 
         <Separator />

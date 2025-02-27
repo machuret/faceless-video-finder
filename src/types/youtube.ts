@@ -36,6 +36,12 @@ export type ChannelType =
 export type ChannelSize = "small" | "growing" | "established" | "larger" | "big";
 export type UploadFrequency = "very_low" | "low" | "medium" | "high" | "very_high" | "insane";
 
+// Type for metadata stored in JSONB field
+export interface ChannelMetadata {
+  ui_channel_type?: string;
+  [key: string]: any; // Allow for additional metadata properties
+}
+
 export interface Channel {
   id: string;
   video_id: string;
@@ -62,7 +68,8 @@ export interface Channel {
   video_count?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
-  videoStats?: VideoStats[]; // Add this property for video statistics
+  videoStats?: VideoStats[]; // Property for video statistics
+  metadata?: ChannelMetadata; // New property for JSON metadata
 }
 
 export interface VideoStats {

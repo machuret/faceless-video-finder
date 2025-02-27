@@ -3,31 +3,53 @@ import { Channel } from "@/types/youtube";
 import { Input } from "@/components/ui/input";
 import { channelCategories, channelTypes, channelSizes, uploadFrequencies, countries } from "../constants";
 import { niches } from "../constants/niches";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ChannelCategoriesProps {
   editForm: Channel;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onTypeChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export const ChannelCategories = ({ editForm, onChange }: ChannelCategoriesProps) => {
-  const [selectedType, setSelectedType] = useState<string | undefined>(editForm?.channel_type);
+export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelCategoriesProps) => {
+  // Get the current UI channel type either from metadata or from channel_type if it's not "other"
+  const getInitialChannelType = () => {
+    if (editForm?.metadata?.ui_channel_type) {
+      return editForm.metadata.ui_channel_type;
+    }
+    if (editForm?.channel_type && editForm.channel_type !== "other") {
+      return editForm.channel_type;
+    }
+    return "other";
+  };
+  
+  const [selectedType, setSelectedType] = useState<string | undefined>(getInitialChannelType());
+  
+  // Update selectedType when editForm changes
+  useEffect(() => {
+    setSelectedType(getInitialChannelType());
+  }, [editForm]);
   
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setSelectedType(value);
     
-    // Create a modified event to pass to parent component
-    const modifiedEvent = {
-      ...e,
-      target: {
-        ...e.target,
-        name: e.target.name,
-        value: value
-      }
-    };
-    
-    onChange(modifiedEvent);
+    // If a custom handler is provided, use it - otherwise use the default onChange
+    if (onTypeChange) {
+      onTypeChange(e);
+    } else {
+      // Create a modified event to pass to parent component
+      const modifiedEvent = {
+        ...e,
+        target: {
+          ...e.target,
+          name: e.target.name,
+          value: value
+        }
+      };
+      
+      onChange(modifiedEvent);
+    }
   };
 
   const selectedTypeInfo = channelTypes.find(type => type.id === selectedType);
@@ -54,7 +76,7 @@ export const ChannelCategories = ({ editForm, onChange }: ChannelCategoriesProps
           <label className="block text-sm font-medium mb-1">Type of Channel</label>
           <select
             name="channel_type"
-            value={editForm?.channel_type || "other"}
+            value={selectedType || "other"}
             onChange={handleTypeChange}
             className="w-full p-2 border rounded"
           >

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -200,12 +201,33 @@ const Dashboard = () => {
       const revenuePerVideo = calculateRevenuePerVideo(channel.total_views, channel.cpm, channel.video_count);
       const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
 
-      const dbChannelType = mapToDatabaseChannelType(channel.channel_type);
-      console.log(`Mapping channel_type from "${channel.channel_type}" to database type "${dbChannelType}"`);
+      // Process the UI channel type
+      let uiChannelType = channel.channel_type;
+      let dbChannelType: DatabaseChannelType = "other";
+      
+      // If it's one of the database types, use it directly
+      if (uiChannelType === "creator" || uiChannelType === "brand" || uiChannelType === "media") {
+        dbChannelType = uiChannelType as DatabaseChannelType;
+      } else {
+        // Store the UI type in metadata
+        dbChannelType = "other";
+      }
+
+      // Get or initialize metadata
+      const metadata = channel.metadata || {};
+      
+      // If we have a UI channel type that's not a database type, save it in metadata
+      if (uiChannelType && !["creator", "brand", "media", "other"].includes(uiChannelType)) {
+        metadata.ui_channel_type = uiChannelType;
+      }
+      
+      console.log(`Mapping channel_type from "${uiChannelType}" to database type "${dbChannelType}"`);
+      console.log("Metadata:", metadata);
 
       const dataToUpdate = {
         ...channel,
         channel_type: dbChannelType,
+        metadata: metadata,
         potential_revenue: potentialRevenue,
         revenue_per_video: revenuePerVideo,
         revenue_per_month: revenuePerMonth,
@@ -229,9 +251,13 @@ const Dashboard = () => {
         throw error;
       }
 
+      // Update the channel in local state, but preserve the UI channel type
       setChannels(channels.map(c => {
         if (c.id === channel.id) {
-          return {...dataToUpdate, channel_type: channel.channel_type};
+          return {
+            ...dataToUpdate,
+            channel_type: uiChannelType // Keep the UI channel type for display
+          };
         }
         return c;
       }));

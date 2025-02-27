@@ -6,28 +6,16 @@ import { channelTypes } from "@/components/youtube/channel-list/constants";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Channel, DatabaseChannelType } from "@/types/youtube";
-import { ChannelList } from "@/components/youtube/ChannelList";
-import { formatDate, getChannelSize, getGrowthRange, calculateUploadFrequency, getUploadFrequencyCategory, getUploadFrequencyLabel } from "@/utils/channelUtils";
+import { Channel } from "@/types/youtube";
+import { formatDate } from "@/utils/channelUtils";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
-
-// Function to map UI channel type to database-compatible type
-const mapToDatabaseChannelType = (uiChannelType: string | undefined): DatabaseChannelType => {
-  // Only use values that match the database schema
-  if (uiChannelType === "creator" || uiChannelType === "brand" || uiChannelType === "media") {
-    return uiChannelType;
-  }
-  // Default to "other" for all custom types
-  return "other";
-};
 
 const ChannelTypeDetails = () => {
   const { typeId } = useParams<{ typeId: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [generatingContent, setGeneratingContent] = useState(false);
   
   const typeInfo = channelTypes.find(type => type.id === typeId);
   
@@ -38,23 +26,20 @@ const ChannelTypeDetails = () => {
       setLoading(true);
       try {
         console.log("Fetching channels of type:", typeId);
-        // Using any type here because we're dealing with a mismatch between 
-        // our TypeScript types and the database schema
+        
+        // First, fetch all channels - we'll filter client-side
         const { data, error } = await supabase
           .from("youtube_channels")
-          .select("*")
-          .eq("channel_type", "other"); // Query for "other" since that's the DB representation
+          .select("*");
           
         if (error) throw error;
         
-        // Filter the results client-side to match our UI channel type
-        const filteredData = data.filter(channel => {
-          // Since we can't query by the custom property directly, we need to check
-          // after we get the data back
-          return channel.channel_type === "other";
-        });
+        // Filter channels client-side based on the UI channel type
+        const filteredData = data.filter(channel => channel.channel_type === "other" && channel.metadata?.ui_channel_type === typeId);
         
-        console.log("Fetched channels:", filteredData);
+        console.log("Fetched channels:", data);
+        console.log("Filtered channels for type:", typeId, filteredData);
+        
         // Cast the data to ensure it matches the Channel type
         setChannels(filteredData as unknown as Channel[]);
       } catch (error) {
@@ -67,109 +52,6 @@ const ChannelTypeDetails = () => {
     
     fetchChannelsByType();
   }, [typeId]);
-  
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("youtube_channels")
-        .delete()
-        .eq("id", id);
-        
-      if (error) throw error;
-      setChannels(prevChannels => prevChannels.filter(channel => channel.id !== id));
-      toast.success("Channel deleted successfully");
-    } catch (error) {
-      console.error("Error deleting channel:", error);
-      toast.error("Failed to delete channel");
-    }
-  };
-  
-  const handleSave = async (updatedChannel: Channel) => {
-    try {
-      console.log("Saving updated channel:", updatedChannel);
-      
-      // Map the UI channel type to a database-compatible type
-      const dbChannelType = mapToDatabaseChannelType(updatedChannel.channel_type);
-      console.log(`Mapping channel_type from "${updatedChannel.channel_type}" to database type "${dbChannelType}"`);
-      
-      // Prepare the data for update
-      const dataToUpdate = {
-        ...updatedChannel,
-        channel_type: dbChannelType, // Use database-compatible type
-        // Convert string values to numbers where needed
-        total_views: updatedChannel.total_views ? Number(updatedChannel.total_views) : null,
-        total_subscribers: updatedChannel.total_subscribers ? Number(updatedChannel.total_subscribers) : null,
-        video_count: updatedChannel.video_count ? Number(updatedChannel.video_count) : null,
-        cpm: updatedChannel.cpm ? Number(updatedChannel.cpm) : null,
-      };
-      
-      // Remove properties that don't exist in the database
-      delete dataToUpdate.videoStats;
-      
-      const { error } = await supabase
-        .from("youtube_channels")
-        .update(dataToUpdate)
-        .eq("id", updatedChannel.id);
-        
-      if (error) {
-        console.error("Error updating channel:", error);
-        throw error;
-      }
-      
-      // Update the local state with the new data, but preserve the original UI channel_type
-      setChannels(prevChannels => 
-        prevChannels.map(channel => 
-          channel.id === updatedChannel.id 
-            ? {...updatedChannel, channel_type: updatedChannel.channel_type}
-            : channel
-        )
-      );
-      
-      toast.success("Channel updated successfully");
-    } catch (error) {
-      console.error("Error updating channel:", error);
-      toast.error("Failed to update channel");
-    }
-  };
-  
-  const handleGenerateContent = async (channel: Channel) => {
-    setGeneratingContent(true);
-    try {
-      console.log("Generating content for channel:", channel.id);
-      
-      const { data, error } = await supabase.functions.invoke('generate-channel-content', {
-        body: { channelTitle: channel.channel_title }
-      });
-      
-      if (error) throw error;
-      
-      if (!data || !data.description) {
-        throw new Error("Failed to generate valid content");
-      }
-      
-      // Update the channel description in the database
-      const { error: updateError } = await supabase
-        .from("youtube_channels")
-        .update({ description: data.description })
-        .eq("id", channel.id);
-        
-      if (updateError) throw updateError;
-      
-      // Update the description in our local state
-      setChannels(prevChannels => 
-        prevChannels.map(c => 
-          c.id === channel.id ? { ...c, description: data.description } : c
-        )
-      );
-      
-      toast.success("Content generated successfully");
-    } catch (error) {
-      console.error("Error generating content:", error);
-      toast.error("Failed to generate content");
-    } finally {
-      setGeneratingContent(false);
-    }
-  };
   
   if (!typeInfo) {
     return (
@@ -225,19 +107,11 @@ const ChannelTypeDetails = () => {
         {loading ? (
           <div className="text-center py-8 font-lato">Loading channels...</div>
         ) : channels.length > 0 ? (
-          <ChannelList 
-            channels={channels}
-            onDelete={handleDelete}
-            onSave={handleSave}
-            onGenerateContent={handleGenerateContent}
-            generatingContent={generatingContent}
-            getChannelSize={getChannelSize}
-            getGrowthRange={getGrowthRange}
-            calculateUploadFrequency={calculateUploadFrequency}
-            getUploadFrequencyCategory={getUploadFrequencyCategory}
-            getUploadFrequencyLabel={getUploadFrequencyLabel}
-            formatDate={formatDate}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {channels.map(channel => (
+              <ChannelCard key={channel.id} channel={channel} />
+            ))}
+          </div>
         ) : (
           <Card className="p-6">
             <p className="font-lato">No channels found for this type.</p>
@@ -245,6 +119,76 @@ const ChannelTypeDetails = () => {
         )}
       </div>
     </div>
+  );
+};
+
+// User-friendly channel card without edit functionality
+const ChannelCard = ({ channel }: { channel: Channel }) => {
+  return (
+    <Card className="overflow-hidden h-full flex flex-col">
+      <div className="p-4 flex-grow">
+        <div className="flex items-start gap-4 mb-4">
+          {channel.screenshot_url && (
+            <img
+              src={channel.screenshot_url}
+              alt={channel.channel_title}
+              className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+            />
+          )}
+          <div>
+            <h3 className="text-lg font-semibold line-clamp-2">{channel.channel_title}</h3>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {channel.channel_category && (
+                <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  {channel.channel_category}
+                </span>
+              )}
+              {channel.niche && (
+                <span className="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
+                  {channel.niche}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <p className="text-sm text-gray-500">Subscribers</p>
+            <p className="font-medium">{channel.total_subscribers?.toLocaleString() || 'N/A'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Videos</p>
+            <p className="font-medium">{channel.video_count?.toLocaleString() || 'N/A'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Total Views</p>
+            <p className="font-medium">{channel.total_views?.toLocaleString() || 'N/A'}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Since</p>
+            <p className="font-medium">{channel.start_date ? formatDate(channel.start_date) : 'N/A'}</p>
+          </div>
+        </div>
+        
+        {channel.description && (
+          <div className="mt-2">
+            <p className="text-sm text-gray-700 line-clamp-3">{channel.description}</p>
+          </div>
+        )}
+      </div>
+      
+      <div className="p-3 bg-gray-50 border-t">
+        <a 
+          href={channel.channel_url} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-blue-600 hover:underline text-sm font-medium"
+        >
+          View YouTube Channel
+        </a>
+      </div>
+    </Card>
   );
 };
 
