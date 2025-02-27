@@ -13,6 +13,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generatingContent, setGeneratingContent] = useState(false);
 
   const fetchChannels = async () => {
     try {
@@ -33,6 +34,51 @@ const Dashboard = () => {
   useEffect(() => {
     fetchChannels();
   }, []);
+
+  const generateContent = async (channel: Channel) => {
+    setGeneratingContent(true);
+    try {
+      console.log('Calling generate-channel-content for:', channel.channel_title);
+      
+      const { data, error } = await supabase.functions.invoke('generate-channel-content', {
+        body: { channelTitle: channel.channel_title }
+      });
+
+      console.log('Function response:', data);
+
+      if (error) {
+        console.error('Edge Function error:', error);
+        throw new Error(`Failed to generate content: ${error.message}`);
+      }
+
+      if (!data || !data.description) {
+        console.error('Invalid response:', data);
+        throw new Error('Failed to generate valid content');
+      }
+
+      // Update the channel with the new description
+      const { error: updateError } = await supabase
+        .from('youtube_channels')
+        .update({ description: data.description })
+        .eq('id', channel.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setChannels(channels.map(c => 
+        c.id === channel.id 
+          ? { ...c, description: data.description }
+          : c
+      ));
+
+      toast.success('Channel description updated successfully');
+    } catch (error) {
+      console.error('Generate content error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate content');
+    } finally {
+      setGeneratingContent(false);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this channel?")) return;
@@ -93,6 +139,8 @@ const Dashboard = () => {
           channels={channels}
           onDelete={handleDelete}
           onSave={handleSave}
+          onGenerateContent={generateContent}
+          generatingContent={generatingContent}
         />
       </div>
     </div>
