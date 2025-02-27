@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +6,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { CSVUploader } from "@/components/youtube/CSVUploader";
 import { ChannelList } from "@/components/youtube/ChannelList";
-import type { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
+import type { Channel, ChannelSize, UploadFrequency, DatabaseChannelType } from "@/types/youtube";
 
 const calculatePotentialRevenue = (totalViews: number | null, cpm: number | null): number | null => {
   if (!totalViews || !cpm) return null;
@@ -105,6 +104,13 @@ const formatDate = (dateString: string | null): string => {
   });
 };
 
+const mapToDatabaseChannelType = (uiChannelType: string | undefined): DatabaseChannelType => {
+  if (uiChannelType === "creator" || uiChannelType === "brand" || uiChannelType === "media") {
+    return uiChannelType;
+  }
+  return "other";
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -119,7 +125,6 @@ const Dashboard = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      // Cast the data to Channel[] to handle any type mismatches
       setChannels(data as Channel[] || []);
     } catch (error) {
       toast.error("Failed to fetch channels");
@@ -191,25 +196,25 @@ const Dashboard = () => {
     try {
       console.log("Saving channel with data:", channel);
       
-      // Calculate derived fields
       const potentialRevenue = calculatePotentialRevenue(channel.total_views, channel.cpm);
       const revenuePerVideo = calculateRevenuePerVideo(channel.total_views, channel.cpm, channel.video_count);
       const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
 
-      // Prepare the data for update, making sure it matches the database schema
+      const dbChannelType = mapToDatabaseChannelType(channel.channel_type);
+      console.log(`Mapping channel_type from "${channel.channel_type}" to database type "${dbChannelType}"`);
+
       const dataToUpdate = {
         ...channel,
+        channel_type: dbChannelType,
         potential_revenue: potentialRevenue,
         revenue_per_video: revenuePerVideo,
         revenue_per_month: revenuePerMonth,
-        // Convert any numeric string values to numbers
         total_views: channel.total_views ? Number(channel.total_views) : null,
         total_subscribers: channel.total_subscribers ? Number(channel.total_subscribers) : null,
         video_count: channel.video_count ? Number(channel.video_count) : null,
         cpm: channel.cpm ? Number(channel.cpm) : null,
       };
 
-      // Remove any properties that don't exist in the database schema
       delete dataToUpdate.videoStats;
       
       console.log("Data being sent to Supabase:", dataToUpdate);
@@ -224,8 +229,13 @@ const Dashboard = () => {
         throw error;
       }
 
-      // Update the local state with the new data
-      setChannels(channels.map(c => c.id === channel.id ? {...c, ...dataToUpdate} : c));
+      setChannels(channels.map(c => {
+        if (c.id === channel.id) {
+          return {...dataToUpdate, channel_type: channel.channel_type};
+        }
+        return c;
+      }));
+      
       toast.success("Channel updated successfully");
     } catch (error) {
       console.error("Save error:", error);

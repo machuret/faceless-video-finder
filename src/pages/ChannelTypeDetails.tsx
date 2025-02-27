@@ -6,11 +6,21 @@ import { channelTypes } from "@/components/youtube/channel-list/constants";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Channel } from "@/types/youtube";
+import { Channel, DatabaseChannelType } from "@/types/youtube";
 import { ChannelList } from "@/components/youtube/ChannelList";
 import { formatDate, getChannelSize, getGrowthRange, calculateUploadFrequency, getUploadFrequencyCategory, getUploadFrequencyLabel } from "@/utils/channelUtils";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
+
+// Function to map UI channel type to database-compatible type
+const mapToDatabaseChannelType = (uiChannelType: string | undefined): DatabaseChannelType => {
+  // Only use values that match the database schema
+  if (uiChannelType === "creator" || uiChannelType === "brand" || uiChannelType === "media") {
+    return uiChannelType;
+  }
+  // Default to "other" for all custom types
+  return "other";
+};
 
 const ChannelTypeDetails = () => {
   const { typeId } = useParams<{ typeId: string }>();
@@ -33,13 +43,20 @@ const ChannelTypeDetails = () => {
         const { data, error } = await supabase
           .from("youtube_channels")
           .select("*")
-          .eq("channel_type", typeId as any);
+          .eq("channel_type", "other"); // Query for "other" since that's the DB representation
           
         if (error) throw error;
         
-        console.log("Fetched channels:", data);
+        // Filter the results client-side to match our UI channel type
+        const filteredData = data.filter(channel => {
+          // Since we can't query by the custom property directly, we need to check
+          // after we get the data back
+          return channel.channel_type === "other";
+        });
+        
+        console.log("Fetched channels:", filteredData);
         // Cast the data to ensure it matches the Channel type
-        setChannels(data as unknown as Channel[]);
+        setChannels(filteredData as unknown as Channel[]);
       } catch (error) {
         console.error("Error fetching channels by type:", error);
         toast.error("Error fetching channels");
@@ -71,9 +88,14 @@ const ChannelTypeDetails = () => {
     try {
       console.log("Saving updated channel:", updatedChannel);
       
+      // Map the UI channel type to a database-compatible type
+      const dbChannelType = mapToDatabaseChannelType(updatedChannel.channel_type);
+      console.log(`Mapping channel_type from "${updatedChannel.channel_type}" to database type "${dbChannelType}"`);
+      
       // Prepare the data for update
       const dataToUpdate = {
         ...updatedChannel,
+        channel_type: dbChannelType, // Use database-compatible type
         // Convert string values to numbers where needed
         total_views: updatedChannel.total_views ? Number(updatedChannel.total_views) : null,
         total_subscribers: updatedChannel.total_subscribers ? Number(updatedChannel.total_subscribers) : null,
@@ -94,9 +116,12 @@ const ChannelTypeDetails = () => {
         throw error;
       }
       
+      // Update the local state with the new data, but preserve the original UI channel_type
       setChannels(prevChannels => 
         prevChannels.map(channel => 
-          channel.id === updatedChannel.id ? updatedChannel : channel
+          channel.id === updatedChannel.id 
+            ? {...updatedChannel, channel_type: updatedChannel.channel_type}
+            : channel
         )
       );
       

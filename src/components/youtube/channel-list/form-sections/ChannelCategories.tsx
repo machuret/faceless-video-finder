@@ -16,7 +16,18 @@ export const ChannelCategories = ({ editForm, onChange }: ChannelCategoriesProps
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setSelectedType(value);
-    onChange(e);
+    
+    // Create a modified event to pass to parent component
+    const modifiedEvent = {
+      ...e,
+      target: {
+        ...e.target,
+        name: e.target.name,
+        value: value
+      }
+    };
+    
+    onChange(modifiedEvent);
   };
 
   const selectedTypeInfo = channelTypes.find(type => type.id === selectedType);

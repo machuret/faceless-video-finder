@@ -12,6 +12,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// List of valid database channel types
+const validDatabaseChannelTypes = ["creator", "brand", "media", "other"];
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -139,9 +142,18 @@ Only return the JSON, no other text.
       metadata.channelType = 'other';
     }
 
-    // Map to database-compatible channel type (always "other" for custom types)
-    metadata.channelType = "other";
+    // Store the suggested UI channel type before mapping to database type
+    const uiChannelType = metadata.channelType;
+    
+    // Map to database-compatible channel type
+    // Check if the type is already a valid database type, otherwise use "other"
+    if (!validDatabaseChannelTypes.includes(metadata.channelType)) {
+      console.log(`Channel type '${metadata.channelType}' is not a valid database type, mapping to 'other'`);
+      metadata.channelType = "other";
+    }
 
+    console.log(`Final metadata being returned: `, metadata);
+    
     return new Response(JSON.stringify(metadata), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
