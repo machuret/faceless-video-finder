@@ -6,9 +6,17 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  className?: string;
+  minHeight?: string;
 }
 
-export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+export function RichTextEditor({ 
+  value, 
+  onChange, 
+  placeholder, 
+  className = "border rounded-md p-4 min-h-[200px] prose prose-sm max-w-none",
+  minHeight = "200px"
+}: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [StarterKit],
     content: value,
@@ -17,10 +25,11 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        class: `min-h-[${minHeight}]`,
+        placeholder: placeholder,
       },
     },
   });
 
-  return <EditorContent editor={editor} />;
+  return <div className={className}><EditorContent editor={editor} /></div>;
 }
