@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,6 +93,16 @@ const getUploadFrequencyLabel = (frequency: number | null): string => {
   if (!frequency) return "N/A";
   const videosPerMonth = frequency * 4; // Convert weekly to monthly
   return `${frequency.toFixed(1)} videos/week (${Math.round(videosPerMonth)} per month)`;
+};
+
+const formatDate = (dateString: string | null): string => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 };
 
 const Dashboard = () => {
@@ -235,6 +246,7 @@ const Dashboard = () => {
           calculateUploadFrequency={calculateUploadFrequency}
           getUploadFrequencyCategory={getUploadFrequencyCategory}
           getUploadFrequencyLabel={getUploadFrequencyLabel}
+          formatDate={formatDate}
         />
       </div>
     </div>
