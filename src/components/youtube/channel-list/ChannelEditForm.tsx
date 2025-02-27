@@ -1,9 +1,10 @@
 
-import { Channel, ChannelCategory, ChannelType, ChannelSize, UploadFrequency } from "@/types/youtube";
+import { Channel } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileUpload } from "@/components/FileUpload";
-import { useState } from "react";
+import { KeywordsInput } from "./KeywordsInput";
+import { channelCategories, channelTypes, channelSizes, uploadFrequencies } from "./constants";
 
 interface ChannelEditFormProps {
   editForm: Channel;
@@ -12,84 +13,23 @@ interface ChannelEditFormProps {
   onCancel: () => void;
 }
 
-export const channelCategories: ChannelCategory[] = [
-  "entertainment",
-  "education",
-  "gaming",
-  "music",
-  "news",
-  "sports",
-  "technology",
-  "other"
-];
-
-export const channelTypes: ChannelType[] = [
-  "creator",
-  "brand",
-  "media",
-  "other"
-];
-
-export const channelSizes: ChannelSize[] = [
-  "small",
-  "growing",
-  "established",
-  "larger",
-  "big"
-];
-
-export const uploadFrequencies: UploadFrequency[] = [
-  "very_low",
-  "low",
-  "medium",
-  "high",
-  "very_high",
-  "insane"
-];
-
 export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
-  const [keywordInput, setKeywordInput] = useState("");
-
   const handleScreenshotChange = (url: string) => {
-    const e = {
+    onChange({
       target: {
         name: 'screenshot_url',
         value: url
       }
-    } as React.ChangeEvent<HTMLInputElement>;
-    onChange(e);
+    } as React.ChangeEvent<HTMLInputElement>);
   };
 
-  const handleKeywordAdd = () => {
-    if (!keywordInput.trim()) return;
-    
-    const newKeywords = [...(editForm.keywords || []), keywordInput.trim().toLowerCase()];
-    const e = {
+  const handleKeywordsChange = (keywords: string[]) => {
+    onChange({
       target: {
         name: 'keywords',
-        value: newKeywords
+        value: keywords
       }
-    } as React.ChangeEvent<HTMLInputElement>;
-    onChange(e);
-    setKeywordInput("");
-  };
-
-  const handleKeywordRemove = (keyword: string) => {
-    const newKeywords = (editForm.keywords || []).filter(k => k !== keyword);
-    const e = {
-      target: {
-        name: 'keywords',
-        value: newKeywords
-      }
-    } as React.ChangeEvent<HTMLInputElement>;
-    onChange(e);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleKeywordAdd();
-    }
+    } as unknown as React.ChangeEvent<HTMLInputElement>);
   };
 
   return (
@@ -264,34 +204,10 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Keywords</label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            value={keywordInput}
-            onChange={(e) => setKeywordInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Add keyword and press Enter"
-          />
-          <Button type="button" onClick={handleKeywordAdd}>Add</Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {editForm?.keywords?.map((keyword) => (
-            <div
-              key={keyword}
-              className="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-2"
-            >
-              <span>{keyword}</span>
-              <button
-                onClick={() => handleKeywordRemove(keyword)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+      <KeywordsInput 
+        keywords={editForm?.keywords || []}
+        onChange={handleKeywordsChange}
+      />
 
       <div>
         <label className="block text-sm font-medium mb-1">Description</label>
