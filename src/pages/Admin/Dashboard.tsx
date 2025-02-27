@@ -23,6 +23,31 @@ const calculateRevenuePerVideo = (
   return ((totalViews / 1000) * cpm) / videoCount;
 };
 
+const calculateRevenuePerMonth = (
+  totalViews: number | null,
+  cpm: number | null,
+  startDate: string | null
+): number | null => {
+  if (!totalViews || !cpm || !startDate) return null;
+
+  // Calculate months between start date and now
+  const start = new Date(startDate);
+  const now = new Date();
+  const monthsDiff = (now.getFullYear() - start.getFullYear()) * 12 + 
+                    (now.getMonth() - start.getMonth());
+  
+  // If channel is less than a month old, return the total potential revenue
+  if (monthsDiff === 0) {
+    return (totalViews / 1000) * cpm;
+  }
+
+  // Calculate average views per month
+  const averageViewsPerMonth = totalViews / monthsDiff;
+  
+  // Calculate revenue per month
+  return (averageViewsPerMonth / 1000) * cpm;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -105,14 +130,16 @@ const Dashboard = () => {
 
   const handleSave = async (channel: Channel) => {
     try {
-      // Calculate potential revenue and revenue per video
+      // Calculate all revenue metrics
       const potentialRevenue = calculatePotentialRevenue(channel.total_views, channel.cpm);
       const revenuePerVideo = calculateRevenuePerVideo(channel.total_views, channel.cpm, channel.video_count);
+      const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
 
       const updatedChannel = {
         ...channel,
         potential_revenue: potentialRevenue,
         revenue_per_video: revenuePerVideo,
+        revenue_per_month: revenuePerMonth,
       };
 
       const { error } = await supabase
