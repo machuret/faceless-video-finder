@@ -4,9 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Globe, Users, Play, Eye, TrendingUp, DollarSign, RefreshCw } from "lucide-react";
+import { ArrowLeft, Globe, Users, Play, Eye, TrendingUp, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 const getChannelSize = (subscribers: number | null): ChannelSize => {
   if (!subscribers) return "small";
@@ -104,7 +103,7 @@ const ChannelDetails = () => {
     },
   });
 
-  const { data: videoStats, isLoading: isLoadingStats, refetch: refetchStats } = useQuery({
+  const { data: videoStats, isLoading: isLoadingStats } = useQuery({
     queryKey: ["video-stats", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -116,22 +115,6 @@ const ChannelDetails = () => {
       return data as VideoStats[];
     },
   });
-
-  const refreshStats = async () => {
-    try {
-      const { error } = await supabase.functions.invoke('fetch-youtube-data', {
-        body: { channelId: id }
-      });
-
-      if (error) throw error;
-      
-      await refetchStats();
-      toast.success("Video statistics updated successfully");
-    } catch (error) {
-      console.error('Error refreshing stats:', error);
-      toast.error("Failed to update video statistics");
-    }
-  };
 
   const getBestPerforming = () => {
     if (!videoStats?.length) return null;
@@ -341,12 +324,8 @@ const ChannelDetails = () => {
           </Card>
 
           <Card className="lg:col-span-3">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader>
               <CardTitle className="text-xl font-semibold">Video Performance</CardTitle>
-              <Button variant="outline" onClick={refreshStats} disabled={isLoadingStats}>
-                <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingStats ? 'animate-spin' : ''}`} />
-                Refresh Stats
-              </Button>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
