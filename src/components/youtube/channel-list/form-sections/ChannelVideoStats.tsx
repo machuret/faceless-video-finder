@@ -1,4 +1,5 @@
 
+import { Channel } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw } from "lucide-react";
 import VideoPerformance from "@/components/youtube/VideoPerformance";
