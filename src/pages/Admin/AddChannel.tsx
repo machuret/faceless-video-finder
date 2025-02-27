@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import YouTubeUrlInput from "./components/YouTubeUrlInput";
 import ChannelForm, { ChannelFormData } from "./components/ChannelForm";
 import { useAuth } from "@/context/AuthContext";
+import { DatabaseChannelType } from "@/types/youtube";
 
 const AddChannel = () => {
   const navigate = useNavigate();
@@ -118,14 +119,14 @@ const AddChannel = () => {
         start_date: formData.start_date || null,
         video_count: formData.video_count ? parseInt(formData.video_count) : null,
         cpm: formData.cpm ? parseFloat(formData.cpm) : 4, // Default to 4 if not provided
-        channel_type: "other" // Default to "other" to match the database schema
+        channel_type: "other" as DatabaseChannelType // Explicitly type as DatabaseChannelType
       };
 
       console.log("Submitting data to Supabase:", dataToSubmit);
 
       const { data, error } = await supabase
         .from("youtube_channels")
-        .insert([dataToSubmit])
+        .insert(dataToSubmit)
         .select();
 
       if (error) {
