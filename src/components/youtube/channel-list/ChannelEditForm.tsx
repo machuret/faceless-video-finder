@@ -1,7 +1,7 @@
-
 import { Channel, ChannelCategory, ChannelType, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FileUpload } from "@/components/FileUpload";
 
 interface ChannelEditFormProps {
   editForm: Channel;
@@ -46,8 +46,26 @@ export const uploadFrequencies: UploadFrequency[] = [
 ];
 
 export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
+  const handleScreenshotChange = (url: string) => {
+    const e = {
+      target: {
+        name: 'screenshot_url',
+        value: url
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    onChange(e);
+  };
+
   return (
     <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Channel Screenshot</label>
+        <FileUpload
+          onUploadComplete={handleScreenshotChange}
+          currentUrl={editForm?.screenshot_url || null}
+        />
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium mb-1">Channel Title</label>

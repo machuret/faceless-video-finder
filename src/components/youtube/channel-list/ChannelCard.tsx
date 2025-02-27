@@ -70,12 +70,23 @@ export const ChannelCard = ({
   return (
     <div>
       <div className="flex justify-between items-start mb-4">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">{channel.channel_title}</h3>
-          <p className="text-gray-600">{channel.description || "No description available."}</p>
-          {channel.notes && (
-            <p className="text-gray-500 text-sm">Notes: {channel.notes}</p>
-          )}
+        <div className="space-y-2 flex-1">
+          <div className="flex gap-4 items-start">
+            {channel.screenshot_url && (
+              <img
+                src={channel.screenshot_url}
+                alt={channel.channel_title}
+                className="w-32 h-24 object-cover rounded-lg"
+              />
+            )}
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold">{channel.channel_title}</h3>
+              <p className="text-gray-600">{channel.description || "No description available."}</p>
+              {channel.notes && (
+                <p className="text-gray-500 text-sm">Notes: {channel.notes}</p>
+              )}
+            </div>
+          </div>
         </div>
         <div className="flex gap-2">
           {onGenerateContent && (
