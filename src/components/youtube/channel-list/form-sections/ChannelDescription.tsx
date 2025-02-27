@@ -1,10 +1,11 @@
-
 import { Channel } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
 
 interface ChannelDescriptionProps {
   editForm: Channel;
@@ -16,6 +17,34 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
   const [generatingNiche, setGeneratingNiche] = useState(false);
   const [generatingCountry, setGeneratingCountry] = useState(false);
   const [generatingType, setGeneratingType] = useState(false);
+
+  const descriptionEditor = useEditor({
+    extensions: [StarterKit],
+    content: editForm?.description || "",
+    onUpdate: ({ editor }) => {
+      const mockEvent = {
+        target: {
+          name: "description",
+          value: editor.getHTML()
+        }
+      } as React.ChangeEvent<HTMLTextAreaElement>;
+      onChange(mockEvent);
+    }
+  });
+
+  const notesEditor = useEditor({
+    extensions: [StarterKit],
+    content: editForm?.notes || "",
+    onUpdate: ({ editor }) => {
+      const mockEvent = {
+        target: {
+          name: "notes",
+          value: editor.getHTML()
+        }
+      } as React.ChangeEvent<HTMLTextAreaElement>;
+      onChange(mockEvent);
+    }
+  });
 
   const generateDescription = async () => {
     if (!editForm.channel_title) {
@@ -37,7 +66,6 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
         throw new Error('Failed to generate valid content');
       }
 
-      // Create a mock event to update the description
       const mockEvent = {
         target: {
           name: "description",
@@ -81,7 +109,6 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
 
       console.log("Received niche from API:", data.niche);
 
-      // Update niche
       const nicheEvent = {
         target: {
           name: "niche",
@@ -125,7 +152,6 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
 
       console.log("Received country from API:", data.country);
 
-      // Update country
       const countryEvent = {
         target: {
           name: "country",
@@ -169,7 +195,6 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
 
       console.log("Received channel type from API:", data.channelType);
 
-      // Update channel type
       const typeEvent = {
         target: {
           name: "channel_type",
@@ -202,13 +227,9 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
             {generatingDescription ? 'Generating...' : 'Generate Description'}
           </Button>
         </div>
-        <textarea
-          name="description"
-          value={editForm?.description || ""}
-          onChange={onChange}
-          className="w-full p-2 border rounded min-h-[100px]"
-          rows={4}
-        />
+        <div className="border rounded-md p-4 min-h-[200px] prose prose-sm max-w-none">
+          <EditorContent editor={descriptionEditor} />
+        </div>
       </div>
       
       <div className="flex flex-wrap gap-2 justify-end">
@@ -245,13 +266,9 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
       
       <div>
         <label className="block text-sm font-medium mb-1">Gab Notes</label>
-        <textarea
-          name="notes"
-          value={editForm?.notes || ""}
-          onChange={onChange}
-          className="w-full p-2 border rounded min-h-[100px]"
-          rows={4}
-        />
+        <div className="border rounded-md p-4 min-h-[200px] prose prose-sm max-w-none">
+          <EditorContent editor={notesEditor} />
+        </div>
       </div>
     </div>
   );

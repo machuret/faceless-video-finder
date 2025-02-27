@@ -51,7 +51,7 @@ export const ChannelCategories = ({ editForm, onChange }: ChannelCategoriesProps
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Type of Faceless</label>
+          <label className="block text-sm font-medium mb-1">Type of Channel</label>
           <select
             name="channel_type"
             value={editForm?.channel_type || "other"}
