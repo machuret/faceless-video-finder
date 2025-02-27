@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,10 +5,25 @@ import { channelTypes } from "@/components/youtube/channel-list/constants";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Channel } from "@/types/youtube";
+import { Channel, ChannelMetadata } from "@/types/youtube";
 import { formatDate } from "@/utils/channelUtils";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
+
+interface SupabaseChannelData {
+  id: string;
+  video_id: string;
+  channel_title: string;
+  channel_url: string;
+  screenshot_url: string | null;
+  description: string | null;
+  total_views: number | null;
+  total_subscribers: number | null;
+  channel_category: string | null;
+  channel_type: string | null;
+  metadata: ChannelMetadata | null;
+  [key: string]: any;
+}
 
 const ChannelTypeDetails = () => {
   const { typeId } = useParams<{ typeId: string }>();
@@ -27,20 +41,28 @@ const ChannelTypeDetails = () => {
       try {
         console.log("Fetching channels of type:", typeId);
         
-        // First, fetch all channels - we'll filter client-side
         const { data, error } = await supabase
           .from("youtube_channels")
           .select("*");
           
         if (error) throw error;
         
-        // Filter channels client-side based on the UI channel type
-        const filteredData = data.filter(channel => channel.channel_type === "other" && channel.metadata?.ui_channel_type === typeId);
+        if (!data || !Array.isArray(data)) {
+          console.error("Invalid data format received from Supabase", data);
+          throw new Error("Invalid data format received");
+        }
+        
+        const typedData = data as SupabaseChannelData[];
+        
+        const filteredData = typedData.filter(channel => {
+          return channel.channel_type === "other" && 
+                 channel.metadata && 
+                 channel.metadata.ui_channel_type === typeId;
+        });
         
         console.log("Fetched channels:", data);
         console.log("Filtered channels for type:", typeId, filteredData);
         
-        // Cast the data to ensure it matches the Channel type
         setChannels(filteredData as unknown as Channel[]);
       } catch (error) {
         console.error("Error fetching channels by type:", error);
@@ -122,7 +144,6 @@ const ChannelTypeDetails = () => {
   );
 };
 
-// User-friendly channel card without edit functionality
 const ChannelCard = ({ channel }: { channel: Channel }) => {
   return (
     <Card className="overflow-hidden h-full flex flex-col">
