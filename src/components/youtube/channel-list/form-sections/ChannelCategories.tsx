@@ -1,7 +1,7 @@
-
 import { Channel, ChannelCategory, ChannelType, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Input } from "@/components/ui/input";
 import { channelCategories, channelTypes, channelSizes, uploadFrequencies, countries } from "../constants";
+import { niches } from "../constants/niches";
 import { useState } from "react";
 import {
   Tooltip,
@@ -110,11 +110,28 @@ export const ChannelCategories = ({ editForm, onChange }: ChannelCategoriesProps
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Niche</label>
-          <Input
+          <select
             name="niche"
             value={editForm?.niche || ""}
             onChange={onChange}
-          />
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a niche</option>
+            {niches.map(niche => (
+              <option key={niche} value={niche}>
+                {niche}
+              </option>
+            ))}
+          </select>
+          {editForm?.niche && !niches.includes(editForm.niche) && (
+            <Input
+              name="niche"
+              value={editForm.niche}
+              onChange={onChange}
+              className="mt-2"
+              placeholder="Custom niche"
+            />
+          )}
         </div>
       </div>
 
