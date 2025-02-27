@@ -43,9 +43,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Faceless YouTube Channels</h1>
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+            Faceless YouTube Channels
+          </h1>
+          <p className="text-lg text-gray-600 mb-8 max-w-2xl">
+            Discover and analyze successful faceless YouTube channels across different niches
+          </p>
           
           {/* Search Bar */}
           <div className="relative max-w-2xl mx-auto">
@@ -54,7 +59,7 @@ const Index = () => {
               placeholder="Search channels..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-full"
+              className="pl-10 w-full text-base py-6"
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
           </div>
@@ -62,13 +67,13 @@ const Index = () => {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-12">
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="animate-pulse">Loading channels...</div>
+            <div className="text-base text-gray-600">Loading channels...</div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {channels?.map((channel) => (
               <Card key={channel.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-4">
@@ -76,29 +81,29 @@ const Index = () => {
                     <img
                       src={channel.screenshot_url}
                       alt={channel.channel_title}
-                      className="w-full h-48 object-cover rounded-t-lg mb-4 cursor-pointer"
+                      className="w-full h-48 object-cover rounded-lg mb-4 cursor-pointer"
                       onClick={() => navigate(`/channel/${channel.id}`)}
                     />
                   )}
                   <CardTitle 
-                    className="text-xl line-clamp-2 hover:text-blue-600 cursor-pointer transition-colors"
+                    className="text-xl font-semibold line-clamp-2 hover:text-blue-600 cursor-pointer transition-colors"
                     onClick={() => navigate(`/channel/${channel.id}`)}
                   >
                     {channel.channel_title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600 line-clamp-3">
+                  <div className="space-y-4">
+                    <p className="text-base text-gray-600 line-clamp-3">
                       {channel.description}
                     </p>
                     <div className="flex justify-between text-sm text-gray-500">
-                      <span>{channel.total_subscribers?.toLocaleString()} subscribers</span>
-                      <span>{channel.total_views?.toLocaleString()} views</span>
+                      <span className="font-medium">{channel.total_subscribers?.toLocaleString()} subscribers</span>
+                      <span className="font-medium">{channel.total_views?.toLocaleString()} views</span>
                     </div>
                     <Button
                       variant="outline"
-                      className="w-full mt-4"
+                      className="w-full"
                       onClick={() => navigate(`/channel/${channel.id}`)}
                     >
                       <Info className="w-4 h-4 mr-2" />
@@ -112,8 +117,10 @@ const Index = () => {
         )}
         
         {channels?.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            No channels found matching your search.
+          <div className="text-center py-12">
+            <p className="text-lg text-gray-500">
+              No channels found matching your search.
+            </p>
           </div>
         )}
       </div>

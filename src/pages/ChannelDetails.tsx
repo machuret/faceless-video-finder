@@ -72,7 +72,7 @@ const ChannelDetails = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-pulse">Loading channel details...</div>
+        <div className="text-base">Loading channel details...</div>
       </div>
     );
   }
@@ -80,7 +80,7 @@ const ChannelDetails = () => {
   if (!channel) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-500">Channel not found</div>
+        <div className="text-red-500 text-base">Channel not found</div>
       </div>
     );
   }
@@ -94,40 +94,49 @@ const ChannelDetails = () => {
       <div className="container mx-auto px-4 py-8">
         <Button 
           variant="outline" 
-          className="mb-6"
+          className="mb-8"
           onClick={() => navigate(-1)}
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Info */}
           <Card className="lg:col-span-2">
-            <CardHeader>
+            <CardHeader className="space-y-4">
               {channel.screenshot_url && (
                 <img
                   src={channel.screenshot_url}
                   alt={channel.channel_title}
-                  className="w-full h-48 object-cover rounded-lg mb-4"
+                  className="w-full h-64 object-cover rounded-lg"
                 />
               )}
-              <CardTitle className="text-2xl">{channel.channel_title}</CardTitle>
+              <CardTitle className="text-3xl font-bold tracking-tight">{channel.channel_title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 mb-4">{channel.description}</p>
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">{channel.description || "No description available."}</p>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-500" />
-                  <span>{channel.total_subscribers?.toLocaleString()} subscribers</span>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm text-gray-500">Subscribers</p>
+                    <p className="text-lg font-medium">{channel.total_subscribers?.toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-green-500" />
-                  <span>{channel.total_views?.toLocaleString()} views</span>
+                <div className="flex items-center gap-3">
+                  <Eye className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="text-sm text-gray-500">Views</p>
+                    <p className="text-lg font-medium">{channel.total_views?.toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Play className="w-5 h-5 text-red-500" />
-                  <span>{channel.video_count} videos</span>
+                <div className="flex items-center gap-3">
+                  <Play className="w-5 h-5 text-red-600" />
+                  <div>
+                    <p className="text-sm text-gray-500">Videos</p>
+                    <p className="text-lg font-medium">{channel.video_count}</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -136,41 +145,50 @@ const ChannelDetails = () => {
           {/* Stats */}
           <Card>
             <CardHeader>
-              <CardTitle>Channel Stats</CardTitle>
+              <CardTitle className="text-xl font-semibold">Channel Stats</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div>
-                <h3 className="font-medium mb-1">Channel Size</h3>
-                <p className="text-lg font-semibold text-blue-600">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Channel Size</h3>
+                <p className="text-xl font-semibold text-blue-600">
                   {channelSize.charAt(0).toUpperCase() + channelSize.slice(1)}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-600 mt-1">
                   Expected Monthly Growth: {getGrowthRange(channelSize)} subscribers
                 </p>
               </div>
 
               <div>
-                <h3 className="font-medium mb-1">Upload Frequency</h3>
-                <p className="text-lg font-semibold text-green-600">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Upload Frequency</h3>
+                <p className="text-xl font-semibold text-green-600">
                   {uploadFrequencyCategory.split('_').map(word => 
                     word.charAt(0).toUpperCase() + word.slice(1)
                   ).join(' ')}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-600 mt-1">
                   {getUploadFrequencyLabel(uploadFrequency)}
                 </p>
               </div>
 
               {channel.cpm && (
                 <div>
-                  <h3 className="font-medium mb-1">Revenue Metrics</h3>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Revenue Metrics</h3>
                   <div className="space-y-2">
-                    <p className="text-sm">CPM: ${channel.cpm}</p>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-emerald-600" />
+                      <p className="text-base">CPM: ${channel.cpm}</p>
+                    </div>
                     {channel.revenue_per_video && (
-                      <p className="text-sm">Revenue per Video: ${channel.revenue_per_video}</p>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-emerald-600" />
+                        <p className="text-base">Revenue per Video: ${channel.revenue_per_video}</p>
+                      </div>
                     )}
                     {channel.revenue_per_month && (
-                      <p className="text-sm">Monthly Revenue: ${channel.revenue_per_month}</p>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-emerald-600" />
+                        <p className="text-base">Monthly Revenue: ${channel.revenue_per_month}</p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -178,29 +196,32 @@ const ChannelDetails = () => {
 
               {channel.channel_category && (
                 <div>
-                  <h3 className="font-medium mb-1">Category</h3>
-                  <p className="text-sm capitalize">{channel.channel_category}</p>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Category</h3>
+                  <p className="text-base capitalize">{channel.channel_category}</p>
                 </div>
               )}
 
               {channel.channel_type && (
                 <div>
-                  <h3 className="font-medium mb-1">Type</h3>
-                  <p className="text-sm capitalize">{channel.channel_type}</p>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Type</h3>
+                  <p className="text-base capitalize">{channel.channel_type}</p>
                 </div>
               )}
 
               {channel.niche && (
                 <div>
-                  <h3 className="font-medium mb-1">Niche</h3>
-                  <p className="text-sm">{channel.niche}</p>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Niche</h3>
+                  <p className="text-base">{channel.niche}</p>
                 </div>
               )}
 
               {channel.country && (
-                <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4" />
-                  <span className="text-sm">{channel.country}</span>
+                <div className="flex items-center gap-3">
+                  <Globe className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Country</h3>
+                    <p className="text-base">{channel.country}</p>
+                  </div>
                 </div>
               )}
             </CardContent>
