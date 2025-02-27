@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Channel {
@@ -99,9 +99,10 @@ const Index = () => {
                     <Button
                       variant="outline"
                       className="w-full mt-4"
-                      onClick={() => window.open(channel.channel_url, '_blank')}
+                      onClick={() => navigate(`/channel/${channel.id}`)}
                     >
-                      Visit Channel
+                      <Info className="w-4 h-4 mr-2" />
+                      View Details
                     </Button>
                   </div>
                 </CardContent>
