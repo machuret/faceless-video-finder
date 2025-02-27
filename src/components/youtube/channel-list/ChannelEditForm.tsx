@@ -89,6 +89,8 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
 
   // Log the content of editForm for debugging
   console.log("Current editForm:", editForm);
+  // Specifically log video stats for debugging
+  console.log("Video stats in form:", editForm.videoStats);
 
   return (
     <div className="space-y-8">

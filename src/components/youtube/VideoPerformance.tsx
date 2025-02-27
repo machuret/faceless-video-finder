@@ -9,6 +9,9 @@ interface VideoPerformanceProps {
 }
 
 const VideoPerformance = ({ videoStats }: VideoPerformanceProps) => {
+  // Log the incoming video stats to help debugging
+  console.log("VideoPerformance received stats:", videoStats);
+  
   const getBestPerforming = () => {
     if (!videoStats?.length) return null;
     return videoStats.reduce((prev, current) => 
@@ -43,6 +46,26 @@ const VideoPerformance = ({ videoStats }: VideoPerformanceProps) => {
   const worstVideo = getWorstPerforming();
   const mostLikedVideo = getMostLiked();
   const leastEngagedVideo = getLeastEngaged();
+
+  // Log the calculated stats
+  console.log("Calculated video stats:", { 
+    bestVideo, worstVideo, mostLikedVideo, leastEngagedVideo 
+  });
+
+  if (!videoStats || videoStats.length === 0) {
+    return (
+      <Card className="lg:col-span-3">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">Video Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6 text-gray-500">
+            No video statistics available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="lg:col-span-3">
