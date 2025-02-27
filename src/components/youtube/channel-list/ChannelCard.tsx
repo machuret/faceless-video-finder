@@ -1,5 +1,5 @@
 
-import { Channel, ChannelSize } from "@/types/youtube";
+import { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, RefreshCw } from "lucide-react";
 
@@ -11,6 +11,9 @@ interface ChannelCardProps {
   generatingContent?: boolean;
   getChannelSize: (subscribers: number | null) => ChannelSize;
   getGrowthRange: (size: ChannelSize) => string;
+  calculateUploadFrequency: (startDate: string | null, videoCount: number | null) => number | null;
+  getUploadFrequencyCategory: (frequency: number | null) => UploadFrequency;
+  getUploadFrequencyLabel: (frequency: number | null) => string;
 }
 
 const getChannelSizeColor = (size: ChannelSize): string => {
@@ -30,6 +33,25 @@ const getChannelSizeColor = (size: ChannelSize): string => {
   }
 };
 
+const getUploadFrequencyColor = (frequency: UploadFrequency): string => {
+  switch (frequency) {
+    case "insane":
+      return "text-purple-600 font-semibold";
+    case "very_high":
+      return "text-blue-600 font-semibold";
+    case "high":
+      return "text-green-600 font-semibold";
+    case "medium":
+      return "text-yellow-600 font-semibold";
+    case "low":
+      return "text-orange-600 font-semibold";
+    case "very_low":
+      return "text-red-600 font-semibold";
+    default:
+      return "text-gray-600";
+  }
+};
+
 export const ChannelCard = ({ 
   channel, 
   onEdit, 
@@ -37,8 +59,14 @@ export const ChannelCard = ({
   onGenerateContent,
   generatingContent,
   getChannelSize,
-  getGrowthRange
+  getGrowthRange,
+  calculateUploadFrequency,
+  getUploadFrequencyCategory,
+  getUploadFrequencyLabel
 }: ChannelCardProps) => {
+  const uploadFrequency = calculateUploadFrequency(channel.start_date, channel.video_count);
+  const uploadFrequencyCategory = getUploadFrequencyCategory(uploadFrequency);
+
   return (
     <div>
       <div className="flex justify-between items-start mb-4">
@@ -97,6 +125,20 @@ export const ChannelCard = ({
           </p>
           <p className="text-xs text-gray-500 mt-1">
             Expected Monthly Growth: {getGrowthRange(getChannelSize(channel.total_subscribers))} subscribers
+          </p>
+        </div>
+
+        <div className="col-span-2 mt-2">
+          <p>
+            Upload Frequency:{" "}
+            <span className={getUploadFrequencyColor(uploadFrequencyCategory)}>
+              {uploadFrequencyCategory.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join(' ')}
+            </span>
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {getUploadFrequencyLabel(uploadFrequency)}
           </p>
         </div>
       </div>

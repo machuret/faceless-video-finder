@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +6,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { CSVUploader } from "@/components/youtube/CSVUploader";
 import { ChannelList } from "@/components/youtube/ChannelList";
-import type { Channel, ChannelSize } from "@/types/youtube";
+import type { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
 
 const calculatePotentialRevenue = (totalViews: number | null, cpm: number | null): number | null => {
   if (!totalViews || !cpm) return null;
@@ -30,21 +29,17 @@ const calculateRevenuePerMonth = (
 ): number | null => {
   if (!totalViews || !cpm || !startDate) return null;
 
-  // Calculate months between start date and now
   const start = new Date(startDate);
   const now = new Date();
   const monthsDiff = (now.getFullYear() - start.getFullYear()) * 12 + 
                     (now.getMonth() - start.getMonth());
   
-  // If channel is less than a month old, return the total potential revenue
   if (monthsDiff === 0) {
     return Math.round((totalViews / 1000) * cpm);
   }
 
-  // Calculate average views per month
   const averageViewsPerMonth = totalViews / monthsDiff;
   
-  // Calculate revenue per month and round it
   return Math.round((averageViewsPerMonth / 1000) * cpm);
 };
 
@@ -71,6 +66,32 @@ const getGrowthRange = (size: ChannelSize): string => {
     case "small":
       return "10 - 100";
   }
+};
+
+const calculateUploadFrequency = (startDate: string | null, videoCount: number | null): number | null => {
+  if (!startDate || !videoCount) return null;
+
+  const start = new Date(startDate);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - start.getTime());
+  const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
+  
+  return videoCount / diffWeeks;
+};
+
+const getUploadFrequencyCategory = (frequency: number | null): UploadFrequency => {
+  if (!frequency || frequency <= 0.25) return "very_low";
+  if (frequency <= 0.5) return "low";
+  if (frequency <= 1) return "medium";
+  if (frequency <= 2) return "high";
+  if (frequency <= 3) return "very_high";
+  return "insane";
+};
+
+const getUploadFrequencyLabel = (frequency: number | null): string => {
+  if (!frequency) return "N/A";
+  const videosPerMonth = frequency * 4; // Convert weekly to monthly
+  return `${frequency.toFixed(1)} videos/week (${Math.round(videosPerMonth)} per month)`;
 };
 
 const Dashboard = () => {
@@ -155,7 +176,6 @@ const Dashboard = () => {
 
   const handleSave = async (channel: Channel) => {
     try {
-      // Calculate all revenue metrics
       const potentialRevenue = calculatePotentialRevenue(channel.total_views, channel.cpm);
       const revenuePerVideo = calculateRevenuePerVideo(channel.total_views, channel.cpm, channel.video_count);
       const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
@@ -212,6 +232,9 @@ const Dashboard = () => {
           generatingContent={generatingContent}
           getChannelSize={getChannelSize}
           getGrowthRange={getGrowthRange}
+          calculateUploadFrequency={calculateUploadFrequency}
+          getUploadFrequencyCategory={getUploadFrequencyCategory}
+          getUploadFrequencyLabel={getUploadFrequencyLabel}
         />
       </div>
     </div>

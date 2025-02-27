@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Channel } from "@/types/youtube";
+import type { Channel, UploadFrequency } from "@/types/youtube";
 import { ChannelEditForm } from "./channel-list/ChannelEditForm";
 import { ChannelCard } from "./channel-list/ChannelCard";
 
@@ -13,6 +13,9 @@ interface ChannelListProps {
   generatingContent?: boolean;
   getChannelSize: (subscribers: number | null) => any;
   getGrowthRange: (size: any) => string;
+  calculateUploadFrequency: (startDate: string | null, videoCount: number | null) => number | null;
+  getUploadFrequencyCategory: (frequency: number | null) => UploadFrequency;
+  getUploadFrequencyLabel: (frequency: number | null) => string;
 }
 
 export const ChannelList = ({ 
@@ -22,7 +25,10 @@ export const ChannelList = ({
   onGenerateContent,
   generatingContent,
   getChannelSize,
-  getGrowthRange
+  getGrowthRange,
+  calculateUploadFrequency,
+  getUploadFrequencyCategory,
+  getUploadFrequencyLabel
 }: ChannelListProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Channel | null>(null);
@@ -81,6 +87,9 @@ export const ChannelList = ({
                 generatingContent={generatingContent}
                 getChannelSize={getChannelSize}
                 getGrowthRange={getGrowthRange}
+                calculateUploadFrequency={calculateUploadFrequency}
+                getUploadFrequencyCategory={getUploadFrequencyCategory}
+                getUploadFrequencyLabel={getUploadFrequencyLabel}
               />
             )}
           </CardContent>
