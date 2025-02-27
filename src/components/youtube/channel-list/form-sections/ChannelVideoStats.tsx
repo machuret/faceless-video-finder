@@ -39,11 +39,20 @@ export const ChannelVideoStats = ({
           {isLoading ? 'Refreshing...' : 'Refresh Stats'}
         </Button>
       </div>
-      {videoStats && videoStats.length > 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8 text-gray-500">
+          <div className="flex justify-center mb-4">
+            <RefreshCcw className="w-8 h-8 animate-spin text-blue-500" />
+          </div>
+          <p>Loading video statistics...</p>
+          <p className="text-sm text-gray-400 mt-2">This may take a few moments</p>
+        </div>
+      ) : videoStats && videoStats.length > 0 ? (
         <VideoPerformance videoStats={videoStats} />
       ) : (
         <div className="text-center py-8 text-gray-500">
-          {isLoading ? 'Loading video statistics...' : 'No video statistics available'}
+          <p>No video statistics available</p>
+          <p className="text-sm text-gray-400 mt-2">Click "Refresh Stats" to fetch video statistics</p>
         </div>
       )}
     </div>

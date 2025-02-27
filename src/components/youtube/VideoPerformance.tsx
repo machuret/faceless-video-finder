@@ -80,7 +80,7 @@ const VideoPerformance = ({ videoStats }: VideoPerformanceProps) => {
               <VideoCard
                 title={bestVideo.title}
                 video_id={bestVideo.video_id}
-                thumbnail_url={bestVideo.thumbnail_url}
+                thumbnail_url={bestVideo.thumbnail_url || `https://i.ytimg.com/vi/${bestVideo.video_id}/hqdefault.jpg`}
                 stats={`${bestVideo.views.toLocaleString()} views`}
               />
             </div>
@@ -92,7 +92,7 @@ const VideoPerformance = ({ videoStats }: VideoPerformanceProps) => {
               <VideoCard
                 title={worstVideo.title}
                 video_id={worstVideo.video_id}
-                thumbnail_url={worstVideo.thumbnail_url}
+                thumbnail_url={worstVideo.thumbnail_url || `https://i.ytimg.com/vi/${worstVideo.video_id}/hqdefault.jpg`}
                 stats={`${worstVideo.views.toLocaleString()} views`}
               />
             </div>
@@ -104,7 +104,7 @@ const VideoPerformance = ({ videoStats }: VideoPerformanceProps) => {
               <VideoCard
                 title={mostLikedVideo.title}
                 video_id={mostLikedVideo.video_id}
-                thumbnail_url={mostLikedVideo.thumbnail_url}
+                thumbnail_url={mostLikedVideo.thumbnail_url || `https://i.ytimg.com/vi/${mostLikedVideo.video_id}/hqdefault.jpg`}
                 stats={`${mostLikedVideo.likes.toLocaleString()} likes`}
               />
             </div>
@@ -116,7 +116,7 @@ const VideoPerformance = ({ videoStats }: VideoPerformanceProps) => {
               <VideoCard
                 title={leastEngagedVideo.title}
                 video_id={leastEngagedVideo.video_id}
-                thumbnail_url={leastEngagedVideo.thumbnail_url}
+                thumbnail_url={leastEngagedVideo.thumbnail_url || `https://i.ytimg.com/vi/${leastEngagedVideo.video_id}/hqdefault.jpg`}
                 stats={`${(leastEngagedVideo.likes / (leastEngagedVideo.views || 1) * 100).toFixed(2)}% engagement`}
               />
             </div>
@@ -125,6 +125,6 @@ const VideoPerformance = ({ videoStats }: VideoPerformanceProps) => {
       </CardContent>
     </Card>
   );
-};
+}
 
 export default VideoPerformance;
