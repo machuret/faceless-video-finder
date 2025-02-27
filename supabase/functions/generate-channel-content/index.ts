@@ -14,94 +14,124 @@ serve(async (req) => {
   }
 
   try {
-    const { channelTitle } = await req.json();
-    console.log('Received request for channel:', channelTitle);
-
-    // Test 1: Verify API key
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      console.error('OpenAI API key not found');
-      throw new Error('OpenAI API key not configured');
-    }
-
-    // Test 2: Verify input
-    if (!channelTitle) {
-      console.error('No channel title provided');
-      throw new Error('Channel title is required');
-    }
-
-    // Test 3: API call with proper formatting
-    const response = await fetch('https://api.openai.com/v1/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: "text-davinci-003",
-        prompt: `Generate a JSON object with a description and niche for the YouTube channel "${channelTitle}". Use this exact format:
-{
-  "description": "(2-3 sentences about the channel)",
-  "niche": "(1-2 word category)"
-}`,
-        max_tokens: 200,
-        temperature: 0.7,
-        n: 1
-      }),
+    // Test 1: Log request
+    console.log('Request received:', {
+      method: req.method,
+      headers: Object.fromEntries(req.headers.entries()),
     });
 
-    // Test 4: Verify API response
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error('Failed to get response from OpenAI');
-    }
+    const { channelTitle } = await req.json();
+    console.log('Channel title:', channelTitle);
 
-    const data = await response.json();
-    console.log('Raw OpenAI response:', data);
-
-    if (!data.choices?.[0]?.text) {
-      console.error('Invalid response structure:', data);
-      throw new Error('Invalid response from OpenAI');
-    }
-
-    // Test 5: Parse and validate response
-    try {
-      const parsedResult = JSON.parse(data.choices[0].text.trim());
-      console.log('Parsed result:', parsedResult);
-
-      if (!parsedResult.description || !parsedResult.niche) {
-        throw new Error('Missing required fields in response');
-      }
-
-      return new Response(JSON.stringify(parsedResult), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', parseError);
-      console.error('Raw text:', data.choices[0].text);
-      
-      // Fallback: Create a structured response even if parsing fails
-      const fallbackResponse = {
-        description: data.choices[0].text.split('\n')[0] || 'Description unavailable',
-        niche: 'General'
-      };
-      
-      return new Response(JSON.stringify(fallbackResponse), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-  } catch (error) {
-    console.error('Function error:', error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : 'An unknown error occurred',
+    // Test 2: Check OpenAI API key
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      console.error('OpenAI API key is not set');
+      return new Response(JSON.stringify({
+        error: 'OpenAI API key not configured',
         success: false
-      }),
-      {
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    console.log('API key found (length):', openAIApiKey.length);
+
+    // Test 3: Validate input
+    if (!channelTitle) {
+      console.error('No channel title provided in request');
+      return new Response(JSON.stringify({
+        error: 'Channel title is required',
+        success: false
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Test 4: Test OpenAI API connection
+    console.log('Making OpenAI API request...');
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a YouTube channel analyzer. Provide analysis in JSON format only.'
+            },
+            {
+              role: 'user',
+              content: `Analyze this YouTube channel: "${channelTitle}". Respond ONLY with a JSON object in this exact format:
+              {
+                "description": "2-3 sentences about the channel",
+                "niche": "1-2 words describing the category"
+              }`
+            }
+          ]
+        }),
+      });
+
+      console.log('OpenAI API Response Status:', response.status);
+      console.log('OpenAI API Response Headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API Error Response:', errorText);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
       }
-    );
+
+      const data = await response.json();
+      console.log('OpenAI API Response Data:', JSON.stringify(data, null, 2));
+
+      if (!data.choices?.[0]?.message?.content) {
+        console.error('Invalid OpenAI response structure:', data);
+        throw new Error('Invalid response structure from OpenAI');
+      }
+
+      // Test 5: Parse response
+      const content = data.choices[0].message.content.trim();
+      console.log('Raw content:', content);
+
+      try {
+        const parsed = JSON.parse(content);
+        console.log('Parsed content:', parsed);
+
+        if (!parsed.description || !parsed.niche) {
+          throw new Error('Missing required fields in parsed response');
+        }
+
+        return new Response(JSON.stringify(parsed), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        console.error('Failed to parse content:', content);
+        throw new Error(`Failed to parse OpenAI response: ${parseError.message}`);
+      }
+    } catch (openAiError) {
+      console.error('OpenAI API Error:', openAiError);
+      throw new Error(`OpenAI API error: ${openAiError.message}`);
+    }
+  } catch (error) {
+    console.error('General Error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
+
+    return new Response(JSON.stringify({
+      error: error.message || 'An unknown error occurred',
+      success: false,
+      details: error.stack
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
