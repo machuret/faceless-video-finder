@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, RefreshCw } from "lucide-react";
-import type { Channel, ChannelCategory, ChannelType } from "@/types/youtube";
+import type { Channel, ChannelCategory, ChannelType, ChannelSize } from "@/types/youtube";
 
 interface ChannelListProps {
   channels: Channel[];
@@ -12,6 +12,8 @@ interface ChannelListProps {
   onSave: (channel: Channel) => void;
   onGenerateContent?: (channel: Channel) => void;
   generatingContent?: boolean;
+  getChannelSize: (subscribers: number | null) => ChannelSize;
+  getGrowthRange: (size: ChannelSize) => string;
 }
 
 export const ChannelList = ({ 
@@ -19,7 +21,9 @@ export const ChannelList = ({
   onDelete, 
   onSave,
   onGenerateContent,
-  generatingContent 
+  generatingContent,
+  getChannelSize,
+  getGrowthRange
 }: ChannelListProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Channel | null>(null);
@@ -74,6 +78,23 @@ export const ChannelList = ({
     "media",
     "other"
   ];
+
+  const getChannelSizeColor = (size: ChannelSize): string => {
+    switch (size) {
+      case "big":
+        return "text-purple-600 font-semibold";
+      case "larger":
+        return "text-blue-600 font-semibold";
+      case "established":
+        return "text-green-600 font-semibold";
+      case "growing":
+        return "text-yellow-600 font-semibold";
+      case "small":
+        return "text-gray-600";
+      default:
+        return "text-gray-600";
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -291,6 +312,20 @@ export const ChannelList = ({
                   {channel.channel_type && <p>Type: {channel.channel_type}</p>}
                   {channel.niche && <p>Niche: {channel.niche}</p>}
                   {channel.country && <p>Country: {channel.country}</p>}
+                  
+                  {/* Channel Size Information */}
+                  <div className="col-span-2 mt-2">
+                    <p>
+                      Channel Size:{" "}
+                      <span className={getChannelSizeColor(getChannelSize(channel.total_subscribers))}>
+                        {getChannelSize(channel.total_subscribers).charAt(0).toUpperCase() + 
+                         getChannelSize(channel.total_subscribers).slice(1)}
+                      </span>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Expected Monthly Growth: {getGrowthRange(getChannelSize(channel.total_subscribers))} subscribers
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -300,3 +335,4 @@ export const ChannelList = ({
     </div>
   );
 };
+

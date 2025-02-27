@@ -1,6 +1,7 @@
 
 export type ChannelCategory = "entertainment" | "education" | "gaming" | "music" | "news" | "sports" | "technology" | "other";
 export type ChannelType = "creator" | "brand" | "media" | "other";
+export type ChannelSize = "small" | "growing" | "established" | "larger" | "big";
 
 export interface Channel {
   id: string;
@@ -27,3 +28,4 @@ export interface Channel {
   created_at?: string | null;
   updated_at?: string | null;
 }
+

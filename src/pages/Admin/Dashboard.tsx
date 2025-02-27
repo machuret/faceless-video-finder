@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { CSVUploader } from "@/components/youtube/CSVUploader";
 import { ChannelList } from "@/components/youtube/ChannelList";
-import type { Channel } from "@/types/youtube";
+import type { Channel, ChannelSize } from "@/types/youtube";
 
 const calculatePotentialRevenue = (totalViews: number | null, cpm: number | null): number | null => {
   if (!totalViews || !cpm) return null;
@@ -45,6 +46,31 @@ const calculateRevenuePerMonth = (
   
   // Calculate revenue per month and round it
   return Math.round((averageViewsPerMonth / 1000) * cpm);
+};
+
+const getChannelSize = (subscribers: number | null): ChannelSize => {
+  if (!subscribers) return "small";
+  
+  if (subscribers >= 1_000_000) return "big";
+  if (subscribers >= 100_000) return "larger";
+  if (subscribers >= 10_000) return "established";
+  if (subscribers >= 1_000) return "growing";
+  return "small";
+};
+
+const getGrowthRange = (size: ChannelSize): string => {
+  switch (size) {
+    case "big":
+      return "10,000 - 50,000";
+    case "larger":
+      return "2,000 - 10,000";
+    case "established":
+      return "500 - 2,000";
+    case "growing":
+      return "100 - 500";
+    case "small":
+      return "10 - 100";
+  }
 };
 
 const Dashboard = () => {
@@ -184,6 +210,8 @@ const Dashboard = () => {
           onSave={handleSave}
           onGenerateContent={generateContent}
           generatingContent={generatingContent}
+          getChannelSize={getChannelSize}
+          getGrowthRange={getGrowthRange}
         />
       </div>
     </div>
