@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ export const ChannelList = ({
 
   const handleEdit = (channel: Channel) => {
     setEditingId(channel.id);
-    setEditForm(channel);
+    setEditForm({...channel});
   };
 
   const handleCancel = () => {
@@ -84,6 +83,21 @@ export const ChannelList = ({
     return <div className="bg-white rounded p-6 shadow">No channels found.</div>;
   }
 
+  // If we're currently editing a channel, show only the edit form
+  if (editingId && editForm) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <ChannelEditForm
+          editForm={editForm}
+          onChange={handleChange}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      </div>
+    );
+  }
+
+  // Otherwise, show the list of channels
   return (
     <div className="space-y-6">
       {channels.map((channel) => {
@@ -92,19 +106,6 @@ export const ChannelList = ({
         const uploadFrequency = calculateUploadFrequency(channel.start_date, channel.video_count);
         const frequencyCategory = getUploadFrequencyCategory(uploadFrequency);
         const frequencyLabel = getUploadFrequencyLabel(uploadFrequency);
-
-        if (editingId === channel.id && editForm) {
-          return (
-            <div key={channel.id} className="bg-white rounded-lg shadow p-6">
-              <ChannelEditForm
-                editForm={editForm}
-                onChange={handleChange}
-                onSave={handleSave}
-                onCancel={handleCancel}
-              />
-            </div>
-          );
-        }
 
         return (
           <div key={channel.id} className="bg-white rounded-lg shadow overflow-hidden">
