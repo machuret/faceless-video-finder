@@ -4,7 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileUpload } from "@/components/FileUpload";
 import { KeywordsInput } from "./KeywordsInput";
-import { channelCategories, channelTypes, channelSizes, uploadFrequencies } from "./constants";
+import { channelCategories, channelTypes, channelSizes, uploadFrequencies, countries } from "./constants";
+import { VideoPerformance } from "@/components/youtube/VideoPerformance";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { RefreshCcw } from "lucide-react";
 
 interface ChannelEditFormProps {
   editForm: Channel;
@@ -14,6 +19,19 @@ interface ChannelEditFormProps {
 }
 
 export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
+  const { data: videoStats, isLoading: isLoadingStats, refetch: refetchStats } = useQuery({
+    queryKey: ["video-stats", editForm.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("youtube_video_stats")
+        .select("*")
+        .eq("channel_id", editForm.id);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const handleScreenshotChange = (url: string) => {
     onChange({
       target: {
@@ -30,6 +48,22 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
         value: keywords
       }
     } as unknown as React.ChangeEvent<HTMLInputElement>);
+  };
+
+  const handleRefreshStats = async () => {
+    try {
+      const { error } = await supabase.functions.invoke('fetch-youtube-data', {
+        body: { url: editForm.channel_url }
+      });
+
+      if (error) throw error;
+      
+      await refetchStats();
+      toast.success('Video stats refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+      toast.error('Failed to refresh video stats');
+    }
   };
 
   return (
@@ -188,11 +222,19 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Country</label>
-          <Input
+          <select
             name="country"
             value={editForm?.country || ""}
             onChange={onChange}
-          />
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a country</option>
+            {countries.map(country => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Niche</label>
@@ -232,6 +274,24 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
           rows={4}
         />
       </div>
+
+      <div className="border-t pt-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Video Statistics</h3>
+          <Button 
+            onClick={handleRefreshStats}
+            variant="outline"
+            disabled={isLoadingStats}
+          >
+            <RefreshCcw className="w-4 h-4 mr-2" />
+            Refresh Stats
+          </Button>
+        </div>
+        {videoStats && videoStats.length > 0 && (
+          <VideoPerformance videoStats={videoStats} />
+        )}
+      </div>
+
       <div className="flex gap-2">
         <Button onClick={onSave}>Save</Button>
         <Button variant="outline" onClick={onCancel}>
