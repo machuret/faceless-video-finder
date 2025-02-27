@@ -10,21 +10,39 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Validate OpenAI API key
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key not configured' }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
+    // Parse request body
     const { title, description, category } = await req.json();
 
     if (!title) {
-      throw new Error('Channel title is required');
+      return new Response(
+        JSON.stringify({ error: 'Channel title is required' }), 
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
+    console.log('Calling OpenAI API with:', { title, description, category });
+
+    // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -52,40 +70,68 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('OpenAI API error:', error);
-      throw new Error('Failed to generate keywords');
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      return new Response(
+        JSON.stringify({ error: 'Failed to generate keywords from OpenAI' }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     const data = await response.json();
-    
+    console.log('OpenAI API response:', data);
+
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response from OpenAI');
+      return new Response(
+        JSON.stringify({ error: 'Invalid response format from OpenAI' }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     let keywords;
     try {
       keywords = JSON.parse(data.choices[0].message.content);
+      
       if (!Array.isArray(keywords)) {
-        throw new Error('Invalid keywords format');
+        throw new Error('Response is not an array');
       }
-      keywords = keywords.slice(0, 10); // Ensure exactly 10 keywords
-    } catch (e) {
-      console.error('Failed to parse keywords:', e);
-      throw new Error('Failed to parse keywords response');
+      
+      // Ensure we have exactly 10 keywords
+      keywords = keywords.slice(0, 10);
+      
+      console.log('Generated keywords:', keywords);
+      
+      return new Response(
+        JSON.stringify({ keywords }), 
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    } catch (error) {
+      console.error('Failed to parse keywords:', error);
+      return new Response(
+        JSON.stringify({ error: 'Failed to parse keywords response' }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
-    
-    return new Response(JSON.stringify({ keywords }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (error) {
     console.error('Error in generate-channel-keywords:', error);
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error occurred'
-      }), {
+      }), 
+      { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
