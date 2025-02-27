@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FileUpload } from "@/components/FileUpload";
 
 export interface ChannelFormData {
   video_id: string;
@@ -19,11 +20,19 @@ interface ChannelFormProps {
   loading: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
+  onScreenshotChange: (url: string) => void;
 }
 
-const ChannelForm = ({ formData, loading, onChange, onSubmit }: ChannelFormProps) => {
+const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange }: ChannelFormProps) => {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Channel Screenshot</label>
+        <FileUpload
+          onUploadComplete={onScreenshotChange}
+          currentUrl={formData.screenshot_url}
+        />
+      </div>
       <div>
         <Input
           name="video_id"
@@ -56,14 +65,6 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit }: ChannelFormProps
           name="description"
           placeholder="Description"
           value={formData.description}
-          onChange={onChange}
-        />
-      </div>
-      <div>
-        <Input
-          name="screenshot_url"
-          placeholder="Screenshot URL"
-          value={formData.screenshot_url}
           onChange={onChange}
         />
       </div>

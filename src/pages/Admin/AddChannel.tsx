@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,7 +105,7 @@ const AddChannel = () => {
         channel_title: formData.channel_title.trim(),
         channel_url: formData.channel_url.trim(),
         description: formData.description.trim() || null,
-        screenshot_url: formData.screenshot_url.trim() || null,
+        screenshot_url: formData.screenshot_url || null,
         total_subscribers: formData.total_subscribers ? parseInt(formData.total_subscribers) : null,
         total_views: formData.total_views ? parseInt(formData.total_views) : null,
         start_date: formData.start_date || null,
@@ -121,11 +122,11 @@ const AddChannel = () => {
 
       if (error) {
         console.error("Insert error:", error);
-        if (error.code === "23505") { // Unique violation
+        if (error.code === "23505") {
           throw new Error("This channel has already been added to the database");
-        } else if (error.code === "42501") { // Permission denied
+        } else if (error.code === "42501") {
           throw new Error("You don't have permission to add channels. Please check your login status.");
-        } else if (error.code === "42P17") { // Recursion in policy
+        } else if (error.code === "42P17") {
           throw new Error("There's an issue with database permissions. Please contact the administrator.");
         }
         throw new Error(`Database error: ${error.message}`);
@@ -147,6 +148,10 @@ const AddChannel = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleScreenshotChange = (url: string) => {
+    setFormData((prev) => ({ ...prev, screenshot_url: url }));
   };
 
   if (authLoading) {
@@ -181,6 +186,7 @@ const AddChannel = () => {
               loading={loading}
               onChange={handleChange}
               onSubmit={handleSubmit}
+              onScreenshotChange={handleScreenshotChange}
             />
           </CardContent>
         </Card>
