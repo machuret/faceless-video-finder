@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { FileUpload } from "@/components/FileUpload";
 import { KeywordsInput } from "./KeywordsInput";
 import { channelCategories, channelTypes, channelSizes, uploadFrequencies, countries } from "./constants";
-import VideoPerformance from "@/components/youtube/VideoPerformance"; // Changed from named import to default import
+import VideoPerformance from "@/components/youtube/VideoPerformance";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -98,6 +98,15 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
           <Input
             name="channel_url"
             value={editForm?.channel_url || ""}
+            onChange={onChange}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Start Date</label>
+          <Input
+            type="date"
+            name="start_date"
+            value={editForm?.start_date || ""}
             onChange={onChange}
           />
         </div>
