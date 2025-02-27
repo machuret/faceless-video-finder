@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Channel {
   id: string;
@@ -20,6 +21,7 @@ interface Channel {
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
 
   const { data: channels, isLoading } = useQuery({
     queryKey: ["channels", searchQuery],
@@ -74,10 +76,14 @@ const Index = () => {
                     <img
                       src={channel.screenshot_url}
                       alt={channel.channel_title}
-                      className="w-full h-48 object-cover rounded-t-lg mb-4"
+                      className="w-full h-48 object-cover rounded-t-lg mb-4 cursor-pointer"
+                      onClick={() => navigate(`/channel/${channel.id}`)}
                     />
                   )}
-                  <CardTitle className="text-xl line-clamp-2">
+                  <CardTitle 
+                    className="text-xl line-clamp-2 hover:text-blue-600 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/channel/${channel.id}`)}
+                  >
                     {channel.channel_title}
                   </CardTitle>
                 </CardHeader>

@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import AdminLogin from "./pages/Admin/AdminLogin";
 import Dashboard from "./pages/Admin/Dashboard";
 import AddChannel from "./pages/Admin/AddChannel";
+import ChannelDetails from "./pages/ChannelDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Sonner />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/channel/:id" element={<ChannelDetails />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route
               path="/admin/dashboard"
