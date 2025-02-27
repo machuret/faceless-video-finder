@@ -15,6 +15,8 @@ export interface Channel {
   total_subscribers: number | null;
   channel_category?: ChannelCategory;
   channel_type?: ChannelType;
+  channel_size?: ChannelSize;
+  upload_frequency?: UploadFrequency;
   keywords?: string[] | null;
   country?: string | null;
   niche?: string | null;

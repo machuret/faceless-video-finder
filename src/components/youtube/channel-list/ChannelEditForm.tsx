@@ -1,5 +1,5 @@
 
-import { Channel, ChannelCategory, ChannelType } from "@/types/youtube";
+import { Channel, ChannelCategory, ChannelType, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -26,6 +26,23 @@ export const channelTypes: ChannelType[] = [
   "brand",
   "media",
   "other"
+];
+
+export const channelSizes: ChannelSize[] = [
+  "small",
+  "growing",
+  "established",
+  "larger",
+  "big"
+];
+
+export const uploadFrequencies: UploadFrequency[] = [
+  "very_low",
+  "low",
+  "medium",
+  "high",
+  "very_high",
+  "insane"
 ];
 
 export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
@@ -118,6 +135,38 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
             {channelTypes.map(type => (
               <option key={type} value={type}>
                 {type.charAt(0).toUpperCase() + type.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Channel Size</label>
+          <select
+            name="channel_size"
+            value={editForm?.channel_size || "small"}
+            onChange={onChange}
+            className="w-full p-2 border rounded"
+          >
+            {channelSizes.map(size => (
+              <option key={size} value={size}>
+                {size.charAt(0).toUpperCase() + size.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Upload Frequency</label>
+          <select
+            name="upload_frequency"
+            value={editForm?.upload_frequency || "medium"}
+            onChange={onChange}
+            className="w-full p-2 border rounded"
+          >
+            {uploadFrequencies.map(frequency => (
+              <option key={frequency} value={frequency}>
+                {frequency.split('_').map(word => 
+                  word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ')}
               </option>
             ))}
           </select>
