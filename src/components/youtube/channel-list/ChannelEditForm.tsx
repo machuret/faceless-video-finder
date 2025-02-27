@@ -207,6 +207,9 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
       <KeywordsInput 
         keywords={editForm?.keywords || []}
         onChange={handleKeywordsChange}
+        channelTitle={editForm?.channel_title || ''}
+        description={editForm?.description || ''}
+        category={editForm?.channel_category || 'other'}
       />
 
       <div>
