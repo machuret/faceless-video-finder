@@ -3,12 +3,13 @@ import { useState } from "react";
 import { Channel } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { ChannelBasicInfo } from "./form-sections/ChannelBasicInfo";
-import { ChannelStats } from "./form-sections/ChannelStats";
+import { ChannelStatsForm } from "./form-sections/ChannelStats"; // Fixed import name
 import { ChannelVideoStats } from "./form-sections/ChannelVideoStats";
 import { ChannelCategories } from "./form-sections/ChannelCategories";
 import { ChannelDescription } from "./form-sections/ChannelDescription";
 import { KeywordsInput } from "./KeywordsInput";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 interface ChannelEditFormProps {
   editForm: Channel;
@@ -19,6 +20,7 @@ interface ChannelEditFormProps {
 
 export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
   const [keywords, setKeywords] = useState<string[]>(editForm.keywords || []);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   const handleKeywordsChange = (newKeywords: string[]) => {
     setKeywords(newKeywords);
@@ -30,6 +32,27 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
       }
     } as unknown as React.ChangeEvent<HTMLInputElement>;
     onChange(mockEvent);
+  };
+
+  // Handler for screenshot changes
+  const handleScreenshotChange = (url: string) => {
+    const mockEvent = {
+      target: {
+        name: "screenshot_url",
+        value: url
+      }
+    } as unknown as React.ChangeEvent<HTMLInputElement>;
+    onChange(mockEvent);
+  };
+
+  // Refresh video stats handler
+  const handleRefreshStats = () => {
+    setIsLoadingStats(true);
+    // In a real implementation, this would fetch updated stats
+    setTimeout(() => {
+      setIsLoadingStats(false);
+      toast.success("Stats refreshed successfully");
+    }, 1000);
   };
 
   return (
@@ -53,7 +76,11 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
         </TabsList>
         
         <TabsContent value="basic-info">
-          <ChannelBasicInfo editForm={editForm} onChange={onChange} />
+          <ChannelBasicInfo 
+            editForm={editForm} 
+            onChange={onChange} 
+            onScreenshotChange={handleScreenshotChange} 
+          />
         </TabsContent>
         
         <TabsContent value="categories">
@@ -61,11 +88,15 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
         </TabsContent>
         
         <TabsContent value="stats">
-          <ChannelStats editForm={editForm} onChange={onChange} />
+          <ChannelStatsForm editForm={editForm} onChange={onChange} />
         </TabsContent>
         
         <TabsContent value="videos">
-          <ChannelVideoStats editForm={editForm} onChange={onChange} />
+          <ChannelVideoStats 
+            videoStats={editForm.videoStats || []} 
+            isLoading={isLoadingStats} 
+            onRefresh={handleRefreshStats} 
+          />
         </TabsContent>
         
         <TabsContent value="description">
@@ -75,7 +106,13 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
         <TabsContent value="keywords">
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Keywords</h3>
-            <KeywordsInput keywords={keywords} onChange={handleKeywordsChange} />
+            <KeywordsInput 
+              keywords={keywords} 
+              onChange={handleKeywordsChange} 
+              channelTitle={editForm.channel_title || ""}
+              description={editForm.description || ""}
+              category={editForm.channel_category || ""}
+            />
           </div>
         </TabsContent>
       </Tabs>

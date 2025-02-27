@@ -58,6 +58,7 @@ export interface Channel {
   video_count?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
+  videoStats?: VideoStats[]; // Add this property for video statistics
 }
 
 export interface VideoStats {
