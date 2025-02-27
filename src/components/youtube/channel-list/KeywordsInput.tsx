@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Wand2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface KeywordsInputProps {
   keywords: string[];
@@ -43,6 +44,11 @@ export const KeywordsInput = ({
   };
 
   const generateKeywords = async () => {
+    if (!channelTitle) {
+      toast.error("Channel title is required to generate keywords");
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-channel-keywords', {
@@ -53,12 +59,20 @@ export const KeywordsInput = ({
         }
       });
 
-      if (error) throw error;
-      if (data.keywords) {
-        onChange(data.keywords);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to generate keywords');
       }
+
+      if (!data?.keywords || !Array.isArray(data.keywords)) {
+        throw new Error('Invalid response format');
+      }
+
+      onChange(data.keywords);
+      toast.success('Keywords generated successfully');
     } catch (error) {
-      console.error('Failed to generate keywords:', error);
+      console.error('Generate keywords error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate keywords');
     } finally {
       setIsGenerating(false);
     }
