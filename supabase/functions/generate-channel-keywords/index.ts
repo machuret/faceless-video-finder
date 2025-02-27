@@ -10,13 +10,11 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Validate OpenAI API key
     if (!openAIApiKey) {
       return new Response(
         JSON.stringify({ error: 'OpenAI API key not configured' }), 
@@ -27,7 +25,6 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
     const { title, description, category } = await req.json();
 
     if (!title) {
@@ -42,7 +39,6 @@ serve(async (req) => {
 
     console.log('Calling OpenAI API with:', { title, description, category });
 
-    // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -54,18 +50,18 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an SEO expert. Generate exactly 10 relevant keywords for a YouTube channel. Return ONLY a JSON array of lowercase strings.'
+            content: 'You are a YouTube SEO expert. Your task is to generate exactly 10 relevant keywords for a YouTube channel. You must respond with ONLY a raw JSON array of lowercase strings without any markdown formatting, explanation, or additional text. Example correct response: ["keyword1","keyword2","keyword3"]'
           },
           {
             role: 'user',
-            content: `Generate 10 SEO keywords for this YouTube channel:
-              Title: ${title}
-              Description: ${description || 'No description provided'}
-              Category: ${category || 'other'}
-              
-              Return only a JSON array of lowercase strings, nothing else.`
+            content: `Channel Title: ${title}
+Description: ${description || 'No description provided'}
+Category: ${category || 'other'}
+
+Remember: Return ONLY a raw JSON array of 10 lowercase keywords. No other text or formatting.`
           }
         ],
+        temperature: 0.7
       }),
     });
 
@@ -96,7 +92,9 @@ serve(async (req) => {
 
     let keywords;
     try {
-      keywords = JSON.parse(data.choices[0].message.content);
+      const content = data.choices[0].message.content.trim();
+      console.log('Raw content:', content);
+      keywords = JSON.parse(content);
       
       if (!Array.isArray(keywords)) {
         throw new Error('Response is not an array');
@@ -116,7 +114,11 @@ serve(async (req) => {
     } catch (error) {
       console.error('Failed to parse keywords:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to parse keywords response' }), 
+        JSON.stringify({ 
+          error: 'Failed to parse keywords response',
+          details: error instanceof Error ? error.message : 'Unknown parsing error',
+          rawContent: data.choices[0].message.content
+        }), 
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
