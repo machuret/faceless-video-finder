@@ -1,7 +1,9 @@
+
 import { Channel, ChannelCategory, ChannelType, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileUpload } from "@/components/FileUpload";
+import { useState } from "react";
 
 interface ChannelEditFormProps {
   editForm: Channel;
@@ -46,6 +48,8 @@ export const uploadFrequencies: UploadFrequency[] = [
 ];
 
 export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
+  const [keywordInput, setKeywordInput] = useState("");
+
   const handleScreenshotChange = (url: string) => {
     const e = {
       target: {
@@ -54,6 +58,38 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
       }
     } as React.ChangeEvent<HTMLInputElement>;
     onChange(e);
+  };
+
+  const handleKeywordAdd = () => {
+    if (!keywordInput.trim()) return;
+    
+    const newKeywords = [...(editForm.keywords || []), keywordInput.trim().toLowerCase()];
+    const e = {
+      target: {
+        name: 'keywords',
+        value: newKeywords
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    onChange(e);
+    setKeywordInput("");
+  };
+
+  const handleKeywordRemove = (keyword: string) => {
+    const newKeywords = (editForm.keywords || []).filter(k => k !== keyword);
+    const e = {
+      target: {
+        name: 'keywords',
+        value: newKeywords
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    onChange(e);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleKeywordAdd();
+    }
   };
 
   return (
@@ -125,6 +161,27 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
             name="cpm"
             value={editForm?.cpm || ""}
             onChange={onChange}
+            step="0.01"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Revenue per Video</label>
+          <Input
+            type="number"
+            name="revenue_per_video"
+            value={editForm?.revenue_per_video || ""}
+            onChange={onChange}
+            step="0.01"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Monthly Revenue</label>
+          <Input
+            type="number"
+            name="revenue_per_month"
+            value={editForm?.revenue_per_month || ""}
+            onChange={onChange}
+            step="0.01"
           />
         </div>
         <div>
@@ -206,6 +263,36 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
           />
         </div>
       </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Keywords</label>
+        <div className="flex gap-2 mb-2">
+          <Input
+            value={keywordInput}
+            onChange={(e) => setKeywordInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Add keyword and press Enter"
+          />
+          <Button type="button" onClick={handleKeywordAdd}>Add</Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {editForm?.keywords?.map((keyword) => (
+            <div
+              key={keyword}
+              className="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-2"
+            >
+              <span>{keyword}</span>
+              <button
+                onClick={() => handleKeywordRemove(keyword)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div>
         <label className="block text-sm font-medium mb-1">Description</label>
         <textarea

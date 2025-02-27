@@ -31,7 +31,7 @@ const Index = () => {
         .select("*");
       
       if (searchQuery) {
-        query = query.ilike("channel_title", `%${searchQuery}%`);
+        query = query.or(`channel_title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,keywords.cs.{${searchQuery}}`);
       }
       
       const { data, error } = await query;

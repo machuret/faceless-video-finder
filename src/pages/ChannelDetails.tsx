@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +50,11 @@ const getUploadFrequencyLabel = (frequency: number | null): string => {
   return `${frequency.toFixed(1)} videos/week (${Math.round(videosPerMonth)} per month)`;
 };
 
+const formatRevenue = (amount: number | null) => {
+  if (!amount) return '$0';
+  return `$${amount.toFixed(2)}`;
+};
+
 const ChannelDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -101,7 +105,6 @@ const ChannelDetails = () => {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Info */}
           <Card className="lg:col-span-2">
             <CardHeader className="space-y-4">
               {channel.screenshot_url && (
@@ -142,7 +145,6 @@ const ChannelDetails = () => {
             </CardContent>
           </Card>
 
-          {/* Stats */}
           <Card>
             <CardHeader>
               <CardTitle className="text-xl font-semibold">Channel Stats</CardTitle>
@@ -176,18 +178,18 @@ const ChannelDetails = () => {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-emerald-600" />
-                      <p className="text-base">CPM: ${channel.cpm}</p>
+                      <p className="text-base">CPM: {formatRevenue(channel.cpm)}</p>
                     </div>
                     {channel.revenue_per_video && (
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-emerald-600" />
-                        <p className="text-base">Revenue per Video: ${channel.revenue_per_video}</p>
+                        <p className="text-base">Revenue per Video: {formatRevenue(channel.revenue_per_video)}</p>
                       </div>
                     )}
                     {channel.revenue_per_month && (
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-emerald-600" />
-                        <p className="text-base">Monthly Revenue: ${channel.revenue_per_month}</p>
+                        <p className="text-base">Monthly Revenue: {formatRevenue(channel.revenue_per_month)}</p>
                       </div>
                     )}
                   </div>
