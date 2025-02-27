@@ -1,89 +1,15 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
+import { Channel } from "@/types/youtube";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Globe, Users, Play, Eye, TrendingUp, DollarSign } from "lucide-react";
+import { ArrowLeft, Users, Play, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const getChannelSize = (subscribers: number | null): ChannelSize => {
-  if (!subscribers) return "small";
-  if (subscribers >= 1_000_000) return "big";
-  if (subscribers >= 100_000) return "larger";
-  if (subscribers >= 10_000) return "established";
-  if (subscribers >= 1_000) return "growing";
-  return "small";
-};
-
-const getGrowthRange = (size: ChannelSize): string => {
-  switch (size) {
-    case "big": return "10,000 - 50,000";
-    case "larger": return "2,000 - 10,000";
-    case "established": return "500 - 2,000";
-    case "growing": return "100 - 500";
-    case "small": return "10 - 100";
-  }
-};
-
-const calculateUploadFrequency = (startDate: string | null, videoCount: number | null): number | null => {
-  if (!startDate || !videoCount) return null;
-  const start = new Date(startDate);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - start.getTime());
-  const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
-  return videoCount / diffWeeks;
-};
-
-const getUploadFrequencyCategory = (frequency: number | null): UploadFrequency => {
-  if (!frequency || frequency <= 0.25) return "very_low";
-  if (frequency <= 0.5) return "low";
-  if (frequency <= 1) return "medium";
-  if (frequency <= 2) return "high";
-  if (frequency <= 3) return "very_high";
-  return "insane";
-};
-
-const getUploadFrequencyLabel = (frequency: number | null): string => {
-  if (!frequency) return "N/A";
-  const videosPerMonth = frequency * 4;
-  return `${frequency.toFixed(1)} videos/week (${Math.round(videosPerMonth)} per month)`;
-};
-
-const formatRevenue = (amount: number | null) => {
-  if (!amount) return '$0';
-  return `$${Math.round(amount)}`;
-};
-
-interface VideoStats {
-  title: string;
-  video_id: string;
-  thumbnail_url: string;
-  views: number;
-  likes: number;
-}
-
-const VideoCard = ({ title, video_id, thumbnail_url, stats }: { 
-  title: string;
-  video_id: string;
-  thumbnail_url: string;
-  stats: string;
-}) => (
-  <div className="flex flex-col gap-2">
-    <div className="aspect-video">
-      <iframe
-        src={`https://www.youtube.com/embed/${video_id}`}
-        className="w-full h-full rounded-lg"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    </div>
-    <div>
-      <h4 className="text-sm font-medium line-clamp-1">{title}</h4>
-      <p className="text-xs text-gray-500">{stats}</p>
-    </div>
-  </div>
-);
+import { getChannelSize, calculateUploadFrequency, getUploadFrequencyCategory } from "@/utils/channelUtils";
+import ChannelStats from "@/components/youtube/ChannelStats";
+import VideoPerformance from "@/components/youtube/VideoPerformance";
 
 const ChannelDetails = () => {
   const { id } = useParams();
@@ -112,39 +38,9 @@ const ChannelDetails = () => {
         .eq("channel_id", id);
       
       if (error) throw error;
-      return data as VideoStats[];
+      return data;
     },
   });
-
-  const getBestPerforming = () => {
-    if (!videoStats?.length) return null;
-    return videoStats.reduce((prev, current) => 
-      (current.views > prev.views) ? current : prev
-    );
-  };
-
-  const getWorstPerforming = () => {
-    if (!videoStats?.length) return null;
-    return videoStats.reduce((prev, current) => 
-      (current.views < prev.views) ? current : prev
-    );
-  };
-
-  const getMostLiked = () => {
-    if (!videoStats?.length) return null;
-    return videoStats.reduce((prev, current) => 
-      (current.likes > prev.likes) ? current : prev
-    );
-  };
-
-  const getLeastEngaged = () => {
-    if (!videoStats?.length) return null;
-    return videoStats.reduce((prev, current) => {
-      const prevRatio = prev.likes / (prev.views || 1);
-      const currentRatio = current.likes / (current.views || 1);
-      return (currentRatio < prevRatio) ? current : prev;
-    });
-  };
 
   if (isLoadingChannel) {
     return (
@@ -165,11 +61,6 @@ const ChannelDetails = () => {
   const uploadFrequency = calculateUploadFrequency(channel.start_date, channel.video_count);
   const uploadFrequencyCategory = getUploadFrequencyCategory(uploadFrequency);
   const channelSize = getChannelSize(channel.total_subscribers);
-
-  const bestVideo = getBestPerforming();
-  const worstVideo = getWorstPerforming();
-  const mostLikedVideo = getMostLiked();
-  const leastEngagedVideo = getLeastEngaged();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -223,162 +114,14 @@ const ChannelDetails = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold">Channel Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Channel Size</h3>
-                <p className="text-xl font-semibold text-blue-600">
-                  {channelSize.charAt(0).toUpperCase() + channelSize.slice(1)}
-                </p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Expected Monthly Growth: {getGrowthRange(channelSize)} subscribers
-                </p>
-              </div>
+          <ChannelStats 
+            channel={channel}
+            channelSize={channelSize}
+            uploadFrequency={uploadFrequency}
+            uploadFrequencyCategory={uploadFrequencyCategory}
+          />
 
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Upload Frequency</h3>
-                <p className="text-xl font-semibold text-green-600">
-                  {uploadFrequencyCategory.split('_').map(word => 
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                  ).join(' ')}
-                </p>
-                <p className="text-sm text-gray-600 mt-1">
-                  {getUploadFrequencyLabel(uploadFrequency)}
-                </p>
-              </div>
-
-              {channel.keywords && channel.keywords.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Keywords</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {channel.keywords.map((keyword) => (
-                      <span
-                        key={keyword}
-                        className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
-                      >
-                        {keyword}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {channel.cpm && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Revenue Metrics</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-emerald-600" />
-                      <p className="text-base">CPM: {formatRevenue(channel.cpm)}</p>
-                    </div>
-                    {channel.revenue_per_video && (
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-emerald-600" />
-                        <p className="text-base">Revenue per Video: {formatRevenue(channel.revenue_per_video)}</p>
-                      </div>
-                    )}
-                    {channel.revenue_per_month && (
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-emerald-600" />
-                        <p className="text-base">Monthly Revenue: {formatRevenue(channel.revenue_per_month)}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {channel.channel_category && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Category</h3>
-                  <p className="text-base capitalize">{channel.channel_category}</p>
-                </div>
-              )}
-
-              {channel.channel_type && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Type</h3>
-                  <p className="text-base capitalize">{channel.channel_type}</p>
-                </div>
-              )}
-
-              {channel.niche && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Niche</h3>
-                  <p className="text-base">{channel.niche}</p>
-                </div>
-              )}
-
-              {channel.country && (
-                <div className="flex items-center gap-3">
-                  <Globe className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Country</h3>
-                    <p className="text-base">{channel.country}</p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-3">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold">Video Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {bestVideo && (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-2">Best Performing</h3>
-                    <VideoCard
-                      title={bestVideo.title}
-                      video_id={bestVideo.video_id}
-                      thumbnail_url={bestVideo.thumbnail_url}
-                      stats={`${bestVideo.views.toLocaleString()} views`}
-                    />
-                  </div>
-                )}
-
-                {worstVideo && (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-2">Worst Performing</h3>
-                    <VideoCard
-                      title={worstVideo.title}
-                      video_id={worstVideo.video_id}
-                      thumbnail_url={worstVideo.thumbnail_url}
-                      stats={`${worstVideo.views.toLocaleString()} views`}
-                    />
-                  </div>
-                )}
-
-                {mostLikedVideo && (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-2">Most Liked</h3>
-                    <VideoCard
-                      title={mostLikedVideo.title}
-                      video_id={mostLikedVideo.video_id}
-                      thumbnail_url={mostLikedVideo.thumbnail_url}
-                      stats={`${mostLikedVideo.likes.toLocaleString()} likes`}
-                    />
-                  </div>
-                )}
-
-                {leastEngagedVideo && (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-2">Least Engaged</h3>
-                    <VideoCard
-                      title={leastEngagedVideo.title}
-                      video_id={leastEngagedVideo.video_id}
-                      thumbnail_url={leastEngagedVideo.thumbnail_url}
-                      stats={`${(leastEngagedVideo.likes / (leastEngagedVideo.views || 1) * 100).toFixed(2)}% engagement`}
-                    />
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          {videoStats && <VideoPerformance videoStats={videoStats} />}
         </div>
       </div>
     </div>

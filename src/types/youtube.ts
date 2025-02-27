@@ -31,3 +31,12 @@ export interface Channel {
   created_at?: string | null;
   updated_at?: string | null;
 }
+
+export interface VideoStats {
+  title: string;
+  video_id: string;
+  thumbnail_url: string;
+  views: number;
+  likes: number;
+  channel_id?: string;
+}
