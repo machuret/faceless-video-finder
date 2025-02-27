@@ -1,15 +1,14 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Search, Filter, Home, BookOpen, LogIn } from "lucide-react";
 import { 
   channelCategories 
 } from "@/components/youtube/channel-list/constants";
-import { Channel, ChannelCategory } from "@/types/youtube";
-import { 
-  ChannelList 
-} from "@/components/youtube/ChannelList";
+import { Channel, ChannelCategory, VideoStats } from "@/types/youtube";
 import { 
   formatDate,
   getChannelSize,
@@ -19,14 +18,14 @@ import {
   getUploadFrequencyLabel
 } from "@/utils/channelUtils";
 import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
+import VideoCard from "@/components/youtube/VideoCard";
 
 const Index = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<ChannelCategory | "">("");
-  const [generatingContent, setGeneratingContent] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchChannels();
@@ -68,85 +67,6 @@ const Index = () => {
     setSelectedCategory(category === selectedCategory ? "" : category);
   };
 
-  const handleGenerateContent = async (channel: Channel) => {
-    setGeneratingContent(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-channel-content', {
-        body: { channelId: channel.id }
-      });
-
-      if (error) throw error;
-
-      if (data?.description) {
-        // Update the local state
-        setChannels(channels.map(c => {
-          if (c.id === channel.id) {
-            return { ...c, description: data.description };
-          }
-          return c;
-        }));
-
-        // Update the database
-        const { error: updateError } = await supabase
-          .from('youtube_channels')
-          .update({ description: data.description })
-          .eq('id', channel.id);
-
-        if (updateError) throw updateError;
-
-        toast.success("Generated content successfully");
-      }
-    } catch (error) {
-      console.error("Error generating content:", error);
-      toast.error("Failed to generate content");
-    } finally {
-      setGeneratingContent(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('youtube_channels')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setChannels(channels.filter(channel => channel.id !== id));
-      toast.success("Channel deleted successfully");
-    } catch (error) {
-      console.error("Error deleting channel:", error);
-      toast.error("Failed to delete channel");
-    }
-  };
-
-  const handleSave = async (updatedChannel: Channel) => {
-    try {
-      // Create a new object for updating the database with correct types
-      const dataToUpdate: any = {
-        ...updatedChannel,
-        // Keep channel_type as is for database
-        channel_type: updatedChannel.channel_type
-      };
-
-      const { error } = await supabase
-        .from('youtube_channels')
-        .update(dataToUpdate)
-        .eq('id', updatedChannel.id);
-
-      if (error) throw error;
-
-      setChannels(channels.map(channel => 
-        channel.id === updatedChannel.id ? updatedChannel : channel
-      ));
-      toast.success("Channel updated successfully");
-    } catch (error) {
-      console.error("Error updating channel:", error);
-      toast.error("Failed to update channel");
-    }
-  };
-
   // Filter channels based on search term
   const filteredChannels = channels.filter(channel => {
     const searchLower = searchTerm.toLowerCase();
@@ -161,83 +81,186 @@ const Index = () => {
   });
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-        <h1 className="text-3xl font-bold mb-4 md:mb-0">YouTube Channel Database</h1>
-        <div className="flex gap-2">
-          <Link to="/channel-types">
-            <Button variant="outline">View Channel Types</Button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+          <Link to="/" className="flex items-center gap-2">
+            <Home className="h-6 w-6 text-blue-600" />
+            <h1 className="text-2xl font-bold text-gray-900">YT Channel Explorer</h1>
           </Link>
-          <Link to="/admin/login">
-            <Button>Admin Login</Button>
-          </Link>
+          <nav className="flex items-center gap-4">
+            <Link to="/channel-types" className="flex items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors">
+              <BookOpen className="h-5 w-5" />
+              <span className="font-medium">Channel Types</span>
+            </Link>
+            <Link to="/admin/login" className="flex items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors">
+              <LogIn className="h-5 w-5" />
+              <span className="font-medium">Admin</span>
+            </Link>
+          </nav>
         </div>
-      </div>
+      </header>
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-          <Input
-            type="text"
-            placeholder="Search channels..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1"
-          />
-          <Button type="submit">Search</Button>
-        </form>
+      <main className="container mx-auto px-4 py-8">
+        {/* Search and Filter Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4 text-gray-800">Find YouTube Channels</h2>
+          
+          <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search channels..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+              Search
+            </Button>
+          </form>
 
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-2">Filter by Category</h2>
-          <div className="flex flex-wrap gap-2">
-            {channelCategories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategorySelect(category as ChannelCategory)}
-                className={`px-3 py-1 rounded-full text-sm ${
-                  selectedCategory === category
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 hover:bg-gray-200"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <h3 className="text-base font-semibold text-gray-700">Filter by Category</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {channelCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => handleCategorySelect(category as ChannelCategory)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    selectedCategory === category
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold mb-2 text-gray-800">
+              {selectedCategory 
+                ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Channels`
+                : "All Channels"}
+            </h2>
+            <p className="text-gray-600">
+              {filteredChannels.length} {filteredChannels.length === 1 ? "channel" : "channels"} found
+            </p>
           </div>
         </div>
 
-        <div>
-          <h2 className="text-lg font-semibold mb-2">
-            {selectedCategory 
-              ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Channels`
-              : "All Channels"}
-          </h2>
-          <p className="text-gray-600 mb-4">
-            {filteredChannels.length} {filteredChannels.length === 1 ? "channel" : "channels"} found
-          </p>
-        </div>
-      </div>
+        {/* Channel Cards Section */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading channels...</p>
+          </div>
+        ) : filteredChannels.length > 0 ? (
+          <div>
+            {/* Channel Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredChannels.map((channel) => (
+                <Card key={channel.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+                  <Link to={`/channel/${channel.id}`}>
+                    <div className="aspect-video bg-gray-200 relative overflow-hidden">
+                      {channel.screenshot_url ? (
+                        <img 
+                          src={channel.screenshot_url} 
+                          alt={channel.channel_title} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full bg-gray-100">
+                          <p className="text-gray-400">No screenshot</p>
+                        </div>
+                      )}
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="text-lg font-semibold mb-2 line-clamp-1">{channel.channel_title}</h3>
+                      <div className="flex items-center gap-x-4 text-sm text-gray-500 mb-3">
+                        <div className="flex items-center">
+                          <span className="font-medium">{channel.total_subscribers ? parseInt(channel.total_subscribers.toString()).toLocaleString() : '0'}</span>
+                          <span className="ml-1">subscribers</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">{channel.total_views ? parseInt(channel.total_views.toString()).toLocaleString() : '0'}</span>
+                          <span className="ml-1">views</span>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 line-clamp-2 text-sm mb-2">
+                        {channel.description || "No description available"}
+                      </p>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {channel.niche && (
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            {channel.niche}
+                          </span>
+                        )}
+                        {channel.channel_category && (
+                          <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
+                            {channel.channel_category}
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Link>
+                </Card>
+              ))}
+            </div>
 
-      {loading ? (
-        <div className="text-center py-8">Loading channels...</div>
-      ) : filteredChannels.length > 0 ? (
-        <ChannelList
-          channels={filteredChannels}
-          onDelete={handleDelete}
-          onSave={handleSave}
-          onGenerateContent={handleGenerateContent}
-          generatingContent={generatingContent}
-          getChannelSize={getChannelSize}
-          getGrowthRange={getGrowthRange}
-          calculateUploadFrequency={calculateUploadFrequency}
-          getUploadFrequencyCategory={getUploadFrequencyCategory}
-          getUploadFrequencyLabel={getUploadFrequencyLabel}
-          formatDate={formatDate}
-        />
-      ) : (
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <p className="text-gray-600">No channels found matching your criteria.</p>
+            {/* Featured Videos Section */}
+            {channels.some(channel => channel.videoStats && channel.videoStats.length > 0) && (
+              <div className="mt-12">
+                <h2 className="text-2xl font-bold mb-6 text-gray-800">Featured Videos</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {channels
+                    .filter(channel => channel.videoStats && channel.videoStats.length > 0)
+                    .flatMap(channel => channel.videoStats || [])
+                    .slice(0, 6)
+                    .map((video: VideoStats) => (
+                      <VideoCard
+                        key={video.video_id}
+                        title={video.title || "Untitled Video"}
+                        video_id={video.video_id}
+                        thumbnail_url={video.thumbnail_url || ""}
+                        stats={`${video.views?.toLocaleString() || 0} views • ${formatDate(video.upload_date || null)}`}
+                      />
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+            <p className="text-gray-600 text-lg">No channels found matching your criteria.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedCategory("");
+              }}
+            >
+              Reset filters
+            </Button>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t mt-12 py-8">
+        <div className="container mx-auto px-4 text-center text-gray-500">
+          <p>YouTube Channel Explorer - Find and discover content creators</p>
         </div>
-      )}
+      </footer>
     </div>
   );
 };
