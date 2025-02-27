@@ -48,3 +48,8 @@ export const formatRevenue = (amount: number | null) => {
   if (!amount) return '$0';
   return `$${Math.round(amount)}`;
 };
+
+// Add the missing formatNumberWithCommas function
+export const formatNumberWithCommas = (num: number): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
