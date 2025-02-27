@@ -57,6 +57,7 @@ export function DescriptionEditor({ editForm, onChange }: DescriptionEditorProps
         value={editForm?.description || ""} 
         onChange={handleDescriptionChange}
         placeholder="Enter channel description..." 
+        className="min-h-[200px] border rounded-md p-4 prose prose-sm max-w-none bg-white"
       />
     </div>
   );

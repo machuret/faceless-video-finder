@@ -25,11 +25,19 @@ export function RichTextEditor({
     },
     editorProps: {
       attributes: {
-        class: `min-h-[${minHeight}]`,
+        class: "outline-none min-h-[200px]",
         placeholder: placeholder,
       },
     },
-  });
+  }, [value]); // Added value as dependency to update when it changes
 
-  return <div className={className}><EditorContent editor={editor} /></div>;
+  if (!editor) {
+    return null;
+  }
+
+  return (
+    <div className={className}>
+      <EditorContent editor={editor} />
+    </div>
+  );
 }

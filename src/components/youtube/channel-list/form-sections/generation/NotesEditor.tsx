@@ -25,6 +25,7 @@ export function NotesEditor({ editForm, onChange }: NotesEditorProps) {
         value={editForm?.notes || ""} 
         onChange={handleNotesChange}
         placeholder="Enter notes..." 
+        className="min-h-[200px] border rounded-md p-4 prose prose-sm max-w-none bg-white"
       />
     </div>
   );
