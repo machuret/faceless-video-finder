@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { 
   channelCategories 
 } from "@/components/youtube/channel-list/constants";
-import { Channel } from "@/types/youtube";
+import { Channel, ChannelCategory } from "@/types/youtube";
 import { 
   ChannelList 
 } from "@/components/youtube/ChannelList";
@@ -25,7 +25,7 @@ const Index = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<ChannelCategory | "">("");
   const [generatingContent, setGeneratingContent] = useState(false);
   const navigate = useNavigate();
 
@@ -50,7 +50,8 @@ const Index = () => {
         throw error;
       }
 
-      setChannels(data || []);
+      // Cast the data to ensure it matches the Channel type
+      setChannels(data as unknown as Channel[]);
     } catch (error) {
       console.error("Error fetching channels:", error);
       toast.error("Failed to fetch channels");
@@ -64,7 +65,7 @@ const Index = () => {
     // Filtering is done in the filtered channels computed value
   };
 
-  const handleCategorySelect = (category: string) => {
+  const handleCategorySelect = (category: ChannelCategory) => {
     setSelectedCategory(category === selectedCategory ? "" : category);
   };
 
@@ -123,9 +124,15 @@ const Index = () => {
 
   const handleSave = async (updatedChannel: Channel) => {
     try {
+      const dataToUpdate = {
+        ...updatedChannel,
+        // When sending to Supabase, ensure we're sending the correct type
+        channel_type: updatedChannel.channel_type as string
+      };
+
       const { error } = await supabase
         .from('youtube_channels')
-        .update(updatedChannel)
+        .update(dataToUpdate)
         .eq('id', updatedChannel.id);
 
       if (error) throw error;

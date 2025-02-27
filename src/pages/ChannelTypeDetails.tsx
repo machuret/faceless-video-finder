@@ -31,7 +31,9 @@ const ChannelTypeDetails = () => {
           .eq("channel_type", typeId);
           
         if (error) throw error;
-        setChannels(data || []);
+        
+        // Cast the data to ensure it matches the Channel type
+        setChannels(data as unknown as Channel[]);
       } catch (error) {
         console.error("Error fetching channels by type:", error);
       } finally {
@@ -58,9 +60,15 @@ const ChannelTypeDetails = () => {
   
   const handleSave = async (updatedChannel: Channel) => {
     try {
+      const dataToUpdate = {
+        ...updatedChannel,
+        // When sending to Supabase, ensure we're sending the correct type
+        channel_type: updatedChannel.channel_type as string
+      };
+      
       const { error } = await supabase
         .from("youtube_channels")
-        .update(updatedChannel)
+        .update(dataToUpdate)
         .eq("id", updatedChannel.id);
         
       if (error) throw error;

@@ -53,3 +53,14 @@ export const formatRevenue = (amount: number | null) => {
 export const formatNumberWithCommas = (num: number): string => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
+
+// Add formatDate function
+export const formatDate = (dateString: string | null): string => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+};
