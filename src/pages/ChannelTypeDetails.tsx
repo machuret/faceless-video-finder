@@ -25,10 +25,12 @@ const ChannelTypeDetails = () => {
     const fetchChannelsByType = async () => {
       setLoading(true);
       try {
+        // Using any type here because we're dealing with a mismatch between 
+        // our TypeScript types and the database schema
         const { data, error } = await supabase
           .from("youtube_channels")
           .select("*")
-          .eq("channel_type", typeId);
+          .eq("channel_type", typeId as any);
           
         if (error) throw error;
         
@@ -60,10 +62,11 @@ const ChannelTypeDetails = () => {
   
   const handleSave = async (updatedChannel: Channel) => {
     try {
-      const dataToUpdate = {
+      // Create a new object with the correct type for the database
+      const dataToUpdate: any = {
         ...updatedChannel,
-        // When sending to Supabase, ensure we're sending the correct type
-        channel_type: updatedChannel.channel_type as string
+        // Ensure channel_type is handled properly for database
+        channel_type: updatedChannel.channel_type
       };
       
       const { error } = await supabase

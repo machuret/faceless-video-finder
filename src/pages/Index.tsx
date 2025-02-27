@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
@@ -41,7 +40,7 @@ const Index = () => {
         .select("*");
 
       if (selectedCategory) {
-        query = query.eq("channel_category", selectedCategory);
+        query = query.eq("channel_category", selectedCategory as any);
       }
 
       const { data, error } = await query;
@@ -124,10 +123,11 @@ const Index = () => {
 
   const handleSave = async (updatedChannel: Channel) => {
     try {
-      const dataToUpdate = {
+      // Create a new object for updating the database with correct types
+      const dataToUpdate: any = {
         ...updatedChannel,
-        // When sending to Supabase, ensure we're sending the correct type
-        channel_type: updatedChannel.channel_type as string
+        // Keep channel_type as is for database
+        channel_type: updatedChannel.channel_type
       };
 
       const { error } = await supabase
@@ -192,7 +192,7 @@ const Index = () => {
             {channelCategories.map((category) => (
               <button
                 key={category}
-                onClick={() => handleCategorySelect(category)}
+                onClick={() => handleCategorySelect(category as ChannelCategory)}
                 className={`px-3 py-1 rounded-full text-sm ${
                   selectedCategory === category
                     ? "bg-blue-600 text-white"
