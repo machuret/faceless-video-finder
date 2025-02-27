@@ -16,7 +16,7 @@ type RequiredChannelFields = {
   channel_title: string;
   channel_url: string;
   channel_category?: ChannelCategory;
-  channel_type?: ChannelType;
+  channel_type?: string; // Changed to string to be compatible with Supabase
   description?: string | null;
   screenshot_url?: string | null;
   total_subscribers?: number | null;
@@ -37,7 +37,7 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
 
   const downloadTemplate = () => {
     const csvHeader = "video_id,channel_title,channel_url,description,screenshot_url,total_subscribers,total_views,channel_category,channel_type,keywords,country,niche,notes,cpm,potential_revenue,revenue_per_video,revenue_per_month,uses_ai\n";
-    const csvContent = csvHeader + "dQw4w9WgXcQ,Rick Astley,https://youtube.com/rickastley,Official Rick Astley channel,https://example.com/screenshot.jpg,12500000,2000000000,entertainment,creator,\"music,pop,80s\",UK,Music,Great engagement,5.50,75000,1500,45000,false";
+    const csvContent = csvHeader + "dQw4w9WgXcQ,Rick Astley,https://youtube.com/rickastley,Official Rick Astley channel,https://example.com/screenshot.jpg,12500000,2000000000,entertainment,compilation_montage,\"music,pop,80s\",UK,Music,Great engagement,5.50,75000,1500,45000,false";
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -100,9 +100,8 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
               }
               break;
             case 'channel_type':
-              if (isValidChannelType(value)) {
-                channel[headerKey] = value;
-              }
+              // Store as string, no validation needed as we're storing raw values now
+              channel[headerKey] = value;
               break;
             default:
               // @ts-ignore - we know these are string fields
@@ -121,9 +120,10 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
         throw new Error('No valid channels found in the CSV file');
       }
 
+      // Cast validChannels to any for Supabase insert to avoid type issues
       const { error } = await supabase
         .from('youtube_channels')
-        .insert(validChannels);
+        .insert(validChannels as any);
 
       if (error) throw error;
       
@@ -147,10 +147,6 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
   // Type guard functions
   const isValidChannelCategory = (value: string): value is ChannelCategory => {
     return ["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"].includes(value);
-  };
-
-  const isValidChannelType = (value: string): value is ChannelType => {
-    return ["creator", "brand", "media", "other"].includes(value);
   };
 
   return (

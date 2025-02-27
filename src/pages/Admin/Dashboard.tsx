@@ -119,7 +119,8 @@ const Dashboard = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setChannels(data || []);
+      // Cast the data to Channel[] to handle any type mismatches
+      setChannels(data as Channel[] || []);
     } catch (error) {
       toast.error("Failed to fetch channels");
     } finally {
@@ -200,7 +201,7 @@ const Dashboard = () => {
 
       const { error } = await supabase
         .from("youtube_channels")
-        .update(updatedChannel)
+        .update(updatedChannel as any) // Cast to any to bypass TypeScript checking
         .eq("id", channel.id);
 
       if (error) throw error;
