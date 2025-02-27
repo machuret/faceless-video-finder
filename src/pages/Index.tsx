@@ -231,7 +231,7 @@ const Index = () => {
                         title={video.title || "Untitled Video"}
                         video_id={video.video_id}
                         thumbnail_url={video.thumbnail_url || ""}
-                        stats={`${video.views?.toLocaleString() || 0} views • ${formatDate(video.upload_date || null)}`}
+                        stats={`${video.views?.toLocaleString() || 0} views`}
                       />
                     ))}
                 </div>
