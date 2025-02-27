@@ -24,6 +24,7 @@ const AddChannel = () => {
     total_views: "",
     start_date: "",
     video_count: "",
+    cpm: "4", // Set default CPM to 4
   });
 
   useEffect(() => {
@@ -76,6 +77,7 @@ const AddChannel = () => {
         total_views: data.total_views?.toString() || "",
         start_date: formattedStartDate,
         video_count: data.video_count?.toString() || "",
+        cpm: "4", // Always set to 4 as default
       });
 
       toast.success("Channel data fetched successfully");
@@ -110,6 +112,7 @@ const AddChannel = () => {
         total_views: formData.total_views ? parseInt(formData.total_views) : null,
         start_date: formData.start_date || null,
         video_count: formData.video_count ? parseInt(formData.video_count) : null,
+        cpm: formData.cpm ? parseFloat(formData.cpm) : 4, // Default to 4 if not provided
       };
 
       console.log("Submitting data:", dataToSubmit);

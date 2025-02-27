@@ -20,7 +20,7 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">Notes</label>
+        <label className="block text-sm font-medium mb-1">Gab Notes</label>
         <textarea
           name="notes"
           value={editForm?.notes || ""}

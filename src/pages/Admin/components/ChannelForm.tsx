@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileUpload } from "@/components/FileUpload";
+import { useEffect } from "react";
 
 export interface ChannelFormData {
   video_id: string;
@@ -13,6 +14,7 @@ export interface ChannelFormData {
   total_views: string;
   start_date: string;
   video_count: string;
+  cpm: string; // Added this field
 }
 
 interface ChannelFormProps {
@@ -24,6 +26,19 @@ interface ChannelFormProps {
 }
 
 const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange }: ChannelFormProps) => {
+  // Set default CPM to 4 when the component mounts and CPM is empty
+  useEffect(() => {
+    if (!formData.cpm) {
+      const mockEvent = {
+        target: {
+          name: "cpm",
+          value: "4"
+        }
+      } as React.ChangeEvent<HTMLInputElement>;
+      onChange(mockEvent);
+    }
+  }, []);
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
@@ -101,6 +116,15 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
           placeholder="Number of Videos"
           type="number"
           value={formData.video_count}
+          onChange={onChange}
+        />
+      </div>
+      <div>
+        <Input
+          name="cpm"
+          placeholder="CPM"
+          type="number"
+          value={formData.cpm || "4"} // Default to 4
           onChange={onChange}
         />
       </div>

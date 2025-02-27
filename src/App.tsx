@@ -11,6 +11,8 @@ import AdminLogin from "./pages/Admin/AdminLogin";
 import Dashboard from "./pages/Admin/Dashboard";
 import AddChannel from "./pages/Admin/AddChannel";
 import ChannelDetails from "./pages/ChannelDetails";
+import ChannelTypes from "./pages/ChannelTypes";
+import ChannelTypeDetails from "./pages/ChannelTypeDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +27,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/channel/:id" element={<ChannelDetails />} />
+            <Route path="/channel-types" element={<ChannelTypes />} />
+            <Route path="/channel-types/:typeId" element={<ChannelTypeDetails />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route
               path="/admin/dashboard"
