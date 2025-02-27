@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { getChannelSize, calculateUploadFrequency, getUploadFrequencyCategory } from "@/utils/channelUtils";
 import ChannelStats from "@/components/youtube/ChannelStats";
 import VideoPerformance from "@/components/youtube/VideoPerformance";
+import MainNavbar from "@/components/MainNavbar";
 
 const ChannelDetails = () => {
   const { id } = useParams();
@@ -44,16 +45,22 @@ const ChannelDetails = () => {
 
   if (isLoadingChannel) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-base">Loading channel details...</div>
+      <div className="min-h-screen bg-gray-50">
+        <MainNavbar />
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+          <div className="text-base">Loading channel details...</div>
+        </div>
       </div>
     );
   }
 
   if (!channel) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-500 text-base">Channel not found</div>
+      <div className="min-h-screen bg-gray-50">
+        <MainNavbar />
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+          <div className="text-red-500 text-base">Channel not found</div>
+        </div>
       </div>
     );
   }
@@ -64,6 +71,8 @@ const ChannelDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <MainNavbar />
+      
       <div className="container mx-auto px-4 py-8">
         <Button 
           variant="outline" 
