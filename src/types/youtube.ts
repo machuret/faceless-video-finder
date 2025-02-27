@@ -1,6 +1,34 @@
 
 export type ChannelCategory = "entertainment" | "education" | "gaming" | "music" | "news" | "sports" | "technology" | "other";
-export type ChannelType = "creator" | "brand" | "media" | "other";
+
+export type ChannelType = 
+  | "compilation_montage"
+  | "no_face_reaction" 
+  | "documentary_story" 
+  | "whiteboard_explainer" 
+  | "animation_2d_3d" 
+  | "text_based_narrative" 
+  | "screen_recording_tutorial" 
+  | "asmr_ambient" 
+  | "news_aggregation" 
+  | "stock_footage_voiceover" 
+  | "text_to_speech" 
+  | "infographic_data" 
+  | "hands_only_demo" 
+  | "audio_only_podcast" 
+  | "music_curation" 
+  | "ai_generated" 
+  | "original_storytelling" 
+  | "history_educational" 
+  | "fake_trailers" 
+  | "movie_tv_analysis" 
+  | "police_cam_commentary" 
+  | "court_reactions" 
+  | "live_drama_freakouts" 
+  | "virtual_avatar" 
+  | "found_footage_archival" 
+  | "other";
+
 export type ChannelSize = "small" | "growing" | "established" | "larger" | "big";
 export type UploadFrequency = "very_low" | "low" | "medium" | "high" | "very_high" | "insane";
 

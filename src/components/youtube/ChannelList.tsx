@@ -4,6 +4,7 @@ import { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Wand2 } from "lucide-react";
 import { ChannelEditForm } from "./channel-list/ChannelEditForm";
+import { channelTypes } from "./channel-list/constants";
 
 interface ChannelListProps {
   channels: Channel[];
@@ -73,6 +74,12 @@ export const ChannelList = ({
     }
   };
 
+  const getChannelTypeLabel = (typeId: string | undefined) => {
+    if (!typeId) return "Not specified";
+    const typeInfo = channelTypes.find(type => type.id === typeId);
+    return typeInfo ? typeInfo.label : typeId;
+  };
+
   if (channels.length === 0) {
     return <div className="bg-white rounded p-6 shadow">No channels found.</div>;
   }
@@ -121,7 +128,7 @@ export const ChannelList = ({
                       )}
                       {channel.channel_type && (
                         <span className="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
-                          {channel.channel_type}
+                          {getChannelTypeLabel(channel.channel_type)}
                         </span>
                       )}
                       <span className={`inline-block text-xs px-2 py-1 rounded ${
