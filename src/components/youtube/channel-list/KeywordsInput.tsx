@@ -2,14 +2,26 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { Wand2 } from "lucide-react";
 
 interface KeywordsInputProps {
   keywords: string[];
   onChange: (keywords: string[]) => void;
+  channelTitle: string;
+  description: string;
+  category: string;
 }
 
-export const KeywordsInput = ({ keywords, onChange }: KeywordsInputProps) => {
+export const KeywordsInput = ({ 
+  keywords, 
+  onChange, 
+  channelTitle,
+  description,
+  category
+}: KeywordsInputProps) => {
   const [keywordInput, setKeywordInput] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleKeywordAdd = () => {
     if (!keywordInput.trim()) return;
@@ -30,9 +42,42 @@ export const KeywordsInput = ({ keywords, onChange }: KeywordsInputProps) => {
     }
   };
 
+  const generateKeywords = async () => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-channel-keywords', {
+        body: { 
+          title: channelTitle,
+          description: description,
+          category: category
+        }
+      });
+
+      if (error) throw error;
+      if (data.keywords) {
+        onChange(data.keywords);
+      }
+    } catch (error) {
+      console.error('Failed to generate keywords:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div>
-      <label className="block text-sm font-medium mb-1">Keywords</label>
+      <div className="flex justify-between items-center mb-2">
+        <label className="block text-sm font-medium">Keywords</label>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={generateKeywords}
+          disabled={isGenerating}
+        >
+          <Wand2 className={`w-4 h-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
+          Generate Keywords
+        </Button>
+      </div>
       <div className="flex gap-2 mb-2">
         <Input
           value={keywordInput}

@@ -1,4 +1,3 @@
-
 import { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, RefreshCw } from "lucide-react";
@@ -55,7 +54,7 @@ const getUploadFrequencyColor = (frequency: UploadFrequency): string => {
 export const ChannelCard = ({ 
   channel, 
   onEdit, 
-  onDelete, 
+  onDelete,
   onGenerateContent,
   generatingContent,
   getChannelSize,
@@ -66,6 +65,11 @@ export const ChannelCard = ({
 }: ChannelCardProps) => {
   const uploadFrequency = calculateUploadFrequency(channel.start_date, channel.video_count);
   const uploadFrequencyCategory = getUploadFrequencyCategory(uploadFrequency);
+
+  const formatRevenue = (amount: number | null) => {
+    if (!amount) return '$0';
+    return `$${Math.round(amount)}`;
+  };
 
   return (
     <div>
@@ -152,6 +156,22 @@ export const ChannelCard = ({
             {getUploadFrequencyLabel(uploadFrequency)}
           </p>
         </div>
+
+        {channel.keywords && channel.keywords.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-sm font-medium text-gray-500 mb-2">Keywords</h4>
+            <div className="flex flex-wrap gap-2">
+              {channel.keywords.map((keyword) => (
+                <span
+                  key={keyword}
+                  className="bg-gray-100 px-2 py-1 rounded-full text-sm text-gray-600"
+                >
+                  {keyword}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

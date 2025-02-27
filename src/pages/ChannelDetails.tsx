@@ -52,7 +52,7 @@ const getUploadFrequencyLabel = (frequency: number | null): string => {
 
 const formatRevenue = (amount: number | null) => {
   if (!amount) return '$0';
-  return `$${amount.toFixed(2)}`;
+  return `$${Math.round(amount)}`;
 };
 
 const ChannelDetails = () => {
@@ -171,6 +171,22 @@ const ChannelDetails = () => {
                   {getUploadFrequencyLabel(uploadFrequency)}
                 </p>
               </div>
+
+              {channel.keywords && channel.keywords.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Keywords</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {channel.keywords.map((keyword) => (
+                      <span
+                        key={keyword}
+                        className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
+                      >
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {channel.cpm && (
                 <div>
