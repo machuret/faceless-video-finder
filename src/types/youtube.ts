@@ -1,6 +1,10 @@
 
 export type ChannelCategory = "entertainment" | "education" | "gaming" | "music" | "news" | "sports" | "technology" | "other";
 
+// This is the type that matches with the database 
+export type DatabaseChannelType = "creator" | "brand" | "media" | "other";
+
+// This is our extended type for the UI
 export type ChannelType = 
   | "compilation_montage"
   | "no_face_reaction" 
@@ -42,7 +46,7 @@ export interface Channel {
   total_views: number | null;
   total_subscribers: number | null;
   channel_category?: ChannelCategory;
-  channel_type?: ChannelType;
+  channel_type?: string; // Use string type to accommodate any value
   channel_size?: ChannelSize;
   upload_frequency?: UploadFrequency;
   keywords?: string[] | null;

@@ -139,6 +139,9 @@ Only return the JSON, no other text.
       metadata.channelType = 'other';
     }
 
+    // Map to database-compatible channel type (always "other" for custom types)
+    metadata.channelType = "other";
+
     return new Response(JSON.stringify(metadata), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
