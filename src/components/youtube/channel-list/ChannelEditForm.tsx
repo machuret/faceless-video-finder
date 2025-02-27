@@ -8,8 +8,8 @@ import { ChannelVideoStats } from "./form-sections/ChannelVideoStats";
 import { ChannelCategories } from "./form-sections/ChannelCategories";
 import { ChannelDescription } from "./form-sections/ChannelDescription";
 import { KeywordsInput } from "./KeywordsInput";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 
 interface ChannelEditFormProps {
   editForm: Channel;
@@ -21,7 +21,6 @@ interface ChannelEditFormProps {
 export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
   const [keywords, setKeywords] = useState<string[]>(editForm.keywords || []);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
-  const [activeTab, setActiveTab] = useState("basic-info");
 
   // Force update keywords when editForm changes
   useEffect(() => {
@@ -61,17 +60,12 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
     }, 1000);
   };
 
-  // Handle tab change
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-  };
-
   // Log the content of editForm for debugging
   console.log("Current editForm:", editForm);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between">
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold">Edit Channel: {editForm.channel_title}</h3>
         <div className="space-x-2">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
@@ -79,57 +73,74 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
         </div>
       </div>
 
-      <Tabs defaultValue="basic-info" value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="mb-4 w-full">
-          <TabsTrigger value="basic-info">Basic Info</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="stats">Stats</TabsTrigger>
-          <TabsTrigger value="videos">Videos</TabsTrigger>
-          <TabsTrigger value="description">Description</TabsTrigger>
-          <TabsTrigger value="keywords">Keywords</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="basic-info">
+      <div className="space-y-12">
+        {/* Basic Info Section */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
           <ChannelBasicInfo 
             editForm={editForm} 
             onChange={onChange} 
             onScreenshotChange={handleScreenshotChange} 
           />
-        </TabsContent>
+        </div>
+
+        <Separator />
         
-        <TabsContent value="categories">
+        {/* Categories Section */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Categories & Classification</h3>
           <ChannelCategories editForm={editForm} onChange={onChange} />
-        </TabsContent>
+        </div>
+
+        <Separator />
         
-        <TabsContent value="stats">
+        {/* Stats Section */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Channel Statistics</h3>
           <ChannelStatsForm editForm={editForm} onChange={onChange} />
-        </TabsContent>
+        </div>
+
+        <Separator />
         
-        <TabsContent value="videos">
+        {/* Description Section */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Description & Notes</h3>
+          <ChannelDescription editForm={editForm} onChange={onChange} />
+        </div>
+
+        <Separator />
+        
+        {/* Keywords Section */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Keywords</h3>
+          <KeywordsInput 
+            keywords={keywords} 
+            onChange={handleKeywordsChange} 
+            channelTitle={editForm.channel_title || ""}
+            description={editForm.description || ""}
+            category={editForm.channel_category || ""}
+          />
+        </div>
+
+        <Separator />
+        
+        {/* Videos Section */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Video Statistics</h3>
           <ChannelVideoStats 
             videoStats={editForm.videoStats || []} 
             isLoading={isLoadingStats} 
             onRefresh={handleRefreshStats} 
           />
-        </TabsContent>
-        
-        <TabsContent value="description">
-          <ChannelDescription editForm={editForm} onChange={onChange} />
-        </TabsContent>
-        
-        <TabsContent value="keywords">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Keywords</h3>
-            <KeywordsInput 
-              keywords={keywords} 
-              onChange={handleKeywordsChange} 
-              channelTitle={editForm.channel_title || ""}
-              description={editForm.description || ""}
-              category={editForm.channel_category || ""}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
+
+      <div className="flex justify-end mt-8 pt-4 border-t">
+        <div className="space-x-2">
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button onClick={onSave}>Save Changes</Button>
+        </div>
+      </div>
     </div>
   );
 };
