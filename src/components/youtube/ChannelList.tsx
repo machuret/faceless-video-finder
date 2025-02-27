@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, RefreshCw } from "lucide-react";
-import type { Channel } from "@/types/youtube";
+import type { Channel, ChannelCategory, ChannelType } from "@/types/youtube";
 
 interface ChannelListProps {
   channels: Channel[];
@@ -25,7 +25,6 @@ export const ChannelList = ({
   const [editForm, setEditForm] = useState<Channel | null>(null);
 
   const handleEdit = (channel: Channel) => {
-    // Create a complete copy of the channel for editing
     setEditForm({ ...channel });
     setEditingId(channel.id);
   };
@@ -43,11 +42,13 @@ export const ChannelList = ({
     setEditForm(null);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     if (editForm) {
-      const value = e.target.type === 'number' 
-        ? e.target.value === '' ? null : Number(e.target.value)
-        : e.target.value;
+      let value: string | number | null = e.target.value;
+      
+      if (e.target.type === 'number') {
+        value = e.target.value === '' ? null : Number(e.target.value);
+      }
 
       setEditForm({
         ...editForm,
@@ -56,6 +57,24 @@ export const ChannelList = ({
     }
   };
 
+  const channelCategories: ChannelCategory[] = [
+    "entertainment",
+    "education",
+    "gaming",
+    "music",
+    "news",
+    "sports",
+    "technology",
+    "other"
+  ];
+
+  const channelTypes: ChannelType[] = [
+    "creator",
+    "brand",
+    "media",
+    "other"
+  ];
+
   return (
     <div className="space-y-4">
       {channels.map((channel) => (
@@ -63,7 +82,7 @@ export const ChannelList = ({
           <CardContent className="p-6">
             {editingId === channel.id ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Channel Title</label>
                     <Input
@@ -77,6 +96,14 @@ export const ChannelList = ({
                     <Input
                       name="video_id"
                       value={editForm?.video_id || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Channel URL</label>
+                    <Input
+                      name="channel_url"
+                      value={editForm?.channel_url || ""}
                       onChange={handleChange}
                     />
                   </div>
@@ -107,12 +134,104 @@ export const ChannelList = ({
                       onChange={handleChange}
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">CPM</label>
+                    <Input
+                      type="number"
+                      name="cpm"
+                      value={editForm?.cpm || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Potential Revenue</label>
+                    <Input
+                      type="number"
+                      name="potential_revenue"
+                      value={editForm?.potential_revenue || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Revenue per Video</label>
+                    <Input
+                      type="number"
+                      name="revenue_per_video"
+                      value={editForm?.revenue_per_video || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Revenue per Month</label>
+                    <Input
+                      type="number"
+                      name="revenue_per_month"
+                      value={editForm?.revenue_per_month || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Category</label>
+                    <select
+                      name="channel_category"
+                      value={editForm?.channel_category || "other"}
+                      onChange={handleChange}
+                      className="w-full p-2 border rounded"
+                    >
+                      {channelCategories.map(category => (
+                        <option key={category} value={category}>
+                          {category.charAt(0).toUpperCase() + category.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Type</label>
+                    <select
+                      name="channel_type"
+                      value={editForm?.channel_type || "other"}
+                      onChange={handleChange}
+                      className="w-full p-2 border rounded"
+                    >
+                      {channelTypes.map(type => (
+                        <option key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Country</label>
+                    <Input
+                      name="country"
+                      value={editForm?.country || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Niche</label>
+                    <Input
+                      name="niche"
+                      value={editForm?.niche || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Description</label>
                   <textarea
                     name="description"
                     value={editForm?.description || ""}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded min-h-[100px]"
+                    rows={4}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Notes</label>
+                  <textarea
+                    name="notes"
+                    value={editForm?.notes || ""}
                     onChange={handleChange}
                     className="w-full p-2 border rounded min-h-[100px]"
                     rows={4}
@@ -128,9 +247,12 @@ export const ChannelList = ({
             ) : (
               <div>
                 <div className="flex justify-between items-start mb-4">
-                  <div>
+                  <div className="space-y-2">
                     <h3 className="text-lg font-semibold">{channel.channel_title}</h3>
-                    <p className="text-gray-600 mt-2">{channel.description || "No description available."}</p>
+                    <p className="text-gray-600">{channel.description || "No description available."}</p>
+                    {channel.notes && (
+                      <p className="text-gray-500 text-sm">Notes: {channel.notes}</p>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     {onGenerateContent && (
@@ -160,10 +282,15 @@ export const ChannelList = ({
                     </Button>
                   </div>
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm text-gray-500">
                   <p>Subscribers: {channel.total_subscribers?.toLocaleString()}</p>
                   <p>Total Views: {channel.total_views?.toLocaleString()}</p>
                   <p>Videos: {channel.video_count}</p>
+                  {channel.cpm && <p>CPM: ${channel.cpm}</p>}
+                  {channel.channel_category && <p>Category: {channel.channel_category}</p>}
+                  {channel.channel_type && <p>Type: {channel.channel_type}</p>}
+                  {channel.niche && <p>Niche: {channel.niche}</p>}
+                  {channel.country && <p>Country: {channel.country}</p>}
                 </div>
               </div>
             )}
