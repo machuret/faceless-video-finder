@@ -12,7 +12,10 @@ interface ChannelDescriptionProps {
 }
 
 export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionProps) => {
-  const [generating, setGenerating] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
+  const [generatingNiche, setGeneratingNiche] = useState(false);
+  const [generatingCountry, setGeneratingCountry] = useState(false);
+  const [generatingType, setGeneratingType] = useState(false);
 
   const generateDescription = async () => {
     if (!editForm.channel_title) {
@@ -20,7 +23,7 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
       return;
     }
 
-    setGenerating(true);
+    setGeneratingDescription(true);
     try {
       console.log('Calling generate-channel-content for:', editForm.channel_title);
       
@@ -48,83 +51,139 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
       console.error('Generate content error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate content');
     } finally {
-      setGenerating(false);
+      setGeneratingDescription(false);
     }
   };
 
-  const generateMetadata = async () => {
+  const generateNiche = async () => {
     if (!editForm.channel_title || !editForm.description) {
-      toast.error("Channel title and description are required to generate metadata");
+      toast.error("Channel title and description are required to generate niche");
       return;
     }
 
-    setGenerating(true);
+    setGeneratingNiche(true);
     try {
-      console.log('Calling generate-channel-metadata for:', editForm.channel_title);
+      console.log('Generating niche for:', editForm.channel_title);
       
       const { data, error } = await supabase.functions.invoke('generate-channel-metadata', {
         body: { 
           channelTitle: editForm.channel_title,
-          description: editForm.description 
+          description: editForm.description,
+          fieldToGenerate: 'niche'
         }
       });
 
       if (error) throw error;
 
-      if (!data) {
-        throw new Error('Failed to generate valid metadata');
+      if (!data || !data.niche) {
+        throw new Error('Failed to generate niche');
       }
 
-      console.log("Received metadata from API:", data);
+      console.log("Received niche from API:", data.niche);
 
-      // Create a batch of mock events to update multiple fields
-      const updateFields = () => {
-        // Update niche
-        if (data.niche) {
-          console.log("Updating niche to:", data.niche);
-          const nicheEvent = {
-            target: {
-              name: "niche",
-              value: data.niche
-            }
-          } as React.ChangeEvent<HTMLInputElement>;
-          onChange(nicheEvent);
+      // Update niche
+      const nicheEvent = {
+        target: {
+          name: "niche",
+          value: data.niche
         }
-
-        // Update country
-        if (data.country) {
-          console.log("Updating country to:", data.country);
-          const countryEvent = {
-            target: {
-              name: "country",
-              value: data.country
-            }
-          } as React.ChangeEvent<HTMLInputElement>;
-          onChange(countryEvent);
-        }
-
-        // Update channel type
-        if (data.channelType) {
-          console.log("Updating channel_type to:", data.channelType);
-          const typeEvent = {
-            target: {
-              name: "channel_type",
-              value: data.channelType
-            }
-          } as React.ChangeEvent<HTMLSelectElement>;
-          onChange(typeEvent);
-        }
-      };
-
-      // Execute updates
-      updateFields();
+      } as React.ChangeEvent<HTMLInputElement>;
+      onChange(nicheEvent);
       
-      toast.success(`Metadata generated: ${data.niche} | ${data.country} | ${data.channelType}`);
+      toast.success(`Niche generated: ${data.niche}`);
     } catch (error) {
-      console.error('Generate metadata error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to generate metadata');
+      console.error('Generate niche error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate niche');
     } finally {
-      setGenerating(false);
+      setGeneratingNiche(false);
+    }
+  };
+
+  const generateCountry = async () => {
+    if (!editForm.channel_title || !editForm.description) {
+      toast.error("Channel title and description are required to generate country");
+      return;
+    }
+
+    setGeneratingCountry(true);
+    try {
+      console.log('Generating country for:', editForm.channel_title);
+      
+      const { data, error } = await supabase.functions.invoke('generate-channel-metadata', {
+        body: { 
+          channelTitle: editForm.channel_title,
+          description: editForm.description,
+          fieldToGenerate: 'country'
+        }
+      });
+
+      if (error) throw error;
+
+      if (!data || !data.country) {
+        throw new Error('Failed to generate country');
+      }
+
+      console.log("Received country from API:", data.country);
+
+      // Update country
+      const countryEvent = {
+        target: {
+          name: "country",
+          value: data.country
+        }
+      } as React.ChangeEvent<HTMLInputElement>;
+      onChange(countryEvent);
+      
+      toast.success(`Country generated: ${data.country}`);
+    } catch (error) {
+      console.error('Generate country error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate country');
+    } finally {
+      setGeneratingCountry(false);
+    }
+  };
+
+  const generateChannelType = async () => {
+    if (!editForm.channel_title || !editForm.description) {
+      toast.error("Channel title and description are required to generate channel type");
+      return;
+    }
+
+    setGeneratingType(true);
+    try {
+      console.log('Generating channel type for:', editForm.channel_title);
+      
+      const { data, error } = await supabase.functions.invoke('generate-channel-metadata', {
+        body: { 
+          channelTitle: editForm.channel_title,
+          description: editForm.description,
+          fieldToGenerate: 'channelType'
+        }
+      });
+
+      if (error) throw error;
+
+      if (!data || !data.channelType) {
+        throw new Error('Failed to generate channel type');
+      }
+
+      console.log("Received channel type from API:", data.channelType);
+
+      // Update channel type
+      const typeEvent = {
+        target: {
+          name: "channel_type",
+          value: data.channelType
+        }
+      } as React.ChangeEvent<HTMLSelectElement>;
+      onChange(typeEvent);
+      
+      toast.success(`Channel type generated: ${data.channelType}`);
+    } catch (error) {
+      console.error('Generate channel type error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate channel type');
+    } finally {
+      setGeneratingType(false);
     }
   };
 
@@ -137,10 +196,10 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
             variant="outline" 
             size="sm" 
             onClick={generateDescription}
-            disabled={generating || !editForm.channel_title}
+            disabled={generatingDescription || !editForm.channel_title}
           >
             <Wand2 className="w-4 h-4 mr-2" /> 
-            {generating ? 'Generating...' : 'Generate Description'}
+            {generatingDescription ? 'Generating...' : 'Generate Description'}
           </Button>
         </div>
         <textarea
@@ -152,15 +211,35 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
         />
       </div>
       
-      <div className="flex justify-end">
+      <div className="flex flex-wrap gap-2 justify-end">
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={generateMetadata}
-          disabled={generating || !editForm.channel_title || !editForm.description}
+          onClick={generateNiche}
+          disabled={generatingNiche || !editForm.channel_title || !editForm.description}
         >
           <Wand2 className="w-4 h-4 mr-2" /> 
-          {generating ? 'Generating...' : 'Suggest Niche, Country, and Type'}
+          {generatingNiche ? 'Generating...' : 'Generate Niche'}
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={generateCountry}
+          disabled={generatingCountry || !editForm.channel_title || !editForm.description}
+        >
+          <Wand2 className="w-4 h-4 mr-2" /> 
+          {generatingCountry ? 'Generating...' : 'Generate Country'}
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={generateChannelType}
+          disabled={generatingType || !editForm.channel_title || !editForm.description}
+        >
+          <Wand2 className="w-4 h-4 mr-2" /> 
+          {generatingType ? 'Generating...' : 'Generate Channel Type'}
         </Button>
       </div>
       

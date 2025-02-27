@@ -22,7 +22,8 @@ serve(async (req) => {
   }
 
   try {
-    const { channelTitle, description } = await req.json();
+    const requestBody = await req.json();
+    const { channelTitle, description, fieldToGenerate } = requestBody;
 
     if (!channelTitle) {
       return new Response(JSON.stringify({ error: 'Channel title is required' }), {
@@ -45,7 +46,49 @@ serve(async (req) => {
       description: type.description.substring(0, 120)
     }));
 
-    const prompt = `
+    let prompt;
+    let fieldName;
+
+    // Create a specific prompt based on the requested field
+    if (fieldToGenerate === 'niche') {
+      fieldName = 'niche';
+      prompt = `
+As an AI YouTube channel analyst, analyze the following YouTube channel:
+
+Channel Title: ${channelTitle}
+Channel Description: ${description}
+
+Based on this information, determine the most appropriate niche from these options: ${niches.join(', ')}
+
+Return only the niche name, nothing else.
+`;
+    } else if (fieldToGenerate === 'country') {
+      fieldName = 'country';
+      prompt = `
+As an AI YouTube channel analyst, analyze the following YouTube channel:
+
+Channel Title: ${channelTitle}
+Channel Description: ${description}
+
+Based on this information, determine the most likely country of origin from these options: ${countries.join(', ')}
+
+Return only the country name, nothing else.
+`;
+    } else if (fieldToGenerate === 'channelType') {
+      fieldName = 'channelType';
+      prompt = `
+As an AI YouTube channel analyst, analyze the following YouTube channel:
+
+Channel Title: ${channelTitle}
+Channel Description: ${description}
+
+Based on this information, determine the most appropriate type of faceless channel from these options: ${simplifiedChannelTypes.map(type => `${type.id} (${type.label})`).join(', ')}
+
+Return only the channel type ID (not the label), nothing else.
+`;
+    } else {
+      // Default: generate all fields
+      prompt = `
 As an AI YouTube channel analyst, analyze the following YouTube channel:
 
 Channel Title: ${channelTitle}
@@ -71,8 +114,9 @@ For example:
 
 Only return the JSON, no other text.
 `;
+    }
 
-    console.log("Sending prompt to OpenAI for channel metadata generation");
+    console.log(`Sending prompt to OpenAI for ${fieldToGenerate || 'all fields'} generation`);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -100,6 +144,39 @@ Only return the JSON, no other text.
     const aiResponse = data.choices[0].message.content;
     console.log("AI Response:", aiResponse);
 
+    // Handle single field response
+    if (fieldToGenerate) {
+      let fieldValue = aiResponse.trim();
+      
+      // If we're generating channel type, make sure it's valid
+      if (fieldToGenerate === 'channelType') {
+        const validChannelType = channelTypes.find(type => type.id === fieldValue);
+        if (!validChannelType) {
+          console.warn(`Channel type '${fieldValue}' not found, using 'other' instead`);
+          fieldValue = 'other';
+        }
+      }
+      
+      // For niche, make sure it's in our list or at least sensible
+      if (fieldToGenerate === 'niche' && !niches.includes(fieldValue)) {
+        console.warn(`Niche '${fieldValue}' not found in predefined list, using as-is`);
+      }
+      
+      // For country, make sure it's in our list or at least sensible
+      if (fieldToGenerate === 'country' && !countries.includes(fieldValue)) {
+        console.warn(`Country '${fieldValue}' not found in predefined list, using as-is`);
+      }
+      
+      // Return just the requested field
+      const result = { [fieldName]: fieldValue };
+      console.log(`Returning single field result:`, result);
+      
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Handle full metadata response
     let metadata;
     try {
       metadata = JSON.parse(aiResponse);
@@ -140,16 +217,6 @@ Only return the JSON, no other text.
     if (!validChannelType) {
       console.warn(`Channel type '${metadata.channelType}' not found, using 'other' instead`);
       metadata.channelType = 'other';
-    }
-
-    // Store the suggested UI channel type before mapping to database type
-    const uiChannelType = metadata.channelType;
-    
-    // Map to database-compatible channel type
-    // Check if the type is already a valid database type, otherwise use "other"
-    if (!validDatabaseChannelTypes.includes(metadata.channelType)) {
-      console.log(`Channel type '${metadata.channelType}' is not a valid database type, mapping to 'other'`);
-      metadata.channelType = "other";
     }
 
     console.log(`Final metadata being returned: `, metadata);
