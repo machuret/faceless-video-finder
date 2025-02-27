@@ -17,6 +17,7 @@ interface Channel {
   total_views: number;
   total_subscribers: number;
   description: string;
+  start_date: string;
 }
 
 const Index = () => {
@@ -31,14 +32,23 @@ const Index = () => {
         .select("*");
       
       if (searchQuery) {
-        query = query.or(`channel_title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,keywords.cs.{${searchQuery}}`);
+        query = query.or(`channel_title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
       }
       
-      const { data, error } = await query;
+      const { data, error } = await query.order('total_subscribers', { ascending: false });
       if (error) throw error;
       return data as Channel[];
     },
   });
+
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short'
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -72,9 +82,9 @@ const Index = () => {
           <div className="text-center py-12">
             <div className="text-base text-gray-600">Loading channels...</div>
           </div>
-        ) : (
+        ) : channels && channels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {channels?.map((channel) => (
+            {channels.map((channel) => (
               <Card key={channel.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-4">
                   {channel.screenshot_url && (
@@ -98,9 +108,14 @@ const Index = () => {
                       {channel.description}
                     </p>
                     <div className="flex justify-between text-sm text-gray-500">
-                      <span className="font-medium">{channel.total_subscribers?.toLocaleString()} subscribers</span>
-                      <span className="font-medium">{channel.total_views?.toLocaleString()} views</span>
+                      <span className="font-medium">{channel.total_subscribers?.toLocaleString() || 0} subscribers</span>
+                      <span className="font-medium">{channel.total_views?.toLocaleString() || 0} views</span>
                     </div>
+                    {channel.start_date && (
+                      <div className="text-sm text-gray-500">
+                        <span>Started: {formatDate(channel.start_date)}</span>
+                      </div>
+                    )}
                     <Button
                       variant="outline"
                       className="w-full"
@@ -114,12 +129,10 @@ const Index = () => {
               </Card>
             ))}
           </div>
-        )}
-        
-        {channels?.length === 0 && (
+        ) : (
           <div className="text-center py-12">
             <p className="text-lg text-gray-500">
-              No channels found matching your search.
+              {searchQuery ? "No channels found matching your search." : "No channels available. Check back later!"}
             </p>
           </div>
         )}
