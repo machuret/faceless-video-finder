@@ -1,15 +1,9 @@
-import { Channel, ChannelCategory, ChannelType, ChannelSize, UploadFrequency } from "@/types/youtube";
+
+import { Channel } from "@/types/youtube";
 import { Input } from "@/components/ui/input";
 import { channelCategories, channelTypes, channelSizes, uploadFrequencies, countries } from "../constants";
 import { niches } from "../constants/niches";
 import { useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
 
 interface ChannelCategoriesProps {
   editForm: Channel;
@@ -17,10 +11,10 @@ interface ChannelCategoriesProps {
 }
 
 export const ChannelCategories = ({ editForm, onChange }: ChannelCategoriesProps) => {
-  const [selectedType, setSelectedType] = useState<ChannelType | null>(editForm?.channel_type || null);
+  const [selectedType, setSelectedType] = useState<string | undefined>(editForm?.channel_type);
   
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as ChannelType;
+    const value = e.target.value;
     setSelectedType(value);
     onChange(e);
   };

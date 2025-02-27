@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Channel } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { ChannelBasicInfo } from "./form-sections/ChannelBasicInfo";
@@ -21,6 +21,12 @@ interface ChannelEditFormProps {
 export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
   const [keywords, setKeywords] = useState<string[]>(editForm.keywords || []);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic-info");
+
+  // Force update keywords when editForm changes
+  useEffect(() => {
+    setKeywords(editForm.keywords || []);
+  }, [editForm.keywords]);
 
   const handleKeywordsChange = (newKeywords: string[]) => {
     setKeywords(newKeywords);
@@ -55,18 +61,26 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
     }, 1000);
   };
 
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
+  // Log the content of editForm for debugging
+  console.log("Current editForm:", editForm);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between">
-        <h3 className="text-xl font-semibold">Edit Channel</h3>
+        <h3 className="text-xl font-semibold">Edit Channel: {editForm.channel_title}</h3>
         <div className="space-x-2">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
           <Button onClick={onSave}>Save Changes</Button>
         </div>
       </div>
 
-      <Tabs defaultValue="basic-info">
-        <TabsList className="mb-4">
+      <Tabs defaultValue="basic-info" value={activeTab} onValueChange={handleTabChange}>
+        <TabsList className="mb-4 w-full">
           <TabsTrigger value="basic-info">Basic Info</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="stats">Stats</TabsTrigger>

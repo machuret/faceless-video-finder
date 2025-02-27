@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
@@ -36,8 +37,11 @@ export const ChannelList = ({
   const [editForm, setEditForm] = useState<Channel | null>(null);
 
   const handleEdit = (channel: Channel) => {
+    // Create a deep copy of the channel to avoid reference issues
+    const channelCopy = JSON.parse(JSON.stringify(channel));
     setEditingId(channel.id);
-    setEditForm({...channel});
+    setEditForm(channelCopy);
+    console.log("Editing channel:", channelCopy);
   };
 
   const handleCancel = () => {
@@ -64,6 +68,12 @@ export const ChannelList = ({
         ...editForm,
         [name]: value === '' ? null : Number(value)
       });
+    } else if (name === "uses_ai") {
+      // Handle boolean values like uses_ai
+      setEditForm({
+        ...editForm,
+        [name]: value === "true"
+      });
     } else {
       // Handle text and other inputs
       setEditForm({
@@ -71,6 +81,8 @@ export const ChannelList = ({
         [name]: value
       });
     }
+    
+    console.log(`Updated field ${name} to:`, value);
   };
 
   const getChannelTypeLabel = (typeId: string | undefined) => {

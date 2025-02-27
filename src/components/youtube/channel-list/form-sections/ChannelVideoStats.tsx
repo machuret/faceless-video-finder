@@ -5,7 +5,7 @@ import VideoPerformance from "@/components/youtube/VideoPerformance";
 import { VideoStats } from "@/types/youtube";
 
 interface ChannelVideoStatsProps {
-  videoStats: VideoStats[] | null;
+  videoStats: VideoStats[];
   isLoading: boolean;
   onRefresh: () => void;
 }
@@ -28,8 +28,10 @@ export const ChannelVideoStats = ({
           Refresh Stats
         </Button>
       </div>
-      {videoStats && videoStats.length > 0 && (
+      {videoStats && videoStats.length > 0 ? (
         <VideoPerformance videoStats={videoStats} />
+      ) : (
+        <div className="text-center py-8 text-gray-500">No video statistics available</div>
       )}
     </div>
   );
