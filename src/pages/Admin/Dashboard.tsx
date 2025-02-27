@@ -9,6 +9,20 @@ import { CSVUploader } from "@/components/youtube/CSVUploader";
 import { ChannelList } from "@/components/youtube/ChannelList";
 import type { Channel } from "@/types/youtube";
 
+const calculatePotentialRevenue = (totalViews: number | null, cpm: number | null): number | null => {
+  if (!totalViews || !cpm) return null;
+  return (totalViews / 1000) * cpm;
+};
+
+const calculateRevenuePerVideo = (
+  totalViews: number | null, 
+  cpm: number | null, 
+  videoCount: number | null
+): number | null => {
+  if (!totalViews || !cpm || !videoCount || videoCount === 0) return null;
+  return ((totalViews / 1000) * cpm) / videoCount;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -44,19 +58,12 @@ const Dashboard = () => {
         body: { channelTitle: channel.channel_title }
       });
 
-      console.log('Function response:', data);
-
-      if (error) {
-        console.error('Edge Function error:', error);
-        throw new Error(`Failed to generate content: ${error.message}`);
-      }
+      if (error) throw error;
 
       if (!data || !data.description) {
-        console.error('Invalid response:', data);
         throw new Error('Failed to generate valid content');
       }
 
-      // Update the channel with the new description
       const { error: updateError } = await supabase
         .from('youtube_channels')
         .update({ description: data.description })
@@ -64,7 +71,6 @@ const Dashboard = () => {
 
       if (updateError) throw updateError;
 
-      // Update local state
       setChannels(channels.map(c => 
         c.id === channel.id 
           ? { ...c, description: data.description }
@@ -99,13 +105,24 @@ const Dashboard = () => {
 
   const handleSave = async (channel: Channel) => {
     try {
+      // Calculate potential revenue and revenue per video
+      const potentialRevenue = calculatePotentialRevenue(channel.total_views, channel.cpm);
+      const revenuePerVideo = calculateRevenuePerVideo(channel.total_views, channel.cpm, channel.video_count);
+
+      const updatedChannel = {
+        ...channel,
+        potential_revenue: potentialRevenue,
+        revenue_per_video: revenuePerVideo,
+      };
+
       const { error } = await supabase
         .from("youtube_channels")
-        .update(channel)
+        .update(updatedChannel)
         .eq("id", channel.id);
 
       if (error) throw error;
-      setChannels(channels.map(c => c.id === channel.id ? channel : c));
+
+      setChannels(channels.map(c => c.id === channel.id ? updatedChannel : c));
       toast.success("Channel updated successfully");
     } catch (error) {
       toast.error("Failed to update channel");
