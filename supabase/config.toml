@@ -1,1 +1,14 @@
+
 project_id = "dhbuaffdzhjzsqjfkesg"
+
+[functions.fetch-youtube-data]
+verify_jwt = false
+
+[functions.generate-channel-content]
+verify_jwt = false
+
+[functions.generate-channel-keywords]
+verify_jwt = false
+
+[functions.generate-channel-metadata]
+verify_jwt = false
