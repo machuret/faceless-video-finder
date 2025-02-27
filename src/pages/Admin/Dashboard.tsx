@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +10,7 @@ import type { Channel } from "@/types/youtube";
 
 const calculatePotentialRevenue = (totalViews: number | null, cpm: number | null): number | null => {
   if (!totalViews || !cpm) return null;
-  return (totalViews / 1000) * cpm;
+  return Math.round((totalViews / 1000) * cpm);
 };
 
 const calculateRevenuePerVideo = (
@@ -20,7 +19,7 @@ const calculateRevenuePerVideo = (
   videoCount: number | null
 ): number | null => {
   if (!totalViews || !cpm || !videoCount || videoCount === 0) return null;
-  return ((totalViews / 1000) * cpm) / videoCount;
+  return Math.round(((totalViews / 1000) * cpm) / videoCount);
 };
 
 const calculateRevenuePerMonth = (
@@ -38,14 +37,14 @@ const calculateRevenuePerMonth = (
   
   // If channel is less than a month old, return the total potential revenue
   if (monthsDiff === 0) {
-    return (totalViews / 1000) * cpm;
+    return Math.round((totalViews / 1000) * cpm);
   }
 
   // Calculate average views per month
   const averageViewsPerMonth = totalViews / monthsDiff;
   
-  // Calculate revenue per month
-  return (averageViewsPerMonth / 1000) * cpm;
+  // Calculate revenue per month and round it
+  return Math.round((averageViewsPerMonth / 1000) * cpm);
 };
 
 const Dashboard = () => {
