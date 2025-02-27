@@ -42,10 +42,15 @@ const AddChannel = () => {
   }, [user, isAdmin, authLoading, navigate]);
 
   const fetchYoutubeData = async () => {
-    if (!youtubeUrl) return;
+    if (!youtubeUrl) {
+      toast.error("Please enter a YouTube URL");
+      return;
+    }
 
     setLoading(true);
     try {
+      console.log("Fetching YouTube data for URL:", youtubeUrl);
+      
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: { url: youtubeUrl }
       });
@@ -60,7 +65,7 @@ const AddChannel = () => {
         throw new Error("No data received from YouTube API. Please check if the URL is correct.");
       }
 
-      console.log("Received data:", data);
+      console.log("Received data from YouTube API:", data);
 
       // Format the date string to YYYY-MM-DD if it exists
       const formattedStartDate = data.start_date 
@@ -113,15 +118,15 @@ const AddChannel = () => {
         start_date: formData.start_date || null,
         video_count: formData.video_count ? parseInt(formData.video_count) : null,
         cpm: formData.cpm ? parseFloat(formData.cpm) : 4, // Default to 4 if not provided
+        channel_type: "other" // Default to "other" to match the database schema
       };
 
-      console.log("Submitting data:", dataToSubmit);
+      console.log("Submitting data to Supabase:", dataToSubmit);
 
       const { data, error } = await supabase
         .from("youtube_channels")
         .insert([dataToSubmit])
-        .select()
-        .single();
+        .select();
 
       if (error) {
         console.error("Insert error:", error);

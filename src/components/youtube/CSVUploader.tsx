@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { Channel, ChannelCategory, ChannelType } from "@/types/youtube";
+import type { Channel, ChannelCategory, DatabaseChannelType } from "@/types/youtube";
 
 interface CSVUploaderProps {
   onUploadSuccess: () => Promise<void>;
@@ -16,7 +16,7 @@ type RequiredChannelFields = {
   channel_title: string;
   channel_url: string;
   channel_category?: ChannelCategory;
-  channel_type?: string; // Changed to string to be compatible with Supabase
+  channel_type?: DatabaseChannelType;
   description?: string | null;
   screenshot_url?: string | null;
   total_subscribers?: number | null;
@@ -37,7 +37,7 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
 
   const downloadTemplate = () => {
     const csvHeader = "video_id,channel_title,channel_url,description,screenshot_url,total_subscribers,total_views,channel_category,channel_type,keywords,country,niche,notes,cpm,potential_revenue,revenue_per_video,revenue_per_month,uses_ai\n";
-    const csvContent = csvHeader + "dQw4w9WgXcQ,Rick Astley,https://youtube.com/rickastley,Official Rick Astley channel,https://example.com/screenshot.jpg,12500000,2000000000,entertainment,compilation_montage,\"music,pop,80s\",UK,Music,Great engagement,5.50,75000,1500,45000,false";
+    const csvContent = csvHeader + "dQw4w9WgXcQ,Rick Astley,https://youtube.com/rickastley,Official Rick Astley channel,https://example.com/screenshot.jpg,12500000,2000000000,entertainment,other,\"music,pop,80s\",UK,Music,Great engagement,5.50,75000,1500,45000,false";
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -48,6 +48,16 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Function to map UI channel type to database-compatible type
+  const mapToDatabaseChannelType = (value: string): DatabaseChannelType => {
+    // Only use values that match the database schema
+    if (value === "creator" || value === "brand" || value === "media") {
+      return value as DatabaseChannelType;
+    }
+    // Default to "other" for all custom types
+    return "other";
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,8 +110,8 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
               }
               break;
             case 'channel_type':
-              // Store as string, no validation needed as we're storing raw values now
-              channel[headerKey] = value;
+              // Map to a valid database channel type
+              channel[headerKey] = mapToDatabaseChannelType(value);
               break;
             default:
               // @ts-ignore - we know these are string fields
@@ -120,6 +130,8 @@ export const CSVUploader = ({ onUploadSuccess }: CSVUploaderProps) => {
         throw new Error('No valid channels found in the CSV file');
       }
 
+      console.log("Inserting valid channels:", validChannels);
+      
       // Cast validChannels to any for Supabase insert to avoid type issues
       const { error } = await supabase
         .from('youtube_channels')
