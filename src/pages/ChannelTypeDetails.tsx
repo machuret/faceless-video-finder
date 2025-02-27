@@ -10,6 +10,7 @@ import { Channel } from "@/types/youtube";
 import { ChannelList } from "@/components/youtube/ChannelList";
 import { formatDate, getChannelSize, getGrowthRange, calculateUploadFrequency, getUploadFrequencyCategory, getUploadFrequencyLabel } from "@/utils/channelUtils";
 import MainNavbar from "@/components/MainNavbar";
+import { toast } from "sonner";
 
 const ChannelTypeDetails = () => {
   const { typeId } = useParams<{ typeId: string }>();
@@ -26,6 +27,7 @@ const ChannelTypeDetails = () => {
     const fetchChannelsByType = async () => {
       setLoading(true);
       try {
+        console.log("Fetching channels of type:", typeId);
         // Using any type here because we're dealing with a mismatch between 
         // our TypeScript types and the database schema
         const { data, error } = await supabase
@@ -35,10 +37,12 @@ const ChannelTypeDetails = () => {
           
         if (error) throw error;
         
+        console.log("Fetched channels:", data);
         // Cast the data to ensure it matches the Channel type
         setChannels(data as unknown as Channel[]);
       } catch (error) {
         console.error("Error fetching channels by type:", error);
+        toast.error("Error fetching channels");
       } finally {
         setLoading(false);
       }
@@ -56,46 +60,87 @@ const ChannelTypeDetails = () => {
         
       if (error) throw error;
       setChannels(prevChannels => prevChannels.filter(channel => channel.id !== id));
+      toast.success("Channel deleted successfully");
     } catch (error) {
       console.error("Error deleting channel:", error);
+      toast.error("Failed to delete channel");
     }
   };
   
   const handleSave = async (updatedChannel: Channel) => {
     try {
-      // Create a new object with the correct type for the database
-      const dataToUpdate: any = {
+      console.log("Saving updated channel:", updatedChannel);
+      
+      // Prepare the data for update
+      const dataToUpdate = {
         ...updatedChannel,
-        // Ensure channel_type is handled properly for database
-        channel_type: updatedChannel.channel_type
+        // Convert string values to numbers where needed
+        total_views: updatedChannel.total_views ? Number(updatedChannel.total_views) : null,
+        total_subscribers: updatedChannel.total_subscribers ? Number(updatedChannel.total_subscribers) : null,
+        video_count: updatedChannel.video_count ? Number(updatedChannel.video_count) : null,
+        cpm: updatedChannel.cpm ? Number(updatedChannel.cpm) : null,
       };
+      
+      // Remove properties that don't exist in the database
+      delete dataToUpdate.videoStats;
       
       const { error } = await supabase
         .from("youtube_channels")
         .update(dataToUpdate)
         .eq("id", updatedChannel.id);
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating channel:", error);
+        throw error;
+      }
       
       setChannels(prevChannels => 
         prevChannels.map(channel => 
           channel.id === updatedChannel.id ? updatedChannel : channel
         )
       );
+      
+      toast.success("Channel updated successfully");
     } catch (error) {
       console.error("Error updating channel:", error);
+      toast.error("Failed to update channel");
     }
   };
   
   const handleGenerateContent = async (channel: Channel) => {
     setGeneratingContent(true);
     try {
-      // Implementation for generating content would go here
       console.log("Generating content for channel:", channel.id);
-      // Placeholder timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const { data, error } = await supabase.functions.invoke('generate-channel-content', {
+        body: { channelTitle: channel.channel_title }
+      });
+      
+      if (error) throw error;
+      
+      if (!data || !data.description) {
+        throw new Error("Failed to generate valid content");
+      }
+      
+      // Update the channel description in the database
+      const { error: updateError } = await supabase
+        .from("youtube_channels")
+        .update({ description: data.description })
+        .eq("id", channel.id);
+        
+      if (updateError) throw updateError;
+      
+      // Update the description in our local state
+      setChannels(prevChannels => 
+        prevChannels.map(c => 
+          c.id === channel.id ? { ...c, description: data.description } : c
+        )
+      );
+      
+      toast.success("Content generated successfully");
     } catch (error) {
       console.error("Error generating content:", error);
+      toast.error("Failed to generate content");
     } finally {
       setGeneratingContent(false);
     }

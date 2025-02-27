@@ -51,13 +51,40 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
   };
 
   // Refresh video stats handler
-  const handleRefreshStats = () => {
+  const handleRefreshStats = async () => {
     setIsLoadingStats(true);
-    // In a real implementation, this would fetch updated stats
-    setTimeout(() => {
-      setIsLoadingStats(false);
+    try {
+      // Log the channel ID
+      console.log("Refreshing video stats for channel ID:", editForm.id);
+      
+      const response = await fetch(`https://dhbuaffdzhjzsqjfkesg.supabase.co/functions/v1/fetch-youtube-data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: editForm.video_id,
+          channelId: editForm.id
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to refresh stats: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Stats refreshed successfully:", data);
       toast.success("Stats refreshed successfully");
-    }, 1000);
+      
+      // Force refresh the page to show the updated stats
+      window.location.reload();
+    } catch (error) {
+      console.error("Error refreshing stats:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to refresh stats");
+    } finally {
+      setIsLoadingStats(false);
+    }
   };
 
   // Log the content of editForm for debugging

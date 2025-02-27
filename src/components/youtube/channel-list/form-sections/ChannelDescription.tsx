@@ -75,40 +75,51 @@ export const ChannelDescription = ({ editForm, onChange }: ChannelDescriptionPro
         throw new Error('Failed to generate valid metadata');
       }
 
-      // Update niche
-      if (data.niche) {
-        const nicheEvent = {
-          target: {
-            name: "niche",
-            value: data.niche
-          }
-        } as React.ChangeEvent<HTMLSelectElement>;
-        onChange(nicheEvent);
-      }
+      console.log("Received metadata from API:", data);
 
-      // Update country
-      if (data.country) {
-        const countryEvent = {
-          target: {
-            name: "country",
-            value: data.country
-          }
-        } as React.ChangeEvent<HTMLSelectElement>;
-        onChange(countryEvent);
-      }
+      // Create a batch of mock events to update multiple fields
+      const updateFields = () => {
+        // Update niche
+        if (data.niche) {
+          console.log("Updating niche to:", data.niche);
+          const nicheEvent = {
+            target: {
+              name: "niche",
+              value: data.niche
+            }
+          } as React.ChangeEvent<HTMLInputElement>;
+          onChange(nicheEvent);
+        }
 
-      // Update channel type
-      if (data.channelType) {
-        const typeEvent = {
-          target: {
-            name: "channel_type",
-            value: data.channelType
-          }
-        } as React.ChangeEvent<HTMLSelectElement>;
-        onChange(typeEvent);
-      }
+        // Update country
+        if (data.country) {
+          console.log("Updating country to:", data.country);
+          const countryEvent = {
+            target: {
+              name: "country",
+              value: data.country
+            }
+          } as React.ChangeEvent<HTMLInputElement>;
+          onChange(countryEvent);
+        }
+
+        // Update channel type
+        if (data.channelType) {
+          console.log("Updating channel_type to:", data.channelType);
+          const typeEvent = {
+            target: {
+              name: "channel_type",
+              value: data.channelType
+            }
+          } as React.ChangeEvent<HTMLSelectElement>;
+          onChange(typeEvent);
+        }
+      };
+
+      // Execute updates
+      updateFields();
       
-      toast.success('Metadata generated successfully');
+      toast.success(`Metadata generated: ${data.niche} | ${data.country} | ${data.channelType}`);
     } catch (error) {
       console.error('Generate metadata error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate metadata');

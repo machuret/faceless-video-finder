@@ -182,33 +182,53 @@ const Dashboard = () => {
       setChannels(channels.filter(channel => channel.id !== id));
       toast.success("Channel deleted successfully");
     } catch (error) {
+      console.error("Delete error:", error);
       toast.error("Failed to delete channel");
     }
   };
 
   const handleSave = async (channel: Channel) => {
     try {
+      console.log("Saving channel with data:", channel);
+      
+      // Calculate derived fields
       const potentialRevenue = calculatePotentialRevenue(channel.total_views, channel.cpm);
       const revenuePerVideo = calculateRevenuePerVideo(channel.total_views, channel.cpm, channel.video_count);
       const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
 
-      const updatedChannel = {
+      // Prepare the data for update, making sure it matches the database schema
+      const dataToUpdate = {
         ...channel,
         potential_revenue: potentialRevenue,
         revenue_per_video: revenuePerVideo,
         revenue_per_month: revenuePerMonth,
+        // Convert any numeric string values to numbers
+        total_views: channel.total_views ? Number(channel.total_views) : null,
+        total_subscribers: channel.total_subscribers ? Number(channel.total_subscribers) : null,
+        video_count: channel.video_count ? Number(channel.video_count) : null,
+        cpm: channel.cpm ? Number(channel.cpm) : null,
       };
+
+      // Remove any properties that don't exist in the database schema
+      delete dataToUpdate.videoStats;
+      
+      console.log("Data being sent to Supabase:", dataToUpdate);
 
       const { error } = await supabase
         .from("youtube_channels")
-        .update(updatedChannel as any) // Cast to any to bypass TypeScript checking
+        .update(dataToUpdate)
         .eq("id", channel.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
 
-      setChannels(channels.map(c => c.id === channel.id ? updatedChannel : c));
+      // Update the local state with the new data
+      setChannels(channels.map(c => c.id === channel.id ? {...c, ...dataToUpdate} : c));
       toast.success("Channel updated successfully");
     } catch (error) {
+      console.error("Save error:", error);
       toast.error("Failed to update channel");
     }
   };
