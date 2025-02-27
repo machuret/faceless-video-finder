@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, RefreshCw } from "lucide-react";
 import type { Channel } from "@/types/youtube";
 
@@ -24,8 +25,9 @@ export const ChannelList = ({
   const [editForm, setEditForm] = useState<Channel | null>(null);
 
   const handleEdit = (channel: Channel) => {
+    // Create a complete copy of the channel for editing
+    setEditForm({ ...channel });
     setEditingId(channel.id);
-    setEditForm(channel);
   };
 
   const handleSave = () => {
@@ -43,9 +45,13 @@ export const ChannelList = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (editForm) {
+      const value = e.target.type === 'number' 
+        ? e.target.value === '' ? null : Number(e.target.value)
+        : e.target.value;
+
       setEditForm({
         ...editForm,
-        [e.target.name]: e.target.value,
+        [e.target.name]: value,
       });
     }
   };
@@ -57,19 +63,61 @@ export const ChannelList = ({
           <CardContent className="p-6">
             {editingId === channel.id ? (
               <div className="space-y-4">
-                <input
-                  name="channel_title"
-                  value={editForm?.channel_title || ""}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                />
-                <textarea
-                  name="description"
-                  value={editForm?.description || ""}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  rows={3}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Channel Title</label>
+                    <Input
+                      name="channel_title"
+                      value={editForm?.channel_title || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Video ID</label>
+                    <Input
+                      name="video_id"
+                      value={editForm?.video_id || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Total Subscribers</label>
+                    <Input
+                      type="number"
+                      name="total_subscribers"
+                      value={editForm?.total_subscribers || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Total Views</label>
+                    <Input
+                      type="number"
+                      name="total_views"
+                      value={editForm?.total_views || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Video Count</label>
+                    <Input
+                      type="number"
+                      name="video_count"
+                      value={editForm?.video_count || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Description</label>
+                  <textarea
+                    name="description"
+                    value={editForm?.description || ""}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded min-h-[100px]"
+                    rows={4}
+                  />
+                </div>
                 <div className="flex gap-2">
                   <Button onClick={handleSave}>Save</Button>
                   <Button variant="outline" onClick={handleCancel}>
