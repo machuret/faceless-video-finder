@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Channel } from "@/types/youtube";
+import { Channel, VideoStats } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { ChannelBasicInfo } from "./form-sections/ChannelBasicInfo";
 import { ChannelStatsForm } from "./form-sections/ChannelStats"; 
@@ -10,6 +10,7 @@ import { ChannelDescription } from "./form-sections/ChannelDescription";
 import { KeywordsInput } from "./KeywordsInput";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChannelEditFormProps {
   editForm: Channel;
@@ -21,11 +22,19 @@ interface ChannelEditFormProps {
 export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
   const [keywords, setKeywords] = useState<string[]>(editForm.keywords || []);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
-
+  const [videoStats, setVideoStats] = useState<VideoStats[]>(editForm.videoStats || []);
+  
   // Force update keywords when editForm changes
   useEffect(() => {
     setKeywords(editForm.keywords || []);
   }, [editForm.keywords]);
+
+  // Update videoStats when editForm.videoStats changes
+  useEffect(() => {
+    if (editForm.videoStats) {
+      setVideoStats(editForm.videoStats);
+    }
+  }, [editForm.videoStats]);
 
   const handleKeywordsChange = (newKeywords: string[]) => {
     setKeywords(newKeywords);
@@ -54,13 +63,32 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
   const handleRefreshStats = async () => {
     setIsLoadingStats(true);
     try {
-      // Log the channel ID
+      // Log the channel ID and video_id
       console.log("Refreshing video stats for channel ID:", editForm.id);
+      console.log("Video ID for fetching:", editForm.video_id);
       
+      if (!editForm.id || !editForm.video_id) {
+        throw new Error("Missing channel ID or video ID");
+      }
+      
+      // First, try to fetch existing video stats
+      const { data: existingStats, error: fetchError } = await supabase
+        .from('youtube_video_stats')
+        .select('*')
+        .eq('channel_id', editForm.id);
+        
+      if (fetchError) {
+        console.error("Error fetching existing stats:", fetchError);
+      } else {
+        console.log("Found existing stats:", existingStats?.length || 0);
+      }
+      
+      // Call the Edge Function to refresh the stats
       const response = await fetch(`https://dhbuaffdzhjzsqjfkesg.supabase.co/functions/v1/fetch-youtube-data`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.auth.getSession() ? (await supabase.auth.getSession()).data.session?.access_token : ''}`
         },
         body: JSON.stringify({
           videoId: editForm.video_id,
@@ -70,15 +98,43 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
       
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to refresh stats: ${errorText}`);
+        console.error("Error response from fetch-youtube-data:", errorText);
+        throw new Error(`Failed to refresh stats: ${response.status} ${errorText}`);
       }
       
       const data = await response.json();
       console.log("Stats refreshed successfully:", data);
-      toast.success("Stats refreshed successfully");
       
-      // Force refresh the page to show the updated stats
-      window.location.reload();
+      // Fetch the updated stats
+      const { data: updatedStats, error: updatedError } = await supabase
+        .from('youtube_video_stats')
+        .select('*')
+        .eq('channel_id', editForm.id);
+      
+      if (updatedError) {
+        console.error("Error fetching updated stats:", updatedError);
+        throw new Error("Failed to fetch updated video statistics");
+      }
+      
+      console.log("Fetched updated stats:", updatedStats);
+      
+      if (updatedStats && updatedStats.length > 0) {
+        // Update local state with the fresh data
+        setVideoStats(updatedStats as VideoStats[]);
+        
+        // Also update the editForm with the new stats
+        const mockEvent = {
+          target: {
+            name: "videoStats",
+            value: updatedStats
+          }
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+        onChange(mockEvent);
+        
+        toast.success(`Successfully refreshed stats for ${updatedStats.length} videos`);
+      } else {
+        toast.warning("No video statistics were found or updated");
+      }
     } catch (error) {
       console.error("Error refreshing stats:", error);
       toast.error(error instanceof Error ? error.message : "Failed to refresh stats");
@@ -91,6 +147,7 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
   console.log("Current editForm:", editForm);
   // Specifically log video stats for debugging
   console.log("Video stats in form:", editForm.videoStats);
+  console.log("Video stats in local state:", videoStats);
 
   return (
     <div className="space-y-8">
@@ -155,9 +212,8 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
         
         {/* Videos Section */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Video Statistics</h3>
           <ChannelVideoStats 
-            videoStats={editForm.videoStats || []} 
+            videoStats={videoStats} 
             isLoading={isLoadingStats} 
             onRefresh={handleRefreshStats} 
           />
