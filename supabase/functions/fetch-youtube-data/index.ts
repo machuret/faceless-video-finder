@@ -12,50 +12,79 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function extractChannelId(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    
+    // Handle different YouTube URL formats
+    if (url.includes('/channel/')) {
+      return url.split('/channel/')[1].split('/')[0];
+    } else if (url.includes('/user/')) {
+      return url.split('/user/')[1].split('/')[0];
+    } else if (url.includes('@')) {
+      return url.split('@')[1].split('/')[0];
+    } else if (url.includes('/c/')) {
+      return url.split('/c/')[1].split('/')[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error parsing URL:', error);
+    return null;
+  }
+}
+
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     console.log('Starting fetch-youtube-data function');
+    const { url } = await req.json();
     
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { channelId } = await req.json();
-
-    console.log('Processing request for channel:', channelId);
-
-    // Get channel data from our database
-    const { data: channel, error: channelError } = await supabase
-      .from('youtube_channels')
-      .select('video_id')
-      .eq('id', channelId)
-      .maybeSingle();
-
-    if (channelError) {
-      console.error('Error fetching channel:', channelError);
-      throw new Error('Failed to fetch channel data');
+    if (!url) {
+      throw new Error('URL is required');
     }
 
-    if (!channel) {
-      console.error('Channel not found:', channelId);
-      return new Response(
-        JSON.stringify({ error: 'Channel not found' }), 
-        { 
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+    console.log('Processing URL:', url);
+    const channelId = extractChannelId(url);
+    
+    if (!channelId) {
+      throw new Error('Could not extract channel ID from URL');
     }
 
-    console.log('Found channel with video_id:', channel.video_id);
+    console.log('Extracted channel ID:', channelId);
 
-    // Get channel videos from YouTube API
-    const playlistId = `UU${channel.video_id.slice(2)}`; // Convert video ID to uploads playlist ID
-    console.log('Fetching playlist:', playlistId);
+    // First, try to get channel info
+    const channelResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YOUTUBE_API_KEY}`
+    );
 
+    if (!channelResponse.ok) {
+      const errorData = await channelResponse.json();
+      console.error('YouTube API error:', errorData);
+      throw new Error(`YouTube API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const channelData = await channelResponse.json();
+    
+    if (!channelData.items?.length) {
+      console.log('No channel found with ID:', channelId);
+      throw new Error('Channel not found');
+    }
+
+    const channel = channelData.items[0];
+    const channelSnippet = channel.snippet;
+    const channelStats = channel.statistics;
+
+    // Get the channel's uploads playlist ID
+    const uploadsPlaylistId = `UU${channelId.slice(2)}`;
+
+    // Get recent videos
     const videosResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&key=${YOUTUBE_API_KEY}`
+      `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=50&key=${YOUTUBE_API_KEY}`
     );
 
     if (!videosResponse.ok) {
@@ -65,76 +94,29 @@ serve(async (req) => {
     }
 
     const videosData = await videosResponse.json();
-    
-    if (!videosData.items?.length) {
-      console.log('No videos found in playlist');
-      return new Response(
-        JSON.stringify({ message: 'No videos found' }), 
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
 
-    console.log(`Found ${videosData.items.length} videos`);
+    // Format response data
+    const responseData = {
+      video_id: channelId,
+      channel_title: channelSnippet.title,
+      channel_url: `https://youtube.com/channel/${channelId}`,
+      description: channelSnippet.description,
+      screenshot_url: channelSnippet.thumbnails.default.url,
+      total_subscribers: parseInt(channelStats.subscriberCount) || 0,
+      total_views: parseInt(channelStats.viewCount) || 0,
+      start_date: channelSnippet.publishedAt,
+      video_count: parseInt(channelStats.videoCount) || 0,
+    };
 
-    const videoIds = videosData.items.map((item: any) => item.snippet.resourceId.videoId).join(',');
-
-    // Get video statistics from YouTube API
-    const statsResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}`
-    );
-
-    if (!statsResponse.ok) {
-      const errorData = await statsResponse.json();
-      console.error('YouTube API error (stats):', errorData);
-      throw new Error(`Failed to fetch video statistics: ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const statsData = await statsResponse.json();
-    console.log(`Got statistics for ${statsData.items?.length || 0} videos`);
-
-    // Prepare video stats for database
-    const videoStats = statsData.items.map((item: any) => {
-      const video = videosData.items.find(
-        (v: any) => v.snippet.resourceId.videoId === item.id
-      );
-      
-      return {
-        channel_id: channelId,
-        video_id: item.id,
-        title: video.snippet.title,
-        thumbnail_url: video.snippet.thumbnails.default.url,
-        views: parseInt(item.statistics.viewCount) || 0,
-        likes: parseInt(item.statistics.likeCount) || 0,
-      };
-    });
-
-    console.log('Prepared stats for upsert:', videoStats.length);
-
-    // Upsert video stats to our database
-    const { error: upsertError } = await supabase
-      .from('youtube_video_stats')
-      .upsert(videoStats, {
-        onConflict: 'video_id,channel_id',
-        ignoreDuplicates: false
-      });
-
-    if (upsertError) {
-      console.error('Error upserting video stats:', upsertError);
-      throw new Error(`Failed to save video statistics: ${upsertError.message}`);
-    }
-
-    console.log('Successfully updated video statistics');
+    console.log('Returning data:', responseData);
 
     return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Video statistics updated successfully',
-        count: videoStats.length
-      }), 
+      JSON.stringify(responseData),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       }
     );
   } catch (error) {
@@ -144,7 +126,7 @@ serve(async (req) => {
         error: error instanceof Error ? error.message : 'An unknown error occurred'
       }), 
       { 
-        status: 500,
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
