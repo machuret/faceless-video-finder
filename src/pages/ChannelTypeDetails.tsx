@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Channel } from "@/types/youtube";
 import { ChannelList } from "@/components/youtube/ChannelList";
 import { formatDate, getChannelSize, getGrowthRange, calculateUploadFrequency, getUploadFrequencyCategory, getUploadFrequencyLabel } from "@/utils/channelUtils";
+import MainNavbar from "@/components/MainNavbar";
 
 const ChannelTypeDetails = () => {
   const { typeId } = useParams<{ typeId: string }>();
@@ -102,70 +103,77 @@ const ChannelTypeDetails = () => {
   
   if (!typeInfo) {
     return (
-      <div className="container mx-auto p-4">
-        <Card className="p-6">
-          <h1 className="text-2xl font-bold mb-4">Channel Type Not Found</h1>
-          <p>The requested channel type does not exist.</p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
-          </Button>
-        </Card>
+      <div className="min-h-screen bg-gray-50">
+        <MainNavbar />
+        <div className="container mx-auto px-4 py-8">
+          <Card className="p-6">
+            <h1 className="font-crimson text-2xl font-bold mb-4">Channel Type Not Found</h1>
+            <p className="font-lato">The requested channel type does not exist.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4 font-montserrat"
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+            </Button>
+          </Card>
+        </div>
       </div>
     );
   }
   
   return (
-    <div className="container mx-auto p-4">
-      <Button 
-        variant="outline" 
-        className="mb-4"
-        onClick={() => navigate(-1)}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back
-      </Button>
+    <div className="min-h-screen bg-gray-50">
+      <MainNavbar />
       
-      <Card className="p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">{typeInfo.label}</h1>
-        <p className="text-gray-600 mb-4">{typeInfo.description}</p>
+      <div className="container mx-auto px-4 py-8">
+        <Button 
+          variant="outline" 
+          className="mb-4 font-montserrat"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        </Button>
         
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-medium mb-2">Typical Production</h3>
-          <p>{typeInfo.production}</p>
-        </div>
-        
-        <div className="mt-4">
-          <h3 className="font-medium mb-2">Examples</h3>
-          <p>{typeInfo.example}</p>
-        </div>
-      </Card>
-      
-      <h2 className="text-xl font-semibold mb-4">Channels of this type</h2>
-      
-      {loading ? (
-        <div>Loading channels...</div>
-      ) : channels.length > 0 ? (
-        <ChannelList 
-          channels={channels}
-          onDelete={handleDelete}
-          onSave={handleSave}
-          onGenerateContent={handleGenerateContent}
-          generatingContent={generatingContent}
-          getChannelSize={getChannelSize}
-          getGrowthRange={getGrowthRange}
-          calculateUploadFrequency={calculateUploadFrequency}
-          getUploadFrequencyCategory={getUploadFrequencyCategory}
-          getUploadFrequencyLabel={getUploadFrequencyLabel}
-          formatDate={formatDate}
-        />
-      ) : (
-        <Card className="p-6">
-          <p>No channels found for this type.</p>
+        <Card className="p-6 mb-6">
+          <h1 className="font-crimson text-2xl font-bold mb-2">{typeInfo.label}</h1>
+          <p className="font-lato text-gray-600 mb-4">{typeInfo.description}</p>
+          
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="font-montserrat font-medium mb-2">Typical Production</h3>
+            <p className="font-lato">{typeInfo.production}</p>
+          </div>
+          
+          <div className="mt-4">
+            <h3 className="font-montserrat font-medium mb-2">Examples</h3>
+            <p className="font-lato">{typeInfo.example}</p>
+          </div>
         </Card>
-      )}
+        
+        <h2 className="font-crimson text-xl font-semibold mb-4">Channels of this type</h2>
+        
+        {loading ? (
+          <div className="text-center py-8 font-lato">Loading channels...</div>
+        ) : channels.length > 0 ? (
+          <ChannelList 
+            channels={channels}
+            onDelete={handleDelete}
+            onSave={handleSave}
+            onGenerateContent={handleGenerateContent}
+            generatingContent={generatingContent}
+            getChannelSize={getChannelSize}
+            getGrowthRange={getGrowthRange}
+            calculateUploadFrequency={calculateUploadFrequency}
+            getUploadFrequencyCategory={getUploadFrequencyCategory}
+            getUploadFrequencyLabel={getUploadFrequencyLabel}
+            formatDate={formatDate}
+          />
+        ) : (
+          <Card className="p-6">
+            <p className="font-lato">No channels found for this type.</p>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

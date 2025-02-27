@@ -4,22 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Home, BookOpen, LogIn } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { 
   channelCategories 
 } from "@/components/youtube/channel-list/constants";
 import { Channel, ChannelCategory, VideoStats } from "@/types/youtube";
-import { 
-  formatDate,
-  getChannelSize,
-  getGrowthRange,
-  calculateUploadFrequency,
-  getUploadFrequencyCategory,
-  getUploadFrequencyLabel
-} from "@/utils/channelUtils";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import VideoCard from "@/components/youtube/VideoCard";
+import MainNavbar from "@/components/MainNavbar";
 
 const Index = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -82,30 +75,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation Bar */}
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <Home className="h-6 w-6 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">YT Channel Explorer</h1>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link to="/channel-types" className="flex items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors">
-              <BookOpen className="h-5 w-5" />
-              <span className="font-medium">Channel Types</span>
-            </Link>
-            <Link to="/admin/login" className="flex items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors">
-              <LogIn className="h-5 w-5" />
-              <span className="font-medium">Admin</span>
-            </Link>
-          </nav>
-        </div>
-      </header>
+      {/* Sticky Navigation Bar */}
+      <MainNavbar />
 
       <main className="container mx-auto px-4 py-8">
         {/* Search and Filter Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-bold mb-4 text-gray-800">Find YouTube Channels</h2>
+          <h2 className="font-crimson text-2xl font-bold mb-4 text-gray-800">Find YouTube Channels</h2>
           
           <form onSubmit={handleSearch} className="flex gap-2 mb-6">
             <div className="relative flex-1">
@@ -115,10 +91,10 @@ const Index = () => {
                 placeholder="Search channels..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 font-montserrat"
               />
             </div>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 font-montserrat">
               Search
             </Button>
           </form>
@@ -126,14 +102,14 @@ const Index = () => {
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Filter className="h-4 w-4 text-gray-500" />
-              <h3 className="text-base font-semibold text-gray-700">Filter by Category</h3>
+              <h3 className="font-montserrat text-base font-semibold text-gray-700">Filter by Category</h3>
             </div>
             <div className="flex flex-wrap gap-2">
               {channelCategories.map((category) => (
                 <button
                   key={category}
                   onClick={() => handleCategorySelect(category as ChannelCategory)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors font-montserrat ${
                     selectedCategory === category
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -146,12 +122,12 @@ const Index = () => {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold mb-2 text-gray-800">
+            <h2 className="font-montserrat text-lg font-semibold mb-2 text-gray-800">
               {selectedCategory 
                 ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Channels`
                 : "All Channels"}
             </h2>
-            <p className="text-gray-600">
+            <p className="font-lato text-gray-600">
               {filteredChannels.length} {filteredChannels.length === 1 ? "channel" : "channels"} found
             </p>
           </div>
@@ -161,7 +137,7 @@ const Index = () => {
         {loading ? (
           <div className="text-center py-12">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-            <p className="mt-4 text-gray-600 font-medium">Loading channels...</p>
+            <p className="mt-4 text-gray-600 font-medium font-montserrat">Loading channels...</p>
           </div>
         ) : filteredChannels.length > 0 ? (
           <div>
@@ -179,13 +155,13 @@ const Index = () => {
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full bg-gray-100">
-                          <p className="text-gray-400">No screenshot</p>
+                          <p className="text-gray-400 font-lato">No screenshot</p>
                         </div>
                       )}
                     </div>
                     <CardContent className="p-4">
-                      <h3 className="text-lg font-semibold mb-2 line-clamp-1">{channel.channel_title}</h3>
-                      <div className="flex items-center gap-x-4 text-sm text-gray-500 mb-3">
+                      <h3 className="font-crimson text-lg font-semibold mb-2 line-clamp-1">{channel.channel_title}</h3>
+                      <div className="flex items-center gap-x-4 text-sm text-gray-500 mb-3 font-montserrat">
                         <div className="flex items-center">
                           <span className="font-medium">{channel.total_subscribers ? parseInt(channel.total_subscribers.toString()).toLocaleString() : '0'}</span>
                           <span className="ml-1">subscribers</span>
@@ -195,17 +171,17 @@ const Index = () => {
                           <span className="ml-1">views</span>
                         </div>
                       </div>
-                      <p className="text-gray-600 line-clamp-2 text-sm mb-2">
+                      <p className="font-lato text-gray-600 line-clamp-2 text-sm mb-2">
                         {channel.description || "No description available"}
                       </p>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {channel.niche && (
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full font-montserrat">
                             {channel.niche}
                           </span>
                         )}
                         {channel.channel_category && (
-                          <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
+                          <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full font-montserrat">
                             {channel.channel_category}
                           </span>
                         )}
@@ -219,7 +195,7 @@ const Index = () => {
             {/* Featured Videos Section */}
             {channels.some(channel => channel.videoStats && channel.videoStats.length > 0) && (
               <div className="mt-12">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">Featured Videos</h2>
+                <h2 className="font-crimson text-2xl font-bold mb-6 text-gray-800">Featured Videos</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {channels
                     .filter(channel => channel.videoStats && channel.videoStats.length > 0)
@@ -240,10 +216,10 @@ const Index = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <p className="text-gray-600 text-lg">No channels found matching your criteria.</p>
+            <p className="text-gray-600 text-lg font-lato">No channels found matching your criteria.</p>
             <Button 
               variant="outline" 
-              className="mt-4"
+              className="mt-4 font-montserrat"
               onClick={() => {
                 setSearchTerm("");
                 setSelectedCategory("");
@@ -257,7 +233,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="bg-white border-t mt-12 py-8">
-        <div className="container mx-auto px-4 text-center text-gray-500">
+        <div className="container mx-auto px-4 text-center text-gray-500 font-lato">
           <p>YouTube Channel Explorer - Find and discover content creators</p>
         </div>
       </footer>

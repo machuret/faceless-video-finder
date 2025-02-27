@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,6 +19,13 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'crimson': ['"Crimson Text"', 'serif'],
+				'lato': ['Lato', 'sans-serif'],
+				'montserrat': ['Montserrat', 'sans-serif'],
+				'bebas': ['"Bebas Neue"', 'sans-serif'],
+				'opensans': ['"Open Sans"', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
