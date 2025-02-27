@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Channel } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { ChannelBasicInfo } from "./form-sections/ChannelBasicInfo";
-import { ChannelStatsForm } from "./form-sections/ChannelStats"; // Fixed import name
+import { ChannelStatsForm } from "./form-sections/ChannelStats"; 
 import { ChannelVideoStats } from "./form-sections/ChannelVideoStats";
 import { ChannelCategories } from "./form-sections/ChannelCategories";
 import { ChannelDescription } from "./form-sections/ChannelDescription";
