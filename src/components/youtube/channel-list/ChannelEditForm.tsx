@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { FileUpload } from "@/components/FileUpload";
 import { KeywordsInput } from "./KeywordsInput";
 import { channelCategories, channelTypes, channelSizes, uploadFrequencies, countries } from "./constants";
-import { VideoPerformance } from "@/components/youtube/VideoPerformance";
+import VideoPerformance from "@/components/youtube/VideoPerformance"; // Changed from named import to default import
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
