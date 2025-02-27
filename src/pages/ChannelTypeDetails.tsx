@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { formatDate } from "@/utils/channelUtils";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
 
+// Define a more flexible interface for the raw data from Supabase
 interface SupabaseChannelData {
   id: string;
   video_id: string;
@@ -21,7 +23,7 @@ interface SupabaseChannelData {
   total_subscribers: number | null;
   channel_category: string | null;
   channel_type: string | null;
-  metadata: ChannelMetadata | null;
+  metadata?: ChannelMetadata | null; // Make metadata optional to match what comes from the database
   [key: string]: any;
 }
 
@@ -52,8 +54,10 @@ const ChannelTypeDetails = () => {
           throw new Error("Invalid data format received");
         }
         
-        const typedData = data as SupabaseChannelData[];
+        // First convert to unknown, then to our interface type
+        const typedData = data as unknown as SupabaseChannelData[];
         
+        // Filter to find channels with the matching UI channel type in metadata
         const filteredData = typedData.filter(channel => {
           return channel.channel_type === "other" && 
                  channel.metadata && 
@@ -63,6 +67,7 @@ const ChannelTypeDetails = () => {
         console.log("Fetched channels:", data);
         console.log("Filtered channels for type:", typeId, filteredData);
         
+        // Cast the filtered data to Channel type for the component
         setChannels(filteredData as unknown as Channel[]);
       } catch (error) {
         console.error("Error fetching channels by type:", error);
