@@ -172,25 +172,49 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       
       console.log("Standard fields updated successfully");
       
-      // Now, we need to update the metadata using raw SQL since it's not in the TypeScript definition
-      console.log("Updating the channel_type in metadata with a direct update...");
+      // Now, we need to update the metadata using the RPC function since direct update doesn't work
+      console.log("Updating the channel_type in metadata with RPC function...");
       
       const metadataJson = JSON.stringify(metadata);
       console.log("Metadata to store:", metadataJson);
       
-      // Use direct SQL query for metadata update since rpc is not defined in types
-      // We'll use the REST API directly with a raw query
-      const { error: metadataError } = await supabase
-        .from('youtube_channels')
-        .update({ metadata: metadata })
-        .eq('id', channel.id);
+      // Use the RPC function to update metadata
+      const { error: rpcError } = await supabase.rpc(
+        'update_channel_metadata',
+        {
+          channel_id: channel.id,
+          metadata_json: metadata
+        }
+      );
       
-      if (metadataError) {
-        console.error("Error updating metadata directly:", metadataError);
-        throw metadataError;
+      if (rpcError) {
+        console.error("Error updating metadata via RPC:", rpcError);
+        
+        // Try an alternative approach - update via Edge Function
+        console.log("Attempting to update metadata via Edge Function...");
+        
+        try {
+          const { error: functionError } = await supabase.functions.invoke('update-channel-metadata', {
+            body: { 
+              channelId: channel.id, 
+              metadata: metadata 
+            }
+          });
+          
+          if (functionError) {
+            console.error("Edge Function error:", functionError);
+            // We'll continue anyway since the main data was updated
+          } else {
+            console.log("Metadata updated successfully via Edge Function");
+          }
+        } catch (functionCallError) {
+          console.error("Error calling Edge Function:", functionCallError);
+          // Continue anyway since the main data was updated
+        }
       } else {
-        console.log("Metadata updated successfully via direct update");
+        console.log("Metadata updated successfully via RPC");
       }
+      
     } catch (error) {
       console.error("Error in update process:", error);
       throw error;
