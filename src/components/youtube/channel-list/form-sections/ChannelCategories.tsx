@@ -1,3 +1,4 @@
+
 import { Channel } from "@/types/youtube";
 import { Input } from "@/components/ui/input";
 import { channelCategories, channelTypes, channelSizes, uploadFrequencies, countries } from "../constants";
@@ -58,7 +59,9 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
     }
     
     // Also update the metadata to ensure consistency
-    const metadataEvent = {
+    // Create a valid synthetic event for the metadata update
+    // First, create a plain object with the required properties
+    const metadataObj = {
       target: {
         name: "metadata",
         value: { 
@@ -66,7 +69,11 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
           ui_channel_type: value 
         }
       }
-    } as React.ChangeEvent<HTMLInputElement>;
+    };
+    
+    // Then cast it to unknown first, and then to the expected event type
+    // This is safer than direct casting and addresses the TypeScript complaint
+    const metadataEvent = metadataObj as unknown as React.ChangeEvent<HTMLInputElement>;
     
     console.log("Updating metadata with ui_channel_type:", value);
     onChange(metadataEvent);
