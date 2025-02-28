@@ -158,19 +158,89 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     
     console.log("Filtered data being sent to Supabase:", JSON.stringify(cleanDataToSend, null, 2));
 
-    // Perform the update
-    const { data, error } = await supabase
-      .from("youtube_channels")
-      .update(cleanDataToSend)
-      .eq("id", channel.id)
-      .select();
-
-    if (error) {
-      console.error("Supabase update error:", error);
-      throw error;
+    // Let's try a different approach - update fields one by one
+    try {
+      // First get the current channel data to compare
+      const { data: currentChannel, error: fetchError } = await supabase
+        .from("youtube_channels")
+        .select("*")
+        .eq("id", channel.id)
+        .single();
+        
+      if (fetchError) {
+        console.error("Error fetching current channel data:", fetchError);
+        throw fetchError;
+      }
+      
+      console.log("Current channel data from DB:", JSON.stringify(currentChannel, null, 2));
+      
+      // Now let's try updating with a minimal set of fields first
+      const minimalUpdate = {
+        id: channel.id,
+        channel_title: channel.channel_title,
+        channel_url: channel.channel_url,
+        description: channel.description
+      };
+      
+      console.log("Trying minimal update first:", JSON.stringify(minimalUpdate, null, 2));
+      
+      const { error: minUpdateError } = await supabase
+        .from("youtube_channels")
+        .update(minimalUpdate)
+        .eq("id", channel.id);
+        
+      if (minUpdateError) {
+        console.error("Error with minimal update:", minUpdateError);
+        throw minUpdateError;
+      }
+      
+      console.log("Minimal update successful, now updating the rest");
+      
+      // Now update the rest of the fields
+      const { metadata: _, ...restOfFields } = cleanDataToSend;
+      
+      const { error: restUpdateError } = await supabase
+        .from("youtube_channels")
+        .update(restOfFields)
+        .eq("id", channel.id);
+        
+      if (restUpdateError) {
+        console.error("Error updating rest of fields:", restUpdateError);
+        throw restUpdateError;
+      }
+      
+      // Finally update metadata separately
+      const { error: metadataUpdateError } = await supabase
+        .from("youtube_channels")
+        .update({ metadata: cleanDataToSend.metadata })
+        .eq("id", channel.id);
+        
+      if (metadataUpdateError) {
+        console.error("Error updating metadata:", metadataUpdateError);
+        throw metadataUpdateError;
+      }
+      
+      console.log("All updates completed successfully");
+      
+    } catch (stepError) {
+      console.error("Error during step-by-step update:", stepError);
+      
+      // If step-by-step update fails, try the original approach as fallback
+      console.log("Falling back to single update operation");
+      
+      const { data, error } = await supabase
+        .from("youtube_channels")
+        .update(cleanDataToSend)
+        .eq("id", channel.id);
+        
+      if (error) {
+        console.error("Fallback update also failed:", error);
+        throw error;
+      }
+      
+      console.log("Fallback update succeeded");
     }
     
-    console.log("Update successful, returned data:", data);
     console.log("=== CHANNEL UPDATE END ===");
     
     toast.success("Channel updated successfully");
