@@ -20,19 +20,15 @@ export const fetchAllChannels = async (): Promise<Channel[]> => {
     const processedData = data?.map(channel => {
       let displayChannelType = channel.channel_type;
       
-      // Cast the database response to any to access the metadata property
-      const anyChannel = channel as any;
-      
       // If there's metadata with ui_channel_type, use that instead
-      if (anyChannel.metadata && anyChannel.metadata.ui_channel_type) {
-        displayChannelType = anyChannel.metadata.ui_channel_type;
+      if (channel.metadata && channel.metadata.ui_channel_type) {
+        displayChannelType = channel.metadata.ui_channel_type;
         console.log(`Using ui_channel_type from metadata for ${channel.channel_title}: ${displayChannelType}`);
       }
       
       return {
         ...channel,
-        channel_type: displayChannelType,
-        metadata: anyChannel.metadata // Keep the metadata in the processed data
+        channel_type: displayChannelType
       };
     }) || [];
     
@@ -124,10 +120,13 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     
     console.log(`Channel type mapping: UI="${uiChannelType}" -> DB="${dbChannelType}"`);
     
-    // Create metadata object for the channel
+    // Create metadata object for the channel, preserving existing metadata
     const metadata = {
+      ...(channel.metadata || {}),
       ui_channel_type: uiChannelType
     };
+    
+    console.log("Prepared metadata:", JSON.stringify(metadata, null, 2));
     
     // Prepare the data for update - include metadata directly
     const updateData = {
@@ -153,7 +152,19 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       metadata: metadata  // Include metadata directly in the update
     };
     
-    console.log("Updating with data (including metadata):", JSON.stringify(updateData, null, 2));
+    console.log("Updating with data:", JSON.stringify(updateData, null, 2));
+    
+    // First, check if the channel exists
+    const { data: existingChannel, error: checkError } = await supabase
+      .from("youtube_channels")
+      .select("id")
+      .eq("id", channel.id)
+      .single();
+    
+    if (checkError) {
+      console.error("Error checking if channel exists:", checkError);
+      throw new Error(`Channel not found: ${channel.id}`);
+    }
     
     // Update all channel data including metadata in a single operation
     const { error: updateError } = await supabase
@@ -162,10 +173,24 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       .eq("id", channel.id);
     
     if (updateError) {
+      console.error("Error updating channel:", updateError);
       throw updateError;
     }
     
+    // Verification: Check if the update was successful
+    const { data: updatedChannel, error: verifyError } = await supabase
+      .from("youtube_channels")
+      .select("id, channel_title, channel_type, metadata")
+      .eq("id", channel.id)
+      .single();
+    
+    if (verifyError) {
+      console.error("Error verifying update:", verifyError);
+      throw new Error("Failed to verify channel update");
+    }
+    
     console.log("Channel updated successfully with metadata included");
+    console.log("Verification - Updated channel data:", updatedChannel);
     toast.success("Channel updated successfully");
     
     return true;

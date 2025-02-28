@@ -97,7 +97,9 @@ export const ChannelEditForm = ({
         name: "metadata",
         value: updatedMetadata
       }
-    } as unknown as React.ChangeEvent<HTMLInputElement>;
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    // Apply the metadata change
     onChange(metadataEvent);
     
     console.log("Updated channel type:", uiChannelType);
@@ -188,17 +190,28 @@ export const ChannelEditForm = ({
     }
   };
 
-  // Log the content of editForm for debugging
-  console.log("Current editForm:", editForm);
-  // Specifically log channel type and metadata for debugging
-  console.log("Channel type:", editForm.channel_type);
-  console.log("Metadata:", editForm.metadata);
+  // Debug function to check current form state
+  const debugFormState = () => {
+    console.log("Current editForm state:", editForm);
+    console.log("Channel type:", editForm.channel_type);
+    console.log("Metadata:", editForm.metadata);
+    
+    // Display a toast with metadata info
+    if (editForm.metadata) {
+      toast.info(`Current metadata: ${JSON.stringify(editForm.metadata)}`);
+    } else {
+      toast.info("No metadata in current form");
+    }
+  };
 
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold">Edit Channel: {editForm.channel_title}</h3>
         <div className="space-x-2">
+          <Button variant="outline" size="sm" onClick={debugFormState}>
+            Debug
+          </Button>
           <Button variant="outline" onClick={onCancel} disabled={isSaving}>Cancel</Button>
           <Button onClick={onSave} disabled={isSaving}>
             {isSaving ? (

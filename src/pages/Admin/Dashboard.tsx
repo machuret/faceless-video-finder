@@ -19,6 +19,7 @@ import {
   updateChannel, 
   generateChannelContent 
 } from "@/services/channelService";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -78,14 +79,29 @@ const Dashboard = () => {
     setEditingChannelId(channel.id);
     
     try {
+      // Ensure metadata is properly set if it exists
+      if (channel.channel_type && !channel.metadata?.ui_channel_type) {
+        if (!channel.metadata) {
+          channel.metadata = {};
+        }
+        channel.metadata.ui_channel_type = channel.channel_type;
+        console.log("Updated metadata with ui_channel_type from channel_type:", channel.channel_type);
+      }
+      
+      // If we have metadata but no channel_type, use the ui_channel_type
+      if (channel.metadata?.ui_channel_type && !channel.channel_type) {
+        channel.channel_type = channel.metadata.ui_channel_type;
+        console.log("Updated channel_type from metadata.ui_channel_type:", channel.metadata.ui_channel_type);
+      }
+      
+      console.log("Saving channel with final data:", channel);
       const success = await updateChannel(channel);
       
       if (success) {
         console.log("Channel saved successfully, refreshing data...");
-        // Refresh the channels to get the updated data from the server
+        // Ensure we fully refresh the data from the server
         await fetchChannels();
         toast.success("Channel updated successfully");
-        // Only clear editing state after successful refresh
         setEditingChannelId(null);
       } else {
         console.error("Failed to save channel - update returned false");
@@ -111,6 +127,29 @@ const Dashboard = () => {
     navigate("/admin/login");
   };
 
+  // For debugging: directly check the db state
+  const debugCheckDatabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("youtube_channels")
+        .select("id, channel_title, channel_type, metadata")
+        .limit(10);
+      
+      if (error) throw error;
+      console.log("DEBUG - Channel data in database:", data);
+      
+      return data;
+    } catch (err) {
+      console.error("Error checking database:", err);
+      return null;
+    }
+  };
+
+  // Call once on component mount for debugging
+  useEffect(() => {
+    debugCheckDatabase();
+  }, []);
+
   if (loading) {
     return <div className="text-center py-12">Loading...</div>;
   }
@@ -122,6 +161,14 @@ const Dashboard = () => {
           onLogout={handleLogout} 
           onUploadSuccess={fetchChannels} 
         />
+
+        {/* Debug button - temporary */}
+        <button 
+          onClick={debugCheckDatabase} 
+          className="mb-4 px-3 py-1 bg-gray-200 text-xs rounded hover:bg-gray-300"
+        >
+          Debug: Check DB
+        </button>
 
         <ChannelList
           channels={channels}
