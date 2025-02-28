@@ -102,10 +102,8 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     // Get or initialize metadata
     const metadata = channel.metadata || {};
     
-    // If we have a UI channel type that's not a database type, save it in metadata
-    if (uiChannelType && !["creator", "brand", "media", "other"].includes(uiChannelType)) {
-      metadata.ui_channel_type = uiChannelType;
-    }
+    // Always store the UI channel type in metadata for consistency
+    metadata.ui_channel_type = uiChannelType;
     
     console.log(`Mapping channel_type from "${uiChannelType}" to database type "${dbChannelType}"`);
     console.log("Metadata:", metadata);

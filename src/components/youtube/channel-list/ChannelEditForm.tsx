@@ -63,31 +63,33 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
   const handleChannelTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     // Get the UI channel type value
     const uiChannelType = e.target.value;
+    console.log("Channel type changed to:", uiChannelType);
     
-    // Update the metadata to store the UI channel type
+    // Create event for type change
+    const channelTypeEvent = {
+      target: {
+        name: "channel_type",
+        value: uiChannelType
+      }
+    } as React.ChangeEvent<HTMLSelectElement>;
+    
+    // Apply the change
+    onChange(channelTypeEvent);
+    
+    // Also update metadata to store the UI channel type for persistence
     const currentMetadata = editForm.metadata || {};
     const updatedMetadata = {
       ...currentMetadata,
       ui_channel_type: uiChannelType
     };
     
-    // Create events for both changes
-    const channelTypeEvent = {
-      target: {
-        name: "channel_type",
-        value: "other" // Always store as "other" in the database
-      }
-    } as React.ChangeEvent<HTMLSelectElement>;
-    
+    // Create another event for metadata update
     const metadataEvent = {
       target: {
         name: "metadata",
         value: updatedMetadata
       }
     } as unknown as React.ChangeEvent<HTMLInputElement>;
-    
-    // Apply both changes
-    onChange(channelTypeEvent);
     onChange(metadataEvent);
     
     console.log("Updated channel type:", uiChannelType);

@@ -39,6 +39,12 @@ export const ChannelList = ({
   const handleEdit = (channel: Channel) => {
     // Create a deep copy of the channel to avoid reference issues
     const channelCopy = JSON.parse(JSON.stringify(channel));
+    
+    // Check for UI channel type in metadata and use it if available
+    if (channelCopy.metadata?.ui_channel_type) {
+      channelCopy.channel_type = channelCopy.metadata.ui_channel_type;
+    }
+    
     setEditingId(channel.id);
     setEditForm(channelCopy);
     console.log("Editing channel:", channelCopy);
@@ -51,6 +57,7 @@ export const ChannelList = ({
 
   const handleSave = () => {
     if (editForm) {
+      console.log("Saving channel with form data:", editForm);
       onSave(editForm);
       setEditingId(null);
       setEditForm(null);
@@ -85,7 +92,10 @@ export const ChannelList = ({
     console.log(`Updated field ${name} to:`, value);
   };
 
-  const getChannelTypeLabel = (typeId: string | undefined) => {
+  const getChannelTypeLabel = (channel: Channel): string => {
+    // First check if there's a UI channel type in metadata
+    const typeId = channel.metadata?.ui_channel_type || channel.channel_type;
+    
     if (!typeId) return "Not specified";
     const typeInfo = channelTypes.find(type => type.id === typeId);
     return typeInfo ? typeInfo.label : typeId;
@@ -139,9 +149,9 @@ export const ChannelList = ({
                           {channel.channel_category}
                         </span>
                       )}
-                      {channel.channel_type && (
+                      {(channel.channel_type || channel.metadata?.ui_channel_type) && (
                         <span className="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
-                          {getChannelTypeLabel(channel.channel_type)}
+                          {getChannelTypeLabel(channel)}
                         </span>
                       )}
                       <span className={`inline-block text-xs px-2 py-1 rounded ${
