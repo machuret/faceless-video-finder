@@ -144,7 +144,8 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       'id', 'channel_title', 'channel_url', 'description', 'channel_category', 
       'channel_type', 'metadata', 'screenshot_url', 'total_subscribers', 
       'total_views', 'start_date', 'video_count', 'cpm', 'uses_ai', 'potential_revenue', 
-      'revenue_per_video', 'revenue_per_month', 'country', 'niche', 'notes'
+      'revenue_per_video', 'revenue_per_month', 'country', 'niche', 'notes',
+      'video_id'  // Added video_id to valid fields
     ];
     
     // Create a clean object with only valid database fields
@@ -196,7 +197,16 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       console.error("Error hint:", (error as any).hint);
     }
     
-    toast.error(`Failed to update channel: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Display more detailed error message
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorDetails = 'details' in (error as any) ? (error as any).details : '';
+    const errorHint = 'hint' in (error as any) ? (error as any).hint : '';
+    
+    let displayError = `Failed to update channel: ${errorMessage}`;
+    if (errorDetails) displayError += ` - ${errorDetails}`;
+    if (errorHint) displayError += ` (${errorHint})`;
+    
+    toast.error(displayError);
     return false;
   }
 };
