@@ -1,4 +1,3 @@
-
 import { Channel } from "@/types/youtube";
 import { Input } from "@/components/ui/input";
 import { channelCategories, channelTypes, channelSizes, uploadFrequencies, countries } from "../constants";
@@ -12,30 +11,36 @@ interface ChannelCategoriesProps {
 }
 
 export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelCategoriesProps) => {
-  // Get the current UI channel type either from metadata or from channel_type if it's not "other"
+  // Get the current UI channel type either from metadata or from channel_type
   const getInitialChannelType = () => {
+    // First check metadata if it exists
     if (editForm?.metadata?.ui_channel_type) {
+      console.log("Using channel type from metadata:", editForm.metadata.ui_channel_type);
       return editForm.metadata.ui_channel_type;
     }
-    if (editForm?.channel_type && editForm.channel_type !== "other") {
-      return editForm.channel_type;
-    }
-    return "other";
+    // Otherwise use channel_type
+    console.log("Using direct channel_type value:", editForm.channel_type);
+    return editForm.channel_type || "other";
   };
   
   const [selectedType, setSelectedType] = useState<string | undefined>(getInitialChannelType());
   
   // Update selectedType when editForm changes
   useEffect(() => {
-    setSelectedType(getInitialChannelType());
+    console.log("EditForm changed, recalculating channel type");
+    const initialType = getInitialChannelType();
+    console.log("New initial type:", initialType);
+    setSelectedType(initialType);
   }, [editForm]);
   
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
+    console.log(`Channel type changed in UI to: ${value}`);
     setSelectedType(value);
     
     // If a custom handler is provided, use it - otherwise use the default onChange
     if (onTypeChange) {
+      console.log("Using custom onTypeChange handler");
       onTypeChange(e);
     } else {
       // Create a modified event to pass to parent component
@@ -48,8 +53,23 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
         }
       };
       
+      console.log("Using standard onChange handler");
       onChange(modifiedEvent);
     }
+    
+    // Also update the metadata to ensure consistency
+    const metadataEvent = {
+      target: {
+        name: "metadata",
+        value: { 
+          ...(editForm.metadata || {}),
+          ui_channel_type: value 
+        }
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    console.log("Updating metadata with ui_channel_type:", value);
+    onChange(metadataEvent);
   };
 
   const selectedTypeInfo = channelTypes.find(type => type.id === selectedType);
@@ -86,6 +106,12 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
               </option>
             ))}
           </select>
+          {/* Debug info */}
+          <div className="text-xs text-gray-500 mt-1">
+            Current type: {selectedType} 
+            {editForm?.metadata?.ui_channel_type && 
+              ` (from metadata: ${editForm.metadata.ui_channel_type})`}
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Channel Size</label>

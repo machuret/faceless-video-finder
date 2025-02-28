@@ -124,7 +124,12 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     
     console.log(`Channel type mapping: UI="${uiChannelType}" -> DB="${dbChannelType}"`);
     
-    // Prepare the data for update
+    // Create metadata object for the channel
+    const metadata = {
+      ui_channel_type: uiChannelType
+    };
+    
+    // Prepare the data for update - include metadata directly
     const updateData = {
       channel_title: channel.channel_title,
       channel_url: channel.channel_url,
@@ -144,12 +149,13 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       country: channel.country,
       niche: channel.niche,
       notes: channel.notes,
-      video_id: channel.video_id
+      video_id: channel.video_id,
+      metadata: metadata  // Include metadata directly in the update
     };
     
-    // First update the main channel data
-    console.log("Updating standard fields with:", JSON.stringify(updateData, null, 2));
+    console.log("Updating with data (including metadata):", JSON.stringify(updateData, null, 2));
     
+    // Update all channel data including metadata in a single operation
     const { error: updateError } = await supabase
       .from("youtube_channels")
       .update(updateData)
@@ -159,44 +165,7 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       throw updateError;
     }
     
-    console.log("Standard fields updated successfully");
-    
-    // Now update the metadata with the custom channel type, bypassing TypeScript issues
-    if (uiChannelType) {
-      console.log(`Saving UI channel type "${uiChannelType}" to metadata...`);
-      
-      // Use the Edge Function to update metadata
-      try {
-        const updateResult = await fetch(
-          "https://dhbuaffdzhjzsqjfkesg.supabase.co/functions/v1/update-channel-metadata",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`
-            },
-            body: JSON.stringify({
-              channelId: channel.id,
-              metadata: { ui_channel_type: uiChannelType }
-            })
-          }
-        );
-        
-        const updateJson = await updateResult.json();
-        console.log("Metadata update response:", updateJson);
-        
-        if (!updateResult.ok) {
-          console.error("Failed to update metadata:", updateJson);
-        } else {
-          console.log("Successfully updated metadata with UI channel type");
-        }
-      } catch (metadataError) {
-        console.error("Error updating metadata:", metadataError);
-        // Continue since we've already updated the main fields
-      }
-    }
-    
-    console.log("=== CHANNEL UPDATE END ===");
+    console.log("Channel updated successfully with metadata included");
     toast.success("Channel updated successfully");
     
     return true;

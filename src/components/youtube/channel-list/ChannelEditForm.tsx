@@ -190,9 +190,9 @@ export const ChannelEditForm = ({
 
   // Log the content of editForm for debugging
   console.log("Current editForm:", editForm);
-  // Specifically log video stats for debugging
-  console.log("Video stats in form:", editForm.videoStats);
-  console.log("Video stats in local state:", videoStats);
+  // Specifically log channel type and metadata for debugging
+  console.log("Channel type:", editForm.channel_type);
+  console.log("Metadata:", editForm.metadata);
 
   return (
     <div className="space-y-8">
