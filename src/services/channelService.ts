@@ -20,15 +20,19 @@ export const fetchAllChannels = async (): Promise<Channel[]> => {
     const processedData = data?.map(channel => {
       let displayChannelType = channel.channel_type;
       
+      // Cast the database response to any to access the metadata property
+      const anyChannel = channel as any;
+      
       // If there's metadata with ui_channel_type, use that instead
-      if (channel.metadata && channel.metadata.ui_channel_type) {
-        displayChannelType = channel.metadata.ui_channel_type;
+      if (anyChannel.metadata && anyChannel.metadata.ui_channel_type) {
+        displayChannelType = anyChannel.metadata.ui_channel_type;
         console.log(`Using ui_channel_type from metadata for ${channel.channel_title}: ${displayChannelType}`);
       }
       
       return {
         ...channel,
-        channel_type: displayChannelType
+        channel_type: displayChannelType,
+        metadata: anyChannel.metadata // Keep the metadata in the processed data
       };
     }) || [];
     
