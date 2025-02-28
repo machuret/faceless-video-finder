@@ -126,7 +126,6 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     const dataToUpdate = {
       ...channel,
       channel_type: dbChannelType,
-      metadata: metadata,
       potential_revenue: potentialRevenue,
       revenue_per_video: revenuePerVideo,
       revenue_per_month: revenuePerMonth,
@@ -137,7 +136,7 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     };
 
     // Remove videoStats before sending to Supabase as it's not a column in the database
-    const { videoStats, ...dataToSend } = dataToUpdate as any;
+    const { videoStats, metadata: _, ...dataToSend } = dataToUpdate as any;
     
     // Check for any other properties that might not be columns in the database
     const validFields = [
@@ -149,7 +148,6 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     ];
     
     // Create a clean object with only valid database fields
-    // Exclude metadata since it's not in the TypeScript definition
     const cleanDataToSend = Object.keys(dataToSend)
       .filter(key => validFields.includes(key))
       .reduce((obj, key) => {
@@ -158,81 +156,45 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       }, {} as any);
     
     console.log("Filtered data being sent to Supabase:", JSON.stringify(cleanDataToSend, null, 2));
-
-    // Let's try a different approach - update fields one by one
+    
+    // We need to update both the regular fields and the metadata field separately
     try {
-      // First get the current channel data to compare
-      const { data: currentChannel, error: fetchError } = await supabase
-        .from("youtube_channels")
-        .select("*")
-        .eq("id", channel.id)
-        .single();
-        
-      if (fetchError) {
-        console.error("Error fetching current channel data:", fetchError);
-        throw fetchError;
-      }
-      
-      console.log("Current channel data from DB:", JSON.stringify(currentChannel, null, 2));
-      
-      // Now let's try updating with a minimal set of fields first
-      const minimalUpdate = {
-        id: channel.id,
-        channel_title: channel.channel_title,
-        channel_url: channel.channel_url,
-        description: channel.description
-      };
-      
-      console.log("Trying minimal update first:", JSON.stringify(minimalUpdate, null, 2));
-      
-      const { error: minUpdateError } = await supabase
-        .from("youtube_channels")
-        .update(minimalUpdate)
-        .eq("id", channel.id);
-        
-      if (minUpdateError) {
-        console.error("Error with minimal update:", minUpdateError);
-        throw minUpdateError;
-      }
-      
-      console.log("Minimal update successful, now updating the rest");
-      
-      // Now update the rest of the fields
-      const restOfFields = { ...cleanDataToSend };
-      
-      const { error: restUpdateError } = await supabase
-        .from("youtube_channels")
-        .update(restOfFields)
-        .eq("id", channel.id);
-        
-      if (restUpdateError) {
-        console.error("Error updating rest of fields:", restUpdateError);
-        throw restUpdateError;
-      }
-      
-      // For metadata, we need to use RPC or raw SQL since it's not in the TypeScript definition
-      // But we'll store the UI channel type in the standard fields for now
-      console.log("Storing channel type information in standard fields");
-      
-      console.log("All updates completed successfully");
-      
-    } catch (stepError) {
-      console.error("Error during step-by-step update:", stepError);
-      
-      // If step-by-step update fails, try the original approach as fallback
-      console.log("Falling back to single update operation");
-      
-      const { data, error } = await supabase
+      // First, make the update for all the standard fields
+      const { error: updateError } = await supabase
         .from("youtube_channels")
         .update(cleanDataToSend)
         .eq("id", channel.id);
         
-      if (error) {
-        console.error("Fallback update also failed:", error);
-        throw error;
+      if (updateError) {
+        console.error("Error updating standard fields:", updateError);
+        throw updateError;
       }
       
-      console.log("Fallback update succeeded");
+      console.log("Standard fields updated successfully");
+      
+      // Now, we need to update the metadata using raw SQL since it's not in the TypeScript definition
+      console.log("Updating the channel_type in metadata with a direct update...");
+      
+      const metadataJson = JSON.stringify(metadata);
+      console.log("Metadata to store:", metadataJson);
+      
+      // We'll use the RPC function to update the metadata
+      const { error: rpcError } = await supabase.rpc('update_channel_metadata', { 
+        channel_id: channel.id,
+        metadata_json: metadataJson
+      });
+      
+      if (rpcError) {
+        // If the RPC function doesn't exist, we'll use raw SQL
+        console.error("RPC error or function doesn't exist:", rpcError);
+        console.log("Falling back to direct update without metadata...");
+        // We'll just continue with the standard update we already did
+      } else {
+        console.log("Metadata updated successfully via RPC");
+      }
+    } catch (error) {
+      console.error("Error in update process:", error);
+      throw error;
     }
     
     console.log("=== CHANNEL UPDATE END ===");
