@@ -44,6 +44,7 @@ export type Database = {
           description: string | null
           id: string
           keywords: string[] | null
+          metadata: Json | null
           niche: string | null
           notes: string | null
           potential_revenue: number | null
@@ -71,6 +72,7 @@ export type Database = {
           description?: string | null
           id?: string
           keywords?: string[] | null
+          metadata?: Json | null
           niche?: string | null
           notes?: string | null
           potential_revenue?: number | null
@@ -98,6 +100,7 @@ export type Database = {
           description?: string | null
           id?: string
           keywords?: string[] | null
+          metadata?: Json | null
           niche?: string | null
           notes?: string | null
           potential_revenue?: number | null
