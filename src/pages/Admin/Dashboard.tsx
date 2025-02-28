@@ -25,12 +25,18 @@ const Dashboard = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingContent, setGeneratingContent] = useState(false);
+  const [savingChannel, setSavingChannel] = useState(false);
 
   const fetchChannels = async (): Promise<void> => {
     setLoading(true);
     try {
+      console.log("Fetching all channels...");
       const data = await fetchAllChannels();
+      console.log(`Fetched ${data.length} channels`);
       setChannels(data);
+    } catch (error) {
+      console.error("Error fetching channels:", error);
+      toast.error("Failed to fetch channels");
     } finally {
       setLoading(false);
     }
@@ -66,11 +72,26 @@ const Dashboard = () => {
   };
 
   const handleSave = async (channel: Channel) => {
-    const success = await updateChannel(channel);
-    if (success) {
-      // Refresh the channels to get the updated data from the server
-      await fetchChannels();
-      toast.success("Channel updated successfully");
+    console.log("Saving channel:", channel);
+    setSavingChannel(true);
+    
+    try {
+      const success = await updateChannel(channel);
+      
+      if (success) {
+        console.log("Channel saved successfully, refreshing data...");
+        // Refresh the channels to get the updated data from the server
+        await fetchChannels();
+        toast.success("Channel updated successfully");
+      } else {
+        console.error("Failed to save channel - update returned false");
+        toast.error("Failed to update channel");
+      }
+    } catch (error) {
+      console.error("Exception caught in handleSave:", error);
+      toast.error("Error saving channel");
+    } finally {
+      setSavingChannel(false);
     }
   };
 
@@ -96,6 +117,7 @@ const Dashboard = () => {
           onSave={handleSave}
           onGenerateContent={handleGenerateContent}
           generatingContent={generatingContent}
+          savingChannel={savingChannel}
           getChannelSize={getChannelSize}
           getGrowthRange={getGrowthRange}
           calculateUploadFrequency={calculateUploadFrequency}

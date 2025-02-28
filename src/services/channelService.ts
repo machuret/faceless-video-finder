@@ -81,11 +81,25 @@ export const generateChannelContent = async (channel: Channel): Promise<string |
  */
 export const updateChannel = async (channel: Channel): Promise<boolean> => {
   try {
-    console.log("Saving channel with data:", channel);
+    console.log("=== CHANNEL UPDATE START ===");
+    console.log("Channel data received:", JSON.stringify(channel, null, 2));
     
+    // Calculate revenue metrics
     const potentialRevenue = calculatePotentialRevenue(channel.total_views, channel.cpm);
     const revenuePerVideo = calculateRevenuePerVideo(channel.total_views, channel.cpm, channel.video_count);
     const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
+    
+    console.log("Revenue calculations:", {
+      potentialRevenue,
+      revenuePerVideo,
+      revenuePerMonth,
+      baseValues: {
+        views: channel.total_views,
+        cpm: channel.cpm,
+        videoCount: channel.video_count,
+        startDate: channel.start_date
+      }
+    });
 
     // Process the UI channel type
     let uiChannelType = channel.channel_type;
@@ -105,9 +119,10 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     // Always store the UI channel type in metadata for consistency
     metadata.ui_channel_type = uiChannelType;
     
-    console.log(`Mapping channel_type from "${uiChannelType}" to database type "${dbChannelType}"`);
-    console.log("Metadata:", metadata);
+    console.log(`Channel type mapping: "${uiChannelType}" -> database type "${dbChannelType}"`);
+    console.log("Updated metadata:", JSON.stringify(metadata, null, 2));
 
+    // Make sure the channel data is properly typed
     const dataToUpdate = {
       ...channel,
       channel_type: dbChannelType,
@@ -121,26 +136,67 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       cpm: channel.cpm ? Number(channel.cpm) : null,
     };
 
-    // Remove videoStats before sending to Supabase
+    // Remove videoStats before sending to Supabase as it's not a column in the database
     const { videoStats, ...dataToSend } = dataToUpdate as any;
     
-    console.log("Data being sent to Supabase:", dataToSend);
+    // Check for any other properties that might not be columns in the database
+    const validFields = [
+      'id', 'channel_title', 'channel_url', 'description', 'channel_category', 
+      'channel_type', 'metadata', 'screenshot_url', 'total_subscribers', 
+      'total_views', 'start_date', 'video_count', 'cpm', 'uses_ai', 'potential_revenue', 
+      'revenue_per_video', 'revenue_per_month', 'country', 'niche', 'notes'
+    ];
+    
+    // Create a clean object with only valid database fields
+    const cleanDataToSend = Object.keys(dataToSend)
+      .filter(key => validFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key] = dataToSend[key];
+        return obj;
+      }, {} as any);
+    
+    console.log("Filtered data being sent to Supabase:", JSON.stringify(cleanDataToSend, null, 2));
 
-    const { error } = await supabase
+    // Perform the update
+    const { data, error } = await supabase
       .from("youtube_channels")
-      .update(dataToSend)
-      .eq("id", channel.id);
+      .update(cleanDataToSend)
+      .eq("id", channel.id)
+      .select();
 
     if (error) {
       console.error("Supabase update error:", error);
       throw error;
     }
     
+    console.log("Update successful, returned data:", data);
+    console.log("=== CHANNEL UPDATE END ===");
+    
     toast.success("Channel updated successfully");
     return true;
   } catch (error) {
-    console.error("Save error:", error);
-    toast.error("Failed to update channel");
+    console.error("=== CHANNEL UPDATE ERROR ===");
+    console.error("Error details:", error);
+    
+    if (error instanceof Error) {
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    
+    if ('code' in (error as any)) {
+      console.error("Error code:", (error as any).code);
+    }
+    
+    if ('details' in (error as any)) {
+      console.error("Error details:", (error as any).details);
+    }
+    
+    if ('hint' in (error as any)) {
+      console.error("Error hint:", (error as any).hint);
+    }
+    
+    toast.error(`Failed to update channel: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return false;
   }
 };

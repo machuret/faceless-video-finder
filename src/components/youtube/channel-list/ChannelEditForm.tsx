@@ -11,15 +11,23 @@ import { KeywordsInput } from "./KeywordsInput";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 interface ChannelEditFormProps {
   editForm: Channel;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   onSave: () => void;
   onCancel: () => void;
+  isSaving?: boolean;
 }
 
-export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: ChannelEditFormProps) => {
+export const ChannelEditForm = ({ 
+  editForm, 
+  onChange, 
+  onSave, 
+  onCancel,
+  isSaving = false
+}: ChannelEditFormProps) => {
   const [keywords, setKeywords] = useState<string[]>(editForm.keywords || []);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [videoStats, setVideoStats] = useState<VideoStats[]>(editForm.videoStats || []);
@@ -191,8 +199,17 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold">Edit Channel: {editForm.channel_title}</h3>
         <div className="space-x-2">
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button onClick={onSave}>Save Changes</Button>
+          <Button variant="outline" onClick={onCancel} disabled={isSaving}>Cancel</Button>
+          <Button onClick={onSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
+          </Button>
         </div>
       </div>
 
@@ -263,8 +280,17 @@ export const ChannelEditForm = ({ editForm, onChange, onSave, onCancel }: Channe
 
       <div className="flex justify-end mt-8 pt-4 border-t">
         <div className="space-x-2">
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button onClick={onSave}>Save Changes</Button>
+          <Button variant="outline" onClick={onCancel} disabled={isSaving}>Cancel</Button>
+          <Button onClick={onSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
+          </Button>
         </div>
       </div>
     </div>

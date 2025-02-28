@@ -12,6 +12,7 @@ interface ChannelListProps {
   onSave: (channel: Channel) => void;
   onGenerateContent: (channel: Channel) => void;
   generatingContent: boolean;
+  savingChannel?: boolean;
   getChannelSize: (subscribers: number | null) => ChannelSize;
   getGrowthRange: (size: ChannelSize) => string;
   calculateUploadFrequency: (startDate: string | null, videoCount: number | null) => number | null;
@@ -26,6 +27,7 @@ export const ChannelList = ({
   onSave,
   onGenerateContent,
   generatingContent,
+  savingChannel = false,
   getChannelSize,
   getGrowthRange,
   calculateUploadFrequency,
@@ -59,15 +61,23 @@ export const ChannelList = ({
     if (editForm) {
       console.log("Saving channel with form data:", editForm);
       onSave(editForm);
-      setEditingId(null);
-      setEditForm(null);
+      // Don't clear the form yet, wait for the save to complete
+      // This will be handled by updating the channels list
     }
   };
+
+  // When channels list updates and we're editing, check if we need to close the form
+  // This is useful when reloading the channels after a save
+  if (editingId && !channels.find(c => c.id === editingId)) {
+    setEditingId(null);
+    setEditForm(null);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     if (!editForm) return;
 
     const { name, value, type } = e.target;
+    console.log(`Field change - name: ${name}, value: ${value}, type: ${type}`);
     
     if (type === 'number') {
       // Handle number inputs
@@ -114,6 +124,7 @@ export const ChannelList = ({
           onChange={handleChange}
           onSave={handleSave}
           onCancel={handleCancel}
+          isSaving={savingChannel}
         />
       </div>
     );
