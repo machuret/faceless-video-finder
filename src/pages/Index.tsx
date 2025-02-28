@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, ExternalLink } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { 
   channelCategories 
 } from "@/components/youtube/channel-list/constants";
@@ -144,8 +144,8 @@ const Index = () => {
             {/* Channel Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredChannels.map((channel) => (
-                <Card key={channel.id} className="hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
-                  <Link to={`/channel/${channel.id}`} className="flex-grow">
+                <Card key={channel.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+                  <Link to={`/channel/${channel.id}`}>
                     <div className="aspect-video bg-gray-200 relative overflow-hidden">
                       {channel.screenshot_url ? (
                         <img 
@@ -188,20 +188,6 @@ const Index = () => {
                       </div>
                     </CardContent>
                   </Link>
-                  
-                  {/* New Visit Channel Button */}
-                  <div className="p-4 mt-auto border-t bg-gray-50">
-                    <a 
-                      href={channel.channel_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="block w-full"
-                    >
-                      <Button variant="default" size="default" className="w-full bg-red-600 hover:bg-red-700 font-medium">
-                        <ExternalLink className="mr-2 h-4 w-4" /> Visit this Channel
-                      </Button>
-                    </a>
-                  </div>
                 </Card>
               ))}
             </div>

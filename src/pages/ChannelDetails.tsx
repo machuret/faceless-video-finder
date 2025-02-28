@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Channel } from "@/types/youtube";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, Play, Eye } from "lucide-react";
+import { ArrowLeft, Users, Play, Eye, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getChannelSize, calculateUploadFrequency, getUploadFrequencyCategory } from "@/utils/channelUtils";
 import ChannelStats from "@/components/youtube/ChannelStats";
@@ -93,6 +93,18 @@ const ChannelDetails = () => {
                 />
               )}
               <CardTitle className="text-3xl font-bold tracking-tight">{channel.channel_title}</CardTitle>
+              
+              {/* Visit Channel Button */}
+              <a 
+                href={channel.channel_url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="block w-full sm:w-auto mt-4"
+              >
+                <Button variant="default" size="lg" className="w-full bg-red-600 hover:bg-red-700 font-medium">
+                  <ExternalLink className="mr-2 h-5 w-5" /> Visit this Channel
+                </Button>
+              </a>
             </CardHeader>
             <CardContent>
               <p className="text-lg text-gray-600 leading-relaxed mb-8">{channel.description || "No description available."}</p>

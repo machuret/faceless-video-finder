@@ -237,13 +237,14 @@ const Dashboard = () => {
         cpm: channel.cpm ? Number(channel.cpm) : null,
       };
 
-      delete dataToUpdate.videoStats;
+      // Remove videoStats before sending to Supabase
+      const { videoStats, ...dataToSend } = dataToUpdate as any;
       
-      console.log("Data being sent to Supabase:", dataToUpdate);
+      console.log("Data being sent to Supabase:", dataToSend);
 
       const { error } = await supabase
         .from("youtube_channels")
-        .update(dataToUpdate)
+        .update(dataToSend)
         .eq("id", channel.id);
 
       if (error) {
@@ -255,7 +256,7 @@ const Dashboard = () => {
       setChannels(channels.map(c => {
         if (c.id === channel.id) {
           return {
-            ...dataToUpdate,
+            ...dataToSend,
             channel_type: uiChannelType // Keep the UI channel type for display
           };
         }
