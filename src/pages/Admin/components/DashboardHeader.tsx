@@ -6,7 +6,7 @@ import { CSVUploader } from "@/components/youtube/CSVUploader";
 
 interface DashboardHeaderProps {
   onLogout: () => void;
-  onUploadSuccess: () => void;
+  onUploadSuccess: () => Promise<void>;
 }
 
 const DashboardHeader = ({ onLogout, onUploadSuccess }: DashboardHeaderProps) => {

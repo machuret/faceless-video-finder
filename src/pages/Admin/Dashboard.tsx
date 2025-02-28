@@ -26,7 +26,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [generatingContent, setGeneratingContent] = useState(false);
 
-  const fetchChannels = async () => {
+  const fetchChannels = async (): Promise<void> => {
     setLoading(true);
     try {
       const data = await fetchAllChannels();
