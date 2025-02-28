@@ -26,6 +26,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [generatingContent, setGeneratingContent] = useState(false);
   const [savingChannel, setSavingChannel] = useState(false);
+  const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
 
   const fetchChannels = async (): Promise<void> => {
     setLoading(true);
@@ -74,6 +75,7 @@ const Dashboard = () => {
   const handleSave = async (channel: Channel) => {
     console.log("Saving channel:", channel);
     setSavingChannel(true);
+    setEditingChannelId(channel.id);
     
     try {
       const success = await updateChannel(channel);
@@ -83,6 +85,8 @@ const Dashboard = () => {
         // Refresh the channels to get the updated data from the server
         await fetchChannels();
         toast.success("Channel updated successfully");
+        // Only clear editing state after successful refresh
+        setEditingChannelId(null);
       } else {
         console.error("Failed to save channel - update returned false");
         toast.error("Failed to update channel");
@@ -93,6 +97,14 @@ const Dashboard = () => {
     } finally {
       setSavingChannel(false);
     }
+  };
+  
+  const handleStartEditing = (channelId: string) => {
+    setEditingChannelId(channelId);
+  };
+  
+  const handleCancelEditing = () => {
+    setEditingChannelId(null);
   };
 
   const handleLogout = () => {
@@ -115,9 +127,12 @@ const Dashboard = () => {
           channels={channels}
           onDelete={handleDelete}
           onSave={handleSave}
+          onStartEditing={handleStartEditing}
+          onCancelEditing={handleCancelEditing}
           onGenerateContent={handleGenerateContent}
           generatingContent={generatingContent}
           savingChannel={savingChannel}
+          editingChannelId={editingChannelId}
           getChannelSize={getChannelSize}
           getGrowthRange={getGrowthRange}
           calculateUploadFrequency={calculateUploadFrequency}

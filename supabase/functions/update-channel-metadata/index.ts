@@ -1,7 +1,13 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { corsHeaders } from '../_shared/cors.ts'
-import { supabaseClient } from '../_shared/supabaseClient.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0'
+
+// Define CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
 
 interface RequestParams {
   channelId: string;
@@ -15,10 +21,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Request received in update-channel-metadata function');
+    
     // Parse request
     const { channelId, metadata } = await req.json() as RequestParams
 
     if (!channelId) {
+      console.error('Missing channelId parameter');
       return new Response(
         JSON.stringify({ error: 'Channel ID is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -26,46 +35,79 @@ serve(async (req) => {
     }
 
     if (!metadata) {
+      console.error('Missing metadata parameter');
       return new Response(
         JSON.stringify({ error: 'Metadata is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
+    
+    console.log(`Updating metadata for channel ${channelId}:`, JSON.stringify(metadata));
 
-    // Get a Supabase client
-    const supabase = supabaseClient(req)
+    // Create a Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Perform a raw update query to update the metadata JSONB field
-    const { data, error } = await supabase.rpc('update_channel_metadata', {
+    // Get the current metadata to merge with new data
+    const { data: currentData, error: fetchError } = await supabase
+      .from('youtube_channels')
+      .select('metadata')
+      .eq('id', channelId)
+      .single();
+      
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      // Log error but continue with empty metadata if not found
+      console.error('Error fetching current metadata:', fetchError);
+    }
+    
+    // Merge existing metadata with new metadata
+    const currentMetadata = currentData?.metadata || {};
+    const updatedMetadata = { ...currentMetadata, ...metadata };
+    
+    console.log('Merged metadata:', JSON.stringify(updatedMetadata));
+
+    // Directly execute a SQL query to update the metadata
+    const { error } = await supabase.rpc('update_channel_metadata', {
       channel_id: channelId,
-      metadata_json: JSON.stringify(metadata)
-    })
+      metadata_json: updatedMetadata
+    });
 
     if (error) {
-      console.error('Error updating channel metadata:', error)
+      console.error('Error calling RPC function:', error);
       
-      // Fallback to a direct update if RPC fails
-      const { error: directError } = await supabase
-        .from('youtube_channels')
-        .update({ 
-          metadata: metadata 
-        })
-        .eq('id', channelId)
-
-      if (directError) {
-        console.error('Direct update also failed:', directError)
-        throw directError
+      // Try a direct SQL update as a fallback
+      const { error: sqlError } = await supabase.rpc('raw_sql', {
+        query: `UPDATE youtube_channels SET metadata = $1::jsonb WHERE id = $2`,
+        params: [JSON.stringify(updatedMetadata), channelId]
+      });
+      
+      if (sqlError) {
+        console.error('Error with direct SQL update:', sqlError);
+        throw sqlError;
       }
+      
+      console.log('Metadata updated via direct SQL');
+    } else {
+      console.log('Metadata updated via RPC function');
     }
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Metadata updated successfully',
+        channelId,
+        metadata: updatedMetadata
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in update-channel-metadata function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'Unknown error occurred',
+        stack: error.stack
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

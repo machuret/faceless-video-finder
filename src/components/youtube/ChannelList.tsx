@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Channel, ChannelSize, UploadFrequency } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Wand2 } from "lucide-react";
@@ -10,9 +10,12 @@ interface ChannelListProps {
   channels: Channel[];
   onDelete: (id: string) => void;
   onSave: (channel: Channel) => void;
+  onStartEditing: (channelId: string) => void;
+  onCancelEditing: () => void;
   onGenerateContent: (channel: Channel) => void;
   generatingContent: boolean;
   savingChannel?: boolean;
+  editingChannelId: string | null;
   getChannelSize: (subscribers: number | null) => ChannelSize;
   getGrowthRange: (size: ChannelSize) => string;
   calculateUploadFrequency: (startDate: string | null, videoCount: number | null) => number | null;
@@ -25,9 +28,12 @@ export const ChannelList = ({
   channels,
   onDelete,
   onSave,
+  onStartEditing,
+  onCancelEditing,
   onGenerateContent,
   generatingContent,
   savingChannel = false,
+  editingChannelId,
   getChannelSize,
   getGrowthRange,
   calculateUploadFrequency,
@@ -35,43 +41,39 @@ export const ChannelList = ({
   getUploadFrequencyLabel,
   formatDate
 }: ChannelListProps) => {
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Channel | null>(null);
 
-  const handleEdit = (channel: Channel) => {
-    // Create a deep copy of the channel to avoid reference issues
-    const channelCopy = JSON.parse(JSON.stringify(channel));
-    
-    // Check for UI channel type in metadata and use it if available
-    if (channelCopy.metadata?.ui_channel_type) {
-      channelCopy.channel_type = channelCopy.metadata.ui_channel_type;
+  // Reset edit form when channels are updated or editing is cancelled
+  useEffect(() => {
+    if (editingChannelId) {
+      const channelToEdit = channels.find(c => c.id === editingChannelId);
+      if (channelToEdit) {
+        // Create a deep copy to avoid reference issues
+        const channelCopy = JSON.parse(JSON.stringify(channelToEdit));
+        setEditForm(channelCopy);
+        console.log("Setting up edit form for channel:", channelCopy);
+      }
+    } else {
+      setEditForm(null);
     }
-    
-    setEditingId(channel.id);
-    setEditForm(channelCopy);
-    console.log("Editing channel:", channelCopy);
+  }, [editingChannelId, channels]);
+
+  const handleEdit = (channel: Channel) => {
+    console.log("Starting to edit channel:", channel);
+    onStartEditing(channel.id);
   };
 
   const handleCancel = () => {
-    setEditingId(null);
-    setEditForm(null);
+    onCancelEditing();
   };
 
   const handleSave = () => {
     if (editForm) {
       console.log("Saving channel with form data:", editForm);
       onSave(editForm);
-      // Don't clear the form yet, wait for the save to complete
-      // This will be handled by updating the channels list
+      // Don't clear the form here - wait for the parent component to do it after successful save
     }
   };
-
-  // When channels list updates and we're editing, check if we need to close the form
-  // This is useful when reloading the channels after a save
-  if (editingId && !channels.find(c => c.id === editingId)) {
-    setEditingId(null);
-    setEditForm(null);
-  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     if (!editForm) return;
@@ -116,7 +118,7 @@ export const ChannelList = ({
   }
 
   // If we're currently editing a channel, show only the edit form
-  if (editingId && editForm) {
+  if (editingChannelId && editForm) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <ChannelEditForm
