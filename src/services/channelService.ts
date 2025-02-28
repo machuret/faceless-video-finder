@@ -178,19 +178,18 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       const metadataJson = JSON.stringify(metadata);
       console.log("Metadata to store:", metadataJson);
       
-      // We'll use the RPC function to update the metadata
-      const { error: rpcError } = await supabase.rpc('update_channel_metadata', { 
-        channel_id: channel.id,
-        metadata_json: metadataJson
-      });
+      // Use direct SQL query for metadata update since rpc is not defined in types
+      // We'll use the REST API directly with a raw query
+      const { error: metadataError } = await supabase
+        .from('youtube_channels')
+        .update({ metadata: metadata })
+        .eq('id', channel.id);
       
-      if (rpcError) {
-        // If the RPC function doesn't exist, we'll use raw SQL
-        console.error("RPC error or function doesn't exist:", rpcError);
-        console.log("Falling back to direct update without metadata...");
-        // We'll just continue with the standard update we already did
+      if (metadataError) {
+        console.error("Error updating metadata directly:", metadataError);
+        throw metadataError;
       } else {
-        console.log("Metadata updated successfully via RPC");
+        console.log("Metadata updated successfully via direct update");
       }
     } catch (error) {
       console.error("Error in update process:", error);

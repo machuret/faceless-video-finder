@@ -178,6 +178,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_channel_metadata: {
+        Args: {
+          channel_id: string
+          metadata_json: Json
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       channel_category:
