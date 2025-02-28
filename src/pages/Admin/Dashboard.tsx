@@ -68,16 +68,9 @@ const Dashboard = () => {
   const handleSave = async (channel: Channel) => {
     const success = await updateChannel(channel);
     if (success) {
-      // Update the channel in local state, but preserve the UI channel type
-      setChannels(channels.map(c => {
-        if (c.id === channel.id) {
-          return {
-            ...channel,
-            channel_type: channel.channel_type // Keep the UI channel type for display
-          };
-        }
-        return c;
-      }));
+      // Refresh the channels to get the updated data from the server
+      await fetchChannels();
+      toast.success("Channel updated successfully");
     }
   };
 
