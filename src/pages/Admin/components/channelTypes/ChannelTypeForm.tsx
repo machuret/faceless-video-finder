@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,13 +25,45 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
   onSubmit,
   onCancel
 }) => {
+  const [idError, setIdError] = useState<string | null>(null);
+  
+  const validateId = (value: string) => {
+    const regex = /^[a-z0-9_]+$/;
+    if (!regex.test(value)) {
+      return "ID must contain only lowercase letters, numbers, and underscores";
+    }
+    return null;
+  };
+  
+  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const error = validateId(value);
+    setIdError(error);
+    onInputChange(e);
+  };
+  
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate ID field before submission
+    if (!selectedType) {
+      const idValidationError = validateId(formData.id);
+      if (idValidationError) {
+        setIdError(idValidationError);
+        return;
+      }
+    }
+    
+    onSubmit(e);
+  };
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-6">
         {selectedType ? `Edit Channel Type: ${selectedType.label}` : "Create New Channel Type"}
       </h2>
       
-      <form onSubmit={onSubmit} className="space-y-6">
+      <form onSubmit={handleFormSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
@@ -40,12 +72,15 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
                 id="id" 
                 name="id" 
                 value={formData.id} 
-                onChange={onInputChange}
+                onChange={handleIdChange}
                 placeholder="e.g. documentary_style"
                 disabled={!!selectedType}
                 required
+                className={idError ? "border-red-500" : ""}
               />
-              {!selectedType && (
+              {idError ? (
+                <p className="text-sm text-red-500 mt-1">{idError}</p>
+              ) : !selectedType && (
                 <p className="text-sm text-gray-500 mt-1">
                   Use lowercase letters, numbers, and underscores only. This cannot be changed later.
                 </p>
@@ -104,7 +139,7 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" disabled={submitting || (idError !== null && !selectedType)}>
             {submitting ? "Saving..." : (selectedType ? "Update Channel Type" : "Create Channel Type")}
           </Button>
         </div>

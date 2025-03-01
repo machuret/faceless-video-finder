@@ -10,6 +10,14 @@ export interface ChannelTypeInfo {
 }
 
 /**
+ * Validates the channel type ID format
+ */
+export const validateChannelTypeId = (id: string): boolean => {
+  const regex = /^[a-z0-9_]+$/;
+  return regex.test(id);
+};
+
+/**
  * Handles errors from Supabase operations on channel types
  */
 const handleChannelTypeError = (error: any, operation: string): never => {
@@ -49,6 +57,10 @@ export const createChannelType = async (channelType: ChannelTypeInfo): Promise<C
     
     if (!channelType.id || !channelType.label) {
       throw new Error("Channel type must have an ID and label");
+    }
+    
+    if (!validateChannelTypeId(channelType.id)) {
+      throw new Error("Channel type ID must contain only lowercase letters, numbers, and underscores");
     }
     
     const { data, error } = await supabase
