@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MainNavbar from "@/components/MainNavbar";
 import { ChannelTypesList } from "./components/channelTypes/ChannelTypesList";
 import { ChannelTypeForm } from "./components/channelTypes/ChannelTypeForm";
-import { useChannelTypes } from "./components/channelTypes/useChannelTypes";
+import { useChannelTypes } from "./components/channelTypes/hooks/useChannelTypes";
 
 export default function ManageChannelTypes() {
   const {

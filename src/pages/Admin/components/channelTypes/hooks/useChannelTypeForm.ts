@@ -1,64 +1,29 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/context/AuthContext";
 import { 
   ChannelTypeInfo, 
-  fetchChannelTypes, 
   createChannelType, 
   updateChannelType, 
-  deleteChannelType,
   getChannelTypeById
 } from "@/services/channelTypeService";
 
-export const useChannelTypes = () => {
-  const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+export const initialFormState: ChannelTypeInfo = {
+  id: "",
+  label: "",
+  description: "",
+  production: "",
+  example: ""
+};
+
+export const useChannelTypeForm = (
+  refreshChannelTypes: () => Promise<void>,
+  setActiveTab: (tab: string) => void
+) => {
   const { toast } = useToast();
-  const [channelTypes, setChannelTypes] = useState<ChannelTypeInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("list");
   const [submitting, setSubmitting] = useState(false);
-  
-  const initialFormState: ChannelTypeInfo = {
-    id: "",
-    label: "",
-    description: "",
-    production: "",
-    example: ""
-  };
-  
   const [selectedType, setSelectedType] = useState<ChannelTypeInfo | null>(null);
   const [formData, setFormData] = useState<ChannelTypeInfo>(initialFormState);
-  
-  useEffect(() => {
-    if (!isAdmin) {
-      navigate("/admin/login");
-      return;
-    }
-    
-    loadChannelTypes();
-  }, [isAdmin, navigate]);
-  
-  const loadChannelTypes = async () => {
-    try {
-      setLoading(true);
-      console.log("Fetching channel types...");
-      const data = await fetchChannelTypes();
-      console.log("Fetched channel types:", data);
-      setChannelTypes(data);
-    } catch (error) {
-      console.error("Error loading channel types:", error);
-      toast({
-        title: "Error loading channel types",
-        description: "There was a problem fetching the channel types.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -168,18 +133,13 @@ export const useChannelTypes = () => {
           const updatedType = await updateChannelType(updateData);
           console.log("Channel type updated successfully:", updatedType);
           
-          // Update the local state
-          setChannelTypes(prev => 
-            prev.map(type => type.id === updatedType.id ? updatedType : type)
-          );
-          
           toast({
             title: "Success",
             description: "Channel type updated successfully."
           });
           
           // Then refresh from server to ensure consistency
-          await loadChannelTypes();
+          await refreshChannelTypes();
           
           // Reset form and navigation
           setActiveTab("list");
@@ -196,16 +156,16 @@ export const useChannelTypes = () => {
       } else {
         // Create new
         console.log("Creating new channel type:", formData);
-        const newType = await createChannelType(formData);
-        console.log("New channel type created:", newType);
-        
-        // Update local state
-        setChannelTypes(prev => [...prev, newType]);
+        await createChannelType(formData);
+        console.log("New channel type created successfully");
         
         toast({
           title: "Success",
           description: "New channel type created successfully."
         });
+        
+        // Refresh the list from server
+        await refreshChannelTypes();
         
         // Reset form and navigation
         setActiveTab("list");
@@ -223,30 +183,6 @@ export const useChannelTypes = () => {
     }
   };
   
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this channel type? This action cannot be undone.")) {
-      try {
-        console.log("Deleting channel type with ID:", id);
-        await deleteChannelType(id);
-        
-        // Update local state
-        setChannelTypes(prev => prev.filter(type => type.id !== id));
-        
-        toast({
-          title: "Success",
-          description: "Channel type deleted successfully."
-        });
-      } catch (error) {
-        console.error("Error deleting channel type:", error);
-        toast({
-          title: "Error",
-          description: "There was a problem deleting the channel type.",
-          variant: "destructive"
-        });
-      }
-    }
-  };
-  
   const handleCancel = () => {
     setActiveTab("list");
     setSelectedType(null);
@@ -254,10 +190,6 @@ export const useChannelTypes = () => {
   };
 
   return {
-    channelTypes,
-    loading,
-    activeTab,
-    setActiveTab,
     submitting,
     selectedType,
     formData,
@@ -266,7 +198,6 @@ export const useChannelTypes = () => {
     handleSelectType,
     handleCreateNew,
     handleSubmit,
-    handleDelete,
     handleCancel
   };
 };
