@@ -1,9 +1,11 @@
 
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Channel, VideoStats } from "@/types/youtube";
 import VideoCard from "@/components/youtube/VideoCard";
+import { useInView } from "react-intersection-observer";
 
 interface ChannelGridProps {
   channels: Channel[];
@@ -11,7 +13,49 @@ interface ChannelGridProps {
   resetFilters: () => void;
 }
 
+// Lazy-loaded image component
+const LazyImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  });
+
+  return (
+    <div ref={ref} className={`relative ${className || ""}`}>
+      {inView ? (
+        <>
+          {!isLoaded && (
+            <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
+          )}
+          <img
+            src={src}
+            alt={alt}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setIsLoaded(true)}
+          />
+        </>
+      ) : (
+        <div className="w-full h-full bg-gray-200"></div>
+      )}
+    </div>
+  );
+};
+
 const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
+  // State to track which videos to show (for progressive loading)
+  const [visibleVideos, setVisibleVideos] = useState(3);
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0.1,
+  });
+
+  // Increase visible videos when the load more marker comes into view
+  useEffect(() => {
+    if (inView) {
+      setVisibleVideos(prev => Math.min(prev + 3, 12)); // Max 12 videos
+    }
+  }, [inView]);
+
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -36,6 +80,12 @@ const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
     );
   }
 
+  // Get all videos from all channels
+  const allVideos = channels
+    .flatMap(channel => channel.videoStats || [])
+    .filter((video): video is VideoStats => !!video)
+    .sort((a, b) => (b.views || 0) - (a.views || 0)); // Sort by views, most viewed first
+
   return (
     <div>
       {/* Channel Grid */}
@@ -45,9 +95,9 @@ const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
             <Link to={`/channel/${channel.id}`}>
               <div className="aspect-video bg-gray-200 relative overflow-hidden">
                 {channel.screenshot_url ? (
-                  <img 
+                  <LazyImage 
                     src={channel.screenshot_url} 
-                    alt={channel.channel_title} 
+                    alt={channel.channel_title || "Channel screenshot"} 
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -90,14 +140,12 @@ const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
       </div>
 
       {/* Featured Videos Section */}
-      {channels.some(channel => channel.videoStats && channel.videoStats.length > 0) && (
+      {allVideos.length > 0 && (
         <div className="mt-12">
           <h2 className="font-crimson text-2xl font-bold mb-6 text-gray-800">Featured Videos</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {channels
-              .filter(channel => channel.videoStats && channel.videoStats.length > 0)
-              .flatMap(channel => channel.videoStats || [])
-              .slice(0, 6)
+            {allVideos
+              .slice(0, visibleVideos)
               .map((video: VideoStats) => (
                 <VideoCard
                   key={video.video_id}
@@ -108,6 +156,29 @@ const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
                 />
               ))}
           </div>
+          
+          {/* Load more marker */}
+          {visibleVideos < allVideos.length && visibleVideos < 12 && (
+            <div
+              ref={loadMoreRef}
+              className="text-center py-8"
+            >
+              <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-blue-400 border-r-transparent"></div>
+              <p className="text-gray-500 text-sm mt-2">Loading more videos...</p>
+            </div>
+          )}
+          
+          {visibleVideos < allVideos.length && visibleVideos >= 12 && (
+            <div className="text-center mt-8">
+              <Button
+                onClick={() => setVisibleVideos(prev => Math.min(prev + 6, allVideos.length))}
+                variant="outline"
+                className="mx-auto"
+              >
+                Load More Videos
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
