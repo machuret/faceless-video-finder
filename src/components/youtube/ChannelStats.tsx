@@ -48,7 +48,7 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-2">
             <BarChart2 className="w-5 h-5 text-blue-600" />
-            <h3 className="text-sm font-medium text-gray-700">Channel Size</h3>
+            <h3 className="text-base font-semibold text-gray-800">Channel Size</h3>
           </div>
           <p className="text-xl font-semibold text-blue-600 ml-7">
             {channelSize.charAt(0).toUpperCase() + channelSize.slice(1)}
@@ -64,7 +64,7 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-2">
             <Calendar className="w-5 h-5 text-green-600" />
-            <h3 className="text-sm font-medium text-gray-700">Upload Frequency</h3>
+            <h3 className="text-base font-semibold text-gray-800">Upload Frequency</h3>
           </div>
           <p className="text-xl font-semibold text-green-600 ml-7">
             {uploadFrequencyCategory.split('_').map(word => 
@@ -80,7 +80,7 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
           <div className="space-y-1">
             <div className="flex items-center gap-2 mb-2">
               <Tag className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-sm font-medium text-gray-700">Keywords</h3>
+              <h3 className="text-base font-semibold text-gray-800">Keywords</h3>
             </div>
             <div className="flex flex-wrap gap-2 ml-7">
               {channel.keywords.map((keyword) => (
@@ -99,20 +99,20 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
           <div className="space-y-1">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="w-5 h-5 text-emerald-600" />
-              <h3 className="text-sm font-medium text-gray-700">Revenue Metrics</h3>
+              <h3 className="text-base font-semibold text-gray-800">Revenue Metrics</h3>
             </div>
             <div className="space-y-2 ml-7">
               <div className="flex items-center gap-2">
-                <p className="text-base">CPM: <span className="font-medium">{formatRevenue(channel.cpm)}</span></p>
+                <p className="text-sm">CPM: <span className="font-medium">{formatRevenue(channel.cpm)}</span></p>
               </div>
               {channel.revenue_per_video && (
                 <div className="flex items-center gap-2">
-                  <p className="text-base">Revenue per Video: <span className="font-medium">{formatRevenue(channel.revenue_per_video)}</span></p>
+                  <p className="text-sm">Revenue per Video: <span className="font-medium">{formatRevenue(channel.revenue_per_video)}</span></p>
                 </div>
               )}
               {channel.revenue_per_month && (
                 <div className="flex items-center gap-2">
-                  <p className="text-base">Monthly Revenue: <span className="font-medium">{formatRevenue(channel.revenue_per_month)}</span></p>
+                  <p className="text-sm">Monthly Revenue: <span className="font-medium">{formatRevenue(channel.revenue_per_month)}</span></p>
                 </div>
               )}
             </div>
@@ -123,9 +123,9 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
           <div className="space-y-1">
             <div className="flex items-center gap-2 mb-2">
               <Layers className="w-5 h-5 text-orange-500" />
-              <h3 className="text-sm font-medium text-gray-700">Category</h3>
+              <h3 className="text-base font-semibold text-gray-800">Category</h3>
             </div>
-            <p className="text-base capitalize ml-7">{channel.channel_category}</p>
+            <p className="text-sm capitalize ml-7">{channel.channel_category}</p>
           </div>
         )}
 
@@ -133,11 +133,11 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
           <div className="space-y-1">
             <div className="flex items-center gap-2 mb-2">
               <FileType className="w-5 h-5 text-purple-600" />
-              <h3 className="text-sm font-medium text-gray-700">Type</h3>
+              <h3 className="text-base font-semibold text-gray-800">Type</h3>
             </div>
             <Link 
               to={`/channel-types/${getChannelTypeUrl(displayChannelType)}`}
-              className="text-base text-blue-600 hover:text-blue-800 hover:underline ml-7 flex items-center"
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline ml-7 flex items-center"
             >
               {formatChannelType(displayChannelType)}
             </Link>
@@ -148,9 +148,9 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
           <div className="space-y-1">
             <div className="flex items-center gap-2 mb-2">
               <Layers className="w-5 h-5 text-blue-500" />
-              <h3 className="text-sm font-medium text-gray-700">Niche</h3>
+              <h3 className="text-base font-semibold text-gray-800">Niche</h3>
             </div>
-            <p className="text-base ml-7">{channel.niche}</p>
+            <p className="text-sm ml-7">{channel.niche}</p>
           </div>
         )}
 
@@ -158,9 +158,9 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
           <div className="space-y-1">
             <div className="flex items-center gap-2 mb-2">
               <Globe className="w-5 h-5 text-gray-600" />
-              <h3 className="text-sm font-medium text-gray-700">Country</h3>
+              <h3 className="text-base font-semibold text-gray-800">Country</h3>
             </div>
-            <p className="text-base ml-7">{channel.country}</p>
+            <p className="text-sm ml-7">{channel.country}</p>
           </div>
         )}
       </CardContent>
@@ -169,3 +169,4 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
 };
 
 export default ChannelStats;
+
