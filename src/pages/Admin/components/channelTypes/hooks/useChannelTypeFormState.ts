@@ -4,7 +4,8 @@ import { ChannelTypeInfo } from "@/services/channelTypeService";
 
 export const useChannelTypeFormState = (initialState: ChannelTypeInfo) => {
   const [formData, setFormData] = useState<ChannelTypeInfo>(initialState);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  // Changed type from string to ChannelTypeInfo | null to match the expected type
+  const [selectedType, setSelectedType] = useState<ChannelTypeInfo | null>(null);
 
   return {
     formData,

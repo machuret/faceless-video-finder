@@ -1,10 +1,10 @@
 
 import { Dispatch, SetStateAction } from "react";
-import { ChannelTypeInfo } from "@/services/channelTypeService";
-import { getChannelTypeById } from "@/services/channelTypeService";
+import { ChannelTypeInfo, getChannelTypeById } from "@/services/channelTypeService";
 
 export const useTypeSelection = (
-  setSelectedType: Dispatch<SetStateAction<string | null>>,
+  // Update the type here to match useChannelTypeFormState
+  setSelectedType: Dispatch<SetStateAction<ChannelTypeInfo | null>>,
   setFormData: Dispatch<SetStateAction<ChannelTypeInfo>>,
   setActiveTab: (tab: string) => void
 ) => {
@@ -13,7 +13,8 @@ export const useTypeSelection = (
       const typeInfo = await getChannelTypeById(id);
       
       if (typeInfo) {
-        setSelectedType(id);
+        // Pass the full typeInfo object instead of just the ID
+        setSelectedType(typeInfo);
         setFormData(typeInfo);
         setActiveTab("edit");
       } else {

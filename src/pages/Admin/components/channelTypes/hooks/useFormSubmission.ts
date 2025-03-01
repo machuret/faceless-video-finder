@@ -7,7 +7,8 @@ export const useFormSubmission = (
   refreshChannelTypes: () => Promise<void>,
   setActiveTab: (tab: string) => void,
   setFormData: Dispatch<SetStateAction<ChannelTypeInfo>>,
-  setSelectedType: Dispatch<SetStateAction<string | null>>,
+  // Update type from string to ChannelTypeInfo to match useChannelTypeFormState
+  setSelectedType: Dispatch<SetStateAction<ChannelTypeInfo | null>>,
   initialFormState: ChannelTypeInfo
 ) => {
   const [submitting, setSubmitting] = useState(false);
@@ -15,7 +16,8 @@ export const useFormSubmission = (
   const handleSubmit = async (
     e: React.FormEvent,
     formData: ChannelTypeInfo,
-    selectedType: string | null
+    // Update type here as well
+    selectedType: ChannelTypeInfo | null
   ) => {
     e.preventDefault();
     
