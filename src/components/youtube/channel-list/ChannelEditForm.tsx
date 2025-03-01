@@ -46,25 +46,28 @@ export const ChannelEditForm = ({
 
   const handleKeywordsChange = (newKeywords: string[]) => {
     setKeywords(newKeywords);
-    // Create a mock event to update the parent form state
-    const mockEvent = {
+    // Create a custom update function to handle complex updates like arrays
+    // instead of trying to mock a complete ChangeEvent
+    const updateFormValue = {
       target: {
         name: "keywords",
         value: newKeywords
       }
-    } as React.ChangeEvent<HTMLInputElement>;
-    onChange(mockEvent);
+    };
+    // Use type assertion to handle the custom event format
+    onChange(updateFormValue as unknown as React.ChangeEvent<HTMLInputElement>);
   };
 
   // Handler for screenshot changes
   const handleScreenshotChange = (url: string) => {
-    const mockEvent = {
+    const updateFormValue = {
       target: {
         name: "screenshot_url",
         value: url
       }
-    } as React.ChangeEvent<HTMLInputElement>;
-    onChange(mockEvent);
+    };
+    // Use type assertion to handle the custom event format
+    onChange(updateFormValue as unknown as React.ChangeEvent<HTMLInputElement>);
   };
 
   // Handler for channel type changes
@@ -73,14 +76,16 @@ export const ChannelEditForm = ({
     console.log(`Channel type selected: ${channelType}`);
     
     // Update the channel_type field directly
-    onChange({
+    const updateFormValue = {
       ...e,
       target: {
         ...e.target,
         name: "channel_type",
         value: channelType
       }
-    } as React.ChangeEvent<HTMLSelectElement>);
+    };
+    // Use the original type since we're just modifying an existing event
+    onChange(updateFormValue as React.ChangeEvent<HTMLSelectElement>);
   };
 
   // Refresh video stats handler
