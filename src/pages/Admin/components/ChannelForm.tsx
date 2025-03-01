@@ -1,22 +1,15 @@
 
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { ChannelType, ChannelCategory } from "@/types/youtube";
+import { useState } from "react";
+import { ChannelFormData } from "../components/ChannelForm";
 import ChannelIdentity from "./form-sections/ChannelIdentity";
 import ChannelStats from "./form-sections/ChannelStats";
 import ChannelContent from "./form-sections/ChannelContent";
 import RevenueDetails from "./form-sections/RevenueDetails";
-import { countries } from "@/utils/channelUtils";
-import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
-import { FormSection } from "./form-sections/FormSection";
+import TypeSelector from "./form-dropdowns/TypeSelector";
+import CategorySelector from "./form-dropdowns/CategorySelector";
+import CountrySelector from "./form-dropdowns/CountrySelector";
+import NotesSection from "./form-sections/NotesSection";
 
 export interface ChannelFormData {
   video_id: string;
@@ -53,45 +46,6 @@ const ChannelForm = ({
   onFieldChange 
 }: ChannelFormProps) => {
   const isEditMode = !!formData.video_id && !!formData.channel_title;
-  const [channelTypes, setChannelTypes] = useState<{id: string, label: string}[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [channelCategories, setChannelCategories] = useState<{id: string, label: string}[]>([
-    { id: "entertainment", label: "Entertainment" },
-    { id: "education", label: "Education" },
-    { id: "gaming", label: "Gaming" },
-    { id: "sports", label: "Sports" },
-    { id: "music", label: "Music" },
-    { id: "news", label: "News & Politics" },
-    { id: "howto", label: "How-to & Style" },
-    { id: "tech", label: "Technology" },
-    { id: "travel", label: "Travel & Events" },
-    { id: "comedy", label: "Comedy" },
-    { id: "film", label: "Film & Animation" },
-    { id: "beauty", label: "Beauty & Fashion" },
-    { id: "food", label: "Food & Cooking" },
-    { id: "fitness", label: "Fitness & Health" },
-    { id: "other", label: "Other" },
-  ]);
-  
-  // Fetch channel types for dropdown
-  useEffect(() => {
-    const fetchChannelTypes = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('channel_types')
-          .select('id, label')
-          .order('label', { ascending: true });
-        
-        if (error) throw error;
-        setChannelTypes(data || []);
-      } catch (error) {
-        console.error('Error fetching channel types:', error);
-        toast.error('Failed to load channel types');
-      }
-    };
-    
-    fetchChannelTypes();
-  }, []);
 
   // Handle type selection
   const handleTypeSelect = (typeId: string) => {
@@ -108,139 +62,36 @@ const ChannelForm = ({
     onFieldChange("country", countryCode);
   };
 
-  // Generate content using AI
-  const generateContent = async () => {
-    if (!formData.channel_title) {
-      toast.error('Please enter a channel title first');
-      return;
-    }
-    
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-channel-content', {
-        body: { title: formData.channel_title, description: formData.description || '' }
-      });
-      
-      if (error) throw error;
-      
-      if (data?.description) {
-        onFieldChange("description", data.description);
-        toast.success('Description generated successfully!');
-      }
-    } catch (error) {
-      console.error('Error generating content:', error);
-      toast.error('Failed to generate content');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <ChannelContent
         description={formData.description}
         screenshotUrl={formData.screenshot_url}
+        channelTitle={formData.channel_title}
         onChange={onChange}
         onScreenshotChange={onScreenshotChange}
-        onGenerateContent={generateContent}
-        isGenerating={isGenerating}
         onFieldChange={onFieldChange}
       />
 
-      <FormSection title="Channel Notes">
-        <div className="space-y-2">
-          <RichTextEditor
-            id="notes"
-            name="notes"
-            label="Notes"
-            value={formData.notes || ""}
-            onChange={onFieldChange}
-            placeholder="Enter notes about this channel here..."
-            className="w-full"
-          />
-        </div>
-      </FormSection>
+      <NotesSection
+        notes={formData.notes}
+        onFieldChange={onFieldChange}
+      />
 
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-3">Channel Type</h3>
-        <div className="space-y-4">
-          <label className="block text-sm font-medium">Channel Type</label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                {formData.channel_type ? 
-                  channelTypes.find(type => type.id === formData.channel_type)?.label || 'Select Type' : 
-                  'Select Type'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full max-h-96 overflow-y-auto bg-white">
-              {channelTypes.map((type) => (
-                <DropdownMenuItem
-                  key={type.id}
-                  onClick={() => handleTypeSelect(type.id)}
-                  className="cursor-pointer"
-                >
-                  {type.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <TypeSelector
+        selectedType={formData.channel_type}
+        onSelect={handleTypeSelect}
+      />
 
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-3">Channel Category</h3>
-        <div className="space-y-4">
-          <label className="block text-sm font-medium">Category</label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                {formData.channel_category ? 
-                  channelCategories.find(category => category.id === formData.channel_category)?.label || 'Select Category' : 
-                  'Select Category'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full max-h-96 overflow-y-auto bg-white">
-              {channelCategories.map((category) => (
-                <DropdownMenuItem
-                  key={category.id}
-                  onClick={() => handleCategorySelect(category.id)}
-                  className="cursor-pointer"
-                >
-                  {category.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <CategorySelector
+        selectedCategory={formData.channel_category}
+        onSelect={handleCategorySelect}
+      />
 
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-3">Country</h3>
-        <div className="space-y-4">
-          <label className="block text-sm font-medium">Country</label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                {formData.country ? 
-                  countries.find(c => c.code === formData.country)?.name || 'Select Country' : 
-                  'Select Country'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full max-h-96 overflow-y-auto bg-white">
-              {countries.map((country) => (
-                <DropdownMenuItem
-                  key={country.code}
-                  onClick={() => handleCountrySelect(country.code)}
-                  className="cursor-pointer"
-                >
-                  {country.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <CountrySelector
+        selectedCountry={formData.country}
+        onSelect={handleCountrySelect}
+      />
 
       <ChannelIdentity
         videoId={formData.video_id}

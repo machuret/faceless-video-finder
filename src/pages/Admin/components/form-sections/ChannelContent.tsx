@@ -1,30 +1,30 @@
 
-import { Input } from "@/components/ui/input";
 import { FileUpload } from "@/components/FileUpload";
 import { FormSection } from "./FormSection";
-import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
 import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
+import AIContentGenerator from "./AIContentGenerator";
 
 interface ChannelContentProps {
   description: string;
   screenshotUrl: string;
+  channelTitle: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onScreenshotChange: (url: string) => void;
-  onGenerateContent?: () => void;
-  isGenerating?: boolean;
   onFieldChange: (name: string, value: string) => void;
 }
 
 const ChannelContent = ({ 
   description, 
-  screenshotUrl, 
+  screenshotUrl,
+  channelTitle,
   onChange, 
   onScreenshotChange,
-  onGenerateContent,
-  isGenerating = false,
   onFieldChange
 }: ChannelContentProps) => {
+  const handleDescriptionGenerated = (generatedDescription: string) => {
+    onFieldChange("description", generatedDescription);
+  };
+
   return (
     <FormSection title="Content & Visuals">
       <div>
@@ -38,19 +38,11 @@ const ChannelContent = ({
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <label className="block text-sm font-medium">Channel Description</label>
-          {onGenerateContent && (
-            <Button 
-              type="button" 
-              size="sm" 
-              variant="outline"
-              onClick={onGenerateContent}
-              disabled={isGenerating}
-              className="flex items-center gap-1"
-            >
-              <Sparkles className="h-4 w-4" />
-              {isGenerating ? "Generating..." : "Generate with AI"}
-            </Button>
-          )}
+          <AIContentGenerator 
+            channelTitle={channelTitle}
+            description={description}
+            onDescriptionGenerated={handleDescriptionGenerated}
+          />
         </div>
         <RichTextEditor
           id="description"
