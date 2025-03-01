@@ -1,7 +1,8 @@
 
 import { Link } from "react-router-dom";
-import { Calculator, ArrowRight } from "lucide-react";
+import { Calculator, ArrowRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const HeroSection = () => {
   return (
@@ -15,6 +16,16 @@ const HeroSection = () => {
           Find trending niches, estimate earnings, and analyze growth potential
           all in one place. Start your faceless YouTube journey today.
         </p>
+        <div className="flex justify-center mb-6">
+          <div className="relative w-full max-w-xl">
+            <Input 
+              type="text" 
+              placeholder="Search for niches, channels, or keywords..." 
+              className="py-6 pr-12 pl-4 rounded-lg text-black border-2 border-white focus:border-yellow-300"
+            />
+            <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -76,8 +76,6 @@ const Index = () => {
         <HeroSection />
 
         <div className="container mx-auto px-4 py-16">
-          <ToolsSection />
-          
           <ChannelSearch 
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
@@ -91,6 +89,8 @@ const Index = () => {
             loading={loading}
             resetFilters={resetFilters}
           />
+          
+          <ToolsSection />
         </div>
         
         <StatsSection />
