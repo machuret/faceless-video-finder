@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { Channel, DatabaseChannelType } from "@/types/youtube";
 import { toast } from "sonner";
@@ -96,45 +95,50 @@ export const generateChannelContent = async (channel: Channel): Promise<string |
 
 /**
  * Update a channel in the database, including metadata for custom channel types
+ * This is a completely rewritten function to fix the channel saving issues
  */
 export const updateChannel = async (channel: Channel): Promise<boolean> => {
+  console.log("=== STARTING CHANNEL UPDATE ===");
+  console.log("Input channel data:", JSON.stringify(channel, null, 2));
+  
   try {
-    console.log("=== CHANNEL UPDATE START ===");
-    console.log("Channel data received:", JSON.stringify(channel, null, 2));
-    
-    // Calculate revenue metrics
+    // 1. Calculate revenue metrics
     const potentialRevenue = calculatePotentialRevenue(channel.total_views, channel.cpm);
     const revenuePerVideo = calculateRevenuePerVideo(channel.total_views, channel.cpm, channel.video_count);
     const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
     
-    // Process the UI channel type
-    const uiChannelType = channel.channel_type;
-    let dbChannelType: DatabaseChannelType = "other";
+    // 2. Process the UI channel type
+    // Get the UI channel type (what's shown in the interface)
+    const uiChannelType = channel.channel_type || "other";
     
-    // If it's one of the database types, use it directly
+    // Determine the database channel type (must be one of the enum values)
+    let dbChannelType: DatabaseChannelType;
     if (uiChannelType === "creator" || uiChannelType === "brand" || uiChannelType === "media") {
-      dbChannelType = uiChannelType;
+      dbChannelType = uiChannelType as DatabaseChannelType;
     } else {
-      // For custom types, store as "other" in the main column
       dbChannelType = "other";
     }
     
     console.log(`Channel type mapping: UI="${uiChannelType}" -> DB="${dbChannelType}"`);
     
-    // Ensure metadata is an object
-    const currentMetadata = typeof channel.metadata === 'object' && channel.metadata !== null 
-      ? channel.metadata 
-      : {};
+    // 3. Prepare metadata (always include the UI channel type)
+    // Create a new object to avoid mutation
+    let metadataObj = {};
     
-    // Create metadata object for the channel, preserving existing metadata
-    const metadata = {
-      ...currentMetadata,
+    // If there's existing metadata, start with that
+    if (channel.metadata && typeof channel.metadata === 'object') {
+      metadataObj = { ...channel.metadata };
+    }
+    
+    // Always set the ui_channel_type in metadata
+    metadataObj = {
+      ...metadataObj,
       ui_channel_type: uiChannelType
     };
     
-    console.log("Prepared metadata:", JSON.stringify(metadata, null, 2));
+    console.log("Prepared metadata:", JSON.stringify(metadataObj, null, 2));
     
-    // Prepare the data for update
+    // 4. Prepare data for update
     const updateData = {
       channel_title: channel.channel_title,
       channel_url: channel.channel_url,
@@ -155,12 +159,12 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       niche: channel.niche,
       notes: channel.notes,
       video_id: channel.video_id,
-      metadata: metadata  // Include metadata directly in the update
+      metadata: metadataObj
     };
     
-    console.log("Updating with data:", JSON.stringify(updateData, null, 2));
+    console.log("Update data prepared:", JSON.stringify(updateData, null, 2));
     
-    // First, check if the channel exists
+    // 5. First, check if the channel exists
     const { data: existingChannel, error: checkError } = await supabase
       .from("youtube_channels")
       .select("id")
@@ -168,22 +172,29 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       .single();
     
     if (checkError) {
-      console.error("Error checking if channel exists:", checkError);
-      throw new Error(`Channel not found: ${channel.id}`);
+      console.error("Channel existence check failed:", checkError);
+      return false;
     }
     
-    // Perform the update operation
+    if (!existingChannel) {
+      console.error("Channel not found:", channel.id);
+      return false;
+    }
+    
+    // 6. Perform the update
+    console.log("Updating channel with ID:", channel.id);
     const { error: updateError } = await supabase
       .from("youtube_channels")
       .update(updateData)
       .eq("id", channel.id);
     
     if (updateError) {
-      console.error("Error updating channel:", updateError);
-      throw updateError;
+      console.error("Channel update failed:", updateError);
+      return false;
     }
     
-    // Verification: Check if the update was successful
+    // 7. Verify the update was successful
+    console.log("Verifying update...");
     const { data: updatedChannel, error: verifyError } = await supabase
       .from("youtube_channels")
       .select("id, channel_title, channel_type, metadata")
@@ -191,22 +202,17 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       .single();
     
     if (verifyError) {
-      console.error("Error verifying update:", verifyError);
-      throw new Error("Failed to verify channel update");
+      console.error("Update verification failed:", verifyError);
+      return false;
     }
     
-    console.log("Channel updated successfully with metadata included");
-    console.log("Verification - Updated channel data:", updatedChannel);
-    toast.success("Channel updated successfully");
+    console.log("Channel updated successfully:");
+    console.log("Updated channel data:", JSON.stringify(updatedChannel, null, 2));
     
     return true;
   } catch (error) {
     console.error("=== CHANNEL UPDATE ERROR ===");
     console.error("Error details:", error);
-    
-    // Display more detailed error message
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    toast.error(`Failed to update channel: ${errorMessage}`);
     return false;
   }
 };

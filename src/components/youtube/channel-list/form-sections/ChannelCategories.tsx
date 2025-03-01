@@ -12,7 +12,7 @@ interface ChannelCategoriesProps {
 
 export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelCategoriesProps) => {
   // Get the current UI channel type either from metadata or from channel_type
-  const getInitialChannelType = () => {
+  const getInitialChannelType = (): string => {
     // First check metadata if it exists
     if (editForm?.metadata?.ui_channel_type) {
       console.log("Using channel type from metadata:", editForm.metadata.ui_channel_type);
@@ -23,7 +23,7 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
     return editForm.channel_type || "other";
   };
   
-  const [selectedType, setSelectedType] = useState<string | undefined>(getInitialChannelType());
+  const [selectedType, setSelectedType] = useState<string>(getInitialChannelType());
   
   // Update selectedType when editForm changes
   useEffect(() => {
@@ -43,38 +43,10 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
       console.log("Using custom onTypeChange handler");
       onTypeChange(e);
     } else {
-      // Create a modified event to pass to parent component
-      const modifiedEvent = {
-        ...e,
-        target: {
-          ...e.target,
-          name: e.target.name,
-          value: value
-        }
-      };
-      
+      // Use the standard onChange handler
       console.log("Using standard onChange handler");
-      onChange(modifiedEvent);
+      onChange(e);
     }
-    
-    // Also update the metadata to ensure consistency
-    // We need to create a new metadata object with the updated ui_channel_type
-    const updatedMetadata = {
-      ...(editForm.metadata || {}),
-      ui_channel_type: value
-    };
-    
-    // Create a mock event for metadata update with proper type assertion
-    const metadataEvent = {
-      target: {
-        name: "metadata",
-        value: updatedMetadata
-      }
-    } as unknown as React.ChangeEvent<HTMLInputElement>;
-    
-    console.log("Updating metadata with ui_channel_type:", value);
-    console.log("Full metadata object:", updatedMetadata);
-    onChange(metadataEvent);
   };
 
   const selectedTypeInfo = channelTypes.find(type => type.id === selectedType);
@@ -101,7 +73,7 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
           <label className="block text-sm font-medium mb-1">Type of Channel</label>
           <select
             name="channel_type"
-            value={selectedType || "other"}
+            value={selectedType}
             onChange={handleTypeChange}
             className="w-full p-2 border rounded"
           >

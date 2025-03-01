@@ -79,25 +79,17 @@ const Dashboard = () => {
     setEditingChannelId(channel.id);
     
     try {
-      // Ensure metadata is properly set if it exists
-      const metadata = channel.metadata || {};
-      
-      // Always update metadata with current channel_type
-      if (channel.channel_type) {
-        metadata.ui_channel_type = channel.channel_type;
-        channel.metadata = metadata;
-        console.log("Updated metadata with ui_channel_type:", channel.channel_type);
-        console.log("Full updated metadata:", metadata);
-      }
-      
-      console.log("Saving channel with final data:", channel);
+      // Perform the update and wait for the result
       const success = await updateChannel(channel);
       
       if (success) {
-        console.log("Channel saved successfully, refreshing data...");
-        // Ensure we fully refresh the data from the server
-        await fetchChannels();
         toast.success("Channel updated successfully");
+        
+        // After successful update, always fetch fresh data
+        console.log("Channel saved successfully, refreshing data...");
+        await fetchChannels();
+        
+        // Clear editing state
         setEditingChannelId(null);
       } else {
         console.error("Failed to save channel - update returned false");

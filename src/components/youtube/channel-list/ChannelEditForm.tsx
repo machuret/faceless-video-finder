@@ -52,7 +52,7 @@ export const ChannelEditForm = ({
         name: "keywords",
         value: newKeywords
       }
-    } as unknown as React.ChangeEvent<HTMLInputElement>;
+    } as React.ChangeEvent<HTMLInputElement>;
     onChange(mockEvent);
   };
 
@@ -63,47 +63,24 @@ export const ChannelEditForm = ({
         name: "screenshot_url",
         value: url
       }
-    } as unknown as React.ChangeEvent<HTMLInputElement>;
+    } as React.ChangeEvent<HTMLInputElement>;
     onChange(mockEvent);
   };
 
-  // Handler for channel type changes (to track UI channel type)
+  // Handler for channel type changes
   const handleChannelTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    // Get the UI channel type value
-    const uiChannelType = e.target.value;
-    console.log("Channel type changed to:", uiChannelType);
+    const channelType = e.target.value;
+    console.log(`Channel type selected: ${channelType}`);
     
-    // Create event for type change
-    const channelTypeEvent = {
+    // Update the channel_type field directly
+    onChange({
+      ...e,
       target: {
+        ...e.target,
         name: "channel_type",
-        value: uiChannelType
+        value: channelType
       }
-    } as React.ChangeEvent<HTMLSelectElement>;
-    
-    // Apply the change
-    onChange(channelTypeEvent);
-    
-    // Also update metadata to store the UI channel type for persistence
-    const currentMetadata = editForm.metadata || {};
-    const updatedMetadata = {
-      ...currentMetadata,
-      ui_channel_type: uiChannelType
-    };
-    
-    // Create another event for metadata update with proper type assertion
-    const metadataEvent = {
-      target: {
-        name: "metadata",
-        value: updatedMetadata
-      }
-    } as unknown as React.ChangeEvent<HTMLInputElement>;
-    
-    // Apply the metadata change
-    onChange(metadataEvent);
-    
-    console.log("Updated channel type:", uiChannelType);
-    console.log("Updated metadata:", updatedMetadata);
+    } as React.ChangeEvent<HTMLSelectElement>);
   };
 
   // Refresh video stats handler
