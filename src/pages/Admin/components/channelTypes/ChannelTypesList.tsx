@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 interface ChannelTypesListProps {
   channelTypes: ChannelTypeInfo[];
   loading: boolean;
-  onEdit: (type: ChannelTypeInfo) => void;
+  onEdit: (id: string) => void;  // Changed parameter type from ChannelTypeInfo to string
   onCreateNew: () => void;
   onDelete: (id: string) => void;
 }
@@ -62,7 +62,7 @@ export const ChannelTypesList: React.FC<ChannelTypesListProps> = ({
                       variant="outline" 
                       size="sm" 
                       className="mr-2"
-                      onClick={() => onEdit(type)}
+                      onClick={() => onEdit(type.id)}  // Changed to pass type.id instead of type
                     >
                       Edit
                     </Button>
