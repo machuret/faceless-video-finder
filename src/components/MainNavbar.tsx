@@ -1,5 +1,5 @@
 
-import { Home, BookOpen, Mail, HelpCircle, GraduationCap, Info } from "lucide-react";
+import { Home, BookOpen, Mail, HelpCircle, GraduationCap, Info, Calculator } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const MainNavbar = () => {
@@ -22,6 +22,13 @@ const MainNavbar = () => {
             >
               <Home className="h-4 w-4" />
               <span>Home</span>
+            </Link>
+            <Link 
+              to="/calculator" 
+              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/calculator') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
+            >
+              <Calculator className="h-4 w-4" />
+              <span>Shorts Calculator</span>
             </Link>
             <Link 
               to="/about" 

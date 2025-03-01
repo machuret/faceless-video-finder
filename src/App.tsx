@@ -12,6 +12,7 @@ import NotFound from './pages/NotFound';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from "@/components/ui/toaster";
 import ManageChannelTypes from "./pages/Admin/ManageChannelTypes";
+import Calculator from './pages/Calculator';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/channel/:id" element={<ChannelDetails />} />
         <Route path="/channel-types" element={<ChannelTypes />} />
         <Route path="/channel-types/:typeId" element={<ChannelTypeDetails />} />
+        <Route path="/calculator" element={<Calculator />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         
         <Route
