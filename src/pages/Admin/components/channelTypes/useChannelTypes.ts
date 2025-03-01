@@ -8,7 +8,8 @@ import {
   fetchChannelTypes, 
   createChannelType, 
   updateChannelType, 
-  deleteChannelType 
+  deleteChannelType,
+  getChannelTypeById
 } from "@/services/channelTypeService";
 
 export const useChannelTypes = () => {
@@ -68,18 +69,39 @@ export const useChannelTypes = () => {
     console.log(`Field "${name}" updated to:`, value);
   };
   
-  const handleSelectType = (type: ChannelTypeInfo) => {
-    console.log("Selected type for editing:", type);
-    // Create a deep copy to avoid reference issues
-    setSelectedType(type);
-    setFormData({
-      id: type.id || "",
-      label: type.label || "",
-      description: type.description || "",
-      production: type.production || "",
-      example: type.example || ""
-    });
-    setActiveTab("edit");
+  const handleSelectType = async (type: ChannelTypeInfo) => {
+    try {
+      console.log("Selected type for editing:", type);
+      
+      // Fetch fresh data from the database to ensure we're working with the latest
+      const freshData = await getChannelTypeById(type.id);
+      if (!freshData) {
+        toast({
+          title: "Error",
+          description: `Channel type with ID ${type.id} not found.`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Set the selected type and form data
+      setSelectedType(freshData);
+      setFormData({
+        id: freshData.id,
+        label: freshData.label || "",
+        description: freshData.description || "",
+        production: freshData.production || "",
+        example: freshData.example || ""
+      });
+      setActiveTab("edit");
+    } catch (error) {
+      console.error("Error selecting channel type:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem loading the channel type data.",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleCreateNew = () => {
@@ -124,17 +146,21 @@ export const useChannelTypes = () => {
         console.log("Updating existing channel type:", formData);
         
         try {
-          const updatedType = await updateChannelType({
+          // Create a clean object for the update
+          const updateData: ChannelTypeInfo = {
             id: formData.id,
             label: formData.label,
-            description: formData.description,
-            production: formData.production,
-            example: formData.example
-          });
+            description: formData.description || "",
+            production: formData.production || "",
+            example: formData.example || ""
+          };
           
+          console.log("Sending update with data:", updateData);
+          
+          const updatedType = await updateChannelType(updateData);
           console.log("Channel type updated successfully:", updatedType);
           
-          // First update the local state
+          // Update the local state
           setChannelTypes(prev => 
             prev.map(type => type.id === updatedType.id ? updatedType : type)
           );

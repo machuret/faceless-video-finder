@@ -79,18 +79,18 @@ export const createChannelType = async (channelType: ChannelTypeInfo): Promise<C
  */
 export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
   try {
-    console.log("Updating channel type:", channelType.id);
+    console.log("Updating channel type with ID:", channelType.id);
     
     if (!channelType.id) {
-      throw new Error("Cannot update channel type: Missing ID");
+      throw new Error("Cannot update channel type without an ID");
     }
     
+    // Create a clean update object with explicit values
     const updateData = {
       label: channelType.label,
       description: channelType.description || null,
       production: channelType.production || null,
-      example: channelType.example || null,
-      updated_at: new Date().toISOString()
+      example: channelType.example || null
     };
     
     console.log("Update payload:", JSON.stringify(updateData, null, 2));
@@ -99,21 +99,22 @@ export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<C
       .from('channel_types')
       .update(updateData)
       .eq('id', channelType.id)
-      .select('*')
+      .select()
       .single();
     
     if (error) {
-      console.error("Update failed with error:", error);
+      console.error("Update operation failed with error:", error);
       return handleChannelTypeError(error, 'updating');
     }
     
     if (!data) {
-      throw new Error(`No data returned after update for ID: ${channelType.id}`);
+      throw new Error(`No data returned after update for channel type ID: ${channelType.id}`);
     }
     
-    console.log("Channel type updated successfully:", data.id);
+    console.log("Channel type updated successfully:", data);
     return data as ChannelTypeInfo;
   } catch (error) {
+    console.error("Error in updateChannelType function:", error);
     return handleChannelTypeError(error, 'updating');
   }
 };
@@ -169,7 +170,7 @@ export const getChannelTypeById = async (id: string): Promise<ChannelTypeInfo | 
       return handleChannelTypeError(error, 'fetching');
     }
     
-    console.log("Channel type fetched successfully:", data.id);
+    console.log("Channel type fetched successfully:", data);
     return data as ChannelTypeInfo;
   } catch (error) {
     return handleChannelTypeError(error, 'fetching');
