@@ -30,6 +30,36 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          example: string | null
+          id: string
+          label: string
+          production: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          example?: string | null
+          id: string
+          label: string
+          production?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          example?: string | null
+          id?: string
+          label?: string
+          production?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       youtube_channels: {
         Row: {
           channel_category:

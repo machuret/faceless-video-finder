@@ -1,11 +1,14 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChannelList } from "@/components/youtube/channel-list/ChannelList";
 import MainNavbar from "@/components/MainNavbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { checkIsAdmin } from "@/services/userService";
+
+// Import the component we need to make
+import { ChannelList } from "@/components/youtube/channel-list/ChannelList";
 
 const DashboardHeader = () => {
   return (
