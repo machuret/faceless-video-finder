@@ -35,6 +35,7 @@ export const useChannelForm = () => {
   // Initialize edit mode and fetch data if channelId exists
   useEffect(() => {
     if (channelId) {
+      console.log("Channel ID detected, entering edit mode:", channelId);
       setIsEditMode(true);
       fetchChannelData(channelId);
     }

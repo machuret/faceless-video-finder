@@ -50,6 +50,8 @@ export const useChannelFormSubmission = (
           .update(dataToSubmit)
           .eq("id", channelId)
           .select();
+        
+        console.log("Update operation completed, result:", result);
       } else {
         result = await supabase
           .from("youtube_channels")
@@ -61,14 +63,12 @@ export const useChannelFormSubmission = (
 
       if (error) {
         console.error("Database error:", error);
-        if (error.code === "23505") {
-          throw new Error("This channel has already been added to the database");
-        } else if (error.code === "42501") {
-          throw new Error("You don't have permission to add channels. Please check your login status.");
-        } else if (error.code === "42P17") {
-          throw new Error("There's an issue with database permissions. Please contact the administrator.");
-        }
-        throw new Error(`Database error: ${error.message}`);
+        throw new Error(`Database error: ${error.message || error.code}`);
+      }
+
+      if (!data || data.length === 0) {
+        console.error("No data returned from operation");
+        throw new Error("Operation completed but no data was returned");
       }
 
       console.log(`${isEditMode ? "Update" : "Insert"} successful:`, data);
