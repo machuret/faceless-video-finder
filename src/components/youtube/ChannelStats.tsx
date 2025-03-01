@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Globe, DollarSign } from "lucide-react";
 import { Channel, ChannelSize } from "@/types/youtube";
 import { getGrowthRange, formatRevenue, getUploadFrequencyLabel } from "@/utils/channelUtils";
+import { Link } from "react-router-dom";
 
 interface ChannelStatsProps {
   channel: Channel;
@@ -22,6 +23,11 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  };
+
+  // Format for URL - make sure it's lowercase and has underscores
+  const getChannelTypeUrl = (type: string): string => {
+    return type.toLowerCase();
   };
 
   return (
@@ -102,7 +108,12 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
         {displayChannelType && (
           <div>
             <h3 className="text-sm font-medium text-gray-500 mb-2">Type</h3>
-            <p className="text-base">{formatChannelType(displayChannelType)}</p>
+            <Link 
+              to={`/channel-types/${getChannelTypeUrl(displayChannelType)}`}
+              className="text-base text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              {formatChannelType(displayChannelType)}
+            </Link>
           </div>
         )}
 
