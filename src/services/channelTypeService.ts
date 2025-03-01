@@ -36,39 +36,25 @@ export const createChannelType = async (channelType: ChannelTypeInfo): Promise<C
 };
 
 export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
-  console.log("Starting update for channel type:", channelType);
+  console.log("Updating channel type with data:", JSON.stringify(channelType, null, 2));
   
-  // Explicitly construct the update payload to ensure proper data format
+  if (!channelType.id) {
+    const error = new Error("Cannot update channel type: Missing ID");
+    console.error(error);
+    throw error;
+  }
+  
+  // Create a clean update payload with null handling
   const updatePayload = {
-    label: channelType.label,
+    label: channelType.label || null,
     description: channelType.description || null,
     production: channelType.production || null,
     example: channelType.example || null
   };
   
-  console.log("Update payload:", updatePayload);
+  console.log("Sending update payload to Supabase:", JSON.stringify(updatePayload, null, 2));
   
   try {
-    // First check if the record exists
-    const { data: existingData, error: checkError } = await supabase
-      .from('channel_types')
-      .select('*')
-      .eq('id', channelType.id)
-      .single();
-    
-    if (checkError) {
-      console.error("Error checking existing channel type:", checkError);
-      throw checkError;
-    }
-    
-    if (!existingData) {
-      console.error("Channel type not found:", channelType.id);
-      throw new Error(`Channel type with ID ${channelType.id} not found`);
-    }
-    
-    console.log("Existing data found:", existingData);
-    
-    // Perform the update
     const { data, error } = await supabase
       .from('channel_types')
       .update(updatePayload)
@@ -82,11 +68,12 @@ export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<C
     }
     
     if (!data) {
-      console.error("No data returned after update");
-      throw new Error("Update succeeded but no data was returned");
+      const noDataError = new Error("No data returned after update. The record may not exist.");
+      console.error(noDataError);
+      throw noDataError;
     }
     
-    console.log("Update successful, returned data:", data);
+    console.log("Update successful, returned data:", JSON.stringify(data, null, 2));
     return data as ChannelTypeInfo;
   } catch (error) {
     console.error("Exception during channel type update:", error);
