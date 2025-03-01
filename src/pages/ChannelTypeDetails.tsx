@@ -10,6 +10,7 @@ import { Channel, ChannelMetadata } from "@/types/youtube";
 import { formatDate } from "@/utils/channelUtils";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 // Define a more flexible interface for the raw data from Supabase
 interface SupabaseChannelData {
@@ -152,7 +153,7 @@ const ChannelTypeDetails = () => {
 const ChannelCard = ({ channel }: { channel: Channel }) => {
   return (
     <Card className="overflow-hidden h-full flex flex-col">
-      <div className="p-4 flex-grow">
+      <Link to={`/channel/${channel.id}`} className="flex-grow p-4 hover:bg-gray-50 transition-colors">
         <div className="flex items-start gap-4 mb-4">
           {channel.screenshot_url && (
             <img
@@ -202,7 +203,7 @@ const ChannelCard = ({ channel }: { channel: Channel }) => {
             <p className="text-sm text-gray-700 line-clamp-3">{channel.description}</p>
           </div>
         )}
-      </div>
+      </Link>
       
       <div className="p-3 bg-gray-50 border-t">
         <a 
