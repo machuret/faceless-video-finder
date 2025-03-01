@@ -36,35 +36,62 @@ export const createChannelType = async (channelType: ChannelTypeInfo): Promise<C
 };
 
 export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
-  console.log("Updating channel type:", channelType);
+  console.log("Starting update for channel type:", channelType);
   
-  // Make sure we're handling null values properly
-  const updateData = {
+  // Explicitly construct the update payload to ensure proper data format
+  const updatePayload = {
     label: channelType.label,
     description: channelType.description || null,
     production: channelType.production || null,
     example: channelType.example || null
   };
-
-  const { data, error } = await supabase
-    .from('channel_types')
-    .update(updateData)
-    .eq('id', channelType.id)
-    .select()
-    .single();
   
-  if (error) {
-    console.error("Error updating channel type:", error, "Channel type:", channelType);
+  console.log("Update payload:", updatePayload);
+  
+  try {
+    // First check if the record exists
+    const { data: existingData, error: checkError } = await supabase
+      .from('channel_types')
+      .select('*')
+      .eq('id', channelType.id)
+      .single();
+    
+    if (checkError) {
+      console.error("Error checking existing channel type:", checkError);
+      throw checkError;
+    }
+    
+    if (!existingData) {
+      console.error("Channel type not found:", channelType.id);
+      throw new Error(`Channel type with ID ${channelType.id} not found`);
+    }
+    
+    console.log("Existing data found:", existingData);
+    
+    // Perform the update
+    const { data, error } = await supabase
+      .from('channel_types')
+      .update(updatePayload)
+      .eq('id', channelType.id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Supabase error updating channel type:", error);
+      throw error;
+    }
+    
+    if (!data) {
+      console.error("No data returned after update");
+      throw new Error("Update succeeded but no data was returned");
+    }
+    
+    console.log("Update successful, returned data:", data);
+    return data as ChannelTypeInfo;
+  } catch (error) {
+    console.error("Exception during channel type update:", error);
     throw error;
   }
-  
-  if (!data) {
-    console.error("No data returned after update");
-    throw new Error("No data returned after update");
-  }
-  
-  console.log("Update successful, returned data:", data);
-  return data as ChannelTypeInfo;
 };
 
 export const deleteChannelType = async (id: string): Promise<void> => {

@@ -33,6 +33,7 @@ export default function ManageChannelTypes() {
   const [channelTypes, setChannelTypes] = useState<ChannelTypeInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("list");
+  const [submitting, setSubmitting] = useState(false);
   
   const initialFormState: ChannelTypeInfo = {
     id: "",
@@ -57,7 +58,9 @@ export default function ManageChannelTypes() {
   const loadChannelTypes = async () => {
     try {
       setLoading(true);
+      console.log("Fetching channel types...");
       const data = await fetchChannelTypes();
+      console.log("Fetched channel types:", data);
       setChannelTypes(data);
     } catch (error) {
       console.error("Error loading channel types:", error);
@@ -73,12 +76,18 @@ export default function ManageChannelTypes() {
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      console.log(`Field "${name}" updated to "${value}"`);
+      return updated;
+    });
   };
   
   const handleSelectType = (type: ChannelTypeInfo) => {
+    console.log("Selected type for editing:", type);
     setSelectedType(type);
-    setFormData(type);
+    // Create a deep copy to avoid reference issues
+    setFormData({...type});
     setActiveTab("edit");
   };
   
@@ -92,7 +101,15 @@ export default function ManageChannelTypes() {
     e.preventDefault();
     console.log("Form submitted with data:", formData);
     
+    if (submitting) {
+      console.log("Submit already in progress, skipping");
+      return;
+    }
+    
     try {
+      setSubmitting(true);
+      
+      // Validate form fields
       if (!formData.id) {
         toast({
           title: "Error",
@@ -114,7 +131,14 @@ export default function ManageChannelTypes() {
       if (selectedType) {
         // Update existing
         console.log("Updating existing channel type:", formData);
-        await updateChannelType(formData);
+        const updatedType = await updateChannelType(formData);
+        console.log("Channel type updated successfully:", updatedType);
+        
+        // Update local state with the returned data
+        setChannelTypes(prev => 
+          prev.map(type => type.id === updatedType.id ? updatedType : type)
+        );
+        
         toast({
           title: "Success",
           description: "Channel type updated successfully."
@@ -122,14 +146,22 @@ export default function ManageChannelTypes() {
       } else {
         // Create new
         console.log("Creating new channel type:", formData);
-        await createChannelType(formData);
+        const newType = await createChannelType(formData);
+        console.log("New channel type created:", newType);
+        
+        // Update local state with the returned data
+        setChannelTypes(prev => [...prev, newType]);
+        
         toast({
           title: "Success",
           description: "New channel type created successfully."
         });
       }
       
+      // Refresh data from server to ensure consistency
       await loadChannelTypes();
+      
+      // Reset form and navigation
       setActiveTab("list");
       setFormData(initialFormState);
       setSelectedType(null);
@@ -140,18 +172,24 @@ export default function ManageChannelTypes() {
         description: "There was a problem saving the channel type.",
         variant: "destructive"
       });
+    } finally {
+      setSubmitting(false);
     }
   };
   
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this channel type? This action cannot be undone.")) {
       try {
+        console.log("Deleting channel type with ID:", id);
         await deleteChannelType(id);
+        
+        // Update local state
+        setChannelTypes(prev => prev.filter(type => type.id !== id));
+        
         toast({
           title: "Success",
           description: "Channel type deleted successfully."
         });
-        await loadChannelTypes();
       } catch (error) {
         console.error("Error deleting channel type:", error);
         toast({
@@ -327,8 +365,8 @@ export default function ManageChannelTypes() {
                   <Button type="button" variant="outline" onClick={handleCancel}>
                     Cancel
                   </Button>
-                  <Button type="submit">
-                    {selectedType ? "Update Channel Type" : "Create Channel Type"}
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? "Saving..." : (selectedType ? "Update Channel Type" : "Create Channel Type")}
                   </Button>
                 </div>
               </form>
