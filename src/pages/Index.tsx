@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Channel, ChannelCategory } from "@/types/youtube";
@@ -38,7 +37,6 @@ const Index = () => {
         throw error;
       }
 
-      // Cast the data to ensure it matches the Channel type
       setChannels(data as unknown as Channel[]);
     } catch (error) {
       console.error("Error fetching channels:", error);
@@ -57,7 +55,6 @@ const Index = () => {
     setSelectedCategory("");
   };
 
-  // Filter channels based on search term
   const filteredChannels = channels.filter(channel => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -75,7 +72,6 @@ const Index = () => {
       <MainNavbar />
 
       <main>
-        {/* Hero Section */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
           <div className="container mx-auto px-4 max-w-5xl text-center">
             <h1 className="font-crimson text-5xl md:text-6xl font-bold mb-6">
@@ -99,7 +95,6 @@ const Index = () => {
         </div>
 
         <div className="container mx-auto px-4 py-16">
-          {/* Featured Tools Section */}
           <div className="mb-16">
             <div className="text-center mb-10">
               <h2 className="font-crimson text-3xl font-bold mb-4 text-gray-800">Tools for YouTube Creators</h2>
@@ -167,7 +162,6 @@ const Index = () => {
           />
         </div>
         
-        {/* Statistics Bar */}
         <div className="bg-blue-800 text-white py-10">
           <div className="container mx-auto px-4">
             <div className="text-center mb-8">
