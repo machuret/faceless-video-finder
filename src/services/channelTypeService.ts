@@ -36,49 +36,36 @@ export const createChannelType = async (channelType: ChannelTypeInfo): Promise<C
 };
 
 export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
-  console.log("Updating channel type with data:", JSON.stringify(channelType, null, 2));
+  console.log("Attempting to update channel type:", JSON.stringify(channelType, null, 2));
   
   if (!channelType.id) {
-    const error = new Error("Cannot update channel type: Missing ID");
-    console.error(error);
+    throw new Error("Cannot update channel type: Missing ID");
+  }
+  
+  // Direct approach: explicitly define all fields to update
+  const { data, error } = await supabase
+    .from('channel_types')
+    .update({
+      label: channelType.label || null,
+      description: channelType.description || null,
+      production: channelType.production || null,
+      example: channelType.example || null
+    })
+    .eq('id', channelType.id)
+    .select('*');  // Use select('*') to ensure we get all fields back
+  
+  if (error) {
+    console.error("Failed to update channel type:", error);
     throw error;
   }
   
-  // Create a clean update payload with null handling
-  const updatePayload = {
-    label: channelType.label || null,
-    description: channelType.description || null,
-    production: channelType.production || null,
-    example: channelType.example || null
-  };
-  
-  console.log("Sending update payload to Supabase:", JSON.stringify(updatePayload, null, 2));
-  
-  try {
-    const { data, error } = await supabase
-      .from('channel_types')
-      .update(updatePayload)
-      .eq('id', channelType.id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error("Supabase error updating channel type:", error);
-      throw error;
-    }
-    
-    if (!data) {
-      const noDataError = new Error("No data returned after update. The record may not exist.");
-      console.error(noDataError);
-      throw noDataError;
-    }
-    
-    console.log("Update successful, returned data:", JSON.stringify(data, null, 2));
-    return data as ChannelTypeInfo;
-  } catch (error) {
-    console.error("Exception during channel type update:", error);
-    throw error;
+  if (!data || data.length === 0) {
+    console.error("No data returned after update. The record may not exist.");
+    throw new Error(`No data returned for channel type with ID: ${channelType.id}`);
   }
+  
+  console.log("Channel type successfully updated:", JSON.stringify(data[0], null, 2));
+  return data[0] as ChannelTypeInfo;
 };
 
 export const deleteChannelType = async (id: string): Promise<void> => {

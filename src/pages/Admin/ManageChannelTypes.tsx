@@ -76,18 +76,24 @@ export default function ManageChannelTypes() {
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => {
-      const updated = { ...prev, [name]: value };
-      console.log(`Field "${name}" updated to "${value}"`);
-      return updated;
-    });
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    console.log(`Field "${name}" updated to:`, value);
   };
   
   const handleSelectType = (type: ChannelTypeInfo) => {
     console.log("Selected type for editing:", type);
-    setSelectedType(type);
     // Create a deep copy to avoid reference issues
-    setFormData({...type});
+    setSelectedType(type);
+    setFormData({
+      id: type.id || "",
+      label: type.label || "",
+      description: type.description || "",
+      production: type.production || "",
+      example: type.example || ""
+    });
     setActiveTab("edit");
   };
   
@@ -99,7 +105,6 @@ export default function ManageChannelTypes() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted with data:", formData);
     
     if (submitting) {
       console.log("Submit already in progress, skipping");
@@ -108,6 +113,7 @@ export default function ManageChannelTypes() {
     
     try {
       setSubmitting(true);
+      console.log("Form submitted with data:", formData);
       
       // Validate form fields
       if (!formData.id) {
@@ -131,40 +137,61 @@ export default function ManageChannelTypes() {
       if (selectedType) {
         // Update existing
         console.log("Updating existing channel type:", formData);
-        const updatedType = await updateChannelType(formData);
-        console.log("Channel type updated successfully:", updatedType);
         
-        // Update local state with the returned data
-        setChannelTypes(prev => 
-          prev.map(type => type.id === updatedType.id ? updatedType : type)
-        );
-        
-        toast({
-          title: "Success",
-          description: "Channel type updated successfully."
-        });
+        try {
+          const updatedType = await updateChannelType({
+            id: formData.id,
+            label: formData.label,
+            description: formData.description,
+            production: formData.production,
+            example: formData.example
+          });
+          
+          console.log("Channel type updated successfully:", updatedType);
+          
+          // First update the local state
+          setChannelTypes(prev => 
+            prev.map(type => type.id === updatedType.id ? updatedType : type)
+          );
+          
+          toast({
+            title: "Success",
+            description: "Channel type updated successfully."
+          });
+          
+          // Then refresh from server to ensure consistency
+          await loadChannelTypes();
+          
+          // Reset form and navigation
+          setActiveTab("list");
+          setFormData(initialFormState);
+          setSelectedType(null);
+        } catch (updateError) {
+          console.error("Error during update operation:", updateError);
+          toast({
+            title: "Update Failed",
+            description: `Error: ${updateError instanceof Error ? updateError.message : 'Unknown error occurred'}`,
+            variant: "destructive"
+          });
+        }
       } else {
         // Create new
         console.log("Creating new channel type:", formData);
         const newType = await createChannelType(formData);
         console.log("New channel type created:", newType);
         
-        // Update local state with the returned data
+        // Update local state
         setChannelTypes(prev => [...prev, newType]);
         
         toast({
           title: "Success",
           description: "New channel type created successfully."
         });
+        
+        // Reset form and navigation
+        setActiveTab("list");
+        setFormData(initialFormState);
       }
-      
-      // Refresh data from server to ensure consistency
-      await loadChannelTypes();
-      
-      // Reset form and navigation
-      setActiveTab("list");
-      setFormData(initialFormState);
-      setSelectedType(null);
     } catch (error) {
       console.error("Error saving channel type:", error);
       toast({
