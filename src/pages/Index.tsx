@@ -90,6 +90,8 @@ const Index = () => {
             resetFilters={resetFilters}
           />
           
+          <div className="my-20"></div>
+          
           <ToolsSection />
         </div>
         
