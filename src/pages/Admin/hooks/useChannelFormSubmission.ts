@@ -43,6 +43,8 @@ export const useChannelFormSubmission = (
       let result;
       
       if (isEditMode && channelId) {
+        // Ensure we're updating the correct channel
+        console.log("Updating channel with ID:", channelId);
         result = await supabase
           .from("youtube_channels")
           .update(dataToSubmit)

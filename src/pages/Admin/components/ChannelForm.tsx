@@ -63,6 +63,14 @@ const ChannelForm = ({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      {/* Move ChannelIdentity to the top */}
+      <ChannelIdentity
+        videoId={formData.video_id}
+        channelTitle={formData.channel_title}
+        channelUrl={formData.channel_url}
+        onChange={onChange}
+      />
+      
       <ChannelContent
         description={formData.description}
         screenshotUrl={formData.screenshot_url}
@@ -90,13 +98,6 @@ const ChannelForm = ({
       <CountrySelector
         selectedCountry={formData.country}
         onSelect={handleCountrySelect}
-      />
-
-      <ChannelIdentity
-        videoId={formData.video_id}
-        channelTitle={formData.channel_title}
-        channelUrl={formData.channel_url}
-        onChange={onChange}
       />
 
       <ChannelStats
