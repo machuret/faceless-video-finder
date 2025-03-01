@@ -121,15 +121,20 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     
     console.log(`Channel type mapping: UI="${uiChannelType}" -> DB="${dbChannelType}"`);
     
+    // Ensure metadata is an object
+    const currentMetadata = typeof channel.metadata === 'object' && channel.metadata !== null 
+      ? channel.metadata 
+      : {};
+    
     // Create metadata object for the channel, preserving existing metadata
     const metadata = {
-      ...(channel.metadata || {}),
+      ...currentMetadata,
       ui_channel_type: uiChannelType
     };
     
     console.log("Prepared metadata:", JSON.stringify(metadata, null, 2));
     
-    // Prepare the data for update - include metadata directly
+    // Prepare the data for update
     const updateData = {
       channel_title: channel.channel_title,
       channel_url: channel.channel_url,
@@ -167,7 +172,7 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       throw new Error(`Channel not found: ${channel.id}`);
     }
     
-    // Update all channel data including metadata in a single operation
+    // Perform the update operation
     const { error: updateError } = await supabase
       .from("youtube_channels")
       .update(updateData)

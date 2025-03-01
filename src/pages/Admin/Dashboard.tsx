@@ -80,18 +80,14 @@ const Dashboard = () => {
     
     try {
       // Ensure metadata is properly set if it exists
-      if (channel.channel_type && !channel.metadata?.ui_channel_type) {
-        if (!channel.metadata) {
-          channel.metadata = {};
-        }
-        channel.metadata.ui_channel_type = channel.channel_type;
-        console.log("Updated metadata with ui_channel_type from channel_type:", channel.channel_type);
-      }
+      const metadata = channel.metadata || {};
       
-      // If we have metadata but no channel_type, use the ui_channel_type
-      if (channel.metadata?.ui_channel_type && !channel.channel_type) {
-        channel.channel_type = channel.metadata.ui_channel_type;
-        console.log("Updated channel_type from metadata.ui_channel_type:", channel.metadata.ui_channel_type);
+      // Always update metadata with current channel_type
+      if (channel.channel_type) {
+        metadata.ui_channel_type = channel.channel_type;
+        channel.metadata = metadata;
+        console.log("Updated metadata with ui_channel_type:", channel.channel_type);
+        console.log("Full updated metadata:", metadata);
       }
       
       console.log("Saving channel with final data:", channel);
