@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,10 +21,10 @@ export const useChannelForm = () => {
     total_views: "",
     start_date: "",
     video_count: "",
-    cpm: "4", // Set default CPM to 4
+    cpm: "4",
+    channel_type: "",
   });
 
-  // Check for edit mode based on URL params
   useEffect(() => {
     if (channelId) {
       setIsEditMode(true);
@@ -33,7 +32,6 @@ export const useChannelForm = () => {
     }
   }, [channelId]);
 
-  // Fetch channel data for editing
   const fetchChannelData = async (id: string) => {
     setLoading(true);
     try {
@@ -53,7 +51,6 @@ export const useChannelForm = () => {
 
       console.log("Channel data fetched for editing:", data);
 
-      // Format the date string to YYYY-MM-DD if it exists
       const formattedStartDate = data.start_date 
         ? new Date(data.start_date).toISOString().split('T')[0]
         : "";
@@ -69,6 +66,7 @@ export const useChannelForm = () => {
         start_date: formattedStartDate,
         video_count: data.video_count?.toString() || "",
         cpm: data.cpm?.toString() || "4",
+        channel_type: data.channel_type || "",
       });
 
       toast.success("Channel data loaded successfully");
@@ -108,7 +106,6 @@ export const useChannelForm = () => {
 
       console.log("Received data from YouTube API:", data);
 
-      // Format the date string to YYYY-MM-DD if it exists
       const formattedStartDate = data.start_date 
         ? new Date(data.start_date).toISOString().split('T')[0]
         : "";
@@ -123,7 +120,8 @@ export const useChannelForm = () => {
         total_views: data.total_views?.toString() || "",
         start_date: formattedStartDate,
         video_count: data.video_count?.toString() || "",
-        cpm: "4", // Always set to 4 as default
+        cpm: "4",
+        channel_type: "",
       });
 
       toast.success("Channel data fetched successfully");
@@ -142,12 +140,10 @@ export const useChannelForm = () => {
     setLoading(true);
 
     try {
-      // Validate required fields
       if (!formData.video_id || !formData.channel_title || !formData.channel_url) {
         throw new Error("Please fill in all required fields: Channel ID, Title, and URL");
       }
 
-      // Convert string values to appropriate types
       const dataToSubmit = {
         video_id: formData.video_id.trim(),
         channel_title: formData.channel_title.trim(),
@@ -158,8 +154,8 @@ export const useChannelForm = () => {
         total_views: formData.total_views ? parseInt(formData.total_views) : null,
         start_date: formData.start_date || null,
         video_count: formData.video_count ? parseInt(formData.video_count) : null,
-        cpm: formData.cpm ? parseFloat(formData.cpm) : 4, // Default to 4 if not provided
-        channel_type: "other" as DatabaseChannelType // Explicitly type as DatabaseChannelType
+        cpm: formData.cpm ? parseFloat(formData.cpm) : 4,
+        channel_type: formData.channel_type || "other"
       };
 
       console.log(`${isEditMode ? "Updating" : "Submitting"} data to Supabase:`, dataToSubmit);
@@ -167,14 +163,12 @@ export const useChannelForm = () => {
       let result;
       
       if (isEditMode && channelId) {
-        // Update existing channel
         result = await supabase
           .from("youtube_channels")
           .update(dataToSubmit)
           .eq("id", channelId)
           .select();
       } else {
-        // Insert new channel
         result = await supabase
           .from("youtube_channels")
           .insert(dataToSubmit)

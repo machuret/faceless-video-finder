@@ -1,5 +1,15 @@
 
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { ChannelType } from "@/types/youtube";
 import ChannelIdentity from "./form-sections/ChannelIdentity";
 import ChannelStats from "./form-sections/ChannelStats";
 import ChannelContent from "./form-sections/ChannelContent";
@@ -16,6 +26,7 @@ export interface ChannelFormData {
   start_date: string;
   video_count: string;
   cpm: string;
+  channel_type?: string;
 }
 
 interface ChannelFormProps {
@@ -28,6 +39,74 @@ interface ChannelFormProps {
 
 const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange }: ChannelFormProps) => {
   const isEditMode = !!formData.video_id && !!formData.channel_title;
+  const [channelTypes, setChannelTypes] = useState<{id: string, label: string}[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Fetch channel types for dropdown
+  useEffect(() => {
+    const fetchChannelTypes = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('channel_types')
+          .select('id, label')
+          .order('label', { ascending: true });
+        
+        if (error) throw error;
+        setChannelTypes(data || []);
+      } catch (error) {
+        console.error('Error fetching channel types:', error);
+        toast.error('Failed to load channel types');
+      }
+    };
+    
+    fetchChannelTypes();
+  }, []);
+
+  // Handle type selection
+  const handleTypeSelect = (typeId: string) => {
+    const mockEvent = {
+      target: {
+        name: "channel_type",
+        value: typeId
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onChange(mockEvent);
+  };
+
+  // Generate content using AI
+  const generateContent = async () => {
+    if (!formData.channel_title) {
+      toast.error('Please enter a channel title first');
+      return;
+    }
+    
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-channel-content', {
+        body: { title: formData.channel_title, description: formData.description || '' }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.description) {
+        const mockEvent = {
+          target: {
+            name: "description",
+            value: data.description
+          }
+        } as React.ChangeEvent<HTMLInputElement>;
+        
+        onChange(mockEvent);
+        toast.success('Description generated successfully!');
+      }
+    } catch (error) {
+      console.error('Error generating content:', error);
+      toast.error('Failed to generate content');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
@@ -36,7 +115,35 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
         screenshotUrl={formData.screenshot_url}
         onChange={onChange}
         onScreenshotChange={onScreenshotChange}
+        onGenerateContent={generateContent}
+        isGenerating={isGenerating}
       />
+
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-3">Channel Type</h3>
+        <div className="space-y-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                {formData.channel_type ? 
+                  channelTypes.find(type => type.id === formData.channel_type)?.label || 'Select Type' : 
+                  'Select Type'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full max-h-96 overflow-y-auto">
+              {channelTypes.map((type) => (
+                <DropdownMenuItem
+                  key={type.id}
+                  onClick={() => handleTypeSelect(type.id)}
+                  className="cursor-pointer"
+                >
+                  {type.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
       <ChannelIdentity
         videoId={formData.video_id}
