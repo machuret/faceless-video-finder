@@ -11,12 +11,6 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryProvider } from './providers/QueryProvider'
 
 function App() {
-  const getCookie = (name: string) => document.cookie.split('; ').find(row => row.startsWith(`${name}=`))?.split('=')[1];
-  const initialAuthState = getCookie('_auth') ? true : false;
-  const initialAuthToken = getCookie('_auth_token') || null;
-  const initialAuthTokenType = getCookie('_auth_token_type') || 'Bearer';
-  const initialAuthExpiresAt = getCookie('_auth_expires_at') || null;
-
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <QueryProvider>
