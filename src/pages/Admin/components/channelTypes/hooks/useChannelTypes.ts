@@ -44,6 +44,13 @@ export const useChannelTypes = () => {
     handleCancel
   } = useChannelTypeForm(loadChannelTypesWrapper, setActiveTab);
 
+  // Debug logs to track state changes
+  useEffect(() => {
+    console.log("Active Tab:", activeTab);
+    console.log("Selected Type:", selectedType);
+    console.log("Form Data:", formData);
+  }, [activeTab, selectedType, formData]);
+
   return {
     channelTypes,
     loading,

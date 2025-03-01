@@ -10,10 +10,12 @@ export const useTypeSelection = (
 ) => {
   const handleSelectType = async (id: string) => {
     try {
+      console.log("Fetching channel type data for ID:", id);
       const typeInfo = await getChannelTypeById(id);
       
       if (typeInfo) {
-        // Pass the full typeInfo object instead of just the ID
+        console.log("Channel type data received:", typeInfo);
+        // Pass the full typeInfo object
         setSelectedType(typeInfo);
         setFormData(typeInfo);
         setActiveTab("edit");

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,12 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
   onCancel
 }) => {
   const [idError, setIdError] = useState<string | null>(null);
+  
+  // Debug log to check form data
+  useEffect(() => {
+    console.log("Channel Type Form Data:", formData);
+    console.log("Selected Type:", selectedType);
+  }, [formData, selectedType]);
   
   const validateId = (value: string) => {
     const regex = /^[a-z0-9_]+$/;
@@ -106,7 +112,10 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
               name="description"
               label="Description"
               value={formData.description || ''}
-              onChange={onRichTextChange}
+              onChange={(name, value) => {
+                console.log(`Updating ${name} with value:`, value);
+                onRichTextChange(name, value);
+              }}
               placeholder="Describe this channel type..."
               className="min-h-[100px]"
             />
@@ -119,7 +128,10 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
             name="production"
             label="How to Create"
             value={formData.production || ''}
-            onChange={onRichTextChange}
+            onChange={(name, value) => {
+              console.log(`Updating ${name} with value:`, value);
+              onRichTextChange(name, value);
+            }}
             placeholder="Describe how to create this type of content with step-by-step instructions..."
             className="min-h-[200px]"
           />
@@ -129,7 +141,10 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
             name="example"
             label="Example Ideas"
             value={formData.example || ''}
-            onChange={onRichTextChange}
+            onChange={(name, value) => {
+              console.log(`Updating ${name} with value:`, value);
+              onRichTextChange(name, value);
+            }}
             placeholder="Provide examples of content ideas for this channel type..."
             className="min-h-[100px]"
           />
