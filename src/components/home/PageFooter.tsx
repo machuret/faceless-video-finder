@@ -13,16 +13,16 @@ const PageFooter = () => {
               Discover and analyze faceless YouTube channel ideas to help you grow your online presence.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-white">
+              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
                 <Youtube className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white">
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
                 <Twitter className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white">
+              <a href="mailto:contact@example.com" className="text-gray-400 hover:text-white">
                 <Mail className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white">
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
                 <Github className="h-5 w-5" />
               </a>
             </div>
@@ -84,24 +84,24 @@ const PageFooter = () => {
             <h3 className="font-montserrat font-semibold mb-4 text-sm uppercase tracking-wider">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-400 hover:text-white">
+                <Link to="/how-it-works#terms" className="text-gray-400 hover:text-white">
                   Terms of Service
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white">
+                <Link to="/how-it-works#privacy" className="text-gray-400 hover:text-white">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white">
+                <Link to="/how-it-works#cookies" className="text-gray-400 hover:text-white">
                   Cookie Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white">
+                <Link to="/how-it-works#disclaimer" className="text-gray-400 hover:text-white">
                   Disclaimer
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

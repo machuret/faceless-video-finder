@@ -2,8 +2,9 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
-import { ArrowRight, Home } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import MainNavbar from "@/components/MainNavbar";
+import PageFooter from "@/components/home/PageFooter";
 
 const ChannelTypes = () => {
   return (
@@ -37,6 +38,8 @@ const ChannelTypes = () => {
           ))}
         </div>
       </div>
+      
+      <PageFooter />
     </div>
   );
 };

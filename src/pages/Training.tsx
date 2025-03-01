@@ -15,7 +15,8 @@ const TrainingPage = () => {
       icon: <Compass className="h-10 w-10 text-blue-500" />,
       lessons: ["Channel Niche Selection", "Setting Up Your Channel", "Content Planning Basics"],
       duration: "2 hours",
-      level: "Beginner"
+      level: "Beginner",
+      link: "/how-it-works" // Link to relevant page
     },
     {
       title: "Content Creation Masterclass",
@@ -23,7 +24,8 @@ const TrainingPage = () => {
       icon: <BookOpen className="h-10 w-10 text-green-500" />,
       lessons: ["Scriptwriting for Faceless Channels", "Visual Design Principles", "Voice-over Techniques"],
       duration: "3 hours",
-      level: "Intermediate"
+      level: "Intermediate",
+      link: "/channel-types" // Link to relevant page
     },
     {
       title: "Growth Strategies",
@@ -31,7 +33,8 @@ const TrainingPage = () => {
       icon: <GraduationCap className="h-10 w-10 text-purple-500" />,
       lessons: ["YouTube Algorithm Optimization", "Effective Titles & Thumbnails", "Community Engagement"],
       duration: "2.5 hours",
-      level: "Intermediate"
+      level: "Intermediate",
+      link: "/growth-calculator" // Link to relevant page
     },
     {
       title: "Monetization Techniques",
@@ -39,7 +42,8 @@ const TrainingPage = () => {
       icon: <Award className="h-10 w-10 text-yellow-500" />,
       lessons: ["AdSense Optimization", "Sponsorship Strategies", "Product Creation & Sales"],
       duration: "2 hours",
-      level: "Advanced"
+      level: "Advanced",
+      link: "/channel-earnings" // Link to relevant page
     }
   ];
 
@@ -57,7 +61,9 @@ const TrainingPage = () => {
             </p>
             <div className="mt-8">
               <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-semibold">
-                Start Free Training
+                <Link to={trainingModules[0].link}>
+                  Start Free Training
+                </Link>
               </Button>
             </div>
           </div>
@@ -131,9 +137,11 @@ const TrainingPage = () => {
                       <span className="text-sm text-gray-500 flex items-center">
                         <CalendarDays className="h-4 w-4 mr-1" /> {module.duration}
                       </span>
-                      <Button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
-                        Start Module
-                      </Button>
+                      <Link to={module.link}>
+                        <Button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                          Start Module
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </CardContent>
@@ -250,11 +258,11 @@ const TrainingPage = () => {
             </p>
             <Link to="/calculators">
               <Button size="lg" className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold transition-colors">
-                Enroll in Full Program
+                Explore All Calculators
               </Button>
             </Link>
             <p className="mt-4 text-sm text-gray-500">
-              Already have an account? <Link to="/" className="text-blue-600 hover:underline">Sign in</Link>
+              Want to see channel examples? <Link to="/" className="text-blue-600 hover:underline">Browse examples</Link>
             </p>
           </div>
         </div>
