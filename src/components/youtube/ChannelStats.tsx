@@ -50,12 +50,12 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
             <BarChart2 className="w-5 h-5 text-blue-600" />
             <h3 className="text-base font-semibold text-gray-800">Channel Size</h3>
           </div>
-          <p className="text-xl font-semibold text-blue-600 ml-7">
+          <p className="text-sm font-medium text-blue-600 ml-7">
             {channelSize.charAt(0).toUpperCase() + channelSize.slice(1)}
           </p>
           <div className="flex items-center gap-2 ml-7 mt-2">
             <TrendingUp className="w-4 h-4 text-green-600" />
-            <p className="text-sm text-gray-600">
+            <p className="text-xs text-gray-600">
               Expected Monthly Growth: {getGrowthRange(channelSize)} subscribers
             </p>
           </div>
@@ -66,12 +66,12 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
             <Calendar className="w-5 h-5 text-green-600" />
             <h3 className="text-base font-semibold text-gray-800">Upload Frequency</h3>
           </div>
-          <p className="text-xl font-semibold text-green-600 ml-7">
+          <p className="text-sm font-medium text-green-600 ml-7">
             {uploadFrequencyCategory.split('_').map(word => 
               word.charAt(0).toUpperCase() + word.slice(1)
             ).join(' ')}
           </p>
-          <p className="text-sm text-gray-600 mt-1 ml-7">
+          <p className="text-xs text-gray-600 mt-1 ml-7">
             {getUploadFrequencyLabel(uploadFrequency)}
           </p>
         </div>
@@ -86,7 +86,7 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
               {channel.keywords.map((keyword) => (
                 <span
                   key={keyword}
-                  className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600 hover:bg-gray-200 transition-colors"
+                  className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-600 hover:bg-gray-200 transition-colors"
                 >
                   {keyword}
                 </span>
@@ -103,16 +103,16 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
             </div>
             <div className="space-y-2 ml-7">
               <div className="flex items-center gap-2">
-                <p className="text-sm">CPM: <span className="font-medium">{formatRevenue(channel.cpm)}</span></p>
+                <p className="text-xs">CPM: <span className="font-medium">{formatRevenue(channel.cpm)}</span></p>
               </div>
               {channel.revenue_per_video && (
                 <div className="flex items-center gap-2">
-                  <p className="text-sm">Revenue per Video: <span className="font-medium">{formatRevenue(channel.revenue_per_video)}</span></p>
+                  <p className="text-xs">Revenue per Video: <span className="font-medium">{formatRevenue(channel.revenue_per_video)}</span></p>
                 </div>
               )}
               {channel.revenue_per_month && (
                 <div className="flex items-center gap-2">
-                  <p className="text-sm">Monthly Revenue: <span className="font-medium">{formatRevenue(channel.revenue_per_month)}</span></p>
+                  <p className="text-xs">Monthly Revenue: <span className="font-medium">{formatRevenue(channel.revenue_per_month)}</span></p>
                 </div>
               )}
             </div>
@@ -125,7 +125,7 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
               <Layers className="w-5 h-5 text-orange-500" />
               <h3 className="text-base font-semibold text-gray-800">Category</h3>
             </div>
-            <p className="text-sm capitalize ml-7">{channel.channel_category}</p>
+            <p className="text-xs capitalize ml-7">{channel.channel_category}</p>
           </div>
         )}
 
@@ -137,7 +137,7 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
             </div>
             <Link 
               to={`/channel-types/${getChannelTypeUrl(displayChannelType)}`}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline ml-7 flex items-center"
+              className="text-xs text-blue-600 hover:text-blue-800 hover:underline ml-7 flex items-center"
             >
               {formatChannelType(displayChannelType)}
             </Link>
@@ -150,7 +150,7 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
               <Layers className="w-5 h-5 text-blue-500" />
               <h3 className="text-base font-semibold text-gray-800">Niche</h3>
             </div>
-            <p className="text-sm ml-7">{channel.niche}</p>
+            <p className="text-xs ml-7">{channel.niche}</p>
           </div>
         )}
 
@@ -160,7 +160,7 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
               <Globe className="w-5 h-5 text-gray-600" />
               <h3 className="text-base font-semibold text-gray-800">Country</h3>
             </div>
-            <p className="text-sm ml-7">{channel.country}</p>
+            <p className="text-xs ml-7">{channel.country}</p>
           </div>
         )}
       </CardContent>
@@ -169,4 +169,3 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
 };
 
 export default ChannelStats;
-
