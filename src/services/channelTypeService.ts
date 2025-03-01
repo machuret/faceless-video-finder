@@ -9,73 +9,169 @@ export interface ChannelTypeInfo {
   example: string;
 }
 
+/**
+ * Handles errors from Supabase operations on channel types
+ */
+const handleChannelTypeError = (error: any, operation: string): never => {
+  const errorMsg = `Error ${operation} channel type: ${error.message || 'Unknown error'}`;
+  console.error(errorMsg, error);
+  throw new Error(errorMsg);
+};
+
+/**
+ * Fetches all channel types from the database
+ */
 export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
-  const { data, error } = await supabase.from('channel_types').select('*');
-  
-  if (error) {
-    console.error("Error fetching channel types:", error);
-    throw error;
+  try {
+    console.log("Fetching channel types from database");
+    const { data, error } = await supabase
+      .from('channel_types')
+      .select('*')
+      .order('label', { ascending: true });
+    
+    if (error) {
+      return handleChannelTypeError(error, 'fetching');
+    }
+    
+    console.log(`Successfully fetched ${data.length} channel types`);
+    return data as ChannelTypeInfo[];
+  } catch (error) {
+    return handleChannelTypeError(error, 'fetching');
   }
-  
-  return data as ChannelTypeInfo[];
 };
 
+/**
+ * Creates a new channel type in the database
+ */
 export const createChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
-  const { data, error } = await supabase
-    .from('channel_types')
-    .insert(channelType)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error("Error creating channel type:", error);
-    throw error;
+  try {
+    console.log("Creating new channel type:", channelType.id);
+    
+    if (!channelType.id || !channelType.label) {
+      throw new Error("Channel type must have an ID and label");
+    }
+    
+    const { data, error } = await supabase
+      .from('channel_types')
+      .insert({
+        id: channelType.id,
+        label: channelType.label,
+        description: channelType.description || null,
+        production: channelType.production || null,
+        example: channelType.example || null
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      return handleChannelTypeError(error, 'creating');
+    }
+    
+    console.log("Channel type created successfully:", data.id);
+    return data as ChannelTypeInfo;
+  } catch (error) {
+    return handleChannelTypeError(error, 'creating');
   }
-  
-  return data as ChannelTypeInfo;
 };
 
+/**
+ * Updates an existing channel type in the database
+ */
 export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
-  console.log("Attempting to update channel type:", JSON.stringify(channelType, null, 2));
-  
-  if (!channelType.id) {
-    throw new Error("Cannot update channel type: Missing ID");
-  }
-  
-  // Direct approach: explicitly define all fields to update
-  const { data, error } = await supabase
-    .from('channel_types')
-    .update({
-      label: channelType.label || null,
+  try {
+    console.log("Updating channel type:", channelType.id);
+    
+    if (!channelType.id) {
+      throw new Error("Cannot update channel type: Missing ID");
+    }
+    
+    const updateData = {
+      label: channelType.label,
       description: channelType.description || null,
       production: channelType.production || null,
-      example: channelType.example || null
-    })
-    .eq('id', channelType.id)
-    .select('*');  // Use select('*') to ensure we get all fields back
-  
-  if (error) {
-    console.error("Failed to update channel type:", error);
-    throw error;
+      example: channelType.example || null,
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log("Update payload:", JSON.stringify(updateData, null, 2));
+    
+    const { data, error } = await supabase
+      .from('channel_types')
+      .update(updateData)
+      .eq('id', channelType.id)
+      .select('*')
+      .single();
+    
+    if (error) {
+      console.error("Update failed with error:", error);
+      return handleChannelTypeError(error, 'updating');
+    }
+    
+    if (!data) {
+      throw new Error(`No data returned after update for ID: ${channelType.id}`);
+    }
+    
+    console.log("Channel type updated successfully:", data.id);
+    return data as ChannelTypeInfo;
+  } catch (error) {
+    return handleChannelTypeError(error, 'updating');
   }
-  
-  if (!data || data.length === 0) {
-    console.error("No data returned after update. The record may not exist.");
-    throw new Error(`No data returned for channel type with ID: ${channelType.id}`);
-  }
-  
-  console.log("Channel type successfully updated:", JSON.stringify(data[0], null, 2));
-  return data[0] as ChannelTypeInfo;
 };
 
+/**
+ * Deletes a channel type from the database
+ */
 export const deleteChannelType = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('channel_types')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error("Error deleting channel type:", error);
-    throw error;
+  try {
+    console.log("Deleting channel type:", id);
+    
+    if (!id) {
+      throw new Error("Cannot delete channel type: Missing ID");
+    }
+    
+    const { error } = await supabase
+      .from('channel_types')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      return handleChannelTypeError(error, 'deleting');
+    }
+    
+    console.log("Channel type deleted successfully:", id);
+  } catch (error) {
+    handleChannelTypeError(error, 'deleting');
+  }
+};
+
+/**
+ * Fetches a single channel type by ID
+ */
+export const getChannelTypeById = async (id: string): Promise<ChannelTypeInfo | null> => {
+  try {
+    console.log("Fetching channel type by ID:", id);
+    
+    if (!id) {
+      throw new Error("Cannot fetch channel type: Missing ID");
+    }
+    
+    const { data, error } = await supabase
+      .from('channel_types')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log(`No channel type found with ID: ${id}`);
+        return null;
+      }
+      return handleChannelTypeError(error, 'fetching');
+    }
+    
+    console.log("Channel type fetched successfully:", data.id);
+    return data as ChannelTypeInfo;
+  } catch (error) {
+    return handleChannelTypeError(error, 'fetching');
   }
 };
