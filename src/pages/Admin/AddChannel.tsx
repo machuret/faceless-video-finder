@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,9 +12,11 @@ import { DatabaseChannelType } from "@/types/youtube";
 
 const AddChannel = () => {
   const navigate = useNavigate();
+  const { channelId } = useParams(); // Get the channelId from URL params
   const { user, isAdmin, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState<ChannelFormData>({
     video_id: "",
     channel_title: "",
@@ -28,6 +30,15 @@ const AddChannel = () => {
     cpm: "4", // Set default CPM to 4
   });
 
+  // Check for edit mode based on URL params
+  useEffect(() => {
+    if (channelId) {
+      setIsEditMode(true);
+      fetchChannelData(channelId);
+    }
+  }, [channelId]);
+
+  // Auth check
   useEffect(() => {
     if (!authLoading && !user) {
       toast.error("Please log in to access this page");
@@ -41,6 +52,55 @@ const AddChannel = () => {
       return;
     }
   }, [user, isAdmin, authLoading, navigate]);
+
+  // Fetch channel data for editing
+  const fetchChannelData = async (id: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("youtube_channels")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        throw new Error(`Error fetching channel: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error("Channel not found");
+      }
+
+      console.log("Channel data fetched for editing:", data);
+
+      // Format the date string to YYYY-MM-DD if it exists
+      const formattedStartDate = data.start_date 
+        ? new Date(data.start_date).toISOString().split('T')[0]
+        : "";
+
+      setFormData({
+        video_id: data.video_id || "",
+        channel_title: data.channel_title || "",
+        channel_url: data.channel_url || "",
+        description: data.description || "",
+        screenshot_url: data.screenshot_url || "",
+        total_subscribers: data.total_subscribers?.toString() || "",
+        total_views: data.total_views?.toString() || "",
+        start_date: formattedStartDate,
+        video_count: data.video_count?.toString() || "",
+        cpm: data.cpm?.toString() || "4",
+      });
+
+      toast.success("Channel data loaded successfully");
+    } catch (error) {
+      console.error("Error fetching channel data:", error);
+      toast.error(error instanceof Error 
+        ? error.message 
+        : "Failed to load channel data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchYoutubeData = async () => {
     if (!youtubeUrl) {
@@ -122,15 +182,29 @@ const AddChannel = () => {
         channel_type: "other" as DatabaseChannelType // Explicitly type as DatabaseChannelType
       };
 
-      console.log("Submitting data to Supabase:", dataToSubmit);
+      console.log(`${isEditMode ? "Updating" : "Submitting"} data to Supabase:`, dataToSubmit);
 
-      const { data, error } = await supabase
-        .from("youtube_channels")
-        .insert(dataToSubmit)
-        .select();
+      let result;
+      
+      if (isEditMode && channelId) {
+        // Update existing channel
+        result = await supabase
+          .from("youtube_channels")
+          .update(dataToSubmit)
+          .eq("id", channelId)
+          .select();
+      } else {
+        // Insert new channel
+        result = await supabase
+          .from("youtube_channels")
+          .insert(dataToSubmit)
+          .select();
+      }
+
+      const { data, error } = result;
 
       if (error) {
-        console.error("Insert error:", error);
+        console.error("Database error:", error);
         if (error.code === "23505") {
           throw new Error("This channel has already been added to the database");
         } else if (error.code === "42501") {
@@ -141,14 +215,14 @@ const AddChannel = () => {
         throw new Error(`Database error: ${error.message}`);
       }
 
-      console.log("Insert successful:", data);
-      toast.success("Channel added successfully!");
+      console.log(`${isEditMode ? "Update" : "Insert"} successful:`, data);
+      toast.success(`Channel ${isEditMode ? "updated" : "added"} successfully!`);
       navigate("/admin/dashboard");
     } catch (error) {
       console.error("Submit error:", error);
       toast.error(error instanceof Error 
-        ? `Failed to add channel: ${error.message}` 
-        : "An unexpected error occurred while adding the channel");
+        ? `Failed to ${isEditMode ? "update" : "add"} channel: ${error.message}` 
+        : `An unexpected error occurred while ${isEditMode ? "updating" : "adding"} the channel`);
     } finally {
       setLoading(false);
     }
@@ -177,19 +251,21 @@ const AddChannel = () => {
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Add New Channel</CardTitle>
+              <CardTitle>{isEditMode ? "Edit Channel" : "Add New Channel"}</CardTitle>
               <Button variant="outline" onClick={() => navigate("/admin/dashboard")}>
                 Back to Dashboard
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <YouTubeUrlInput
-              youtubeUrl={youtubeUrl}
-              loading={loading}
-              onUrlChange={setYoutubeUrl}
-              onFetch={fetchYoutubeData}
-            />
+            {!isEditMode && (
+              <YouTubeUrlInput
+                youtubeUrl={youtubeUrl}
+                loading={loading}
+                onUrlChange={setYoutubeUrl}
+                onFetch={fetchYoutubeData}
+              />
+            )}
             <ChannelForm
               formData={formData}
               loading={loading}

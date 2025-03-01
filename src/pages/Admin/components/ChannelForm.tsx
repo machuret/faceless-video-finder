@@ -14,7 +14,7 @@ export interface ChannelFormData {
   total_views: string;
   start_date: string;
   video_count: string;
-  cpm: string; // Added this field
+  cpm: string;
 }
 
 interface ChannelFormProps {
@@ -38,6 +38,8 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
       onChange(mockEvent);
     }
   }, []);
+
+  const isEditMode = !!formData.video_id && !!formData.channel_title;
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -129,7 +131,7 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
         />
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Adding Channel..." : "Add Channel"}
+        {loading ? (isEditMode ? "Updating Channel..." : "Adding Channel...") : (isEditMode ? "Update Channel" : "Add Channel")}
       </Button>
     </form>
   );
