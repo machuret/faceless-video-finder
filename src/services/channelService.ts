@@ -1,5 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import type { Channel, DatabaseChannelType } from "@/types/youtube";
+import type { Channel, ChannelMetadata, DatabaseChannelType } from "@/types/youtube";
 import { toast } from "sonner";
 
 /**
@@ -20,15 +21,21 @@ export const fetchAllChannels = async (): Promise<Channel[]> => {
   // Process the data to handle custom channel types from metadata
   const processedData = data.map(channel => {
     // Check if the channel has metadata with ui_channel_type
-    if (channel.metadata?.ui_channel_type) {
-      console.log(`Using ui_channel_type from metadata for ${channel.channel_title}: ${channel.metadata.ui_channel_type}`);
+    if (channel.metadata && typeof channel.metadata === 'object' && 'ui_channel_type' in channel.metadata) {
+      const typedMetadata = channel.metadata as ChannelMetadata;
+      console.log(`Using ui_channel_type from metadata for ${channel.channel_title}: ${typedMetadata.ui_channel_type}`);
       // Use the UI channel type from metadata for display
       return {
         ...channel,
-        channel_type: channel.metadata.ui_channel_type
-      };
+        metadata: typedMetadata,
+        channel_type: typedMetadata.ui_channel_type
+      } as Channel;
     }
-    return channel;
+    // Ensure metadata is properly cast to ChannelMetadata
+    return {
+      ...channel,
+      metadata: channel.metadata as ChannelMetadata
+    } as Channel;
   });
 
   return processedData;
@@ -49,7 +56,10 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     
     // 2. Process the UI channel type
     // Get the UI channel type from metadata first, then fallback to channel_type
-    const uiChannelType = channel.metadata?.ui_channel_type || channel.channel_type || "other";
+    const uiChannelType = channel.metadata && typeof channel.metadata === 'object' && 'ui_channel_type' in channel.metadata
+      ? (channel.metadata as ChannelMetadata).ui_channel_type
+      : channel.channel_type || "other";
+    
     console.log("UI Channel Type for update:", uiChannelType);
     
     // Determine the database channel type (must be one of the enum values)
@@ -69,7 +79,7 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     
     // If there's existing metadata, start with that
     if (channel.metadata && typeof channel.metadata === 'object') {
-      metadataObj = { ...channel.metadata };
+      metadataObj = { ...channel.metadata as Record<string, any> };
     }
     
     // Always ensure the ui_channel_type is stored in metadata
