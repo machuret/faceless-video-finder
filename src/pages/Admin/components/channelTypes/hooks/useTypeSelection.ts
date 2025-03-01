@@ -3,7 +3,6 @@ import { Dispatch, SetStateAction } from "react";
 import { ChannelTypeInfo, getChannelTypeById } from "@/services/channelTypeService";
 
 export const useTypeSelection = (
-  // Update the type here to match useChannelTypeFormState
   setSelectedType: Dispatch<SetStateAction<ChannelTypeInfo | null>>,
   setFormData: Dispatch<SetStateAction<ChannelTypeInfo>>,
   setActiveTab: (tab: string) => void
@@ -15,9 +14,17 @@ export const useTypeSelection = (
       
       if (typeInfo) {
         console.log("Channel type data received:", typeInfo);
-        // Pass the full typeInfo object
         setSelectedType(typeInfo);
-        setFormData(typeInfo);
+        
+        // Make sure we're setting the complete object with all properties
+        setFormData({
+          id: typeInfo.id,
+          label: typeInfo.label,
+          description: typeInfo.description || '',
+          production: typeInfo.production || '',
+          example: typeInfo.example || ''
+        });
+        
         setActiveTab("edit");
       } else {
         console.error(`Channel type with ID ${id} not found`);
