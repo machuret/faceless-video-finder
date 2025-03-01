@@ -7,6 +7,9 @@ import ChannelEarnings from './pages/ChannelEarnings'
 import ReachCalculator from './pages/ReachCalculator'
 import GrowthRateCalculator from './pages/GrowthRateCalculator'
 import Calculators from './pages/Calculators'
+import AboutUs from './pages/AboutUs'
+import HowItWorks from './pages/HowItWorks'
+import ContactUs from './pages/ContactUs'
 import { Toaster } from "@/components/ui/toaster"
 
 function App() {
@@ -20,6 +23,9 @@ function App() {
         <Route path="/reach-calculator" element={<ReachCalculator />} />
         <Route path="/growth-calculator" element={<GrowthRateCalculator />} />
         <Route path="/calculators" element={<Calculators />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/contact" element={<ContactUs />} />
       </Routes>
       <Toaster />
     </>
