@@ -15,15 +15,6 @@ const HeroSection = () => {
           Find trending niches, estimate earnings, and analyze growth potential
           all in one place. Start your faceless YouTube journey today.
         </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-10">
-          <Link to="/calculators">
-            <Button className="bg-white text-blue-700 hover:bg-gray-100 px-6 py-6 rounded-lg text-lg font-medium flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-              Explore Creator Tools
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
       </div>
     </div>
   );
