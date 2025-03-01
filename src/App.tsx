@@ -10,6 +10,7 @@ import Calculators from './pages/Calculators'
 import AboutUs from './pages/AboutUs'
 import HowItWorks from './pages/HowItWorks'
 import ContactUs from './pages/ContactUs'
+import ChannelDetails from './pages/ChannelDetails'
 import { Toaster } from "@/components/ui/toaster"
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/about" element={<AboutUs />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/contact" element={<ContactUs />} />
+        <Route path="/channel/:channelId" element={<ChannelDetails />} />
       </Routes>
       <Toaster />
     </>

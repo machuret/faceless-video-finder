@@ -1,258 +1,259 @@
 
-import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Channel, ChannelMetadata } from "@/types/youtube";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, Play, Eye, ExternalLink } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { getChannelSize, calculateUploadFrequency, getUploadFrequencyCategory } from "@/utils/channelUtils";
-import ChannelStats from "@/components/youtube/ChannelStats";
-import VideoPerformance from "@/components/youtube/VideoPerformance";
-import MainNavbar from "@/components/MainNavbar";
-import { getChannelTypeById } from "@/services/channelTypeService";
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Channel } from "@/types/youtube";
+import MainNavbar from "@/components/MainNavbar";
+import PageFooter from "@/components/home/PageFooter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { Loader2, Youtube, Users, Play, Calendar, Bookmark, CircleDollarSign } from "lucide-react";
 
 const ChannelDetails = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [channelTypeInfo, setChannelTypeInfo] = useState<any>(null);
-  
-  // Fetch channel data
-  const { 
-    data: channel, 
-    isLoading: isLoadingChannel,
-    error: channelError
-  } = useQuery({
-    queryKey: ["channel", id],
-    queryFn: async () => {
-      if (!id) throw new Error("Channel ID is required");
-      
-      const { data, error } = await supabase
+  const { channelId } = useParams();
+  const [channel, setChannel] = useState<Channel | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [videoStats, setVideoStats] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (channelId) {
+      fetchChannelDetails(channelId);
+    }
+  }, [channelId]);
+
+  const fetchChannelDetails = async (id: string) => {
+    setLoading(true);
+    try {
+      // Fetch channel details
+      const { data: channelData, error: channelError } = await supabase
         .from("youtube_channels")
         .select("*")
         .eq("id", id)
         .single();
-      
-      if (error) {
-        console.error("Error fetching channel:", error);
-        throw error;
-      }
-      
-      if (!data) {
-        throw new Error("Channel not found");
-      }
-      
-      // Process the channel to get UI channel type from metadata
-      if (data.metadata && typeof data.metadata === 'object') {
-        const typedMetadata = data.metadata as ChannelMetadata;
-        if ('ui_channel_type' in typedMetadata) {
-          console.log(`Using channel type from metadata: ${typedMetadata.ui_channel_type}`);
-          return {
-            ...data,
-            metadata: typedMetadata,
-            channel_type: typedMetadata.ui_channel_type
-          } as Channel;
-        }
-      }
-      
-      return data as Channel;
-    },
-    retry: 1,
-    enabled: !!id
-  });
 
-  // Fetch channel type info when channel is loaded
-  useEffect(() => {
-    if (channel?.metadata?.ui_channel_type) {
-      const fetchChannelTypeInfo = async () => {
-        try {
-          const typeInfo = await getChannelTypeById(channel.metadata.ui_channel_type);
-          if (typeInfo) {
-            setChannelTypeInfo(typeInfo);
-          }
-        } catch (error) {
-          console.error("Error fetching channel type info:", error);
-        }
-      };
+      if (channelError) throw channelError;
       
-      fetchChannelTypeInfo();
-    }
-  }, [channel]);
-
-  // Fetch video stats
-  const { 
-    data: videoStats, 
-    isLoading: isLoadingStats,
-    error: statsError 
-  } = useQuery({
-    queryKey: ["video-stats", id],
-    queryFn: async () => {
-      if (!id) return [];
-      
-      const { data, error } = await supabase
+      // Fetch video stats for this channel
+      const { data: videoData, error: videoError } = await supabase
         .from("youtube_video_stats")
         .select("*")
         .eq("channel_id", id);
-      
-      if (error) {
-        console.error("Error fetching video stats:", error);
-        return [];
-      }
-      
-      return data || [];
-    },
-    retry: 1,
-    enabled: !!id
-  });
+        
+      if (videoError) throw videoError;
 
-  // Handle loading state
-  if (isLoadingChannel) {
+      setChannel(channelData as unknown as Channel);
+      setVideoStats(videoData || []);
+    } catch (error) {
+      console.error("Error fetching channel details:", error);
+      toast.error("Failed to load channel details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <MainNavbar />
-        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
-          <div className="text-base">Loading channel details...</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle error state
-  if (channelError || !channel) {
-    console.error("Channel error:", channelError);
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <MainNavbar />
-        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
-          <div className="text-red-500 text-base">
-            {channelError instanceof Error ? channelError.message : "Channel not found"}
+        <div className="container mx-auto px-4 py-16 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-blue-600" />
+            <h2 className="text-xl font-semibold">Loading channel details...</h2>
           </div>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Go Back
-          </Button>
         </div>
+        <PageFooter />
       </div>
     );
   }
 
-  // Calculate channel metrics
-  const uploadFrequency = calculateUploadFrequency(channel.start_date, channel.video_count);
-  const uploadFrequencyCategory = getUploadFrequencyCategory(uploadFrequency);
-  const channelSize = getChannelSize(channel.total_subscribers);
+  if (!channel) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainNavbar />
+        <div className="container mx-auto px-4 py-16">
+          <div className="bg-white p-8 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Channel not found</h2>
+            <p className="text-gray-600">The channel you're looking for doesn't exist or has been removed.</p>
+          </div>
+        </div>
+        <PageFooter />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <MainNavbar />
-      
-      <div className="container mx-auto px-4 py-8">
-        <Button 
-          variant="outline" 
-          className="mb-8"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back
-        </Button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2">
-            <CardHeader className="space-y-4">
-              {channel.screenshot_url && (
-                <img
-                  src={channel.screenshot_url}
-                  alt={channel.channel_title}
-                  className="w-full h-64 object-cover rounded-lg"
-                />
-              )}
-              <CardTitle className="text-3xl font-bold tracking-tight">{channel.channel_title}</CardTitle>
-              
-              {/* Visit Channel Button */}
-              <a 
-                href={channel.channel_url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="block w-full sm:w-auto mt-4"
-              >
-                <Button variant="default" size="lg" className="w-full bg-red-600 hover:bg-red-700 font-medium">
-                  <ExternalLink className="mr-2 h-5 w-5" /> Visit this Channel
-                </Button>
-              </a>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg text-gray-600 leading-relaxed mb-8"
-                dangerouslySetInnerHTML={{ __html: channel.description || "No description available." }}
-              />
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">Subscribers</p>
-                    <p className="text-lg font-medium">{channel.total_subscribers?.toLocaleString()}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Eye className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">Views</p>
-                    <p className="text-lg font-medium">{channel.total_views?.toLocaleString()}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Play className="w-5 h-5 text-red-600" />
-                  <div>
-                    <p className="text-sm text-gray-500">Videos</p>
-                    <p className="text-lg font-medium">{channel.video_count}</p>
-                  </div>
+      <main className="container mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
+            <h1 className="text-3xl font-bold mb-2">{channel.channel_title}</h1>
+            {channel.niche && (
+              <div className="inline-block px-3 py-1 bg-blue-500 bg-opacity-30 rounded-full text-sm font-medium">
+                {channel.niche}
+              </div>
+            )}
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Channel Information</h2>
+                
+                <div className="space-y-4">
+                  {channel.description && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Description</h3>
+                      <p className="text-gray-700">{channel.description}</p>
+                    </div>
+                  )}
+                  
+                  {channel.channel_url && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Channel URL</h3>
+                      <a 
+                        href={channel.channel_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline flex items-center"
+                      >
+                        <Youtube className="h-4 w-4 mr-2" />
+                        Visit YouTube Channel
+                      </a>
+                    </div>
+                  )}
+                  
+                  {channel.keywords && channel.keywords.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Keywords</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {channel.keywords.map((keyword, index) => (
+                          <span key={index} className="px-2 py-1 bg-gray-100 rounded-full text-sm">
+                            {keyword}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <ChannelStats 
-            channel={channel}
-            channelSize={channelSize}
-            uploadFrequency={uploadFrequency}
-            uploadFrequencyCategory={uploadFrequencyCategory}
-          />
-
-          {videoStats && videoStats.length > 0 && (
-            <VideoPerformance videoStats={videoStats} />
-          )}
+              
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Channel Statistics</h2>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Card>
+                    <CardContent className="p-4 flex items-center">
+                      <Users className="h-8 w-8 text-blue-600 mr-3" />
+                      <div>
+                        <p className="text-sm text-gray-500">Subscribers</p>
+                        <p className="text-xl font-bold">
+                          {channel.total_subscribers ? 
+                            parseInt(channel.total_subscribers.toString()).toLocaleString() : 
+                            'N/A'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4 flex items-center">
+                      <Play className="h-8 w-8 text-blue-600 mr-3" />
+                      <div>
+                        <p className="text-sm text-gray-500">Views</p>
+                        <p className="text-xl font-bold">
+                          {channel.total_views ? 
+                            parseInt(channel.total_views.toString()).toLocaleString() : 
+                            'N/A'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4 flex items-center">
+                      <Calendar className="h-8 w-8 text-blue-600 mr-3" />
+                      <div>
+                        <p className="text-sm text-gray-500">Videos</p>
+                        <p className="text-xl font-bold">
+                          {channel.video_count || 'N/A'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4 flex items-center">
+                      <CircleDollarSign className="h-8 w-8 text-blue-600 mr-3" />
+                      <div>
+                        <p className="text-sm text-gray-500">Est. CPM</p>
+                        <p className="text-xl font-bold">
+                          {channel.cpm ? `$${channel.cpm.toFixed(2)}` : 'N/A'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {channel.revenue_per_month && (
+                  <Card className="mt-4">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-gray-500">Estimated Monthly Revenue</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        ${parseFloat(channel.revenue_per_month.toString()).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
         
-        {channelTypeInfo && (
-          <Card className="mt-8 p-6">
-            <h2 className="text-xl font-semibold mb-4">Channel Type: {channelTypeInfo.label}</h2>
-            
-            {channelTypeInfo.description && (
-              <div className="mb-4">
-                <h3 className="font-medium mb-2">Description</h3>
-                <div dangerouslySetInnerHTML={{ __html: channelTypeInfo.description }} />
+        {videoStats.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Recent Videos</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {videoStats.map((video) => (
+                  <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <a 
+                      href={`https://youtube.com/watch?v=${video.video_id}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      {video.thumbnail_url ? (
+                        <div className="aspect-video bg-gray-200 relative overflow-hidden">
+                          <img 
+                            src={video.thumbnail_url} 
+                            alt={video.title} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-video bg-gray-200 flex items-center justify-center">
+                          <Youtube className="h-10 w-10 text-gray-400" />
+                        </div>
+                      )}
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-2 line-clamp-2">{video.title}</h3>
+                        <div className="flex justify-between text-sm text-gray-500">
+                          <span>{video.views?.toLocaleString() || 0} views</span>
+                          <span>{video.likes?.toLocaleString() || 0} likes</span>
+                        </div>
+                      </CardContent>
+                    </a>
+                  </Card>
+                ))}
               </div>
-            )}
-            
-            {channelTypeInfo.production && (
-              <div className="mb-4">
-                <h3 className="font-medium mb-2">Production Details</h3>
-                <div dangerouslySetInnerHTML={{ __html: channelTypeInfo.production }} />
-              </div>
-            )}
-            
-            {channelTypeInfo.example && (
-              <div>
-                <h3 className="font-medium mb-2">Examples</h3>
-                <div dangerouslySetInnerHTML={{ __html: channelTypeInfo.example }} />
-              </div>
-            )}
-          </Card>
+            </div>
+          </div>
         )}
-      </div>
+      </main>
+
+      <PageFooter />
     </div>
   );
 };
