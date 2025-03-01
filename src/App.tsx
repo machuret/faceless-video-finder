@@ -17,6 +17,8 @@ import ManageChannelTypes from './pages/Admin/ManageChannelTypes'
 import AddChannel from './pages/Admin/AddChannel'
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from './context/AuthContext'
+import ChannelTypes from './pages/ChannelTypes'
+import NotFound from './pages/NotFound'
 
 function App() {
   return (
@@ -33,11 +35,14 @@ function App() {
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/contact" element={<ContactUs />} />
         <Route path="/channel/:channelId" element={<ChannelDetails />} />
+        <Route path="/channel-types" element={<ChannelTypes />} />
+        <Route path="/training" element={<HowItWorks />} /> {/* Temporarily point to HowItWorks until Training page is created */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/channel-types" element={<ManageChannelTypes />} />
         <Route path="/admin/add-channel" element={<AddChannel />} />
         <Route path="/admin/edit-channel/:channelId" element={<AddChannel />} />
+        <Route path="*" element={<NotFound />} /> {/* Add a catch-all route for 404 handling */}
       </Routes>
       <Toaster />
     </AuthProvider>

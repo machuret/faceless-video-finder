@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ChannelCategory } from "@/types/youtube";
@@ -27,6 +27,10 @@ const ChannelSearch = ({
     // Filtering is done in the parent component via the searchTerm state
   };
 
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-8 mb-10">
       <div className="max-w-5xl mx-auto text-center mb-6">
@@ -47,6 +51,15 @@ const ChannelSearch = ({
               onChange={(e) => setSearchTerm(e.target.value)}
               className="border-0 shadow-none pl-0 font-montserrat text-base focus-visible:ring-0 focus-visible:ring-offset-0"
             />
+            {searchTerm && (
+              <button 
+                type="button"
+                onClick={clearSearch}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
         </div>
         <div className="flex gap-3 mt-2">
@@ -74,6 +87,8 @@ const ChannelSearch = ({
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
+              type="button"
+              aria-pressed={selectedCategory === category}
             >
               {category}
             </button>

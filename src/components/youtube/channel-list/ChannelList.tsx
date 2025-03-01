@@ -13,30 +13,41 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, AlertCircle, Loader2 } from "lucide-react";
 import { Channel, ChannelMetadata } from "@/types/youtube";
 
 interface ChannelListProps {
   isAdmin: boolean;
+  limit?: number;
 }
 
-export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
+export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin, limit }) => {
   const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast: uiToast } = useToast();
 
   useEffect(() => {
     fetchChannels();
-  }, []);
+  }, [limit]);
 
   const fetchChannels = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      setError(null);
+      
+      let query = supabase
         .from("youtube_channels")
         .select("*")
         .order("created_at", { ascending: false });
+      
+      // Apply limit if provided
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -50,6 +61,7 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
       setChannels(typedChannels);
     } catch (error: any) {
       console.error("Error fetching channels:", error);
+      setError(error.message || "Failed to load channels");
       uiToast({
         title: "Error",
         description: "Failed to load channels. Please try again.",
@@ -84,7 +96,25 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
   };
 
   if (loading) {
-    return <div className="text-center py-10">Loading channels...</div>;
+    return (
+      <div className="text-center py-10">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-600" />
+        <p className="text-gray-500">Loading channels...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6 text-center">
+        <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-2" />
+        <p className="text-gray-700 mb-2 font-semibold">Error loading channels</p>
+        <p className="text-gray-500 mb-4">{error}</p>
+        <Button variant="outline" onClick={fetchChannels}>
+          Try Again
+        </Button>
+      </Card>
+    );
   }
 
   if (channels.length === 0) {
@@ -102,11 +132,18 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-semibold">Channels</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Channels</h2>
+        {isAdmin && (
+          <Button onClick={() => navigate("/admin/add-channel")} size="sm">
+            Add New Channel
+          </Button>
+        )}
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {channels.map((channel) => (
-          <Card key={channel.id} className="overflow-hidden">
+          <Card key={channel.id} className="overflow-hidden hover:shadow-md transition-shadow">
             <div className="p-4">
               <div className="flex justify-between items-start">
                 <h3 className="font-semibold text-lg truncate">
@@ -120,7 +157,7 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="z-50 bg-white">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => handleEdit(channel.id)}>
                         Edit

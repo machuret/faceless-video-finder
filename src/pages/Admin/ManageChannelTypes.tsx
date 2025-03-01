@@ -1,13 +1,19 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MainNavbar from "@/components/MainNavbar";
 import { ChannelTypesList } from "./components/channelTypes/ChannelTypesList";
 import { ChannelTypeForm } from "./components/channelTypes/ChannelTypeForm";
 import { useChannelTypes } from "./components/channelTypes/hooks/useChannelTypes";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function ManageChannelTypes() {
+  const navigate = useNavigate();
+  const { user, isAdmin, loading: authLoading } = useAuth();
+  
   const {
     channelTypes,
     loading,
@@ -25,10 +31,28 @@ export default function ManageChannelTypes() {
     handleCancel
   } = useChannelTypes();
 
-  // Add console log to debug the issue
-  console.log("Current active tab:", activeTab);
-  console.log("Form data:", formData);
-  console.log("Selected type:", selectedType);
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast.error("Please log in to access this page");
+      navigate("/admin/login");
+    } else if (!authLoading && !isAdmin) {
+      toast.error("You don't have permission to access this page");
+      navigate("/");
+    }
+  }, [user, isAdmin, authLoading, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
