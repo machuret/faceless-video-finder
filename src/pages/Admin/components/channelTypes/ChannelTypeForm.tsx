@@ -82,20 +82,20 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
           <RichTextEditor
             id="production"
             name="production"
-            label="Production Details"
+            label="How to Create"
             value={formData.production || ''}
             onChange={onRichTextChange}
-            placeholder="Describe how this type of content is typically produced..."
-            className="min-h-[100px]"
+            placeholder="Describe how to create this type of content with step-by-step instructions..."
+            className="min-h-[200px]"
           />
           
           <RichTextEditor
             id="example"
             name="example"
-            label="Examples"
+            label="Example Ideas"
             value={formData.example || ''}
             onChange={onRichTextChange}
-            placeholder="Provide examples of channels that use this format..."
+            placeholder="Provide examples of content ideas for this channel type..."
             className="min-h-[100px]"
           />
         </div>

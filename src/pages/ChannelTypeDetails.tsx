@@ -130,20 +130,20 @@ const ChannelTypeDetails = () => {
         <Card className="p-6 mb-6">
           <h1 className="font-crimson text-2xl font-bold mb-2">{typeInfo.label}</h1>
           <div 
-            className="font-lato text-gray-600 mb-4"
+            className="font-lato text-gray-700 mb-6 prose max-w-none"
             dangerouslySetInnerHTML={{ __html: typeInfo.description || '' }}
           />
           
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-montserrat font-medium mb-2">Typical Production</h3>
+          <div className="bg-gray-50 p-6 rounded-lg mb-6 prose max-w-none">
+            <h3 className="font-montserrat font-medium mb-3 text-xl">How to Create</h3>
             <div 
               className="font-lato"
               dangerouslySetInnerHTML={{ __html: typeInfo.production || '' }}
             />
           </div>
           
-          <div className="mt-4">
-            <h3 className="font-montserrat font-medium mb-2">Examples</h3>
+          <div className="mt-4 prose max-w-none">
+            <h3 className="font-montserrat font-medium mb-3 text-xl">Example Ideas</h3>
             <div 
               className="font-lato"
               dangerouslySetInnerHTML={{ __html: typeInfo.example || '' }}
