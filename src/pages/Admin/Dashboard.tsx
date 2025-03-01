@@ -1,183 +1,65 @@
-
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { Channel } from "@/types/youtube";
-import { ChannelList } from "@/components/youtube/ChannelList";
-import DashboardHeader from "./components/DashboardHeader";
-import { 
-  getChannelSize,
-  getGrowthRange,
-  calculateUploadFrequency,
-  getUploadFrequencyCategory,
-  getUploadFrequencyLabel,
-  formatDate
-} from "@/utils/channelMetrics";
-import { 
-  fetchAllChannels, 
-  deleteChannel, 
-  updateChannel, 
-  generateChannelContent 
-} from "@/services/channelService";
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ChannelList } from "@/components/youtube/channel-list/ChannelList";
+import MainNavbar from "@/components/MainNavbar";
+import { useAuth } from "@/contexts/AuthContext";
+import { checkIsAdmin } from "@/services/userService";
 
-const Dashboard = () => {
-  const navigate = useNavigate();
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [generatingContent, setGeneratingContent] = useState(false);
-  const [savingChannel, setSavingChannel] = useState(false);
-  const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
-
-  const fetchChannels = async (): Promise<void> => {
-    setLoading(true);
-    try {
-      console.log("Fetching all channels...");
-      const data = await fetchAllChannels();
-      console.log(`Fetched ${data.length} channels`);
-      setChannels(data);
-    } catch (error) {
-      console.error("Error fetching channels:", error);
-      toast.error("Failed to fetch channels");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchChannels();
-  }, []);
-
-  const handleGenerateContent = async (channel: Channel) => {
-    setGeneratingContent(true);
-    try {
-      const newDescription = await generateChannelContent(channel);
-      if (newDescription) {
-        setChannels(channels.map(c => 
-          c.id === channel.id 
-            ? { ...c, description: newDescription }
-            : c
-        ));
-      }
-    } finally {
-      setGeneratingContent(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this channel?")) return;
-
-    const success = await deleteChannel(id);
-    if (success) {
-      setChannels(channels.filter(channel => channel.id !== id));
-    }
-  };
-
-  const handleSave = async (channel: Channel) => {
-    console.log("Saving channel:", channel);
-    setSavingChannel(true);
-    setEditingChannelId(channel.id);
-    
-    try {
-      // Perform the update and wait for the result
-      const success = await updateChannel(channel);
-      
-      if (success) {
-        toast.success("Channel updated successfully");
-        
-        // After successful update, always fetch fresh data
-        console.log("Channel saved successfully, refreshing data...");
-        await fetchChannels();
-        
-        // Clear editing state
-        setEditingChannelId(null);
-      } else {
-        console.error("Failed to save channel - update returned false");
-        toast.error("Failed to update channel");
-      }
-    } catch (error) {
-      console.error("Exception caught in handleSave:", error);
-      toast.error("Error saving channel");
-    } finally {
-      setSavingChannel(false);
-    }
-  };
-  
-  const handleStartEditing = (channelId: string) => {
-    setEditingChannelId(channelId);
-  };
-  
-  const handleCancelEditing = () => {
-    setEditingChannelId(null);
-  };
-
-  const handleLogout = () => {
-    navigate("/admin/login");
-  };
-
-  // For debugging: directly check the db state
-  const debugCheckDatabase = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("youtube_channels")
-        .select("id, channel_title, channel_type, metadata")
-        .limit(10);
-      
-      if (error) throw error;
-      console.log("DEBUG - Channel data in database:", data);
-      
-      return data;
-    } catch (err) {
-      console.error("Error checking database:", err);
-      return null;
-    }
-  };
-
-  // Call once on component mount for debugging
-  useEffect(() => {
-    debugCheckDatabase();
-  }, []);
-
-  if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
-  }
-
+const DashboardHeader = () => {
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <DashboardHeader 
-          onLogout={handleLogout} 
-          onUploadSuccess={fetchChannels} 
-        />
-
-        {/* Debug button - temporary */}
-        <button 
-          onClick={debugCheckDatabase} 
-          className="mb-4 px-3 py-1 bg-gray-200 text-xs rounded hover:bg-gray-300"
-        >
-          Debug: Check DB
-        </button>
-
-        <ChannelList
-          channels={channels}
-          onDelete={handleDelete}
-          onSave={handleSave}
-          onStartEditing={handleStartEditing}
-          onCancelEditing={handleCancelEditing}
-          onGenerateContent={handleGenerateContent}
-          generatingContent={generatingContent}
-          savingChannel={savingChannel}
-          editingChannelId={editingChannelId}
-          getChannelSize={getChannelSize}
-          getGrowthRange={getGrowthRange}
-          calculateUploadFrequency={calculateUploadFrequency}
-          getUploadFrequencyCategory={getUploadFrequencyCategory}
-          getUploadFrequencyLabel={getUploadFrequencyLabel}
-          formatDate={formatDate}
-        />
-      </div>
+    <div className="mb-8">
+      <h1 className="text-3xl font-bold font-crimson mb-2">Admin Dashboard</h1>
+      <p className="text-gray-600 font-lato">Manage your YouTube channels and application settings.</p>
     </div>
   );
 };
 
-export default Dashboard;
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const status = await checkIsAdmin(user.id);
+        setIsAdmin(status);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <MainNavbar />
+      <div className="container mx-auto px-4 py-8">
+        <DashboardHeader />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Channels</h2>
+            <p className="text-gray-600 mb-4">Manage YouTube channels in the database.</p>
+            <Button onClick={() => navigate("/admin/add-channel")} className="w-full">
+              Add New Channel
+            </Button>
+          </Card>
+          
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Channel Types</h2>
+            <p className="text-gray-600 mb-4">Manage channel types and their descriptions.</p>
+            <Button onClick={() => navigate("/admin/channel-types")} className="w-full">
+              Manage Channel Types
+            </Button>
+          </Card>
+          
+          {/* Additional admin cards can be added here */}
+        </div>
+        
+        <ChannelList isAdmin={isAdmin} />
+      </div>
+    </div>
+  );
+}
