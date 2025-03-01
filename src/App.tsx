@@ -13,6 +13,8 @@ import ContactUs from './pages/ContactUs'
 import ChannelDetails from './pages/ChannelDetails'
 import AdminLogin from './pages/Admin/AdminLogin'
 import Dashboard from './pages/Admin/Dashboard'
+import ManageChannelTypes from './pages/Admin/ManageChannelTypes'
+import AddChannel from './pages/Admin/AddChannel'
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from './context/AuthContext'
 
@@ -33,6 +35,9 @@ function App() {
         <Route path="/channel/:channelId" element={<ChannelDetails />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/channel-types" element={<ManageChannelTypes />} />
+        <Route path="/admin/add-channel" element={<AddChannel />} />
+        <Route path="/admin/edit-channel/:channelId" element={<AddChannel />} />
       </Routes>
       <Toaster />
     </AuthProvider>

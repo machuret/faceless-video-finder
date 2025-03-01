@@ -1,9 +1,11 @@
 
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,18 +14,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical } from "lucide-react";
-
-// This is a simplified version just to make the build pass
-// The actual implementation would have more features
+import { Channel } from "@/types/youtube";
 
 interface ChannelListProps {
   isAdmin: boolean;
 }
 
 export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
-  const [channels, setChannels] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
 
   useEffect(() => {
     fetchChannels();
@@ -41,13 +42,36 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
       setChannels(data || []);
     } catch (error: any) {
       console.error("Error fetching channels:", error);
-      toast({
+      uiToast({
         title: "Error",
         description: "Failed to load channels. Please try again.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = (channelId: string) => {
+    navigate(`/admin/edit-channel/${channelId}`);
+  };
+
+  const handleDelete = async (channelId: string) => {
+    if (!confirm("Are you sure you want to delete this channel?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from("youtube_channels")
+        .delete()
+        .eq("id", channelId);
+      
+      if (error) throw error;
+      
+      toast.success("Channel deleted successfully");
+      fetchChannels(); // Refresh the list
+    } catch (error: any) {
+      console.error("Error deleting channel:", error);
+      toast.error("Failed to delete channel: " + error.message);
     }
   };
 
@@ -60,7 +84,9 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
       <Card className="p-6 text-center">
         <p className="text-gray-500 mb-4">No channels found in the database.</p>
         {isAdmin && (
-          <Button variant="outline">Add Your First Channel</Button>
+          <Button variant="outline" onClick={() => navigate("/admin/add-channel")}>
+            Add Your First Channel
+          </Button>
         )}
       </Card>
     );
@@ -88,8 +114,15 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem>Delete</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEdit(channel.id)}>
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDelete(channel.id)}
+                        className="text-red-500"
+                      >
+                        Delete
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -98,6 +131,19 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
               <p className="text-sm text-gray-500 mt-1">
                 {channel.total_subscribers?.toLocaleString() || 0} subscribers
               </p>
+              <p className="text-sm text-gray-500">
+                {channel.channel_type || 'Unknown'} · {channel.channel_category || 'Uncategorized'}
+              </p>
+              <div className="mt-3">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => navigate(`/channel/${channel.id}`)}
+                >
+                  View Details
+                </Button>
+              </div>
             </div>
           </Card>
         ))}
