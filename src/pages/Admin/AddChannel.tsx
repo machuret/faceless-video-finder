@@ -1,7 +1,5 @@
 
 import { useParams } from "react-router-dom";
-import YouTubeUrlInput from "./components/YouTubeUrlInput";
-import ChannelForm from "./components/ChannelForm";
 import ChannelFormContainer from "./components/ChannelFormContainer";
 import { useChannelForm } from "./hooks/useChannelForm";
 
@@ -17,27 +15,15 @@ const AddChannel = () => {
     fetchYoutubeData,
     handleSubmit,
     handleChange,
-    handleScreenshotChange
+    handleScreenshotChange,
+    handleFieldChange
   } = useChannelForm();
 
   return (
-    <ChannelFormContainer title={isEditMode ? "Edit Channel" : "Add New Channel"}>
-      {!isEditMode && (
-        <YouTubeUrlInput
-          youtubeUrl={youtubeUrl}
-          loading={loading}
-          onUrlChange={setYoutubeUrl}
-          onFetch={fetchYoutubeData}
-        />
-      )}
-      <ChannelForm
-        formData={formData}
-        loading={loading}
-        onChange={handleChange}
-        onSubmit={handleSubmit}
-        onScreenshotChange={handleScreenshotChange}
-      />
-    </ChannelFormContainer>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">{isEditMode ? "Edit Channel" : "Add New Channel"}</h1>
+      <ChannelFormContainer />
+    </div>
   );
 };
 

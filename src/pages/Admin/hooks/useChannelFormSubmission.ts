@@ -1,0 +1,86 @@
+
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { ChannelFormData } from "../components/ChannelForm";
+
+export const useChannelFormSubmission = (
+  isEditMode: boolean,
+  channelId: string | undefined,
+  formData: ChannelFormData,
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>
+) => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (!formData.video_id || !formData.channel_title || !formData.channel_url) {
+        throw new Error("Please fill in all required fields: Channel ID, Title, and URL");
+      }
+
+      const dataToSubmit: any = {
+        video_id: formData.video_id.trim(),
+        channel_title: formData.channel_title.trim(),
+        channel_url: formData.channel_url.trim(),
+        description: formData.description.trim() || null,
+        screenshot_url: formData.screenshot_url || null,
+        total_subscribers: formData.total_subscribers ? parseInt(formData.total_subscribers) : null,
+        total_views: formData.total_views ? parseInt(formData.total_views) : null,
+        start_date: formData.start_date || null,
+        video_count: formData.video_count ? parseInt(formData.video_count) : null,
+        cpm: formData.cpm ? parseFloat(formData.cpm) : 4,
+        channel_type: formData.channel_type || "other",
+        country: formData.country || null,
+        channel_category: formData.channel_category || "other",
+        notes: formData.notes || null
+      };
+
+      console.log(`${isEditMode ? "Updating" : "Submitting"} data to Supabase:`, dataToSubmit);
+
+      let result;
+      
+      if (isEditMode && channelId) {
+        result = await supabase
+          .from("youtube_channels")
+          .update(dataToSubmit)
+          .eq("id", channelId)
+          .select();
+      } else {
+        result = await supabase
+          .from("youtube_channels")
+          .insert(dataToSubmit)
+          .select();
+      }
+
+      const { data, error } = result;
+
+      if (error) {
+        console.error("Database error:", error);
+        if (error.code === "23505") {
+          throw new Error("This channel has already been added to the database");
+        } else if (error.code === "42501") {
+          throw new Error("You don't have permission to add channels. Please check your login status.");
+        } else if (error.code === "42P17") {
+          throw new Error("There's an issue with database permissions. Please contact the administrator.");
+        }
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      console.log(`${isEditMode ? "Update" : "Insert"} successful:`, data);
+      toast.success(`Channel ${isEditMode ? "updated" : "added"} successfully!`);
+      navigate("/admin/dashboard");
+    } catch (error) {
+      console.error("Submit error:", error);
+      toast.error(error instanceof Error 
+        ? `Failed to ${isEditMode ? "update" : "add"} channel: ${error.message}` 
+        : `An unexpected error occurred while ${isEditMode ? "updating" : "adding"} the channel`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { handleSubmit };
+};

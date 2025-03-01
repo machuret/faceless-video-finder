@@ -6,16 +6,16 @@ import { Button } from "@/components/ui/button";
 interface YouTubeUrlInputProps {
   youtubeUrl: string;
   loading: boolean;
-  onUrlChange: (url: string) => void;
+  setYoutubeUrl: (url: string) => void;
   onFetch: () => void;
 }
 
-const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
+const YouTubeUrlInput = ({
   youtubeUrl,
   loading,
-  onUrlChange,
+  setYoutubeUrl,
   onFetch,
-}) => {
+}: YouTubeUrlInputProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onFetch();
@@ -30,7 +30,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
       <div className="flex gap-2">
         <Input
           value={youtubeUrl}
-          onChange={(e) => onUrlChange(e.target.value)}
+          onChange={(e) => setYoutubeUrl(e.target.value)}
           placeholder="https://youtube.com/..."
           className="flex-1"
           required
