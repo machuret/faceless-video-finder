@@ -1,10 +1,17 @@
 
-import { Home, BookOpen, Mail, HelpCircle, GraduationCap, Info, Calculator } from "lucide-react";
+import { Home, BookOpen, Mail, HelpCircle, GraduationCap, Info, Calculator, Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const MainNavbar = () => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
   return (
     <div className="sticky top-0 z-50 w-full bg-white border-b shadow-sm">
@@ -24,11 +31,11 @@ const MainNavbar = () => {
               <span>Home</span>
             </Link>
             <Link 
-              to="/calculator" 
-              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/calculator') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
+              to="/calculators" 
+              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/calculators') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
             >
               <Calculator className="h-4 w-4" />
-              <span>Shorts Calculator</span>
+              <span>Calculators</span>
             </Link>
             <Link 
               to="/about" 
@@ -70,13 +77,106 @@ const MainNavbar = () => {
           <div className="flex items-center gap-4">
             <Link 
               to="/admin/login" 
-              className="font-montserrat text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+              className="hidden md:block font-montserrat text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+            >
+              Admin
+            </Link>
+            
+            <button className="md:hidden text-gray-700" onClick={toggleMobileMenu}>
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white border-b shadow-md">
+          <div className="px-4 py-3 space-y-1">
+            <Link 
+              to="/" 
+              className={`block py-2 px-3 rounded-md ${isActive('/') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <Home className="h-5 w-5 mr-2" />
+                <span>Home</span>
+              </div>
+            </Link>
+            <Link 
+              to="/calculators" 
+              className={`block py-2 px-3 rounded-md ${isActive('/calculators') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <Calculator className="h-5 w-5 mr-2" />
+                <span>Calculators</span>
+              </div>
+            </Link>
+            <Link 
+              to="/about" 
+              className={`block py-2 px-3 rounded-md ${isActive('/about') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <Info className="h-5 w-5 mr-2" />
+                <span>About Us</span>
+              </div>
+            </Link>
+            <Link 
+              to="/how-it-works" 
+              className={`block py-2 px-3 rounded-md ${isActive('/how-it-works') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <HelpCircle className="h-5 w-5 mr-2" />
+                <span>How This Works</span>
+              </div>
+            </Link>
+            <Link 
+              to="/training" 
+              className={`block py-2 px-3 rounded-md ${isActive('/training') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <GraduationCap className="h-5 w-5 mr-2" />
+                <span>Training</span>
+              </div>
+            </Link>
+            <Link 
+              to="/channel-types" 
+              className={`block py-2 px-3 rounded-md ${isActive('/channel-types') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <BookOpen className="h-5 w-5 mr-2" />
+                <span>Channel Types</span>
+              </div>
+            </Link>
+            <Link 
+              to="/contact" 
+              className={`block py-2 px-3 rounded-md ${isActive('/contact') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <Mail className="h-5 w-5 mr-2" />
+                <span>Contact Us</span>
+              </div>
+            </Link>
+            <Link 
+              to="/admin/login" 
+              className="block py-2 px-3 mt-2 rounded-md bg-blue-600 text-white"
+              onClick={toggleMobileMenu}
             >
               Admin
             </Link>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
