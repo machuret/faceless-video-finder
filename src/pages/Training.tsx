@@ -3,7 +3,7 @@ import React from "react";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Compass, GraduationCap, BookOpen, Play, Certificate } from "lucide-react";
+import { CalendarDays, Compass, GraduationCap, BookOpen, Play, Award } from "lucide-react";
 
 const TrainingPage = () => {
   const trainingModules = [
@@ -31,7 +31,7 @@ const TrainingPage = () => {
     {
       title: "Monetization Techniques",
       description: "Learn various methods to monetize your channel beyond AdSense revenue.",
-      icon: <Certificate className="h-10 w-10 text-yellow-500" />,
+      icon: <Award className="h-10 w-10 text-yellow-500" />,
       lessons: ["AdSense Optimization", "Sponsorship Strategies", "Product Creation & Sales"],
       duration: "2 hours"
     }
