@@ -73,7 +73,7 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
         <div>
           <label className="block text-sm font-medium mb-1">Type of Channel</label>
           <select
-            name="ui_channel_type" // Changed from channel_type to ui_channel_type
+            name="channel_type" // This should actually match the property we're updating
             value={selectedType}
             onChange={handleTypeChange}
             className="w-full p-2 border rounded"

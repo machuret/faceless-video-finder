@@ -1,48 +1,133 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { Channel, DatabaseChannelType } from "@/types/youtube";
 import { toast } from "sonner";
-import { calculatePotentialRevenue, calculateRevenuePerVideo, calculateRevenuePerMonth } from "@/utils/revenueCalculations";
 
 /**
  * Fetch all channels from the database
  */
 export const fetchAllChannels = async (): Promise<Channel[]> => {
-  try {
-    const { data, error } = await supabase
-      .from("youtube_channels")
-      .select("*")
-      .order("created_at", { ascending: false });
+  const { data, error } = await supabase
+    .from("youtube_channels")
+    .select("*, videoStats:youtube_video_stats(*)")
+    .order("created_at", { ascending: false });
 
-    if (error) throw error;
-    
-    // Post-process the data to ensure custom channel types are handled correctly
-    const processedData = data?.map(channel => {
-      // Default to the database channel type (which is always one of the valid enum values)
-      let displayChannelType: string = channel.channel_type as string;
-      
-      // If there's metadata with ui_channel_type, use that instead for display purposes
-      if (channel.metadata && typeof channel.metadata === 'object' && 'ui_channel_type' in channel.metadata) {
-        displayChannelType = channel.metadata.ui_channel_type as string;
-        console.log(`Using ui_channel_type from metadata for ${channel.channel_title}: ${displayChannelType}`);
-      }
-      
-      return {
-        ...channel,
-        channel_type: displayChannelType
-      };
-    }) || [];
-    
-    return processedData as Channel[];
-  } catch (error) {
+  if (error) {
     console.error("Error fetching channels:", error);
     toast.error("Failed to fetch channels");
-    return [];
+    throw error;
+  }
+
+  // Process the data to handle custom channel types from metadata
+  const processedData = data.map(channel => {
+    // Check if the channel has metadata with ui_channel_type
+    if (channel.metadata?.ui_channel_type) {
+      console.log(`Using ui_channel_type from metadata for ${channel.channel_title}: ${channel.metadata.ui_channel_type}`);
+      // Use the UI channel type from metadata for display
+      return {
+        ...channel,
+        channel_type: channel.metadata.ui_channel_type
+      };
+    }
+    return channel;
+  });
+
+  return processedData;
+};
+
+/**
+ * Update a channel in the database, including metadata for custom channel types
+ */
+export const updateChannel = async (channel: Channel): Promise<boolean> => {
+  console.log("=== STARTING CHANNEL UPDATE ===");
+  console.log("Channel to update:", channel);
+  
+  try {
+    // 1. Calculate any derived values
+    const potentialRevenue = channel.total_views ? channel.total_views * (channel.cpm || 4) / 1000 : null;
+    const revenuePerVideo = potentialRevenue && channel.video_count ? potentialRevenue / channel.video_count : null;
+    const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
+    
+    // 2. Process the UI channel type
+    // Get the UI channel type from metadata first, then fallback to channel_type
+    const uiChannelType = channel.metadata?.ui_channel_type || channel.channel_type || "other";
+    console.log("UI Channel Type for update:", uiChannelType);
+    
+    // Determine the database channel type (must be one of the enum values)
+    let dbChannelType: DatabaseChannelType;
+    // Map the UI channel type to a valid database enum value
+    // This could be more sophisticated with a mapping table
+    if (["educational", "entertainment", "gaming", "howto", "music", "news", "other", "sports", "tech"].includes(uiChannelType)) {
+      dbChannelType = uiChannelType as DatabaseChannelType;
+    } else {
+      // Default to 'other' if not a valid enum value
+      dbChannelType = "other";
+    }
+    console.log("Mapped to DB Channel Type:", dbChannelType);
+    
+    // 3. Prepare metadata (always include the UI channel type)
+    let metadataObj: Record<string, any> = {};
+    
+    // If there's existing metadata, start with that
+    if (channel.metadata && typeof channel.metadata === 'object') {
+      metadataObj = { ...channel.metadata };
+    }
+    
+    // Always ensure the ui_channel_type is stored in metadata
+    metadataObj.ui_channel_type = uiChannelType;
+    console.log("Final metadata for update:", metadataObj);
+    
+    // 4. Prepare the update data
+    // We need to explicitly pull out the properties we want to update
+    // to avoid sending extra properties that don't exist in the database
+    const updateData = {
+      channel_title: channel.channel_title,
+      channel_url: channel.channel_url,
+      description: channel.description,
+      screenshot_url: channel.screenshot_url,
+      total_subscribers: channel.total_subscribers,
+      total_views: channel.total_views, 
+      start_date: channel.start_date,
+      video_count: channel.video_count,
+      channel_type: dbChannelType,  // Use the mapped DB channel type
+      channel_category: channel.channel_category,
+      uses_ai: channel.uses_ai,
+      cpm: channel.cpm,
+      potential_revenue: potentialRevenue,
+      revenue_per_video: revenuePerVideo,
+      revenue_per_month: revenuePerMonth,
+      country: channel.country,
+      niche: channel.niche,
+      notes: channel.notes,
+      video_id: channel.video_id,
+      keywords: channel.keywords,
+      metadata: metadataObj  // Include the prepared metadata
+    };
+    
+    console.log("Final update data:", updateData);
+    
+    // 5. Perform the update
+    const { error } = await supabase
+      .from("youtube_channels")
+      .update(updateData)
+      .eq("id", channel.id);
+    
+    if (error) {
+      console.error("Error updating channel:", error);
+      toast.error(`Failed to update ${channel.channel_title}: ${error.message}`);
+      return false;
+    }
+    
+    console.log(`Channel "${channel.channel_title}" updated successfully`);
+    return true;
+  } catch (error) {
+    console.error("Exception in updateChannel:", error);
+    toast.error(`Error updating channel: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return false;
   }
 };
 
 /**
- * Delete a channel by ID
+ * Delete a channel from the database
  */
 export const deleteChannel = async (id: string): Promise<boolean> => {
   try {
@@ -50,13 +135,18 @@ export const deleteChannel = async (id: string): Promise<boolean> => {
       .from("youtube_channels")
       .delete()
       .eq("id", id);
-
-    if (error) throw error;
+    
+    if (error) {
+      console.error("Error deleting channel:", error);
+      toast.error(`Failed to delete channel: ${error.message}`);
+      return false;
+    }
+    
     toast.success("Channel deleted successfully");
     return true;
   } catch (error) {
-    console.error("Delete error:", error);
-    toast.error("Failed to delete channel");
+    console.error("Exception in deleteChannel:", error);
+    toast.error(`Error deleting channel: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return false;
   }
 };
@@ -66,155 +156,65 @@ export const deleteChannel = async (id: string): Promise<boolean> => {
  */
 export const generateChannelContent = async (channel: Channel): Promise<string | null> => {
   try {
-    console.log('Calling generate-channel-content for:', channel.channel_title);
+    toast.info("Generating channel description...");
     
-    const { data, error } = await supabase.functions.invoke('generate-channel-content', {
-      body: { channelTitle: channel.channel_title }
+    const response = await fetch("https://dhbuaffdzhjzsqjfkesg.supabase.co/functions/v1/generate-channel-content", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Pass authentication token if available
+        ...(supabase.auth.getSession() ? { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` } : {})
+      },
+      body: JSON.stringify({
+        channelTitle: channel.channel_title,
+        channelType: channel.channel_type,
+        channelCategory: channel.channel_category,
+        subscribers: channel.total_subscribers,
+        views: channel.total_views,
+        startDate: channel.start_date,
+        videoCount: channel.video_count,
+        country: channel.country,
+        niche: channel.niche,
+        usesAI: channel.uses_ai
+      })
     });
-
-    if (error) throw error;
-
-    if (!data || !data.description) {
-      throw new Error('Failed to generate valid content');
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API error: ${response.status} ${errorText}`);
     }
-
-    const { error: updateError } = await supabase
-      .from('youtube_channels')
-      .update({ description: data.description })
-      .eq('id', channel.id);
-
-    if (updateError) throw updateError;
-
-    toast.success('Channel description updated successfully');
-    return data.description;
+    
+    const data = await response.json();
+    
+    if (data.description) {
+      toast.success("Description generated successfully!");
+      return data.description;
+    } else {
+      throw new Error("No description was generated");
+    }
   } catch (error) {
-    console.error('Generate content error:', error);
-    toast.error(error instanceof Error ? error.message : 'Failed to generate content');
+    console.error("Error generating content:", error);
+    toast.error(`Failed to generate content: ${error instanceof Error ? error.message : 'API error'}`);
     return null;
   }
 };
 
 /**
- * Update a channel in the database, including metadata for custom channel types
+ * Helper function to calculate revenue per month
  */
-export const updateChannel = async (channel: Channel): Promise<boolean> => {
-  console.log("=== STARTING CHANNEL UPDATE ===");
-  console.log("Input channel data:", JSON.stringify(channel, null, 2));
+const calculateRevenuePerMonth = (totalViews: number | null, cpm: number | null, startDate: string | null): number | null => {
+  if (!totalViews || !startDate || !cpm) return null;
   
-  try {
-    // 1. Calculate revenue metrics
-    const potentialRevenue = calculatePotentialRevenue(channel.total_views, channel.cpm);
-    const revenuePerVideo = calculateRevenuePerVideo(channel.total_views, channel.cpm, channel.video_count);
-    const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
-    
-    // 2. Process the UI channel type
-    // Get the UI channel type (what should be stored in metadata)
-    // First check if metadata already contains ui_channel_type
-    const uiChannelType = channel.metadata?.ui_channel_type || channel.channel_type || "other";
-    
-    // Determine the database channel type (must be one of the enum values)
-    let dbChannelType: DatabaseChannelType;
-    if (uiChannelType === "creator" || uiChannelType === "brand" || uiChannelType === "media") {
-      dbChannelType = uiChannelType as DatabaseChannelType;
-    } else {
-      dbChannelType = "other";
-    }
-    
-    console.log(`Channel type mapping: UI="${uiChannelType}" -> DB="${dbChannelType}"`);
-    
-    // 3. Prepare metadata (always include the UI channel type)
-    // Create a new object to avoid mutation
-    let metadataObj: Record<string, any> = {};
-    
-    // If there's existing metadata, start with that
-    if (channel.metadata && typeof channel.metadata === 'object') {
-      metadataObj = { ...channel.metadata };
-    }
-    
-    // Always set the ui_channel_type in metadata
-    metadataObj = {
-      ...metadataObj,
-      ui_channel_type: uiChannelType
-    };
-    
-    console.log("Prepared metadata:", JSON.stringify(metadataObj, null, 2));
-    
-    // 4. Prepare data for update
-    const updateData = {
-      channel_title: channel.channel_title,
-      channel_url: channel.channel_url,
-      description: channel.description,
-      channel_category: channel.channel_category,
-      channel_type: dbChannelType,
-      screenshot_url: channel.screenshot_url,
-      total_subscribers: channel.total_subscribers ? Number(channel.total_subscribers) : null,
-      total_views: channel.total_views ? Number(channel.total_views) : null,
-      start_date: channel.start_date,
-      video_count: channel.video_count ? Number(channel.video_count) : null,
-      cpm: channel.cpm ? Number(channel.cpm) : null,
-      uses_ai: channel.uses_ai,
-      potential_revenue: potentialRevenue,
-      revenue_per_video: revenuePerVideo,
-      revenue_per_month: revenuePerMonth,
-      country: channel.country,
-      niche: channel.niche,
-      notes: channel.notes,
-      video_id: channel.video_id,
-      keywords: channel.keywords,
-      metadata: metadataObj
-    };
-    
-    console.log("Update data prepared:", JSON.stringify(updateData, null, 2));
-    
-    // 5. First, check if the channel exists
-    const { data: existingChannel, error: checkError } = await supabase
-      .from("youtube_channels")
-      .select("id")
-      .eq("id", channel.id)
-      .single();
-    
-    if (checkError) {
-      console.error("Channel existence check failed:", checkError);
-      return false;
-    }
-    
-    if (!existingChannel) {
-      console.error("Channel not found:", channel.id);
-      return false;
-    }
-    
-    // 6. Perform the update
-    console.log("Updating channel with ID:", channel.id);
-    const { error: updateError } = await supabase
-      .from("youtube_channels")
-      .update(updateData)
-      .eq("id", channel.id);
-    
-    if (updateError) {
-      console.error("Channel update failed:", updateError);
-      return false;
-    }
-    
-    // 7. Verify the update was successful
-    console.log("Verifying update...");
-    const { data: updatedChannel, error: verifyError } = await supabase
-      .from("youtube_channels")
-      .select("id, channel_title, channel_type, metadata")
-      .eq("id", channel.id)
-      .single();
-    
-    if (verifyError) {
-      console.error("Update verification failed:", verifyError);
-      return false;
-    }
-    
-    console.log("Channel updated successfully:");
-    console.log("Updated channel data:", JSON.stringify(updatedChannel, null, 2));
-    
-    return true;
-  } catch (error) {
-    console.error("=== CHANNEL UPDATE ERROR ===");
-    console.error("Error details:", error);
-    return false;
-  }
+  // Calculate months since channel started
+  const start = new Date(startDate);
+  const now = new Date();
+  const monthsActive = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+  
+  if (monthsActive <= 0) return null;
+  
+  // Calculate average views per month
+  const viewsPerMonth = totalViews / monthsActive;
+  
+  // Calculate revenue per month
+  return (viewsPerMonth * cpm) / 1000;
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Channel, VideoStats } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
@@ -71,26 +70,12 @@ export const ChannelEditForm = ({
 
   // Handler for channel type changes
   const handleChannelTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    // Get the selected channel type (from ui_channel_type field)
+    // Get the selected channel type
     const channelType = e.target.value;
     console.log(`Channel type selected: ${channelType}`);
     
     // We need to update both the channel_type field and the metadata.ui_channel_type
-    // First, let's handle the metadata update
-    let updatedMetadata = { ...(editForm.metadata || {}) };
-    updatedMetadata.ui_channel_type = channelType;
-    
-    // Update the metadata
-    const metadataUpdateValue = {
-      target: {
-        name: "metadata",
-        value: updatedMetadata
-      }
-    };
-    onChange(metadataUpdateValue as unknown as React.ChangeEvent<HTMLInputElement>);
-    
-    // Now also update the channel_type for backwards compatibility
-    // This will be mapped to the correct database enum value in the service
+    // First update channel_type directly (this is what's stored in the DB as an enum)
     const channelTypeUpdateValue = {
       target: {
         name: "channel_type",
@@ -98,6 +83,18 @@ export const ChannelEditForm = ({
       }
     };
     onChange(channelTypeUpdateValue as unknown as React.ChangeEvent<HTMLInputElement>);
+    
+    // Now also update the metadata with ui_channel_type for consistency and UI display
+    let updatedMetadata = { ...(editForm.metadata || {}) };
+    updatedMetadata.ui_channel_type = channelType;
+    
+    const metadataUpdateValue = {
+      target: {
+        name: "metadata",
+        value: updatedMetadata
+      }
+    };
+    onChange(metadataUpdateValue as unknown as React.ChangeEvent<HTMLInputElement>);
     
     console.log("Updated channel type to:", channelType);
     console.log("Updated metadata:", updatedMetadata);
