@@ -9,6 +9,8 @@ export const useChannelDataFetcher = (
 ) => {
   const fetchChannelData = async (id: string) => {
     setLoading(true);
+    console.log("Fetching channel data for ID:", id);
+    
     try {
       const { data, error } = await supabase
         .from("youtube_channels")
@@ -17,10 +19,12 @@ export const useChannelDataFetcher = (
         .single();
 
       if (error) {
+        console.error("Error fetching channel data:", error);
         throw new Error(`Error fetching channel: ${error.message}`);
       }
 
       if (!data) {
+        console.error("No channel data found for ID:", id);
         throw new Error("Channel not found");
       }
 
@@ -30,7 +34,7 @@ export const useChannelDataFetcher = (
         ? new Date(data.start_date).toISOString().split('T')[0]
         : "";
 
-      setFormData({
+      const formData = {
         video_id: data.video_id || "",
         channel_title: data.channel_title || "",
         channel_url: data.channel_url || "",
@@ -45,7 +49,10 @@ export const useChannelDataFetcher = (
         country: data.country || "",
         channel_category: data.channel_category || "",
         notes: data.notes || ""
-      });
+      };
+      
+      console.log("Setting form data with:", formData);
+      setFormData(formData);
 
       toast.success("Channel data loaded successfully");
     } catch (error) {

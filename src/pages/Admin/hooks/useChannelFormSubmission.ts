@@ -39,12 +39,21 @@ export const useChannelFormSubmission = (
       };
 
       console.log(`${isEditMode ? "Updating" : "Submitting"} data to Supabase:`, dataToSubmit);
+      console.log("Current mode:", isEditMode ? "EDIT" : "CREATE", "Channel ID:", channelId);
 
       let result;
       
       if (isEditMode && channelId) {
         // Ensure we're updating the correct channel
         console.log("Updating channel with ID:", channelId);
+        
+        // Detailed logging of the update operation
+        console.log("Update parameters:", {
+          table: "youtube_channels",
+          data: dataToSubmit,
+          match: { id: channelId }
+        });
+        
         result = await supabase
           .from("youtube_channels")
           .update(dataToSubmit)

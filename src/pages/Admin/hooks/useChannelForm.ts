@@ -38,8 +38,11 @@ export const useChannelForm = () => {
       console.log("Channel ID detected, entering edit mode:", channelId);
       setIsEditMode(true);
       fetchChannelData(channelId);
+    } else {
+      console.log("No channel ID detected, in create mode");
+      setIsEditMode(false);
     }
-  }, [channelId]);
+  }, [channelId, setIsEditMode, fetchChannelData]);
 
   return {
     loading,
