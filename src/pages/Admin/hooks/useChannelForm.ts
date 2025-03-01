@@ -23,6 +23,8 @@ export const useChannelForm = () => {
     video_count: "",
     cpm: "4",
     channel_type: "",
+    country: "",
+    channel_category: "",
   });
 
   useEffect(() => {
@@ -67,6 +69,8 @@ export const useChannelForm = () => {
         video_count: data.video_count?.toString() || "",
         cpm: data.cpm?.toString() || "4",
         channel_type: data.channel_type || "",
+        country: data.country || "",
+        channel_category: data.channel_category || "",
       });
 
       toast.success("Channel data loaded successfully");
@@ -122,6 +126,8 @@ export const useChannelForm = () => {
         video_count: data.video_count?.toString() || "",
         cpm: "4",
         channel_type: "",
+        country: "",
+        channel_category: "",
       });
 
       toast.success("Channel data fetched successfully");
@@ -155,7 +161,9 @@ export const useChannelForm = () => {
         start_date: formData.start_date || null,
         video_count: formData.video_count ? parseInt(formData.video_count) : null,
         cpm: formData.cpm ? parseFloat(formData.cpm) : 4,
-        channel_type: formData.channel_type || "other"
+        channel_type: formData.channel_type || "other",
+        country: formData.country || null,
+        channel_category: formData.channel_category || null,
       };
 
       console.log(`${isEditMode ? "Updating" : "Submitting"} data to Supabase:`, dataToSubmit);

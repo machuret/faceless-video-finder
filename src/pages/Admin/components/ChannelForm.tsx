@@ -14,6 +14,7 @@ import ChannelIdentity from "./form-sections/ChannelIdentity";
 import ChannelStats from "./form-sections/ChannelStats";
 import ChannelContent from "./form-sections/ChannelContent";
 import RevenueDetails from "./form-sections/RevenueDetails";
+import { countries } from "@/utils/channelUtils";
 
 export interface ChannelFormData {
   video_id: string;
@@ -27,6 +28,8 @@ export interface ChannelFormData {
   video_count: string;
   cpm: string;
   channel_type?: string;
+  country?: string;
+  channel_category?: string;
 }
 
 interface ChannelFormProps {
@@ -41,6 +44,23 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
   const isEditMode = !!formData.video_id && !!formData.channel_title;
   const [channelTypes, setChannelTypes] = useState<{id: string, label: string}[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [channelCategories, setChannelCategories] = useState<{id: string, label: string}[]>([
+    { id: "entertainment", label: "Entertainment" },
+    { id: "education", label: "Education" },
+    { id: "gaming", label: "Gaming" },
+    { id: "sports", label: "Sports" },
+    { id: "music", label: "Music" },
+    { id: "news", label: "News & Politics" },
+    { id: "howto", label: "How-to & Style" },
+    { id: "tech", label: "Technology" },
+    { id: "travel", label: "Travel & Events" },
+    { id: "comedy", label: "Comedy" },
+    { id: "film", label: "Film & Animation" },
+    { id: "beauty", label: "Beauty & Fashion" },
+    { id: "food", label: "Food & Cooking" },
+    { id: "fitness", label: "Fitness & Health" },
+    { id: "other", label: "Other" },
+  ]);
   
   // Fetch channel types for dropdown
   useEffect(() => {
@@ -68,6 +88,30 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
       target: {
         name: "channel_type",
         value: typeId
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onChange(mockEvent);
+  };
+
+  // Handle category selection
+  const handleCategorySelect = (categoryId: string) => {
+    const mockEvent = {
+      target: {
+        name: "channel_category",
+        value: categoryId
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onChange(mockEvent);
+  };
+
+  // Handle country selection
+  const handleCountrySelect = (countryCode: string) => {
+    const mockEvent = {
+      target: {
+        name: "country",
+        value: countryCode
       }
     } as React.ChangeEvent<HTMLInputElement>;
     
@@ -130,7 +174,7 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
                   'Select Type'}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full max-h-96 overflow-y-auto">
+            <DropdownMenuContent className="w-full max-h-96 overflow-y-auto bg-white">
               {channelTypes.map((type) => (
                 <DropdownMenuItem
                   key={type.id}
@@ -138,6 +182,58 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
                   className="cursor-pointer"
                 >
                   {type.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-3">Channel Category</h3>
+        <div className="space-y-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                {formData.channel_category ? 
+                  channelCategories.find(category => category.id === formData.channel_category)?.label || 'Select Category' : 
+                  'Select Category'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full max-h-96 overflow-y-auto bg-white">
+              {channelCategories.map((category) => (
+                <DropdownMenuItem
+                  key={category.id}
+                  onClick={() => handleCategorySelect(category.id)}
+                  className="cursor-pointer"
+                >
+                  {category.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-3">Country</h3>
+        <div className="space-y-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                {formData.country ? 
+                  countries.find(c => c.code === formData.country)?.name || 'Select Country' : 
+                  'Select Country'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full max-h-96 overflow-y-auto bg-white">
+              {countries.map((country) => (
+                <DropdownMenuItem
+                  key={country.code}
+                  onClick={() => handleCountrySelect(country.code)}
+                  className="cursor-pointer"
+                >
+                  {country.name}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
