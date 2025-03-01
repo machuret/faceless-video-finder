@@ -26,15 +26,23 @@ const AIContentGenerator = ({ channelTitle, description, onDescriptionGenerated 
         body: { title: channelTitle, description: description || '' }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Edge Function error:', error);
+        throw error;
+      }
+      
+      console.log("AI generation response:", data);
       
       if (data?.description) {
         onDescriptionGenerated(data.description);
         toast.success('Description generated successfully!');
+      } else {
+        console.error('No description in response:', data);
+        throw new Error('No description was generated');
       }
     } catch (error) {
       console.error('Error generating content:', error);
-      toast.error('Failed to generate content');
+      toast.error('Failed to generate content: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsGenerating(false);
     }

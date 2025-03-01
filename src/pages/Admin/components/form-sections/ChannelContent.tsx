@@ -1,8 +1,8 @@
 
-import { FileUpload } from "@/components/FileUpload";
+import { Input } from "@/components/ui/input";
 import { FormSection } from "./FormSection";
-import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
 import AIContentGenerator from "./AIContentGenerator";
+import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
 
 interface ChannelContentProps {
   description: string;
@@ -13,47 +13,67 @@ interface ChannelContentProps {
   onFieldChange: (name: string, value: string) => void;
 }
 
-const ChannelContent = ({ 
-  description, 
+const ChannelContent = ({
+  description,
   screenshotUrl,
   channelTitle,
-  onChange, 
+  onChange,
   onScreenshotChange,
   onFieldChange
 }: ChannelContentProps) => {
+  const handleDescriptionChange = (name: string, value: string) => {
+    onFieldChange(name, value);
+  };
+
   const handleDescriptionGenerated = (generatedDescription: string) => {
     onFieldChange("description", generatedDescription);
   };
 
+  const handleScreenshotUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onScreenshotChange(e.target.value);
+  };
+
   return (
-    <FormSection title="Content & Visuals">
-      <div>
-        <label className="block text-sm font-medium mb-1">Channel Screenshot</label>
-        <FileUpload
-          onUploadComplete={onScreenshotChange}
-          currentUrl={screenshotUrl}
-        />
-        <p className="text-xs text-gray-500 mt-1">Upload a screenshot of the channel's homepage</p>
-      </div>
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <label className="block text-sm font-medium">Channel Description</label>
-          <AIContentGenerator 
-            channelTitle={channelTitle}
-            description={description}
-            onDescriptionGenerated={handleDescriptionGenerated}
+    <FormSection title="Channel Content">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Channel Screenshot URL</label>
+          <Input
+            name="screenshot_url"
+            value={screenshotUrl}
+            onChange={handleScreenshotUrlChange}
+            placeholder="https://example.com/screenshot.jpg"
+          />
+          {screenshotUrl && (
+            <div className="mt-2">
+              <img
+                src={screenshotUrl}
+                alt="Channel Screenshot"
+                className="max-h-40 rounded border"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="block text-sm font-medium">Description</label>
+            <AIContentGenerator
+              channelTitle={channelTitle}
+              description={description}
+              onDescriptionGenerated={handleDescriptionGenerated}
+            />
+          </div>
+          <RichTextEditor
+            id="description"
+            name="description"
+            label=""
+            value={description || ""}
+            onChange={handleDescriptionChange}
+            placeholder="Enter channel description..."
+            className="w-full"
           />
         </div>
-        <RichTextEditor
-          id="description"
-          name="description"
-          label=""
-          value={description}
-          onChange={onFieldChange}
-          placeholder="Enter channel description here..."
-          className="w-full"
-        />
-        <p className="text-xs text-gray-500">This description will help categorize and search for the channel</p>
       </div>
     </FormSection>
   );

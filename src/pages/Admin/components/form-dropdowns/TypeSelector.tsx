@@ -10,13 +10,22 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface ChannelType {
+  id: string;
+  label: string;
+  description: string | null;
+  production: string | null;
+  example: string | null;
+}
+
 interface TypeSelectorProps {
   selectedType: string | undefined;
   onSelect: (typeId: string) => void;
 }
 
 const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
-  const [channelTypes, setChannelTypes] = useState<{id: string, label: string}[]>([]);
+  const [channelTypes, setChannelTypes] = useState<ChannelType[]>([]);
+  const [selectedTypeDetails, setSelectedTypeDetails] = useState<ChannelType | null>(null);
   
   // Fetch channel types for dropdown
   useEffect(() => {
@@ -24,11 +33,17 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
       try {
         const { data, error } = await supabase
           .from('channel_types')
-          .select('id, label')
+          .select('id, label, description, production, example')
           .order('label', { ascending: true });
         
         if (error) throw error;
         setChannelTypes(data || []);
+        
+        // If there's a selected type, fetch its details
+        if (selectedType) {
+          const selected = data?.find(type => type.id === selectedType) || null;
+          setSelectedTypeDetails(selected);
+        }
       } catch (error) {
         console.error('Error fetching channel types:', error);
         toast.error('Failed to load channel types');
@@ -36,7 +51,13 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
     };
     
     fetchChannelTypes();
-  }, []);
+  }, [selectedType]);
+  
+  const handleSelect = (typeId: string) => {
+    onSelect(typeId);
+    const selected = channelTypes.find(type => type.id === typeId) || null;
+    setSelectedTypeDetails(selected);
+  };
 
   return (
     <div className="mb-6">
@@ -55,7 +76,7 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
             {channelTypes.map((type) => (
               <DropdownMenuItem
                 key={type.id}
-                onClick={() => onSelect(type.id)}
+                onClick={() => handleSelect(type.id)}
                 className="cursor-pointer"
               >
                 {type.label}
@@ -63,6 +84,29 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        
+        {selectedTypeDetails && (
+          <div className="mt-4 space-y-2 border rounded-md p-3 bg-gray-50">
+            {selectedTypeDetails.description && (
+              <div>
+                <h4 className="text-sm font-medium">Description</h4>
+                <p className="text-sm text-gray-600">{selectedTypeDetails.description}</p>
+              </div>
+            )}
+            {selectedTypeDetails.production && (
+              <div>
+                <h4 className="text-sm font-medium">Production</h4>
+                <p className="text-sm text-gray-600">{selectedTypeDetails.production}</p>
+              </div>
+            )}
+            {selectedTypeDetails.example && (
+              <div>
+                <h4 className="text-sm font-medium">Example</h4>
+                <p className="text-sm text-gray-600">{selectedTypeDetails.example}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

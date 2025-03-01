@@ -71,7 +71,11 @@ export const useChannelFormSubmission = (
 
       console.log(`${isEditMode ? "Update" : "Insert"} successful:`, data);
       toast.success(`Channel ${isEditMode ? "updated" : "added"} successfully!`);
-      navigate("/admin/dashboard");
+      
+      // Add slight delay before navigation to ensure toast is seen
+      setTimeout(() => {
+        navigate("/admin/dashboard");
+      }, 1000);
     } catch (error) {
       console.error("Submit error:", error);
       toast.error(error instanceof Error 

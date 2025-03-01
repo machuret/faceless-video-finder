@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { ChannelFormData } from "../components/ChannelForm";
 import ChannelIdentity from "./form-sections/ChannelIdentity";
 import ChannelStats from "./form-sections/ChannelStats";
 import ChannelContent from "./form-sections/ChannelContent";
@@ -113,9 +112,19 @@ const ChannelForm = ({
         onChange={onChange}
       />
 
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? (isEditMode ? "Updating Channel..." : "Adding Channel...") : (isEditMode ? "Update Channel" : "Add Channel")}
-      </Button>
+      <div className="flex justify-between gap-2">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => window.location.href = "/admin/dashboard"}
+        >
+          Back to Dashboard
+        </Button>
+        
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? (isEditMode ? "Updating Channel..." : "Adding Channel...") : (isEditMode ? "Update Channel" : "Add Channel")}
+        </Button>
+      </div>
     </form>
   );
 };
