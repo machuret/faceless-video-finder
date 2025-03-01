@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical } from "lucide-react";
-import { Channel } from "@/types/youtube";
+import { Channel, ChannelMetadata } from "@/types/youtube";
 
 interface ChannelListProps {
   isAdmin: boolean;
@@ -39,7 +39,15 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin }) => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setChannels(data || []);
+      
+      // Transform the data to ensure metadata is properly typed
+      const typedChannels: Channel[] = (data || []).map(channel => ({
+        ...channel,
+        // Ensure metadata is treated as ChannelMetadata or undefined
+        metadata: channel.metadata as ChannelMetadata | undefined
+      }));
+      
+      setChannels(typedChannels);
     } catch (error: any) {
       console.error("Error fetching channels:", error);
       uiToast({
