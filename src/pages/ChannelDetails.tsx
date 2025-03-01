@@ -22,26 +22,33 @@ const ChannelDetails = () => {
   const { data: channel, isLoading: isLoadingChannel } = useQuery({
     queryKey: ["channel", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("youtube_channels")
-        .select("*")
-        .eq("id", id)
-        .single();
-      
-      if (error) throw error;
-      
-      // Process the channel to get UI channel type from metadata
-      if (data && data.metadata && typeof data.metadata === 'object' && 'ui_channel_type' in data.metadata) {
-        const typedMetadata = data.metadata as ChannelMetadata;
-        console.log(`Using channel type from metadata: ${typedMetadata.ui_channel_type}`);
-        return {
-          ...data,
-          metadata: typedMetadata,
-          channel_type: typedMetadata.ui_channel_type
-        } as Channel;
+      try {
+        const { data, error } = await supabase
+          .from("youtube_channels")
+          .select("*")
+          .eq("id", id)
+          .single();
+        
+        if (error) throw error;
+        
+        // Process the channel to get UI channel type from metadata
+        if (data && data.metadata && typeof data.metadata === 'object') {
+          const typedMetadata = data.metadata as ChannelMetadata;
+          if ('ui_channel_type' in typedMetadata) {
+            console.log(`Using channel type from metadata: ${typedMetadata.ui_channel_type}`);
+            return {
+              ...data,
+              metadata: typedMetadata,
+              channel_type: typedMetadata.ui_channel_type
+            } as Channel;
+          }
+        }
+        
+        return data as Channel;
+      } catch (error) {
+        console.error("Error fetching channel data:", error);
+        return null;
       }
-      
-      return data as Channel;
     },
   });
 
@@ -65,13 +72,18 @@ const ChannelDetails = () => {
   const { data: videoStats, isLoading: isLoadingStats } = useQuery({
     queryKey: ["video-stats", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("youtube_video_stats")
-        .select("*")
-        .eq("channel_id", id);
-      
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from("youtube_video_stats")
+          .select("*")
+          .eq("channel_id", id);
+        
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error("Error fetching video stats:", error);
+        return [];
+      }
     },
   });
 
@@ -176,7 +188,7 @@ const ChannelDetails = () => {
             uploadFrequencyCategory={uploadFrequencyCategory}
           />
 
-          {videoStats && <VideoPerformance videoStats={videoStats} />}
+          {videoStats && videoStats.length > 0 && <VideoPerformance videoStats={videoStats} />}
         </div>
         
         {channelTypeInfo && (
