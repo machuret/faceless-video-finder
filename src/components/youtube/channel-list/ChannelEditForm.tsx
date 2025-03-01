@@ -91,7 +91,7 @@ export const ChannelEditForm = ({
       ui_channel_type: uiChannelType
     };
     
-    // Create another event for metadata update
+    // Create another event for metadata update with proper type assertion
     const metadataEvent = {
       target: {
         name: "metadata",

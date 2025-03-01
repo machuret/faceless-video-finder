@@ -64,7 +64,7 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
       ui_channel_type: value
     };
     
-    // Create a new event-like object for metadata update
+    // Create a mock event for metadata update with proper type assertion
     const metadataEvent = {
       target: {
         name: "metadata",

@@ -18,9 +18,10 @@ export const fetchAllChannels = async (): Promise<Channel[]> => {
     
     // Post-process the data to ensure custom channel types are handled correctly
     const processedData = data?.map(channel => {
-      let displayChannelType = channel.channel_type;
+      // Default to the database channel type
+      let displayChannelType: string = channel.channel_type as string;
       
-      // If there's metadata with ui_channel_type, use that instead
+      // If there's metadata with ui_channel_type, use that instead for display purposes
       if (channel.metadata && typeof channel.metadata === 'object' && 'ui_channel_type' in channel.metadata) {
         displayChannelType = channel.metadata.ui_channel_type as string;
         console.log(`Using ui_channel_type from metadata for ${channel.channel_title}: ${displayChannelType}`);
