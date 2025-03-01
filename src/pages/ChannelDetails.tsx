@@ -15,43 +15,55 @@ import { getChannelTypeById } from "@/services/channelTypeService";
 import { useEffect, useState } from "react";
 
 const ChannelDetails = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [channelTypeInfo, setChannelTypeInfo] = useState<any>(null);
-
-  const { data: channel, isLoading: isLoadingChannel } = useQuery({
+  
+  // Fetch channel data
+  const { 
+    data: channel, 
+    isLoading: isLoadingChannel,
+    error: channelError
+  } = useQuery({
     queryKey: ["channel", id],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("youtube_channels")
-          .select("*")
-          .eq("id", id)
-          .single();
-        
-        if (error) throw error;
-        
-        // Process the channel to get UI channel type from metadata
-        if (data && data.metadata && typeof data.metadata === 'object') {
-          const typedMetadata = data.metadata as ChannelMetadata;
-          if ('ui_channel_type' in typedMetadata) {
-            console.log(`Using channel type from metadata: ${typedMetadata.ui_channel_type}`);
-            return {
-              ...data,
-              metadata: typedMetadata,
-              channel_type: typedMetadata.ui_channel_type
-            } as Channel;
-          }
-        }
-        
-        return data as Channel;
-      } catch (error) {
-        console.error("Error fetching channel data:", error);
-        return null;
+      if (!id) throw new Error("Channel ID is required");
+      
+      const { data, error } = await supabase
+        .from("youtube_channels")
+        .select("*")
+        .eq("id", id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching channel:", error);
+        throw error;
       }
+      
+      if (!data) {
+        throw new Error("Channel not found");
+      }
+      
+      // Process the channel to get UI channel type from metadata
+      if (data.metadata && typeof data.metadata === 'object') {
+        const typedMetadata = data.metadata as ChannelMetadata;
+        if ('ui_channel_type' in typedMetadata) {
+          console.log(`Using channel type from metadata: ${typedMetadata.ui_channel_type}`);
+          return {
+            ...data,
+            metadata: typedMetadata,
+            channel_type: typedMetadata.ui_channel_type
+          } as Channel;
+        }
+      }
+      
+      return data as Channel;
     },
+    retry: 1,
+    enabled: !!id
   });
 
+  // Fetch channel type info when channel is loaded
   useEffect(() => {
     if (channel?.metadata?.ui_channel_type) {
       const fetchChannelTypeInfo = async () => {
@@ -69,24 +81,33 @@ const ChannelDetails = () => {
     }
   }, [channel]);
 
-  const { data: videoStats, isLoading: isLoadingStats } = useQuery({
+  // Fetch video stats
+  const { 
+    data: videoStats, 
+    isLoading: isLoadingStats,
+    error: statsError 
+  } = useQuery({
     queryKey: ["video-stats", id],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("youtube_video_stats")
-          .select("*")
-          .eq("channel_id", id);
-        
-        if (error) throw error;
-        return data;
-      } catch (error) {
+      if (!id) return [];
+      
+      const { data, error } = await supabase
+        .from("youtube_video_stats")
+        .select("*")
+        .eq("channel_id", id);
+      
+      if (error) {
         console.error("Error fetching video stats:", error);
         return [];
       }
+      
+      return data || [];
     },
+    retry: 1,
+    enabled: !!id
   });
 
+  // Handle loading state
   if (isLoadingChannel) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -98,17 +119,29 @@ const ChannelDetails = () => {
     );
   }
 
-  if (!channel) {
+  // Handle error state
+  if (channelError || !channel) {
+    console.error("Channel error:", channelError);
     return (
       <div className="min-h-screen bg-gray-50">
         <MainNavbar />
         <div className="container mx-auto px-4 py-8 flex items-center justify-center">
-          <div className="text-red-500 text-base">Channel not found</div>
+          <div className="text-red-500 text-base">
+            {channelError instanceof Error ? channelError.message : "Channel not found"}
+          </div>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Go Back
+          </Button>
         </div>
       </div>
     );
   }
 
+  // Calculate channel metrics
   const uploadFrequency = calculateUploadFrequency(channel.start_date, channel.video_count);
   const uploadFrequencyCategory = getUploadFrequencyCategory(uploadFrequency);
   const channelSize = getChannelSize(channel.total_subscribers);
@@ -188,7 +221,9 @@ const ChannelDetails = () => {
             uploadFrequencyCategory={uploadFrequencyCategory}
           />
 
-          {videoStats && videoStats.length > 0 && <VideoPerformance videoStats={videoStats} />}
+          {videoStats && videoStats.length > 0 && (
+            <VideoPerformance videoStats={videoStats} />
+          )}
         </div>
         
         {channelTypeInfo && (
