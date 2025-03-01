@@ -1,239 +1,29 @@
 
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import React from "react";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
 import MainNavbar from "@/components/MainNavbar";
-import { useAuth } from "@/context/AuthContext";
-import { 
-  ChannelTypeInfo, 
-  fetchChannelTypes, 
-  createChannelType, 
-  updateChannelType, 
-  deleteChannelType 
-} from "@/services/channelTypeService";
+import { ChannelTypesList } from "./components/channelTypes/ChannelTypesList";
+import { ChannelTypeForm } from "./components/channelTypes/ChannelTypeForm";
+import { useChannelTypes } from "./components/channelTypes/useChannelTypes";
 
 export default function ManageChannelTypes() {
-  const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
-  const { toast } = useToast();
-  const [channelTypes, setChannelTypes] = useState<ChannelTypeInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("list");
-  const [submitting, setSubmitting] = useState(false);
-  
-  const initialFormState: ChannelTypeInfo = {
-    id: "",
-    label: "",
-    description: "",
-    production: "",
-    example: ""
-  };
-  
-  const [selectedType, setSelectedType] = useState<ChannelTypeInfo | null>(null);
-  const [formData, setFormData] = useState<ChannelTypeInfo>(initialFormState);
-  
-  useEffect(() => {
-    if (!isAdmin) {
-      navigate("/admin/login");
-      return;
-    }
-    
-    loadChannelTypes();
-  }, [isAdmin, navigate]);
-  
-  const loadChannelTypes = async () => {
-    try {
-      setLoading(true);
-      console.log("Fetching channel types...");
-      const data = await fetchChannelTypes();
-      console.log("Fetched channel types:", data);
-      setChannelTypes(data);
-    } catch (error) {
-      console.error("Error loading channel types:", error);
-      toast({
-        title: "Error loading channel types",
-        description: "There was a problem fetching the channel types.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    console.log(`Field "${name}" updated to:`, value);
-  };
-  
-  const handleSelectType = (type: ChannelTypeInfo) => {
-    console.log("Selected type for editing:", type);
-    // Create a deep copy to avoid reference issues
-    setSelectedType(type);
-    setFormData({
-      id: type.id || "",
-      label: type.label || "",
-      description: type.description || "",
-      production: type.production || "",
-      example: type.example || ""
-    });
-    setActiveTab("edit");
-  };
-  
-  const handleCreateNew = () => {
-    setSelectedType(null);
-    setFormData(initialFormState);
-    setActiveTab("edit");
-  };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (submitting) {
-      console.log("Submit already in progress, skipping");
-      return;
-    }
-    
-    try {
-      setSubmitting(true);
-      console.log("Form submitted with data:", formData);
-      
-      // Validate form fields
-      if (!formData.id) {
-        toast({
-          title: "Error",
-          description: "ID is required",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      if (!formData.label) {
-        toast({
-          title: "Error",
-          description: "Label is required",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      if (selectedType) {
-        // Update existing
-        console.log("Updating existing channel type:", formData);
-        
-        try {
-          const updatedType = await updateChannelType({
-            id: formData.id,
-            label: formData.label,
-            description: formData.description,
-            production: formData.production,
-            example: formData.example
-          });
-          
-          console.log("Channel type updated successfully:", updatedType);
-          
-          // First update the local state
-          setChannelTypes(prev => 
-            prev.map(type => type.id === updatedType.id ? updatedType : type)
-          );
-          
-          toast({
-            title: "Success",
-            description: "Channel type updated successfully."
-          });
-          
-          // Then refresh from server to ensure consistency
-          await loadChannelTypes();
-          
-          // Reset form and navigation
-          setActiveTab("list");
-          setFormData(initialFormState);
-          setSelectedType(null);
-        } catch (updateError) {
-          console.error("Error during update operation:", updateError);
-          toast({
-            title: "Update Failed",
-            description: `Error: ${updateError instanceof Error ? updateError.message : 'Unknown error occurred'}`,
-            variant: "destructive"
-          });
-        }
-      } else {
-        // Create new
-        console.log("Creating new channel type:", formData);
-        const newType = await createChannelType(formData);
-        console.log("New channel type created:", newType);
-        
-        // Update local state
-        setChannelTypes(prev => [...prev, newType]);
-        
-        toast({
-          title: "Success",
-          description: "New channel type created successfully."
-        });
-        
-        // Reset form and navigation
-        setActiveTab("list");
-        setFormData(initialFormState);
-      }
-    } catch (error) {
-      console.error("Error saving channel type:", error);
-      toast({
-        title: "Error",
-        description: "There was a problem saving the channel type.",
-        variant: "destructive"
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-  
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this channel type? This action cannot be undone.")) {
-      try {
-        console.log("Deleting channel type with ID:", id);
-        await deleteChannelType(id);
-        
-        // Update local state
-        setChannelTypes(prev => prev.filter(type => type.id !== id));
-        
-        toast({
-          title: "Success",
-          description: "Channel type deleted successfully."
-        });
-      } catch (error) {
-        console.error("Error deleting channel type:", error);
-        toast({
-          title: "Error",
-          description: "There was a problem deleting the channel type.",
-          variant: "destructive"
-        });
-      }
-    }
-  };
-  
-  const handleCancel = () => {
-    setActiveTab("list");
-    setSelectedType(null);
-    setFormData(initialFormState);
-  };
-  
+  const {
+    channelTypes,
+    loading,
+    activeTab,
+    setActiveTab,
+    submitting,
+    selectedType,
+    formData,
+    handleInputChange,
+    handleSelectType,
+    handleCreateNew,
+    handleSubmit,
+    handleDelete,
+    handleCancel
+  } = useChannelTypes();
+
   return (
     <div className="min-h-screen bg-gray-50">
       <MainNavbar />
@@ -253,150 +43,26 @@ export default function ManageChannelTypes() {
           
           <TabsContent value="list">
             <Card className="p-6">
-              <div className="flex justify-between mb-6">
-                <h2 className="text-xl font-semibold">Available Channel Types</h2>
-                <Button onClick={handleCreateNew}>Add New Channel Type</Button>
-              </div>
-              
-              {loading ? (
-                <p>Loading channel types...</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Label</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {channelTypes.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-4">No channel types found</TableCell>
-                      </TableRow>
-                    ) : (
-                      channelTypes.map((type) => (
-                        <TableRow key={type.id}>
-                          <TableCell className="font-medium">{type.id}</TableCell>
-                          <TableCell>{type.label}</TableCell>
-                          <TableCell className="max-w-md truncate">{type.description}</TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="mr-2"
-                              onClick={() => handleSelectType(type)}
-                            >
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => handleDelete(type.id)}
-                            >
-                              Delete
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              )}
+              <ChannelTypesList
+                channelTypes={channelTypes}
+                loading={loading}
+                onEdit={handleSelectType}
+                onCreateNew={handleCreateNew}
+                onDelete={handleDelete}
+              />
             </Card>
           </TabsContent>
           
           <TabsContent value="edit">
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-6">
-                {selectedType ? `Edit Channel Type: ${selectedType.label}` : "Create New Channel Type"}
-              </h2>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="id">ID (slug)</Label>
-                      <Input 
-                        id="id" 
-                        name="id" 
-                        value={formData.id} 
-                        onChange={handleInputChange}
-                        placeholder="e.g. documentary_style"
-                        disabled={!!selectedType}
-                        required
-                      />
-                      {!selectedType && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          Use lowercase letters, numbers, and underscores only. This cannot be changed later.
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="label">Label</Label>
-                      <Input 
-                        id="label" 
-                        name="label" 
-                        value={formData.label} 
-                        onChange={handleInputChange}
-                        placeholder="e.g. Documentary Style"
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea 
-                        id="description" 
-                        name="description" 
-                        value={formData.description || ''} 
-                        onChange={handleInputChange}
-                        placeholder="Describe this channel type..."
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="production">Production Details</Label>
-                    <Textarea 
-                      id="production" 
-                      name="production" 
-                      value={formData.production || ''} 
-                      onChange={handleInputChange}
-                      placeholder="Describe how this type of content is typically produced..."
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="example">Examples</Label>
-                    <Textarea 
-                      id="example" 
-                      name="example" 
-                      value={formData.example || ''} 
-                      onChange={handleInputChange}
-                      placeholder="Provide examples of channels that use this format..."
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex justify-end space-x-4">
-                  <Button type="button" variant="outline" onClick={handleCancel}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? "Saving..." : (selectedType ? "Update Channel Type" : "Create Channel Type")}
-                  </Button>
-                </div>
-              </form>
+              <ChannelTypeForm
+                formData={formData}
+                selectedType={selectedType}
+                submitting={submitting}
+                onInputChange={handleInputChange}
+                onSubmit={handleSubmit}
+                onCancel={handleCancel}
+              />
             </Card>
           </TabsContent>
         </Tabs>
