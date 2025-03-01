@@ -1,7 +1,5 @@
 
-import { Link } from "react-router-dom";
-import { Calculator, ArrowRight, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 const HeroSection = () => {
