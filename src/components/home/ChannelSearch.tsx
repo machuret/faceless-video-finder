@@ -31,6 +31,13 @@ const ChannelSearch = ({
     setSearchTerm("");
   };
 
+  const handleRandomSearch = () => {
+    // Get a random term from predefined keywords or categories
+    const randomTerms = ["gaming", "educational", "cooking", "review", "storytelling", "animation"];
+    const randomTerm = randomTerms[Math.floor(Math.random() * randomTerms.length)];
+    setSearchTerm(randomTerm);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-8 mb-10">
       <div className="max-w-5xl mx-auto text-center mb-6">
@@ -56,6 +63,7 @@ const ChannelSearch = ({
                 type="button"
                 onClick={clearSearch}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Clear search"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -66,7 +74,11 @@ const ChannelSearch = ({
           <Button type="submit" className="bg-blue-600 hover:bg-blue-700 font-montserrat rounded-md px-6 py-2.5 text-sm">
             Search
           </Button>
-          <Button type="button" onClick={() => setSearchTerm("")} className="bg-gray-100 text-gray-700 hover:bg-gray-200 font-montserrat rounded-md px-5 py-2.5 text-sm">
+          <Button 
+            type="button" 
+            onClick={handleRandomSearch} 
+            className="bg-gray-100 text-gray-700 hover:bg-gray-200 font-montserrat rounded-md px-5 py-2.5 text-sm"
+          >
             I'm Feeling Lucky
           </Button>
         </div>

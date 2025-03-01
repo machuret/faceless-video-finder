@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MainNavbar from "@/components/MainNavbar";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 export default function ManageChannelTypes() {
   const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading } = useAuth();
+  const [isAuthorized, setIsAuthorized] = useState(false);
   
   const {
     channelTypes,
@@ -32,12 +33,17 @@ export default function ManageChannelTypes() {
   } = useChannelTypes();
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      toast.error("Please log in to access this page");
-      navigate("/admin/login");
-    } else if (!authLoading && !isAdmin) {
-      toast.error("You don't have permission to access this page");
-      navigate("/");
+    // Only run this check when auth loading is complete
+    if (!authLoading) {
+      if (!user) {
+        toast.error("Please log in to access this page");
+        navigate("/admin/login");
+      } else if (!isAdmin) {
+        toast.error("You don't have permission to access this page");
+        navigate("/");
+      } else {
+        setIsAuthorized(true);
+      }
     }
   }, [user, isAdmin, authLoading, navigate]);
 
@@ -52,7 +58,7 @@ export default function ManageChannelTypes() {
     );
   }
 
-  if (!isAdmin) return null;
+  if (!isAuthorized) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">

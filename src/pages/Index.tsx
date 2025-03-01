@@ -26,10 +26,10 @@ const Index = () => {
     try {
       let query = supabase
         .from("youtube_channels")
-        .select("*");
+        .select("*, videoStats:youtube_video_stats(*)");
 
       if (selectedCategory) {
-        query = query.eq("channel_category", selectedCategory as any);
+        query = query.eq("channel_category", selectedCategory);
       }
 
       const { data, error } = await query;
@@ -38,10 +38,18 @@ const Index = () => {
         throw error;
       }
 
-      setChannels(data as unknown as Channel[]);
+      // Properly type-cast the data
+      const typedChannels = data.map(channel => ({
+        ...channel,
+        // Ensure metadata is properly typed
+        metadata: channel.metadata as Channel['metadata'],
+      })) as Channel[];
+
+      setChannels(typedChannels);
     } catch (error) {
       console.error("Error fetching channels:", error);
       toast.error("Failed to fetch channels");
+      setChannels([]); // Reset to empty array on error
     } finally {
       setLoading(false);
     }

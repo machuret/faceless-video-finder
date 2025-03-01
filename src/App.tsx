@@ -1,6 +1,6 @@
 
 import React from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, Navigate } from 'react-router-dom'
 import Index from './pages/Index'
 import Calculator from './pages/Calculator'
 import ChannelEarnings from './pages/ChannelEarnings'
@@ -24,6 +24,7 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
+        {/* Public routes */}
         <Route path="/home" element={<Index />} />
         <Route path="/" element={<Index />} />
         <Route path="/calculator" element={<Calculator />} />
@@ -37,12 +38,16 @@ function App() {
         <Route path="/channel/:channelId" element={<ChannelDetails />} />
         <Route path="/channel-types" element={<ChannelTypes />} />
         <Route path="/training" element={<HowItWorks />} /> {/* Temporarily point to HowItWorks until Training page is created */}
+        
+        {/* Admin routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/channel-types" element={<ManageChannelTypes />} />
         <Route path="/admin/add-channel" element={<AddChannel />} />
         <Route path="/admin/edit-channel/:channelId" element={<AddChannel />} />
-        <Route path="*" element={<NotFound />} /> {/* Add a catch-all route for 404 handling */}
+        
+        {/* 404 catch-all route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
     </AuthProvider>
