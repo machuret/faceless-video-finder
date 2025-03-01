@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Channel, ChannelCategory } from "@/types/youtube";
 import { toast } from "sonner";
 import MainNavbar from "@/components/MainNavbar";
-import YouTubeTools from "@/components/home/YouTubeTools";
 import ChannelSearch from "@/components/home/ChannelSearch";
 import ChannelGrid from "@/components/home/ChannelGrid";
 import PageFooter from "@/components/home/PageFooter";
+import { Link } from "react-router-dom";
+import { Calculator } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -73,7 +75,18 @@ const Index = () => {
       <MainNavbar />
 
       <main className="container mx-auto px-4 py-8">
-        <YouTubeTools />
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8 flex flex-col md:flex-row items-center justify-between">
+          <div>
+            <h2 className="font-crimson text-2xl font-bold mb-2 text-gray-800">YouTube Analytics Tools</h2>
+            <p className="text-gray-600 mb-4 md:mb-0">Access our collection of calculators for YouTube creators</p>
+          </div>
+          <Link to="/calculators">
+            <Button className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              View Creator Tools
+            </Button>
+          </Link>
+        </div>
         
         <ChannelSearch 
           searchTerm={searchTerm}
