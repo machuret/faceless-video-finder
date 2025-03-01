@@ -18,7 +18,7 @@ export const fetchAllChannels = async (): Promise<Channel[]> => {
     
     // Post-process the data to ensure custom channel types are handled correctly
     const processedData = data?.map(channel => {
-      // Default to the database channel type
+      // Default to the database channel type (which is always one of the valid enum values)
       let displayChannelType: string = channel.channel_type as string;
       
       // If there's metadata with ui_channel_type, use that instead for display purposes
@@ -113,7 +113,7 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     
     // If it's one of the database types, use it directly
     if (uiChannelType === "creator" || uiChannelType === "brand" || uiChannelType === "media") {
-      dbChannelType = uiChannelType as DatabaseChannelType;
+      dbChannelType = uiChannelType;
     } else {
       // For custom types, store as "other" in the main column
       dbChannelType = "other";
