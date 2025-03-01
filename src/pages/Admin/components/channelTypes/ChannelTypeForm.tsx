@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChannelTypeInfo } from "@/services/channelTypeService";
-import { CKEditorField } from "@/components/ui/rich-text-editor/CKEditor";
+import { TextAreaField } from "@/components/ui/rich-text-editor/TextAreaField";
 
 interface ChannelTypeFormProps {
   formData: ChannelTypeInfo;
@@ -66,7 +66,7 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
           </div>
           
           <div className="space-y-4">
-            <CKEditorField
+            <TextAreaField
               id="description"
               name="description"
               label="Description"
@@ -74,12 +74,13 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
               onChange={onRichTextChange}
               placeholder="Describe this channel type..."
               className="min-h-[100px]"
+              rows={5}
             />
           </div>
         </div>
         
         <div className="space-y-4">
-          <CKEditorField
+          <TextAreaField
             id="production"
             name="production"
             label="Production Details"
@@ -87,9 +88,10 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
             onChange={onRichTextChange}
             placeholder="Describe how this type of content is typically produced..."
             className="min-h-[100px]"
+            rows={5}
           />
           
-          <CKEditorField
+          <TextAreaField
             id="example"
             name="example"
             label="Examples"
@@ -97,6 +99,7 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
             onChange={onRichTextChange}
             placeholder="Provide examples of channels that use this format..."
             className="min-h-[100px]"
+            rows={5}
           />
         </div>
         
