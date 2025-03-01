@@ -8,7 +8,8 @@ import PageFooter from "@/components/home/PageFooter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, Youtube, Users, Play, Calendar, Bookmark, CircleDollarSign } from "lucide-react";
+import { Loader2, Youtube, Users, Play, Calendar, Bookmark, CircleDollarSign, MapPin, BarChart, Globe, Upload } from "lucide-react";
+import { channelTypes } from "@/components/youtube/channel-list/constants";
 
 const ChannelDetails = () => {
   const { channelId } = useParams();
@@ -50,6 +51,22 @@ const ChannelDetails = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Find the channel type label based on the channel type ID
+  const getChannelTypeLabel = (typeId: string | undefined) => {
+    if (!typeId) return 'N/A';
+    const foundType = channelTypes.find(type => type.id === typeId);
+    return foundType ? foundType.label : typeId;
+  };
+
+  // Format upload frequency to be more readable
+  const formatUploadFrequency = (frequency: string | undefined) => {
+    if (!frequency) return 'N/A';
+    return frequency
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   if (loading) {
@@ -124,6 +141,48 @@ const ChannelDetails = () => {
                       </a>
                     </div>
                   )}
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                    {channel.channel_type && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm text-gray-500 mb-1">Channel Type</h4>
+                        <div className="flex items-center">
+                          <BarChart className="h-4 w-4 text-blue-600 mr-2" />
+                          <span>{getChannelTypeLabel(channel.metadata?.ui_channel_type || channel.channel_type.toString())}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {channel.channel_category && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm text-gray-500 mb-1">Category</h4>
+                        <div className="flex items-center">
+                          <Bookmark className="h-4 w-4 text-blue-600 mr-2" />
+                          <span className="capitalize">{channel.channel_category}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {channel.country && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm text-gray-500 mb-1">Country</h4>
+                        <div className="flex items-center">
+                          <Globe className="h-4 w-4 text-blue-600 mr-2" />
+                          <span>{channel.country}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {channel.upload_frequency && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm text-gray-500 mb-1">Upload Frequency</h4>
+                        <div className="flex items-center">
+                          <Upload className="h-4 w-4 text-blue-600 mr-2" />
+                          <span>{formatUploadFrequency(channel.upload_frequency)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   {channel.keywords && channel.keywords.length > 0 && (
                     <div>
