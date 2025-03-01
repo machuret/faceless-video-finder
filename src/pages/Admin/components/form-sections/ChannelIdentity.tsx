@@ -13,6 +13,7 @@ const ChannelIdentity = ({ videoId, channelTitle, channelUrl, onChange }: Channe
   return (
     <FormSection title="Channel Identity">
       <div>
+        <label className="block text-sm font-medium mb-1">Channel ID</label>
         <Input
           name="video_id"
           placeholder="Channel ID"
@@ -22,6 +23,7 @@ const ChannelIdentity = ({ videoId, channelTitle, channelUrl, onChange }: Channe
         />
       </div>
       <div>
+        <label className="block text-sm font-medium mb-1">Channel Title</label>
         <Input
           name="channel_title"
           placeholder="Channel Title"
@@ -31,6 +33,7 @@ const ChannelIdentity = ({ videoId, channelTitle, channelUrl, onChange }: Channe
         />
       </div>
       <div>
+        <label className="block text-sm font-medium mb-1">Channel URL</label>
         <Input
           name="channel_url"
           placeholder="Channel URL"

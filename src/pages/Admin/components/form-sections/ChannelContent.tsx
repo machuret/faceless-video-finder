@@ -4,6 +4,7 @@ import { FileUpload } from "@/components/FileUpload";
 import { FormSection } from "./FormSection";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
+import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
 
 interface ChannelContentProps {
   description: string;
@@ -12,6 +13,7 @@ interface ChannelContentProps {
   onScreenshotChange: (url: string) => void;
   onGenerateContent?: () => void;
   isGenerating?: boolean;
+  onFieldChange: (name: string, value: string) => void;
 }
 
 const ChannelContent = ({ 
@@ -20,7 +22,8 @@ const ChannelContent = ({
   onChange, 
   onScreenshotChange,
   onGenerateContent,
-  isGenerating = false
+  isGenerating = false,
+  onFieldChange
 }: ChannelContentProps) => {
   return (
     <FormSection title="Content & Visuals">
@@ -49,12 +52,14 @@ const ChannelContent = ({
             </Button>
           )}
         </div>
-        <Input
+        <RichTextEditor
+          id="description"
           name="description"
-          placeholder="Enter channel description"
+          label=""
           value={description}
-          onChange={onChange}
-          className="mt-1"
+          onChange={onFieldChange}
+          placeholder="Enter channel description here..."
+          className="w-full"
         />
         <p className="text-xs text-gray-500">This description will help categorize and search for the channel</p>
       </div>

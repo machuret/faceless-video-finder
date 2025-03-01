@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChannelFormData } from "../components/ChannelForm";
-import { DatabaseChannelType } from "@/types/youtube";
+import { DatabaseChannelType, ChannelCategory } from "@/types/youtube";
 
 export const useChannelForm = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ export const useChannelForm = () => {
     channel_type: "",
     country: "",
     channel_category: "",
+    notes: ""
   });
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export const useChannelForm = () => {
         channel_type: data.channel_type || "",
         country: data.country || "",
         channel_category: data.channel_category || "",
+        notes: data.notes || ""
       });
 
       toast.success("Channel data loaded successfully");
@@ -128,6 +131,7 @@ export const useChannelForm = () => {
         channel_type: "",
         country: "",
         channel_category: "",
+        notes: ""
       });
 
       toast.success("Channel data fetched successfully");
@@ -150,7 +154,7 @@ export const useChannelForm = () => {
         throw new Error("Please fill in all required fields: Channel ID, Title, and URL");
       }
 
-      const dataToSubmit = {
+      const dataToSubmit: any = {
         video_id: formData.video_id.trim(),
         channel_title: formData.channel_title.trim(),
         channel_url: formData.channel_url.trim(),
@@ -163,7 +167,8 @@ export const useChannelForm = () => {
         cpm: formData.cpm ? parseFloat(formData.cpm) : 4,
         channel_type: formData.channel_type || "other",
         country: formData.country || null,
-        channel_category: formData.channel_category || null,
+        channel_category: formData.channel_category || "other",
+        notes: formData.notes || null
       };
 
       console.log(`${isEditMode ? "Updating" : "Submitting"} data to Supabase:`, dataToSubmit);
@@ -215,6 +220,10 @@ export const useChannelForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFieldChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleScreenshotChange = (url: string) => {
     setFormData((prev) => ({ ...prev, screenshot_url: url }));
   };
@@ -228,6 +237,7 @@ export const useChannelForm = () => {
     fetchYoutubeData,
     handleSubmit,
     handleChange,
-    handleScreenshotChange
+    handleScreenshotChange,
+    handleFieldChange
   };
 };

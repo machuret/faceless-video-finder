@@ -20,6 +20,7 @@ const ChannelStats = ({
   return (
     <FormSection title="Channel Statistics">
       <div>
+        <label className="block text-sm font-medium mb-1">Start Date</label>
         <Input
           name="start_date"
           placeholder="Start Date"
@@ -29,6 +30,7 @@ const ChannelStats = ({
         />
       </div>
       <div>
+        <label className="block text-sm font-medium mb-1">Total Subscribers</label>
         <Input
           name="total_subscribers"
           placeholder="Total Subscribers"
@@ -38,6 +40,7 @@ const ChannelStats = ({
         />
       </div>
       <div>
+        <label className="block text-sm font-medium mb-1">Total Views</label>
         <Input
           name="total_views"
           placeholder="Total Views"
@@ -47,6 +50,7 @@ const ChannelStats = ({
         />
       </div>
       <div>
+        <label className="block text-sm font-medium mb-1">Number of Videos</label>
         <Input
           name="video_count"
           placeholder="Number of Videos"

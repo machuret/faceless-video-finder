@@ -9,12 +9,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ChannelType } from "@/types/youtube";
+import { ChannelType, ChannelCategory } from "@/types/youtube";
 import ChannelIdentity from "./form-sections/ChannelIdentity";
 import ChannelStats from "./form-sections/ChannelStats";
 import ChannelContent from "./form-sections/ChannelContent";
 import RevenueDetails from "./form-sections/RevenueDetails";
 import { countries } from "@/utils/channelUtils";
+import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
+import { FormSection } from "./form-sections/FormSection";
 
 export interface ChannelFormData {
   video_id: string;
@@ -30,6 +32,7 @@ export interface ChannelFormData {
   channel_type?: string;
   country?: string;
   channel_category?: string;
+  notes?: string;
 }
 
 interface ChannelFormProps {
@@ -38,9 +41,17 @@ interface ChannelFormProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onScreenshotChange: (url: string) => void;
+  onFieldChange: (name: string, value: string) => void;
 }
 
-const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange }: ChannelFormProps) => {
+const ChannelForm = ({ 
+  formData, 
+  loading, 
+  onChange, 
+  onSubmit, 
+  onScreenshotChange,
+  onFieldChange 
+}: ChannelFormProps) => {
   const isEditMode = !!formData.video_id && !!formData.channel_title;
   const [channelTypes, setChannelTypes] = useState<{id: string, label: string}[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -84,38 +95,17 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
 
   // Handle type selection
   const handleTypeSelect = (typeId: string) => {
-    const mockEvent = {
-      target: {
-        name: "channel_type",
-        value: typeId
-      }
-    } as React.ChangeEvent<HTMLInputElement>;
-    
-    onChange(mockEvent);
+    onFieldChange("channel_type", typeId);
   };
 
   // Handle category selection
   const handleCategorySelect = (categoryId: string) => {
-    const mockEvent = {
-      target: {
-        name: "channel_category",
-        value: categoryId
-      }
-    } as React.ChangeEvent<HTMLInputElement>;
-    
-    onChange(mockEvent);
+    onFieldChange("channel_category", categoryId);
   };
 
   // Handle country selection
   const handleCountrySelect = (countryCode: string) => {
-    const mockEvent = {
-      target: {
-        name: "country",
-        value: countryCode
-      }
-    } as React.ChangeEvent<HTMLInputElement>;
-    
-    onChange(mockEvent);
+    onFieldChange("country", countryCode);
   };
 
   // Generate content using AI
@@ -134,14 +124,7 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
       if (error) throw error;
       
       if (data?.description) {
-        const mockEvent = {
-          target: {
-            name: "description",
-            value: data.description
-          }
-        } as React.ChangeEvent<HTMLInputElement>;
-        
-        onChange(mockEvent);
+        onFieldChange("description", data.description);
         toast.success('Description generated successfully!');
       }
     } catch (error) {
@@ -161,11 +144,27 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
         onScreenshotChange={onScreenshotChange}
         onGenerateContent={generateContent}
         isGenerating={isGenerating}
+        onFieldChange={onFieldChange}
       />
+
+      <FormSection title="Channel Notes">
+        <div className="space-y-2">
+          <RichTextEditor
+            id="notes"
+            name="notes"
+            label="Notes"
+            value={formData.notes || ""}
+            onChange={onFieldChange}
+            placeholder="Enter notes about this channel here..."
+            className="w-full"
+          />
+        </div>
+      </FormSection>
 
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-3">Channel Type</h3>
         <div className="space-y-4">
+          <label className="block text-sm font-medium">Channel Type</label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full justify-between">
@@ -192,6 +191,7 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-3">Channel Category</h3>
         <div className="space-y-4">
+          <label className="block text-sm font-medium">Category</label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full justify-between">
@@ -218,6 +218,7 @@ const ChannelForm = ({ formData, loading, onChange, onSubmit, onScreenshotChange
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-3">Country</h3>
         <div className="space-y-4">
+          <label className="block text-sm font-medium">Country</label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full justify-between">

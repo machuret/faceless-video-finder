@@ -25,6 +25,7 @@ const RevenueDetails = ({ cpm, onChange }: RevenueDetailsProps) => {
   return (
     <FormSection title="Revenue">
       <div>
+        <label className="block text-sm font-medium mb-1">CPM (Cost per mille)</label>
         <Input
           name="cpm"
           placeholder="CPM"
@@ -32,6 +33,7 @@ const RevenueDetails = ({ cpm, onChange }: RevenueDetailsProps) => {
           value={cpm || "4"} // Default to 4
           onChange={onChange}
         />
+        <p className="text-xs text-gray-500 mt-1">Cost per thousand views (average $4)</p>
       </div>
     </FormSection>
   );
