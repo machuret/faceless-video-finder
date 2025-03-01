@@ -4,6 +4,8 @@ import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, Compass, GraduationCap, BookOpen, Play, Award } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const TrainingPage = () => {
   const trainingModules = [
@@ -12,28 +14,32 @@ const TrainingPage = () => {
       description: "Learn the fundamentals of creating and growing a successful faceless YouTube channel.",
       icon: <Compass className="h-10 w-10 text-blue-500" />,
       lessons: ["Channel Niche Selection", "Setting Up Your Channel", "Content Planning Basics"],
-      duration: "2 hours"
+      duration: "2 hours",
+      level: "Beginner"
     },
     {
       title: "Content Creation Masterclass",
       description: "Deep dive into creating high-quality content that engages viewers and generates views.",
       icon: <BookOpen className="h-10 w-10 text-green-500" />,
       lessons: ["Scriptwriting for Faceless Channels", "Visual Design Principles", "Voice-over Techniques"],
-      duration: "3 hours"
+      duration: "3 hours",
+      level: "Intermediate"
     },
     {
       title: "Growth Strategies",
       description: "Proven strategies to grow your subscriber base and increase channel visibility.",
       icon: <GraduationCap className="h-10 w-10 text-purple-500" />,
       lessons: ["YouTube Algorithm Optimization", "Effective Titles & Thumbnails", "Community Engagement"],
-      duration: "2.5 hours"
+      duration: "2.5 hours",
+      level: "Intermediate"
     },
     {
       title: "Monetization Techniques",
       description: "Learn various methods to monetize your channel beyond AdSense revenue.",
       icon: <Award className="h-10 w-10 text-yellow-500" />,
       lessons: ["AdSense Optimization", "Sponsorship Strategies", "Product Creation & Sales"],
-      duration: "2 hours"
+      duration: "2 hours",
+      level: "Advanced"
     }
   ];
 
@@ -49,6 +55,11 @@ const TrainingPage = () => {
             <p className="text-xl text-blue-100 max-w-3xl mx-auto">
               Comprehensive training materials to help you create, grow, and monetize your faceless YouTube channel
             </p>
+            <div className="mt-8">
+              <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-semibold">
+                Start Free Training
+              </Button>
+            </div>
           </div>
         </div>
         
@@ -104,7 +115,10 @@ const TrainingPage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="mt-2">
-                    <h4 className="text-sm font-medium text-gray-500 mb-2">KEY LESSONS</h4>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-500">KEY LESSONS</span>
+                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">{module.level}</span>
+                    </div>
                     <ul className="space-y-1">
                       {module.lessons.map((lesson, idx) => (
                         <li key={idx} className="flex items-center">
@@ -117,14 +131,114 @@ const TrainingPage = () => {
                       <span className="text-sm text-gray-500 flex items-center">
                         <CalendarDays className="h-4 w-4 mr-1" /> {module.duration}
                       </span>
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors">
+                      <Button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
                         Start Module
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+          
+          {/* Learning Path Section */}
+          <div className="mt-16 mb-12 max-w-4xl mx-auto">
+            <h2 className="text-3xl font-crimson font-bold text-center mb-8">Your Learning Path</h2>
+            <div className="relative">
+              {/* Timeline */}
+              <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-blue-200"></div>
+              
+              {/* Timeline Steps */}
+              <div className="space-y-12 relative">
+                {/* Step 1 */}
+                <div className="flex flex-col md:flex-row items-center">
+                  <div className="md:w-1/2 md:pr-8 md:text-right order-2 md:order-1">
+                    <h3 className="text-xl font-semibold mb-2">1. Channel Foundation</h3>
+                    <p className="text-gray-600">Learn how to set up your channel for success from day one.</p>
+                  </div>
+                  <div className="z-10 flex-shrink-0 order-1 md:order-2 mb-4 md:mb-0">
+                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                      <span className="text-white font-bold">1</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Step 2 */}
+                <div className="flex flex-col md:flex-row items-center">
+                  <div className="z-10 flex-shrink-0 order-1 mb-4 md:mb-0">
+                    <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                      <span className="text-white font-bold">2</span>
+                    </div>
+                  </div>
+                  <div className="md:w-1/2 md:pl-8 order-2">
+                    <h3 className="text-xl font-semibold mb-2">2. Content Creation</h3>
+                    <p className="text-gray-600">Master the art of creating engaging, high-quality content.</p>
+                  </div>
+                </div>
+                
+                {/* Step 3 */}
+                <div className="flex flex-col md:flex-row items-center">
+                  <div className="md:w-1/2 md:pr-8 md:text-right order-2 md:order-1">
+                    <h3 className="text-xl font-semibold mb-2">3. Growth & Optimization</h3>
+                    <p className="text-gray-600">Learn strategies to grow your audience and optimize for the algorithm.</p>
+                  </div>
+                  <div className="z-10 flex-shrink-0 order-1 md:order-2 mb-4 md:mb-0">
+                    <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center">
+                      <span className="text-white font-bold">3</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Step 4 */}
+                <div className="flex flex-col md:flex-row items-center">
+                  <div className="z-10 flex-shrink-0 order-1 mb-4 md:mb-0">
+                    <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center">
+                      <span className="text-white font-bold">4</span>
+                    </div>
+                  </div>
+                  <div className="md:w-1/2 md:pl-8 order-2">
+                    <h3 className="text-xl font-semibold mb-2">4. Monetization</h3>
+                    <p className="text-gray-600">Turn your channel into a profitable business with multiple revenue streams.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Testimonials Section */}
+          <div className="my-16 max-w-5xl mx-auto">
+            <h2 className="text-3xl font-crimson font-bold text-center mb-10">Success Stories</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Card className="bg-white shadow-md">
+                <CardContent className="p-6">
+                  <p className="italic text-gray-600 mb-4">
+                    "This training program helped me go from 0 to 50,000 subscribers in just 6 months. The strategies for faceless YouTube channels were exactly what I needed."
+                  </p>
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center text-blue-600 font-semibold">JM</div>
+                    <div className="ml-3">
+                      <p className="font-semibold">John M.</p>
+                      <p className="text-sm text-gray-500">Finance Channel Owner</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white shadow-md">
+                <CardContent className="p-6">
+                  <p className="italic text-gray-600 mb-4">
+                    "The monetization techniques alone were worth the investment. I've been able to quit my full-time job and focus entirely on my YouTube business."
+                  </p>
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center text-green-600 font-semibold">SK</div>
+                    <div className="ml-3">
+                      <p className="font-semibold">Sarah K.</p>
+                      <p className="text-sm text-gray-500">Lifestyle Content Creator</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
           
           {/* Call to Action */}
@@ -134,9 +248,14 @@ const TrainingPage = () => {
               Start your journey to YouTube success today with our comprehensive training program.
               Learn at your own pace and implement proven strategies for channel growth.
             </p>
-            <button className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold transition-colors">
-              Enroll in Full Program
-            </button>
+            <Link to="/calculators">
+              <Button size="lg" className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold transition-colors">
+                Enroll in Full Program
+              </Button>
+            </Link>
+            <p className="mt-4 text-sm text-gray-500">
+              Already have an account? <Link to="/" className="text-blue-600 hover:underline">Sign in</Link>
+            </p>
           </div>
         </div>
       </main>
