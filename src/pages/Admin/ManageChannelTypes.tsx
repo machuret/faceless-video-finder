@@ -90,6 +90,7 @@ export default function ManageChannelTypes() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Form submitted with data:", formData);
     
     try {
       if (!formData.id) {
@@ -112,6 +113,7 @@ export default function ManageChannelTypes() {
       
       if (selectedType) {
         // Update existing
+        console.log("Updating existing channel type:", formData);
         await updateChannelType(formData);
         toast({
           title: "Success",
@@ -119,6 +121,7 @@ export default function ManageChannelTypes() {
         });
       } else {
         // Create new
+        console.log("Creating new channel type:", formData);
         await createChannelType(formData);
         toast({
           title: "Success",
@@ -128,6 +131,8 @@ export default function ManageChannelTypes() {
       
       await loadChannelTypes();
       setActiveTab("list");
+      setFormData(initialFormState);
+      setSelectedType(null);
     } catch (error) {
       console.error("Error saving channel type:", error);
       toast({
