@@ -25,6 +25,12 @@ export const useChannelTypes = () => {
     handleDelete 
   } = useChannelTypesList();
   
+  // Create a wrapper function that returns void
+  const loadChannelTypesWrapper = async () => {
+    await loadChannelTypes();
+    return;
+  };
+  
   // Get form functionality
   const {
     submitting,
@@ -36,7 +42,7 @@ export const useChannelTypes = () => {
     handleCreateNew,
     handleSubmit,
     handleCancel
-  } = useChannelTypeForm(loadChannelTypes, setActiveTab);
+  } = useChannelTypeForm(loadChannelTypesWrapper, setActiveTab);
 
   return {
     channelTypes,
