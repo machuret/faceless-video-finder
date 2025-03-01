@@ -2,7 +2,7 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Channel } from "@/types/youtube";
+import { Channel, ChannelMetadata } from "@/types/youtube";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Users, Play, Eye, ExternalLink } from "lucide-react";
@@ -26,6 +26,18 @@ const ChannelDetails = () => {
         .single();
       
       if (error) throw error;
+      
+      // Process the channel to get UI channel type from metadata
+      if (data && data.metadata && typeof data.metadata === 'object' && 'ui_channel_type' in data.metadata) {
+        const typedMetadata = data.metadata as ChannelMetadata;
+        console.log(`Using channel type from metadata: ${typedMetadata.ui_channel_type}`);
+        return {
+          ...data,
+          metadata: typedMetadata,
+          channel_type: typedMetadata.ui_channel_type
+        } as Channel;
+      }
+      
       return data as Channel;
     },
   });
@@ -68,6 +80,11 @@ const ChannelDetails = () => {
   const uploadFrequency = calculateUploadFrequency(channel.start_date, channel.video_count);
   const uploadFrequencyCategory = getUploadFrequencyCategory(uploadFrequency);
   const channelSize = getChannelSize(channel.total_subscribers);
+
+  // For debugging
+  console.log("Channel data in details page:", channel);
+  console.log("Channel type from metadata:", channel.metadata?.ui_channel_type);
+  console.log("Final channel_type to display:", channel.channel_type);
 
   return (
     <div className="min-h-screen bg-gray-50">
