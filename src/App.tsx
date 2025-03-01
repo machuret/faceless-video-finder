@@ -6,7 +6,7 @@ import Calculator from './pages/Calculator'
 import ChannelEarnings from './pages/ChannelEarnings'
 import ReachCalculator from './pages/ReachCalculator'
 import GrowthRateCalculator from './pages/GrowthRateCalculator'
-import { ThemeProvider } from './components/theme-provider'
+import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryProvider } from './providers/QueryProvider'
 
