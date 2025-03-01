@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 export default function Calculator() {
   const { toast } = useToast();
-  const [dailyViews, setDailyViews] = useState<number>(0);
+  const [yearlyViews, setYearlyViews] = useState<number>(0);
   const [musicTracks, setMusicTracks] = useState<number>(0);
   const [dailyRevenue, setDailyRevenue] = useState<number>(0);
   const [monthlyRevenue, setMonthlyRevenue] = useState<number>(0);
@@ -31,24 +31,28 @@ export default function Calculator() {
     // YouTube takes 55% of revenue, creator gets 45%
     const platformShareMultiplier = 0.45;
     
-    // Calculate daily revenue
-    const viewsInThousands = dailyViews / 1000;
-    const calculatedRevenue = viewsInThousands * baseRpm * creatorShare * platformShareMultiplier;
+    // Calculate yearly revenue first
+    const viewsInThousands = yearlyViews / 1000;
+    const calculatedYearlyRevenue = viewsInThousands * baseRpm * creatorShare * platformShareMultiplier;
     
-    setDailyRevenue(calculatedRevenue);
-    setMonthlyRevenue(calculatedRevenue * 30);
-    setYearlyRevenue(calculatedRevenue * 365);
+    // Derive daily and monthly from yearly
+    const calculatedDailyRevenue = calculatedYearlyRevenue / 365;
+    const calculatedMonthlyRevenue = calculatedYearlyRevenue / 12;
+    
+    setYearlyRevenue(calculatedYearlyRevenue);
+    setMonthlyRevenue(calculatedMonthlyRevenue);
+    setDailyRevenue(calculatedDailyRevenue);
     
     toast({
       title: "Revenue Calculated",
-      description: `Estimated daily revenue: $${calculatedRevenue.toFixed(2)}`,
+      description: `Estimated yearly revenue: $${calculatedYearlyRevenue.toFixed(2)}`,
     });
   };
 
   useEffect(() => {
     // Optional: Auto-calculate revenue whenever inputs change
     calculateRevenue();
-  }, [dailyViews, musicTracks]);
+  }, [yearlyViews, musicTracks]);
 
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
@@ -80,21 +84,21 @@ export default function Calculator() {
               <CardContent className="space-y-8">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <Label htmlFor="daily-views">Daily Views</Label>
-                    <span className="text-xl font-semibold">{formatViews(dailyViews)}</span>
+                    <Label htmlFor="yearly-views">Yearly Views</Label>
+                    <span className="text-xl font-semibold">{formatViews(yearlyViews)}</span>
                   </div>
                   <Slider
-                    id="daily-views"
+                    id="yearly-views"
                     min={0}
-                    max={10000000}
-                    step={1000}
-                    value={[dailyViews]}
-                    onValueChange={(value) => setDailyViews(value[0])}
+                    max={500000000}
+                    step={10000}
+                    value={[yearlyViews]}
+                    onValueChange={(value) => setYearlyViews(value[0])}
                     className="py-4"
                   />
                   <div className="flex justify-between text-sm text-gray-500">
                     <span>0</span>
-                    <span>10M</span>
+                    <span>500M</span>
                   </div>
                 </div>
 
@@ -134,18 +138,18 @@ export default function Calculator() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">Daily Revenue</p>
-                  <p className="text-3xl font-bold text-green-600">${dailyRevenue.toFixed(2)}</p>
+                  <p className="text-sm text-gray-500">Yearly Revenue Projection</p>
+                  <p className="text-3xl font-bold text-green-600">${yearlyRevenue.toFixed(2)}</p>
                 </div>
                 
                 <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">Monthly Revenue (30 days)</p>
+                  <p className="text-sm text-gray-500">Monthly Revenue</p>
                   <p className="text-2xl font-bold text-green-600">${monthlyRevenue.toFixed(2)}</p>
                 </div>
                 
                 <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500">Yearly Revenue (365 days)</p>
-                  <p className="text-2xl font-bold text-green-600">${yearlyRevenue.toFixed(2)}</p>
+                  <p className="text-sm text-gray-500">Daily Revenue</p>
+                  <p className="text-2xl font-bold text-green-600">${dailyRevenue.toFixed(2)}</p>
                 </div>
               </CardContent>
             </Card>
