@@ -12,11 +12,13 @@ import HowItWorks from './pages/HowItWorks'
 import ContactUs from './pages/ContactUs'
 import ChannelDetails from './pages/ChannelDetails'
 import AdminLogin from './pages/Admin/AdminLogin'
+import Dashboard from './pages/Admin/Dashboard'
 import { Toaster } from "@/components/ui/toaster"
+import { AuthProvider } from './context/AuthContext'
 
 function App() {
   return (
-    <>
+    <AuthProvider>
       <Routes>
         <Route path="/home" element={<Index />} />
         <Route path="/" element={<Index />} />
@@ -30,9 +32,10 @@ function App() {
         <Route path="/contact" element={<ContactUs />} />
         <Route path="/channel/:channelId" element={<ChannelDetails />} />
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<Dashboard />} />
       </Routes>
       <Toaster />
-    </>
+    </AuthProvider>
   );
 }
 
