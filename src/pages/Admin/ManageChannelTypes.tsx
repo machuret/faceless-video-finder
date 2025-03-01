@@ -25,6 +25,11 @@ export default function ManageChannelTypes() {
     handleCancel
   } = useChannelTypes();
 
+  // Add console log to debug the issue
+  console.log("Current active tab:", activeTab);
+  console.log("Form data:", formData);
+  console.log("Selected type:", selectedType);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <MainNavbar />
@@ -34,15 +39,15 @@ export default function ManageChannelTypes() {
           <p className="text-gray-600 font-lato">Create, edit, and delete channel types used for categorizing YouTube channels.</p>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-6 w-full sm:w-auto">
             <TabsTrigger value="list">Channel Types List</TabsTrigger>
             <TabsTrigger value="edit">
               {selectedType ? "Edit Channel Type" : "Create New Channel Type"}
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="list">
+          <TabsContent value="list" className="mt-6">
             <Card className="p-6">
               <ChannelTypesList
                 channelTypes={channelTypes}
@@ -54,7 +59,7 @@ export default function ManageChannelTypes() {
             </Card>
           </TabsContent>
           
-          <TabsContent value="edit">
+          <TabsContent value="edit" className="mt-6">
             <Card className="p-6">
               <ChannelTypeForm
                 formData={formData}
