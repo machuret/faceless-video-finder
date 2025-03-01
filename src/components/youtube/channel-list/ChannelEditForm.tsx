@@ -97,7 +97,7 @@ export const ChannelEditForm = ({
         name: "metadata",
         value: updatedMetadata
       }
-    } as React.ChangeEvent<HTMLInputElement>;
+    } as unknown as React.ChangeEvent<HTMLInputElement>;
     
     // Apply the metadata change
     onChange(metadataEvent);

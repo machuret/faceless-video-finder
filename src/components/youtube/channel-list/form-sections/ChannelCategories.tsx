@@ -70,7 +70,7 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
         name: "metadata",
         value: updatedMetadata
       }
-    } as React.ChangeEvent<HTMLInputElement>;
+    } as unknown as React.ChangeEvent<HTMLInputElement>;
     
     console.log("Updating metadata with ui_channel_type:", value);
     console.log("Full metadata object:", updatedMetadata);

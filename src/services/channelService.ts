@@ -21,8 +21,8 @@ export const fetchAllChannels = async (): Promise<Channel[]> => {
       let displayChannelType = channel.channel_type;
       
       // If there's metadata with ui_channel_type, use that instead
-      if (channel.metadata && channel.metadata.ui_channel_type) {
-        displayChannelType = channel.metadata.ui_channel_type;
+      if (channel.metadata && typeof channel.metadata === 'object' && 'ui_channel_type' in channel.metadata) {
+        displayChannelType = channel.metadata.ui_channel_type as string;
         console.log(`Using ui_channel_type from metadata for ${channel.channel_title}: ${displayChannelType}`);
       }
       
