@@ -1,7 +1,16 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Globe, DollarSign } from "lucide-react";
+import { 
+  Globe, 
+  DollarSign, 
+  BarChart2, 
+  TrendingUp, 
+  Calendar, 
+  Tag, 
+  Layers, 
+  FileType
+} from "lucide-react";
 import { Channel, ChannelSize } from "@/types/youtube";
 import { getGrowthRange, formatRevenue, getUploadFrequencyLabel } from "@/utils/channelUtils";
 import { Link } from "react-router-dom";
@@ -31,41 +40,53 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="shadow-md">
+      <CardHeader className="border-b">
         <CardTitle className="text-xl font-semibold">Channel Stats</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Channel Size</h3>
-          <p className="text-xl font-semibold text-blue-600">
+      <CardContent className="space-y-6 pt-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-2">
+            <BarChart2 className="w-5 h-5 text-blue-600" />
+            <h3 className="text-sm font-medium text-gray-700">Channel Size</h3>
+          </div>
+          <p className="text-xl font-semibold text-blue-600 ml-7">
             {channelSize.charAt(0).toUpperCase() + channelSize.slice(1)}
           </p>
-          <p className="text-sm text-gray-600 mt-1">
-            Expected Monthly Growth: {getGrowthRange(channelSize)} subscribers
-          </p>
+          <div className="flex items-center gap-2 ml-7 mt-2">
+            <TrendingUp className="w-4 h-4 text-green-600" />
+            <p className="text-sm text-gray-600">
+              Expected Monthly Growth: {getGrowthRange(channelSize)} subscribers
+            </p>
+          </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Upload Frequency</h3>
-          <p className="text-xl font-semibold text-green-600">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="w-5 h-5 text-green-600" />
+            <h3 className="text-sm font-medium text-gray-700">Upload Frequency</h3>
+          </div>
+          <p className="text-xl font-semibold text-green-600 ml-7">
             {uploadFrequencyCategory.split('_').map(word => 
               word.charAt(0).toUpperCase() + word.slice(1)
             ).join(' ')}
           </p>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 mt-1 ml-7">
             {getUploadFrequencyLabel(uploadFrequency)}
           </p>
         </div>
 
         {channel.keywords && channel.keywords.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Keywords</h3>
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Tag className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-sm font-medium text-gray-700">Keywords</h3>
+            </div>
+            <div className="flex flex-wrap gap-2 ml-7">
               {channel.keywords.map((keyword) => (
                 <span
                   key={keyword}
-                  className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
+                  className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600 hover:bg-gray-200 transition-colors"
                 >
                   {keyword}
                 </span>
@@ -75,23 +96,23 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
         )}
 
         {channel.cpm && (
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Revenue Metrics</h3>
-            <div className="space-y-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-sm font-medium text-gray-700">Revenue Metrics</h3>
+            </div>
+            <div className="space-y-2 ml-7">
               <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-emerald-600" />
-                <p className="text-base">CPM: {formatRevenue(channel.cpm)}</p>
+                <p className="text-base">CPM: <span className="font-medium">{formatRevenue(channel.cpm)}</span></p>
               </div>
               {channel.revenue_per_video && (
                 <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-emerald-600" />
-                  <p className="text-base">Revenue per Video: {formatRevenue(channel.revenue_per_video)}</p>
+                  <p className="text-base">Revenue per Video: <span className="font-medium">{formatRevenue(channel.revenue_per_video)}</span></p>
                 </div>
               )}
               {channel.revenue_per_month && (
                 <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-emerald-600" />
-                  <p className="text-base">Monthly Revenue: {formatRevenue(channel.revenue_per_month)}</p>
+                  <p className="text-base">Monthly Revenue: <span className="font-medium">{formatRevenue(channel.revenue_per_month)}</span></p>
                 </div>
               )}
             </div>
@@ -99,18 +120,24 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
         )}
 
         {channel.channel_category && (
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Category</h3>
-            <p className="text-base capitalize">{channel.channel_category}</p>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Layers className="w-5 h-5 text-orange-500" />
+              <h3 className="text-sm font-medium text-gray-700">Category</h3>
+            </div>
+            <p className="text-base capitalize ml-7">{channel.channel_category}</p>
           </div>
         )}
 
         {displayChannelType && (
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Type</h3>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <FileType className="w-5 h-5 text-purple-600" />
+              <h3 className="text-sm font-medium text-gray-700">Type</h3>
+            </div>
             <Link 
               to={`/channel-types/${getChannelTypeUrl(displayChannelType)}`}
-              className="text-base text-blue-600 hover:text-blue-800 hover:underline"
+              className="text-base text-blue-600 hover:text-blue-800 hover:underline ml-7 flex items-center"
             >
               {formatChannelType(displayChannelType)}
             </Link>
@@ -118,19 +145,22 @@ const ChannelStats = ({ channel, channelSize, uploadFrequency, uploadFrequencyCa
         )}
 
         {channel.niche && (
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Niche</h3>
-            <p className="text-base">{channel.niche}</p>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Layers className="w-5 h-5 text-blue-500" />
+              <h3 className="text-sm font-medium text-gray-700">Niche</h3>
+            </div>
+            <p className="text-base ml-7">{channel.niche}</p>
           </div>
         )}
 
         {channel.country && (
-          <div className="flex items-center gap-3">
-            <Globe className="w-5 h-5 text-gray-500" />
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Country</h3>
-              <p className="text-base">{channel.country}</p>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Globe className="w-5 h-5 text-gray-600" />
+              <h3 className="text-sm font-medium text-gray-700">Country</h3>
             </div>
+            <p className="text-base ml-7">{channel.country}</p>
           </div>
         )}
       </CardContent>
