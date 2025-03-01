@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,8 +10,8 @@ import { formatDate } from "@/utils/channelUtils";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { getChannelTypeById } from "@/services/channelTypeService";
 
-// Define a more flexible interface for the raw data from Supabase
 interface SupabaseChannelData {
   id: string;
   video_id: string;
@@ -24,7 +23,7 @@ interface SupabaseChannelData {
   total_subscribers: number | null;
   channel_category: string | null;
   channel_type: string | null;
-  metadata?: ChannelMetadata | null; // Make metadata optional to match what comes from the database
+  metadata?: ChannelMetadata | null;
   [key: string]: any;
 }
 
@@ -33,11 +32,26 @@ const ChannelTypeDetails = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [channels, setChannels] = useState<Channel[]>([]);
-  
-  const typeInfo = channelTypes.find(type => type.id === typeId);
+  const [typeInfo, setTypeInfo] = useState<any>(null);
   
   useEffect(() => {
     if (!typeId) return;
+    
+    const fetchTypeInfo = async () => {
+      try {
+        const dbTypeInfo = await getChannelTypeById(typeId);
+        if (dbTypeInfo) {
+          setTypeInfo(dbTypeInfo);
+        } else {
+          const localTypeInfo = channelTypes.find(type => type.id === typeId);
+          setTypeInfo(localTypeInfo);
+        }
+      } catch (error) {
+        console.error("Error fetching type info:", error);
+        const localTypeInfo = channelTypes.find(type => type.id === typeId);
+        setTypeInfo(localTypeInfo);
+      }
+    };
     
     const fetchChannelsByType = async () => {
       setLoading(true);
@@ -55,10 +69,8 @@ const ChannelTypeDetails = () => {
           throw new Error("Invalid data format received");
         }
         
-        // First convert to unknown, then to our interface type
         const typedData = data as unknown as SupabaseChannelData[];
         
-        // Filter to find channels with the matching UI channel type in metadata
         const filteredData = typedData.filter(channel => {
           return channel.channel_type === "other" && 
                  channel.metadata && 
@@ -68,7 +80,6 @@ const ChannelTypeDetails = () => {
         console.log("Fetched channels:", data);
         console.log("Filtered channels for type:", typeId, filteredData);
         
-        // Cast the filtered data to Channel type for the component
         setChannels(filteredData as unknown as Channel[]);
       } catch (error) {
         console.error("Error fetching channels by type:", error);
@@ -78,6 +89,7 @@ const ChannelTypeDetails = () => {
       }
     };
     
+    fetchTypeInfo();
     fetchChannelsByType();
   }, [typeId]);
   
@@ -117,16 +129,25 @@ const ChannelTypeDetails = () => {
         
         <Card className="p-6 mb-6">
           <h1 className="font-crimson text-2xl font-bold mb-2">{typeInfo.label}</h1>
-          <p className="font-lato text-gray-600 mb-4">{typeInfo.description}</p>
+          <div 
+            className="font-lato text-gray-600 mb-4"
+            dangerouslySetInnerHTML={{ __html: typeInfo.description || '' }}
+          />
           
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-montserrat font-medium mb-2">Typical Production</h3>
-            <p className="font-lato">{typeInfo.production}</p>
+            <div 
+              className="font-lato"
+              dangerouslySetInnerHTML={{ __html: typeInfo.production || '' }}
+            />
           </div>
           
           <div className="mt-4">
             <h3 className="font-montserrat font-medium mb-2">Examples</h3>
-            <p className="font-lato">{typeInfo.example}</p>
+            <div 
+              className="font-lato"
+              dangerouslySetInnerHTML={{ __html: typeInfo.example || '' }}
+            />
           </div>
         </Card>
         

@@ -11,10 +11,13 @@ import { getChannelSize, calculateUploadFrequency, getUploadFrequencyCategory } 
 import ChannelStats from "@/components/youtube/ChannelStats";
 import VideoPerformance from "@/components/youtube/VideoPerformance";
 import MainNavbar from "@/components/MainNavbar";
+import { getChannelTypeById } from "@/services/channelTypeService";
+import { useEffect, useState } from "react";
 
 const ChannelDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [channelTypeInfo, setChannelTypeInfo] = useState<any>(null);
 
   const { data: channel, isLoading: isLoadingChannel } = useQuery({
     queryKey: ["channel", id],
@@ -41,6 +44,23 @@ const ChannelDetails = () => {
       return data as Channel;
     },
   });
+
+  useEffect(() => {
+    if (channel?.metadata?.ui_channel_type) {
+      const fetchChannelTypeInfo = async () => {
+        try {
+          const typeInfo = await getChannelTypeById(channel.metadata.ui_channel_type);
+          if (typeInfo) {
+            setChannelTypeInfo(typeInfo);
+          }
+        } catch (error) {
+          console.error("Error fetching channel type info:", error);
+        }
+      };
+      
+      fetchChannelTypeInfo();
+    }
+  }, [channel]);
 
   const { data: videoStats, isLoading: isLoadingStats } = useQuery({
     queryKey: ["video-stats", id],
@@ -81,11 +101,6 @@ const ChannelDetails = () => {
   const uploadFrequencyCategory = getUploadFrequencyCategory(uploadFrequency);
   const channelSize = getChannelSize(channel.total_subscribers);
 
-  // For debugging
-  console.log("Channel data in details page:", channel);
-  console.log("Channel type from metadata:", channel.metadata?.ui_channel_type);
-  console.log("Final channel_type to display:", channel.channel_type);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <MainNavbar />
@@ -124,7 +139,9 @@ const ChannelDetails = () => {
               </a>
             </CardHeader>
             <CardContent>
-              <p className="text-lg text-gray-600 leading-relaxed mb-8">{channel.description || "No description available."}</p>
+              <div className="text-lg text-gray-600 leading-relaxed mb-8"
+                dangerouslySetInnerHTML={{ __html: channel.description || "No description available." }}
+              />
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 <div className="flex items-center gap-3">
@@ -161,6 +178,33 @@ const ChannelDetails = () => {
 
           {videoStats && <VideoPerformance videoStats={videoStats} />}
         </div>
+        
+        {channelTypeInfo && (
+          <Card className="mt-8 p-6">
+            <h2 className="text-xl font-semibold mb-4">Channel Type: {channelTypeInfo.label}</h2>
+            
+            {channelTypeInfo.description && (
+              <div className="mb-4">
+                <h3 className="font-medium mb-2">Description</h3>
+                <div dangerouslySetInnerHTML={{ __html: channelTypeInfo.description }} />
+              </div>
+            )}
+            
+            {channelTypeInfo.production && (
+              <div className="mb-4">
+                <h3 className="font-medium mb-2">Production Details</h3>
+                <div dangerouslySetInnerHTML={{ __html: channelTypeInfo.production }} />
+              </div>
+            )}
+            
+            {channelTypeInfo.example && (
+              <div>
+                <h3 className="font-medium mb-2">Examples</h3>
+                <div dangerouslySetInnerHTML={{ __html: channelTypeInfo.example }} />
+              </div>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   );

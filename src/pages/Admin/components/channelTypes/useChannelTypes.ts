@@ -69,6 +69,14 @@ export const useChannelTypes = () => {
     console.log(`Field "${name}" updated to:`, value);
   };
   
+  const handleRichTextChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    console.log(`Rich text field "${name}" updated`);
+  };
+  
   const handleSelectType = async (type: ChannelTypeInfo) => {
     try {
       console.log("Selected type for editing:", type);
@@ -254,6 +262,7 @@ export const useChannelTypes = () => {
     selectedType,
     formData,
     handleInputChange,
+    handleRichTextChange,
     handleSelectType,
     handleCreateNew,
     handleSubmit,

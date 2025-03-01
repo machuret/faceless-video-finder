@@ -3,14 +3,15 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { ChannelTypeInfo } from "@/services/channelTypeService";
+import { CKEditorField } from "@/components/ui/rich-text-editor/CKEditor";
 
 interface ChannelTypeFormProps {
   formData: ChannelTypeInfo;
   selectedType: ChannelTypeInfo | null;
   submitting: boolean;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onRichTextChange: (name: string, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
 }
@@ -20,6 +21,7 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
   selectedType,
   submitting,
   onInputChange,
+  onRichTextChange,
   onSubmit,
   onCancel
 }) => {
@@ -64,44 +66,38 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
           </div>
           
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea 
-                id="description" 
-                name="description" 
-                value={formData.description || ''} 
-                onChange={onInputChange}
-                placeholder="Describe this channel type..."
-                className="min-h-[100px]"
-              />
-            </div>
+            <CKEditorField
+              id="description"
+              name="description"
+              label="Description"
+              value={formData.description || ''}
+              onChange={onRichTextChange}
+              placeholder="Describe this channel type..."
+              className="min-h-[100px]"
+            />
           </div>
         </div>
         
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="production">Production Details</Label>
-            <Textarea 
-              id="production" 
-              name="production" 
-              value={formData.production || ''} 
-              onChange={onInputChange}
-              placeholder="Describe how this type of content is typically produced..."
-              className="min-h-[100px]"
-            />
-          </div>
+          <CKEditorField
+            id="production"
+            name="production"
+            label="Production Details"
+            value={formData.production || ''}
+            onChange={onRichTextChange}
+            placeholder="Describe how this type of content is typically produced..."
+            className="min-h-[100px]"
+          />
           
-          <div>
-            <Label htmlFor="example">Examples</Label>
-            <Textarea 
-              id="example" 
-              name="example" 
-              value={formData.example || ''} 
-              onChange={onInputChange}
-              placeholder="Provide examples of channels that use this format..."
-              className="min-h-[100px]"
-            />
-          </div>
+          <CKEditorField
+            id="example"
+            name="example"
+            label="Examples"
+            value={formData.example || ''}
+            onChange={onRichTextChange}
+            placeholder="Provide examples of channels that use this format..."
+            className="min-h-[100px]"
+          />
         </div>
         
         <div className="flex justify-end space-x-4">

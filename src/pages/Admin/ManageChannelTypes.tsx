@@ -17,6 +17,7 @@ export default function ManageChannelTypes() {
     selectedType,
     formData,
     handleInputChange,
+    handleRichTextChange,
     handleSelectType,
     handleCreateNew,
     handleSubmit,
@@ -60,6 +61,7 @@ export default function ManageChannelTypes() {
                 selectedType={selectedType}
                 submitting={submitting}
                 onInputChange={handleInputChange}
+                onRichTextChange={handleRichTextChange}
                 onSubmit={handleSubmit}
                 onCancel={handleCancel}
               />
