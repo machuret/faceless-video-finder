@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import type { Channel, DatabaseChannelType } from "@/types/youtube";
 import { toast } from "sonner";
@@ -95,7 +96,6 @@ export const generateChannelContent = async (channel: Channel): Promise<string |
 
 /**
  * Update a channel in the database, including metadata for custom channel types
- * This is a completely rewritten function to fix the channel saving issues
  */
 export const updateChannel = async (channel: Channel): Promise<boolean> => {
   console.log("=== STARTING CHANNEL UPDATE ===");
@@ -108,8 +108,9 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     const revenuePerMonth = calculateRevenuePerMonth(channel.total_views, channel.cpm, channel.start_date);
     
     // 2. Process the UI channel type
-    // Get the UI channel type (what's shown in the interface)
-    const uiChannelType = channel.channel_type || "other";
+    // Get the UI channel type (what should be stored in metadata)
+    // First check if metadata already contains ui_channel_type
+    const uiChannelType = channel.metadata?.ui_channel_type || channel.channel_type || "other";
     
     // Determine the database channel type (must be one of the enum values)
     let dbChannelType: DatabaseChannelType;
@@ -123,7 +124,7 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
     
     // 3. Prepare metadata (always include the UI channel type)
     // Create a new object to avoid mutation
-    let metadataObj = {};
+    let metadataObj: Record<string, any> = {};
     
     // If there's existing metadata, start with that
     if (channel.metadata && typeof channel.metadata === 'object') {
@@ -159,6 +160,7 @@ export const updateChannel = async (channel: Channel): Promise<boolean> => {
       niche: channel.niche,
       notes: channel.notes,
       video_id: channel.video_id,
+      keywords: channel.keywords,
       metadata: metadataObj
     };
     

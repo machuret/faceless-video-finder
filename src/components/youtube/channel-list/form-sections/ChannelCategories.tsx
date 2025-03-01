@@ -1,3 +1,4 @@
+
 import { Channel } from "@/types/youtube";
 import { Input } from "@/components/ui/input";
 import { channelCategories, channelTypes, channelSizes, uploadFrequencies, countries } from "../constants";
@@ -72,7 +73,7 @@ export const ChannelCategories = ({ editForm, onChange, onTypeChange }: ChannelC
         <div>
           <label className="block text-sm font-medium mb-1">Type of Channel</label>
           <select
-            name="channel_type"
+            name="ui_channel_type" // Changed from channel_type to ui_channel_type
             value={selectedType}
             onChange={handleTypeChange}
             className="w-full p-2 border rounded"

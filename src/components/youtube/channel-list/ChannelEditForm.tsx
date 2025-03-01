@@ -47,7 +47,6 @@ export const ChannelEditForm = ({
   const handleKeywordsChange = (newKeywords: string[]) => {
     setKeywords(newKeywords);
     // Create a custom update function to handle complex updates like arrays
-    // instead of trying to mock a complete ChangeEvent
     const updateFormValue = {
       target: {
         name: "keywords",
@@ -72,20 +71,36 @@ export const ChannelEditForm = ({
 
   // Handler for channel type changes
   const handleChannelTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    // Get the selected channel type (from ui_channel_type field)
     const channelType = e.target.value;
     console.log(`Channel type selected: ${channelType}`);
     
-    // Update the channel_type field directly
-    const updateFormValue = {
-      ...e,
+    // We need to update both the channel_type field and the metadata.ui_channel_type
+    // First, let's handle the metadata update
+    let updatedMetadata = { ...(editForm.metadata || {}) };
+    updatedMetadata.ui_channel_type = channelType;
+    
+    // Update the metadata
+    const metadataUpdateValue = {
       target: {
-        ...e.target,
+        name: "metadata",
+        value: updatedMetadata
+      }
+    };
+    onChange(metadataUpdateValue as unknown as React.ChangeEvent<HTMLInputElement>);
+    
+    // Now also update the channel_type for backwards compatibility
+    // This will be mapped to the correct database enum value in the service
+    const channelTypeUpdateValue = {
+      target: {
         name: "channel_type",
         value: channelType
       }
     };
-    // Use the original type since we're just modifying an existing event
-    onChange(updateFormValue as React.ChangeEvent<HTMLSelectElement>);
+    onChange(channelTypeUpdateValue as unknown as React.ChangeEvent<HTMLInputElement>);
+    
+    console.log("Updated channel type to:", channelType);
+    console.log("Updated metadata:", updatedMetadata);
   };
 
   // Refresh video stats handler
