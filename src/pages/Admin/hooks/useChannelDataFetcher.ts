@@ -39,9 +39,17 @@ export const useChannelDataFetcher = (
         ? new Date(data.start_date).toISOString().split('T')[0]
         : "";
 
-      // Explicitly handle channel_type and channel_category 
-      const channelType = data.channel_type || "other";
-      const channelCategory = data.channel_category || "other";
+      // Explicitly validate channel_type and channel_category
+      const validTypes: DatabaseChannelType[] = ["creator", "brand", "publisher", "other"];
+      const validCategories: ChannelCategory[] = ["entertainment", "education", "business", "tech", "lifestyle", "other"];
+      
+      const channelType: DatabaseChannelType = validTypes.includes(data.channel_type as DatabaseChannelType) 
+        ? data.channel_type as DatabaseChannelType 
+        : "other";
+        
+      const channelCategory: ChannelCategory = validCategories.includes(data.channel_category as ChannelCategory)
+        ? data.channel_category as ChannelCategory
+        : "other";
       
       console.log("Raw channel type from database:", data.channel_type);
       console.log("Processed channel type to use:", channelType);

@@ -17,8 +17,12 @@ interface TypeSelectorProps {
 const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    console.log("TypeSelector - Current selected type:", selectedType);
+  }, [selectedType]);
+
   const handleSelect = (typeId: string) => {
-    console.log("TypeSelector - Selected type:", typeId);
+    console.log("TypeSelector - Selecting type:", typeId);
     onSelect(typeId);
     setOpen(false);
   };

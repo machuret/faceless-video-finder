@@ -35,7 +35,7 @@ export const useYouTubeDataFetcher = (
 
       console.log("YouTube data fetched successfully:", data);
 
-      // Default values for enum fields
+      // Ensure valid enum values for database
       const channelType: DatabaseChannelType = "other";
       const channelCategory: ChannelCategory = "other";
 

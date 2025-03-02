@@ -8,6 +8,7 @@ import TypeSelector from "./form-dropdowns/TypeSelector";
 import CategorySelector from "./form-dropdowns/CategorySelector";
 import CountrySelector from "./form-dropdowns/CountrySelector";
 import NotesSection from "./form-sections/NotesSection";
+import { useEffect } from "react";
 
 export interface ChannelFormData {
   video_id: string;
@@ -45,6 +46,10 @@ const ChannelForm = ({
 }: ChannelFormProps) => {
   const isEditMode = !!formData.video_id && !!formData.channel_title;
 
+  useEffect(() => {
+    console.log("ChannelForm - Current formData:", formData);
+  }, [formData]);
+
   // Handle type selection
   const handleTypeSelect = (typeId: string) => {
     console.log("Type selection in form:", typeId);
@@ -74,14 +79,14 @@ const ChannelForm = ({
       />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
+        <div className="z-50">
           <TypeSelector
             selectedType={formData.channel_type}
             onSelect={handleTypeSelect}
           />
         </div>
         
-        <div>
+        <div className="z-40">
           <CategorySelector
             selectedCategory={formData.channel_category}
             onSelect={handleCategorySelect}
@@ -89,10 +94,12 @@ const ChannelForm = ({
         </div>
       </div>
       
-      <CountrySelector
-        selectedCountry={formData.country}
-        onSelect={handleCountrySelect}
-      />
+      <div className="z-30">
+        <CountrySelector
+          selectedCountry={formData.country}
+          onSelect={handleCountrySelect}
+        />
+      </div>
       
       <ChannelContent
         description={formData.description}

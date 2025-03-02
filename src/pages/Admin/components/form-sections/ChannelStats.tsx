@@ -36,6 +36,7 @@ const ChannelStats = ({
           placeholder="Total Subscribers"
           type="text"
           inputMode="numeric"
+          pattern="[0-9]*"
           value={totalSubscribers}
           onChange={onChange}
         />
@@ -47,6 +48,7 @@ const ChannelStats = ({
           placeholder="Total Views"
           type="text"
           inputMode="numeric"
+          pattern="[0-9]*"
           value={totalViews}
           onChange={onChange}
         />
@@ -58,6 +60,7 @@ const ChannelStats = ({
           placeholder="Number of Videos"
           type="text"
           inputMode="numeric"
+          pattern="[0-9]*"
           value={videoCount}
           onChange={onChange}
         />
