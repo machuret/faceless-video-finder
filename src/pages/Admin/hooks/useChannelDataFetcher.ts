@@ -39,19 +39,14 @@ export const useChannelDataFetcher = (
         ? new Date(data.start_date).toISOString().split('T')[0]
         : "";
 
-      // Validate and handle channel_type and channel_category
-      let channelType = "other";
-      if (data.channel_type && ["other", "creator", "brand", "media"].includes(data.channel_type)) {
-        channelType = data.channel_type as DatabaseChannelType;
-      }
+      // Explicitly handle channel_type and channel_category 
+      const channelType = data.channel_type || "other";
+      const channelCategory = data.channel_category || "other";
       
-      let channelCategory = "other";
-      if (data.channel_category && ["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"].includes(data.channel_category)) {
-        channelCategory = data.channel_category as ChannelCategory;
-      }
-      
-      console.log("Channel type from database:", channelType);
-      console.log("Channel category from database:", channelCategory);
+      console.log("Raw channel type from database:", data.channel_type);
+      console.log("Processed channel type to use:", channelType);
+      console.log("Raw channel category from database:", data.channel_category);
+      console.log("Processed channel category to use:", channelCategory);
 
       const formData = {
         video_id: data.video_id || "",

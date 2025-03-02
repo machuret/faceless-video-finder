@@ -15,17 +15,30 @@ export const useChannelFormSubmission = (
 
   // Utility function to validate channel type
   const validateChannelType = (type: string | undefined): DatabaseChannelType => {
-    if (!type || !["other", "creator", "brand", "media"].includes(type)) {
+    const validTypes = ["other", "creator", "brand", "media"];
+    
+    if (!type || !validTypes.includes(type)) {
+      console.warn(`Invalid channel type: ${type}, defaulting to "other"`);
       return "other";
     }
+    
+    console.log(`Validated channel type: ${type}`);
     return type as DatabaseChannelType;
   };
 
   // Utility function to validate channel category
   const validateChannelCategory = (category: string | undefined): ChannelCategory => {
-    if (!category || !["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"].includes(category)) {
+    const validCategories = [
+      "entertainment", "education", "gaming", "music", 
+      "news", "sports", "technology", "other"
+    ];
+    
+    if (!category || !validCategories.includes(category)) {
+      console.warn(`Invalid channel category: ${category}, defaulting to "other"`);
       return "other";
     }
+    
+    console.log(`Validated channel category: ${category}`);
     return category as ChannelCategory;
   };
 
@@ -34,6 +47,12 @@ export const useChannelFormSubmission = (
     setLoading(true);
     
     try {
+      const validatedType = validateChannelType(formData.channel_type);
+      const validatedCategory = validateChannelCategory(formData.channel_category);
+      
+      console.log("Form submission - channel_type:", formData.channel_type, "->", validatedType);
+      console.log("Form submission - channel_category:", formData.channel_category, "->", validatedCategory);
+      
       // Convert string values to appropriate types
       const parsedData = {
         video_id: formData.video_id,
@@ -46,15 +65,13 @@ export const useChannelFormSubmission = (
         start_date: formData.start_date || null,
         video_count: formData.video_count ? parseInt(formData.video_count) : 0,
         cpm: formData.cpm ? parseFloat(formData.cpm) : 4,
-        channel_type: validateChannelType(formData.channel_type),
+        channel_type: validatedType,
         country: formData.country || null,
-        channel_category: validateChannelCategory(formData.channel_category),
+        channel_category: validatedCategory,
         notes: formData.notes || null
       };
 
       console.log("Channel data to submit:", parsedData);
-      console.log("Channel type:", parsedData.channel_type);
-      console.log("Channel category:", parsedData.channel_category);
 
       if (isEditMode && channelId) {
         // Update existing channel

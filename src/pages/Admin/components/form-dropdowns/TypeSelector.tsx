@@ -18,7 +18,7 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
   const [open, setOpen] = useState(false);
 
   const handleSelect = (typeId: string) => {
-    console.log("Selected type in dropdown:", typeId);
+    console.log("TypeSelector - Selected type:", typeId);
     onSelect(typeId);
     setOpen(false);
   };
@@ -51,7 +51,9 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
               <DropdownMenuItem
                 key={type.id}
                 onClick={() => handleSelect(type.id)}
-                className="cursor-pointer hover:bg-gray-100 py-2"
+                className={`cursor-pointer hover:bg-gray-100 py-2 ${
+                  selectedType === type.id ? "bg-gray-100 font-medium" : ""
+                }`}
               >
                 {type.label}
               </DropdownMenuItem>

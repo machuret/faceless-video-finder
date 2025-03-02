@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { countries } from "@/utils/channelUtils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface CountrySelectorProps {
   selectedCountry: string | undefined;
@@ -18,7 +18,7 @@ const CountrySelector = ({ selectedCountry, onSelect }: CountrySelectorProps) =>
   const [open, setOpen] = useState(false);
 
   const handleSelect = (countryCode: string) => {
-    console.log("Selected country:", countryCode);
+    console.log("CountrySelector - Selected country:", countryCode);
     onSelect(countryCode);
     setOpen(false);
   };
@@ -50,7 +50,9 @@ const CountrySelector = ({ selectedCountry, onSelect }: CountrySelectorProps) =>
               <DropdownMenuItem
                 key={country.code}
                 onClick={() => handleSelect(country.code)}
-                className="cursor-pointer hover:bg-gray-100 py-2"
+                className={`cursor-pointer hover:bg-gray-100 py-2 ${
+                  selectedCountry === country.code ? "bg-gray-100 font-medium" : ""
+                }`}
               >
                 {country.name}
               </DropdownMenuItem>

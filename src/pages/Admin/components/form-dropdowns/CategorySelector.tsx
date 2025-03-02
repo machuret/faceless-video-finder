@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChannelCategory } from "@/types/youtube";
 
 interface CategorySelectorProps {
@@ -30,7 +30,7 @@ const CategorySelector = ({ selectedCategory, onSelect }: CategorySelectorProps)
   ];
 
   const handleSelect = (categoryId: string) => {
-    console.log("Selected category:", categoryId);
+    console.log("CategorySelector - Selected category:", categoryId);
     onSelect(categoryId);
     setOpen(false);
   };
@@ -61,7 +61,9 @@ const CategorySelector = ({ selectedCategory, onSelect }: CategorySelectorProps)
               <DropdownMenuItem
                 key={category.id}
                 onClick={() => handleSelect(category.id)}
-                className="cursor-pointer hover:bg-gray-100 py-2"
+                className={`cursor-pointer hover:bg-gray-100 py-2 ${
+                  selectedCategory === category.id ? "bg-gray-100 font-medium" : ""
+                }`}
               >
                 {category.label}
               </DropdownMenuItem>
