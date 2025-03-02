@@ -2,11 +2,12 @@
 import { useState } from "react";
 import { 
   FacelessIdeaInfo, 
-  validateFacelessIdeaId 
+  validateFacelessIdeaId,
+  createFacelessIdea,
+  updateFacelessIdea
 } from "@/services/facelessIdeas";
 import { toast } from "sonner";
 import { useFormValidation } from "./useFormValidation";
-import { useFormProcessing } from "./useFormProcessing";
 
 export const useFormSubmission = (
   refreshFacelessIdeas: () => Promise<void>,
@@ -18,31 +19,43 @@ export const useFormSubmission = (
   const [submitting, setSubmitting] = useState(false);
   
   const { validateForm } = useFormValidation();
-  const { processFormSubmission } = useFormProcessing(refreshFacelessIdeas);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     
     try {
-      // Directly get formData and selectedIdea from the form's handler
-      const formData = (e.target as HTMLFormElement).formData as FacelessIdeaInfo;
-      const selectedIdea = (e.target as HTMLFormElement).selectedIdea as FacelessIdeaInfo | null;
+      const form = e.target as HTMLFormElement;
+      const formElements = form.elements as HTMLFormControlsCollection;
       
-      console.log("Form submission data:", formData);
-      console.log("Selected idea:", selectedIdea);
+      // Get current form data
+      const currentFormData = {
+        id: (formElements.namedItem('id') as HTMLInputElement).value,
+        label: (formElements.namedItem('label') as HTMLInputElement).value,
+        description: document.getElementById('description')?.querySelector('.ProseMirror')?.innerHTML || '',
+        production: document.getElementById('production')?.querySelector('.ProseMirror')?.innerHTML || '',
+        example: document.getElementById('example')?.querySelector('.ProseMirror')?.innerHTML || ''
+      } as FacelessIdeaInfo;
       
-      // Validate form data before submission
-      const isValid = validateForm(formData, selectedIdea);
-      if (!isValid) {
+      // Validate form data
+      if (!validateForm(currentFormData)) {
         setSubmitting(false);
         return;
       }
       
-      // Process the form submission (create or update)
-      await processFormSubmission(formData, selectedIdea);
+      // Determine if it's a create or update operation
+      if (currentFormData.id && document.querySelector('[readonly]')) {
+        // Update existing idea
+        await updateFacelessIdea(currentFormData);
+        toast.success("Faceless idea updated successfully");
+      } else {
+        // Create new idea
+        await createFacelessIdea(currentFormData);
+        toast.success("Faceless idea created successfully");
+      }
       
-      // Reset form and redirect to list view
+      // Refresh data and reset form
+      await refreshFacelessIdeas();
       setFormData(initialFormState);
       setSelectedIdea(null);
       setActiveTab("list");

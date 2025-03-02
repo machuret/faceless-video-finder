@@ -3,7 +3,7 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
-import { FacelessIdeaInfo } from "@/services/facelessIdeaService";
+import { FacelessIdeaInfo } from "@/services/facelessIdeas";
 import { Sparkles } from "lucide-react";
 
 interface FacelessIdeaFormProps {
