@@ -1,4 +1,3 @@
-
 export type ChannelCategory = "entertainment" | "education" | "gaming" | "music" | "news" | "sports" | "technology" | "other";
 
 // This is the type that matches with the database 
@@ -42,6 +41,15 @@ export interface ChannelMetadata {
   [key: string]: any; // Allow for additional metadata properties
 }
 
+export interface VideoStats {
+  title: string;
+  video_id: string;
+  thumbnail_url: string;
+  views: number;
+  likes: number;
+  channel_id?: string;
+}
+
 export interface Channel {
   id: string;
   video_id: string;
@@ -52,7 +60,7 @@ export interface Channel {
   total_views: number | null;
   total_subscribers: number | null;
   channel_category?: ChannelCategory;
-  channel_type?: string; // Use string type to accommodate any value
+  channel_type?: string;
   channel_size?: ChannelSize;
   upload_frequency?: UploadFrequency;
   keywords?: string[] | null;
@@ -68,15 +76,7 @@ export interface Channel {
   video_count?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
-  videoStats?: VideoStats[]; // Property for video statistics
-  metadata?: ChannelMetadata; // New property for JSON metadata
-}
-
-export interface VideoStats {
-  title: string;
-  video_id: string;
-  thumbnail_url: string;
-  views: number;
-  likes: number;
-  channel_id?: string;
+  videoStats?: VideoStats[];
+  metadata?: ChannelMetadata;
+  is_featured?: boolean;
 }
