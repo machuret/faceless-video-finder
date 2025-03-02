@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
-import { FacelessIdeaInfo } from "@/services/facelessIdeaService";
+import { FacelessIdeaInfo, deleteFacelessIdea } from "@/services/facelessIdeas";
 
 export const useIdeaDeletion = (
   setFacelessIdeas: React.Dispatch<React.SetStateAction<FacelessIdeaInfo[]>>,
@@ -10,7 +9,6 @@ export const useIdeaDeletion = (
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this faceless idea? This action cannot be undone.")) {
       try {
-        const { deleteFacelessIdea } = await import("@/services/facelessIdeaService");
         await deleteFacelessIdea(id);
         
         setFacelessIdeas(prev => prev.filter(idea => idea.id !== id));
@@ -26,7 +24,6 @@ export const useIdeaDeletion = (
   const handleDeleteMultiple = async (ids: string[]) => {
     try {
       setLoading(true);
-      const { deleteFacelessIdea } = await import("@/services/facelessIdeaService");
       
       for (const id of ids) {
         await deleteFacelessIdea(id);

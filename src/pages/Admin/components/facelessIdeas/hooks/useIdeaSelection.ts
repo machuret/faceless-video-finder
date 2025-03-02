@@ -1,6 +1,5 @@
-
 import { toast } from "sonner";
-import { FacelessIdeaInfo, getFacelessIdeaById } from "@/services/facelessIdeaService";
+import { FacelessIdeaInfo, getFacelessIdeaById } from "@/services/facelessIdeas";
 
 export const useIdeaSelection = (
   setSelectedIdea: React.Dispatch<React.SetStateAction<FacelessIdeaInfo | null>>,

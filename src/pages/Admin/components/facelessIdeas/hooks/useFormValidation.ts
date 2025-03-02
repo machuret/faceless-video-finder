@@ -1,5 +1,5 @@
 
-import { FacelessIdeaInfo, validateFacelessIdeaId } from "@/services/facelessIdeaService";
+import { FacelessIdeaInfo, validateFacelessIdeaId } from "@/services/facelessIdeas";
 import { toast } from "sonner";
 
 export const useFormValidation = () => {

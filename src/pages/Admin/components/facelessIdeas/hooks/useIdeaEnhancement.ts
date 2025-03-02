@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { FacelessIdeaInfo, updateFacelessIdea } from "@/services/facelessIdeaService";
+import { FacelessIdeaInfo, updateFacelessIdea } from "@/services/facelessIdeas";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useIdeaEnhancement = (

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { FacelessIdeaInfo, fetchFacelessIdeas } from "@/services/facelessIdeaService";
+import { FacelessIdeaInfo, fetchFacelessIdeas } from "@/services/facelessIdeas";
 import { useFacelessIdeaFormState } from "./useFacelessIdeaFormState";
 import { useFormInputHandlers } from "./useFormInputHandlers";
 import { useFormSubmission } from "./useFormSubmission";

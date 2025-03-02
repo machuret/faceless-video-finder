@@ -1,5 +1,5 @@
 
-import { FacelessIdeaInfo, createFacelessIdea, updateFacelessIdea } from "@/services/facelessIdeaService";
+import { FacelessIdeaInfo, createFacelessIdea, updateFacelessIdea } from "@/services/facelessIdeas";
 import { toast } from "sonner";
 
 export const useFormProcessing = (

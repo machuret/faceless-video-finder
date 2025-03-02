@@ -5,7 +5,7 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
-import { fetchFacelessIdeas, FacelessIdeaInfo } from "@/services/facelessIdeaService";
+import { fetchFacelessIdeas, FacelessIdeaInfo } from "@/services/facelessIdeas";
 import { toast } from "sonner";
 
 const FacelessIdeas = () => {

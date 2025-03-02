@@ -1,6 +1,5 @@
-
 import { toast } from "sonner";
-import { processCsvImport } from "@/services/facelessIdeaService";
+import { processCsvImport } from "@/services/facelessIdeas";
 
 export const useCsvImport = (refreshFacelessIdeas: () => Promise<void>) => {
   const handleCsvUpload = async (file: File) => {

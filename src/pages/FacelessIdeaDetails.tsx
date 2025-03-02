@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
-import { getFacelessIdeaById, FacelessIdeaInfo, updateFacelessIdea } from "@/services/facelessIdeaService";
+import { getFacelessIdeaById, FacelessIdeaInfo, updateFacelessIdea } from "@/services/facelessIdeas";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
