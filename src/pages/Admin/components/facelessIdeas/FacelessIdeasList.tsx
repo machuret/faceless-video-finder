@@ -15,6 +15,7 @@ interface FacelessIdeasListProps {
   onDeleteMultiple: (ids: string[]) => void;
   onCsvUpload: (file: File) => void;
   onEnhanceDescription?: (id: string) => void;
+  onEnhanceMultiple?: (ids: string[]) => void;
 }
 
 export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
@@ -25,11 +26,13 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
   onDelete,
   onDeleteMultiple,
   onCsvUpload,
-  onEnhanceDescription
+  onEnhanceDescription,
+  onEnhanceMultiple
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [enhancingId, setEnhancingId] = useState<string | null>(null);
+  const [enhancingMultiple, setEnhancingMultiple] = useState(false);
   
   const filteredIdeas = facelessIdeas.filter(idea => 
     idea.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -80,6 +83,19 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
       setEnhancingId(null);
     }
   };
+
+  const handleEnhanceMultiple = async () => {
+    if (!onEnhanceMultiple || selectedIds.length === 0) return;
+    
+    if (window.confirm(`Are you sure you want to enhance ${selectedIds.length} selected ideas? This may take a while and will overwrite existing descriptions.`)) {
+      setEnhancingMultiple(true);
+      try {
+        await onEnhanceMultiple(selectedIds);
+      } finally {
+        setEnhancingMultiple(false);
+      }
+    }
+  };
   
   return (
     <div>
@@ -108,13 +124,27 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
           </div>
           
           {selectedIds.length > 0 && (
-            <Button 
-              variant="destructive" 
-              onClick={handleDeleteSelected}
-              className="flex items-center gap-1"
-            >
-              <Trash className="h-4 w-4" /> Delete Selected ({selectedIds.length})
-            </Button>
+            <>
+              <Button 
+                variant="destructive" 
+                onClick={handleDeleteSelected}
+                className="flex items-center gap-1"
+              >
+                <Trash className="h-4 w-4" /> Delete Selected ({selectedIds.length})
+              </Button>
+              
+              {onEnhanceMultiple && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleEnhanceMultiple}
+                  disabled={enhancingMultiple}
+                  className="flex items-center gap-1"
+                >
+                  <Sparkles className="h-4 w-4" /> 
+                  {enhancingMultiple ? "Enhancing..." : `Enhance Selected (${selectedIds.length})`}
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>

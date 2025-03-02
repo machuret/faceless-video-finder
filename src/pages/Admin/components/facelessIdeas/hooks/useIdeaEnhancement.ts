@@ -70,5 +70,37 @@ export const useIdeaEnhancement = (
     }
   };
 
-  return { handleEnhanceDescription };
+  const handleEnhanceMultiple = async (ideaIds: string[]) => {
+    if (ideaIds.length === 0) {
+      toast.error("No ideas selected for enhancement");
+      return;
+    }
+
+    toast.info(`Enhancing ${ideaIds.length} descriptions... This may take a while.`, { duration: 5000 });
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    // Using Promise.all would make all requests at once which might be too much
+    // Instead, we process them sequentially to avoid rate limiting
+    for (const ideaId of ideaIds) {
+      try {
+        await handleEnhanceDescription(ideaId);
+        successCount++;
+      } catch (error) {
+        console.error(`Error enhancing idea ${ideaId}:`, error);
+        failCount++;
+      }
+    }
+    
+    if (successCount > 0) {
+      toast.success(`Successfully enhanced ${successCount} descriptions`);
+    }
+    
+    if (failCount > 0) {
+      toast.error(`Failed to enhance ${failCount} descriptions`);
+    }
+  };
+
+  return { handleEnhanceDescription, handleEnhanceMultiple };
 };

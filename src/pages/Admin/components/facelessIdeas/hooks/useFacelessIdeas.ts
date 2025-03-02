@@ -44,7 +44,7 @@ export const useFacelessIdeas = () => {
   
   const { handleDelete, handleDeleteMultiple } = useIdeaDeletion(setFacelessIdeas, setLoading);
   
-  const { handleEnhanceDescription } = useIdeaEnhancement(
+  const { handleEnhanceDescription, handleEnhanceMultiple } = useIdeaEnhancement(
     facelessIdeas, 
     setFacelessIdeas, 
     selectedIdea, 
@@ -89,6 +89,7 @@ export const useFacelessIdeas = () => {
     handleDeleteMultiple,
     handleCancel,
     handleCsvUpload,
-    handleEnhanceDescription
+    handleEnhanceDescription,
+    handleEnhanceMultiple
   };
 };
