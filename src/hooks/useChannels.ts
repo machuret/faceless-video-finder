@@ -57,10 +57,8 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Use type assertion to resolve the circular reference issue
-      // Explicitly convert type to avoid deep nesting issue
-      const typedData = data as any[];
-      setChannels(typedData as Channel[]);
+      // Simplified approach to handle type conversion
+      setChannels(data as Channel[]);
     } catch (error: any) {
       console.error("Error fetching channels:", error);
       toast.error("Failed to fetch channels");
@@ -83,9 +81,8 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Simplify type conversion to avoid deep type instantiation
-      const typedData = data as any[];
-      setFeaturedChannels(typedData as Channel[]);
+      // Simplified approach for type conversion
+      setFeaturedChannels(data as Channel[]);
     } catch (error: any) {
       console.error("Error fetching featured channels:", error);
       setFeaturedChannels([]);
