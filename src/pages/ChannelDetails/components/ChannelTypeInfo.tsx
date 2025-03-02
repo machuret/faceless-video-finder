@@ -1,14 +1,56 @@
 
+import { useEffect, useState } from "react";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
+import { getChannelTypeById } from "@/services/channelTypeService";
+import { ChannelTypeInfo as ChannelTypeInfoType } from "@/services/channelTypeService";
 
 interface ChannelTypeInfoProps {
   channelType: string | undefined;
 }
 
 const ChannelTypeInfo = ({ channelType }: ChannelTypeInfoProps) => {
-  if (!channelType) return null;
+  const [typeInfo, setTypeInfo] = useState<ChannelTypeInfoType | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchTypeInfo = async () => {
+      if (!channelType) return;
+      
+      setLoading(true);
+      try {
+        // First try to get the channel type from the database
+        const dbTypeInfo = await getChannelTypeById(channelType);
+        
+        if (dbTypeInfo) {
+          setTypeInfo(dbTypeInfo);
+        } else {
+          // Fallback to local constant if not found in DB
+          const localTypeInfo = channelTypes.find(type => type.id === channelType);
+          setTypeInfo(localTypeInfo || null);
+        }
+      } catch (error) {
+        console.error("Error fetching channel type info:", error);
+        // Fallback to local constant if there's an error
+        const localTypeInfo = channelTypes.find(type => type.id === channelType);
+        setTypeInfo(localTypeInfo || null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTypeInfo();
+  }, [channelType]);
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+        <div className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Loading channel type information...</h2>
+        </div>
+      </div>
+    );
+  }
   
-  const typeInfo = channelTypes.find(type => type.id === channelType);
   if (!typeInfo) return null;
 
   return (
