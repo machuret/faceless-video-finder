@@ -9,7 +9,6 @@ import {
 } from "@/services/facelessIdeaService";
 import { useFacelessIdeaFormState } from "./useFacelessIdeaFormState";
 import { useFormInputHandlers } from "./useFormInputHandlers";
-import { useTypeSelection } from "./useTypeSelection";
 import { useFormSubmission } from "./useFormSubmission";
 
 export const useFacelessIdeas = () => {
@@ -55,16 +54,14 @@ export const useFacelessIdeas = () => {
     setActiveTab("edit");
   };
   
-  const loadFacelessIdeas = async () => {
+  const loadFacelessIdeas = async (): Promise<void> => {
     try {
       setLoading(true);
       const data = await fetchFacelessIdeas();
       setFacelessIdeas(data);
-      return data;
     } catch (error) {
       console.error("Error loading faceless ideas:", error);
       toast.error("Error loading faceless ideas");
-      return [];
     } finally {
       setLoading(false);
     }

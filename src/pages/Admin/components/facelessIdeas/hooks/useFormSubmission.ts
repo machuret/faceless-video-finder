@@ -17,15 +17,20 @@ export const useFormSubmission = (
 ) => {
   const [submitting, setSubmitting] = useState(false);
   
-  const handleSubmit = async (
-    e: React.FormEvent,
-    formData: FacelessIdeaInfo,
-    selectedIdea: FacelessIdeaInfo | null
-  ) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     
     try {
+      // Accessing formData and selectedIdea from props
+      const formData = (e.currentTarget as HTMLFormElement).dataset.formData 
+        ? JSON.parse((e.currentTarget as HTMLFormElement).dataset.formData) 
+        : null;
+        
+      const selectedIdea = (e.currentTarget as HTMLFormElement).dataset.selectedIdea 
+        ? JSON.parse((e.currentTarget as HTMLFormElement).dataset.selectedIdea) 
+        : null;
+      
       console.log("Form submission data:", formData);
       console.log("Selected idea:", selectedIdea);
       
@@ -61,7 +66,7 @@ export const useFormSubmission = (
       setActiveTab("list");
     } catch (error) {
       console.error("Error submitting faceless idea:", error);
-      toast.error(`Failed to ${selectedIdea ? "update" : "create"} faceless idea: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Failed to submit faceless idea: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }

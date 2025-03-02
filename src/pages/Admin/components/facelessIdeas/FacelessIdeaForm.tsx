@@ -60,6 +60,10 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
       }
     }
     
+    // Set form data in dataset for the submit handler to access
+    (e.currentTarget as HTMLFormElement).dataset.formData = JSON.stringify(formData);
+    (e.currentTarget as HTMLFormElement).dataset.selectedIdea = JSON.stringify(selectedIdea);
+    
     onSubmit(e);
   };
 
