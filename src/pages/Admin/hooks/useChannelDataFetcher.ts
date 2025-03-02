@@ -42,15 +42,20 @@ export const useChannelDataFetcher = (
 
       // Validate channel_type enum values
       const validChannelTypes: DatabaseChannelType[] = ["creator", "brand", "media", "other"];
-      const channelType = data.channel_type && validChannelTypes.includes(data.channel_type as DatabaseChannelType) 
-        ? data.channel_type 
-        : "other";
+      const channelType = data.channel_type && 
+        validChannelTypes.includes(data.channel_type as DatabaseChannelType) 
+          ? data.channel_type as DatabaseChannelType
+          : "other" as const;
 
       // Validate channel_category enum values
-      const validCategories: ChannelCategory[] = ["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"];
-      const channelCategory = data.channel_category && validCategories.includes(data.channel_category as ChannelCategory)
-        ? data.channel_category
-        : "other";
+      const validCategories: ChannelCategory[] = [
+        "entertainment", "education", "gaming", "music", 
+        "news", "sports", "technology", "other"
+      ];
+      const channelCategory = data.channel_category && 
+        validCategories.includes(data.channel_category as ChannelCategory)
+          ? data.channel_category as ChannelCategory
+          : "other" as const;
 
       // Format the data for the form
       const formattedData: ChannelFormData = {
@@ -64,9 +69,9 @@ export const useChannelDataFetcher = (
         start_date: data.start_date || "",
         video_count: data.video_count?.toString() || "",
         cpm: data.cpm?.toString() || "4",
-        channel_type: channelType || undefined,
+        channel_type: channelType,
         country: data.country || undefined,
-        channel_category: channelCategory || undefined,
+        channel_category: channelCategory,
         notes: data.notes || ""
       };
 

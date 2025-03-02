@@ -28,15 +28,20 @@ export const useChannelFormSubmission = (
     try {
       // Validate channel_type enum values
       const validChannelTypes: DatabaseChannelType[] = ["creator", "brand", "media", "other"];
-      const channelType = formData.channel_type && validChannelTypes.includes(formData.channel_type as DatabaseChannelType) 
-        ? formData.channel_type 
-        : "other";
+      const channelType = formData.channel_type && 
+        validChannelTypes.includes(formData.channel_type as DatabaseChannelType) 
+          ? (formData.channel_type as DatabaseChannelType)
+          : "other" as const;
 
       // Validate channel_category enum values
-      const validCategories: ChannelCategory[] = ["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"];
-      const channelCategory = formData.channel_category && validCategories.includes(formData.channel_category as ChannelCategory)
-        ? formData.channel_category
-        : "other";
+      const validCategories: ChannelCategory[] = [
+        "entertainment", "education", "gaming", "music", 
+        "news", "sports", "technology", "other"
+      ];
+      const channelCategory = formData.channel_category && 
+        validCategories.includes(formData.channel_category as ChannelCategory)
+          ? (formData.channel_category as ChannelCategory)
+          : "other" as const;
         
       // Format the data for the database
       const channelData = {

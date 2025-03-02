@@ -18,11 +18,11 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
   const [open, setOpen] = useState(false);
 
   // Define the database enum channel types
-  const dbChannelTypes = [
-    { id: "creator" as DatabaseChannelType, label: "Creator" },
-    { id: "brand" as DatabaseChannelType, label: "Brand" },
-    { id: "media" as DatabaseChannelType, label: "Media" },
-    { id: "other" as DatabaseChannelType, label: "Other" }
+  const dbChannelTypes: {id: DatabaseChannelType, label: string}[] = [
+    { id: "creator", label: "Creator" },
+    { id: "brand", label: "Brand" },
+    { id: "media", label: "Media" },
+    { id: "other", label: "Other" }
   ];
 
   useEffect(() => {
