@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
-import { DatabaseChannelType } from "@/types/youtube";
+import { ChannelType, channelTypes } from "@/components/youtube/channel-list/constants";
 
 interface TypeSelectorProps {
   selectedType: string | undefined;
@@ -17,26 +17,18 @@ interface TypeSelectorProps {
 const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
   const [open, setOpen] = useState(false);
 
-  // Define the database enum channel types
-  const dbChannelTypes: {id: DatabaseChannelType, label: string}[] = [
-    { id: "creator", label: "Creator" },
-    { id: "brand", label: "Brand" },
-    { id: "media", label: "Media" },
-    { id: "other", label: "Other" }
-  ];
-
   useEffect(() => {
     console.log("TypeSelector - Current selected type:", selectedType);
   }, [selectedType]);
 
-  const handleSelect = (typeId: DatabaseChannelType) => {
+  const handleSelect = (typeId: string) => {
     console.log("TypeSelector - Selecting type:", typeId);
     onSelect(typeId);
     setOpen(false);
   };
 
   // Find the selected type for display
-  const selectedTypeInfo = dbChannelTypes.find(type => type.id === selectedType);
+  const selectedTypeInfo = channelTypes.find(type => type.id === selectedType);
   const displayValue = selectedTypeInfo ? selectedTypeInfo.label : "Select Type";
   
   return (
@@ -58,7 +50,7 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
             align="start"
             className="w-[300px] max-h-[300px] overflow-y-auto bg-white shadow-lg z-[100]"
           >
-            {dbChannelTypes.map((type) => (
+            {channelTypes.map((type) => (
               <DropdownMenuItem
                 key={type.id}
                 onClick={() => handleSelect(type.id)}

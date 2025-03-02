@@ -49,6 +49,9 @@ export const useChannelDataFetcher = (
         channelCategory = "other";
       }
       
+      // Check for UI channel type in metadata
+      const uiChannelType = channel.metadata?.ui_channel_type || "other";
+      
       // Format data for the form
       const formattedData: ChannelFormData = {
         video_id: channel.video_id,
@@ -61,7 +64,7 @@ export const useChannelDataFetcher = (
         start_date: channel.start_date || "",
         video_count: channel.video_count?.toString() || "",
         cpm: channel.cpm?.toString() || "4",
-        channel_type: channelType,
+        channel_type: uiChannelType, // Use UI channel type from metadata
         country: channel.country || "",
         channel_category: channelCategory,
         notes: channel.notes || "",

@@ -1,51 +1,46 @@
 
-import { FormEvent } from "react";
+import { FormEvent, Dispatch, SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChannelFormData } from "../components/ChannelForm";
-import { DatabaseChannelType, ChannelCategory } from "@/types/youtube";
+import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
 
 export const useChannelFormSubmission = (
-  isEditMode: boolean,
-  channelId: string | undefined,
   formData: ChannelFormData,
-  setLoading: (loading: boolean) => void
+  setLoading: Dispatch<SetStateAction<boolean>>,
+  redirectToList: boolean = true
 ) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     console.log("Form submission initiated");
     console.log("Form data:", formData);
     
-    // Validate required fields
     if (!formData.video_id || !formData.channel_title || !formData.channel_url) {
-      toast.error("Please fill in all required fields");
-      console.error("Missing required fields");
+      toast.error("Video ID, Channel Title, and Channel URL are required");
       return;
     }
-
+    
     setLoading(true);
     
     try {
-      // Validate channel_type enum values
-      const validChannelTypes: DatabaseChannelType[] = ["creator", "brand", "media", "other"];
-      let channelType: DatabaseChannelType = "other";
-      
-      if (formData.channel_type && validChannelTypes.includes(formData.channel_type as DatabaseChannelType)) {
-        channelType = formData.channel_type as DatabaseChannelType;
+      // Validate channel type for database storage (must be a valid DatabaseChannelType)
+      let dbChannelType: DatabaseChannelType = "other";
+      if (formData.channel_type && ["creator", "brand", "media", "other"].includes(formData.channel_type as string)) {
+        dbChannelType = formData.channel_type as DatabaseChannelType;
       }
-
-      // Validate channel_category enum values
-      const validCategories: ChannelCategory[] = [
-        "entertainment", "education", "gaming", "music", 
-        "news", "sports", "technology", "other"
-      ];
       
+      // Validate channel category (must be a valid ChannelCategory)
       let channelCategory: ChannelCategory = "other";
-      if (formData.channel_category && validCategories.includes(formData.channel_category as ChannelCategory)) {
+      if (formData.channel_category && ["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"].includes(formData.channel_category as string)) {
         channelCategory = formData.channel_category as ChannelCategory;
       }
-        
-      // Format the data for the database
+      
+      // Prepare metadata with UI channel type
+      const metadata = {
+        ui_channel_type: formData.channel_type || "other"
+      };
+      
+      // Format data for database
       const channelData = {
         video_id: formData.video_id,
         channel_title: formData.channel_title,
@@ -56,50 +51,71 @@ export const useChannelFormSubmission = (
         total_views: formData.total_views ? parseInt(formData.total_views) : null,
         start_date: formData.start_date || null,
         video_count: formData.video_count ? parseInt(formData.video_count) : null,
-        cpm: formData.cpm ? parseFloat(formData.cpm) : 4,
-        channel_type: channelType,
+        cpm: formData.cpm ? parseFloat(formData.cpm) : null,
+        channel_type: dbChannelType,
         country: formData.country || null,
         channel_category: channelCategory,
         notes: formData.notes || null,
-        keywords: formData.keywords || null
+        keywords: formData.keywords || [],
+        metadata: metadata
       };
       
       console.log("Formatted data for submission:", channelData);
       
-      let response;
+      // Check if channel already exists by video_id
+      const { data: existingChannel, error: queryError } = await supabase
+        .from("youtube_channels")
+        .select("id")
+        .eq("video_id", formData.video_id)
+        .maybeSingle();
       
-      if (isEditMode && channelId) {
-        console.log(`Updating channel with ID: ${channelId}`);
-        response = await supabase
+      if (queryError) {
+        throw new Error(`Error checking existing channel: ${queryError.message}`);
+      }
+      
+      let result;
+      
+      if (existingChannel) {
+        // Update existing channel
+        console.log("Updating channel with ID:", existingChannel.id);
+        result = await supabase
           .from("youtube_channels")
           .update(channelData)
-          .eq("id", channelId);
+          .eq("id", existingChannel.id)
+          .select()
+          .single();
+        
+        if (result.error) {
+          throw new Error(`Error updating channel: ${result.error.message}`);
+        }
+        
+        console.log("Channel updated successfully");
+        toast.success("Channel updated successfully");
       } else {
+        // Insert new channel
         console.log("Creating new channel");
-        response = await supabase
+        result = await supabase
           .from("youtube_channels")
-          .insert(channelData);
+          .insert(channelData)
+          .select()
+          .single();
+        
+        if (result.error) {
+          throw new Error(`Error creating channel: ${result.error.message}`);
+        }
+        
+        console.log("Channel created successfully");
+        toast.success("Channel added successfully");
       }
       
-      const { error } = response;
-      
-      if (error) {
-        console.error("Database operation failed:", error);
-        toast.error(`Failed to ${isEditMode ? 'update' : 'add'} channel: ${error.message}`);
-        return;
-      }
-      
-      console.log(`Channel ${isEditMode ? 'updated' : 'added'} successfully`);
-      toast.success(`Channel ${isEditMode ? 'updated' : 'added'} successfully!`);
-      
-      // Redirect to the dashboard after successful submission
-      setTimeout(() => {
+      // Redirect to dashboard if requested
+      if (redirectToList) {
         window.location.href = "/admin/dashboard";
-      }, 1500);
+      }
       
     } catch (error) {
-      console.error("Unexpected error:", error);
-      toast.error(`An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("Error submitting form:", error);
+      toast.error(`Error saving channel: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
