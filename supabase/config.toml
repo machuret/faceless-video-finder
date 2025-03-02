@@ -82,13 +82,11 @@ client_id = ""
 # DO NOT commit your OAuth provider secret to git. Use the dashboard to set this env var.
 # secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
 # Additional OAuth scopes to request from apple provider
-additional_scopes = ["name", "email"]
+scopes = ["name", "email"]
 
 # Functions configuration
 [functions]
-# Function ports and settings
-[functions.serve]
-port = 54321
+# Function settings
 
 # Individual function configurations
 [functions.generate-channel-content]
