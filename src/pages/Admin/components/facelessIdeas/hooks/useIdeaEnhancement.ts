@@ -39,18 +39,25 @@ export const useIdeaEnhancement = (
       }
       
       if (data?.enhancedDescription) {
+        // Clean the description from markdown/HTML code blocks
+        let cleanedDescription = data.enhancedDescription;
+        
+        // Remove ```html and ``` tags that might be in the response
+        cleanedDescription = cleanedDescription.replace(/```html/g, "");
+        cleanedDescription = cleanedDescription.replace(/```/g, "");
+        
         // Update the description in the database
-        const updatedIdea = { ...idea, description: data.enhancedDescription };
+        const updatedIdea = { ...idea, description: cleanedDescription };
         await updateFacelessIdea(updatedIdea);
         
         // Update local state
         setFacelessIdeas(prev => prev.map(i => 
-          i.id === ideaId ? { ...i, description: data.enhancedDescription } : i
+          i.id === ideaId ? { ...i, description: cleanedDescription } : i
         ));
         
         // If we're editing this idea, update the form data
         if (selectedIdea?.id === ideaId) {
-          setFormData(prev => ({ ...prev, description: data.enhancedDescription }));
+          setFormData(prev => ({ ...prev, description: cleanedDescription }));
         }
         
         toast.success("Description enhanced successfully");

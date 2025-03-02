@@ -61,12 +61,19 @@ const FacelessIdeaDetails = () => {
       }
       
       if (data?.enhancedDescription) {
+        // Clean the description from markdown/HTML code blocks
+        let cleanedDescription = data.enhancedDescription;
+        
+        // Remove ```html and ``` tags that might be in the response
+        cleanedDescription = cleanedDescription.replace(/```html/g, "");
+        cleanedDescription = cleanedDescription.replace(/```/g, "");
+        
         // Save to database
-        const updatedIdea = { ...idea, description: data.enhancedDescription };
+        const updatedIdea = { ...idea, description: cleanedDescription };
         await updateFacelessIdea(updatedIdea);
         
         // Update local state
-        setIdea(prev => prev ? {...prev, description: data.enhancedDescription} : null);
+        setIdea(prev => prev ? {...prev, description: cleanedDescription} : null);
         toast.success("Description enhanced successfully!");
       } else {
         throw new Error("No enhanced description received");

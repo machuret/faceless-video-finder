@@ -41,7 +41,7 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are an expert in YouTube content creation strategies, particularly faceless content. Your task is to enhance descriptions of faceless YouTube content ideas to be more comprehensive, educational, and valuable for content creators. Include key points about the concept, potential audience, and why this format is effective. Format the response in HTML with appropriate paragraph tags (<p>).'
+            content: 'You are an expert in YouTube content creation strategies, particularly faceless content. Your task is to enhance descriptions of faceless YouTube content ideas to be more comprehensive, educational, and valuable for content creators. Include key points about the concept, potential audience, and why this format is effective. Format the response as plain text with paragraphs. DO NOT use markdown, HTML tags, or code blocks in your response.'
           },
           { 
             role: 'user', 
