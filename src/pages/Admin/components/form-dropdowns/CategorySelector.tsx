@@ -15,7 +15,7 @@ interface CategorySelectorProps {
 }
 
 const CategorySelector = ({ selectedCategory, onSelect }: CategorySelectorProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   // Ensure these match the database enum values
   const channelCategories = [
@@ -32,28 +32,30 @@ const CategorySelector = ({ selectedCategory, onSelect }: CategorySelectorProps)
   const handleSelect = (categoryId: string) => {
     console.log("Selected category:", categoryId);
     onSelect(categoryId);
-    setIsOpen(false);
+    setOpen(false);
   };
+
+  const selectedCategoryInfo = channelCategories.find(cat => cat.id === selectedCategory);
+  const displayValue = selectedCategoryInfo ? selectedCategoryInfo.label : "Select Category";
 
   return (
     <div className="mb-6">
       <h3 className="text-lg font-medium mb-3">Channel Category</h3>
       <div className="space-y-4">
         <label className="block text-sm font-medium">Category</label>
-        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="outline" 
-              className="w-full justify-between bg-white"
-              onClick={() => setIsOpen(true)}
+              className="w-full justify-between bg-white border border-gray-300"
+              type="button"
             >
-              {selectedCategory ? 
-                channelCategories.find(category => category.id === selectedCategory)?.label || 'Select Category' : 
-                'Select Category'}
+              {displayValue}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
-            className="w-[calc(100vw-3rem)] sm:w-[400px] max-h-[300px] overflow-y-auto z-50 bg-white shadow-lg"
+            className="w-[calc(100vw-3rem)] sm:w-[400px] max-h-[300px] overflow-y-auto z-[100] bg-white shadow-lg"
+            forceMount
           >
             {channelCategories.map((category) => (
               <DropdownMenuItem

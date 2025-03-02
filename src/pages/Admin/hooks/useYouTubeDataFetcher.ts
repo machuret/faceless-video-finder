@@ -1,8 +1,8 @@
 
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { ChannelFormData } from "../components/ChannelForm";
-import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
+import { DatabaseChannelType, ChannelCategory } from "@/types/youtube";
 
 export const useYouTubeDataFetcher = (
   youtubeUrl: string,
@@ -15,57 +15,58 @@ export const useYouTubeDataFetcher = (
       return;
     }
 
+    console.log("Fetching YouTube data for URL:", youtubeUrl);
     setLoading(true);
+
     try {
-      console.log("Fetching YouTube data for URL:", youtubeUrl);
-      
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: { url: youtubeUrl }
       });
 
       if (error) {
-        console.error('Edge Function error:', error);
-        throw new Error(`Failed to fetch YouTube data: ${error.message}`);
+        console.error("Error fetching YouTube data:", error);
+        throw new Error(`Error fetching YouTube data: ${error.message}`);
       }
 
-      if (!data) {
-        console.error('No data received');
-        throw new Error("No data received from YouTube API. Please check if the URL is correct.");
+      if (!data || !data.channelId) {
+        console.error("Invalid YouTube data returned:", data);
+        throw new Error("Could not extract channel data from the provided URL");
       }
 
-      console.log("Received data from YouTube API:", data);
+      console.log("YouTube data fetched successfully:", data);
 
-      const formattedStartDate = data.start_date 
-        ? new Date(data.start_date).toISOString().split('T')[0]
-        : "";
+      // Default values for enum fields
+      const channelType: DatabaseChannelType = "other";
+      const channelCategory: ChannelCategory = "other";
 
-      // Ensure we set valid default types
-      const defaultChannelType: DatabaseChannelType = "other";
-      const defaultChannelCategory: ChannelCategory = "other";
+      // Convert start date to proper format
+      const startDate = data.publishedAt ? 
+        new Date(data.publishedAt).toISOString().split('T')[0] : 
+        "";
 
       setFormData({
-        video_id: data.video_id || "",
-        channel_title: data.channel_title || "",
-        channel_url: data.channel_url || "",
+        video_id: data.channelId || "",
+        channel_title: data.title || "",
+        channel_url: data.channelUrl || youtubeUrl,
         description: data.description || "",
-        screenshot_url: data.screenshot_url || "",
-        total_subscribers: data.total_subscribers?.toString() || "",
-        total_views: data.total_views?.toString() || "",
-        start_date: formattedStartDate,
-        video_count: data.video_count?.toString() || "",
-        cpm: "4",
-        channel_type: defaultChannelType,
+        screenshot_url: data.thumbnailUrl || "",
+        total_subscribers: data.subscriberCount?.toString() || "",
+        total_views: data.viewCount?.toString() || "",
+        start_date: startDate,
+        video_count: data.videoCount?.toString() || "",
+        cpm: "4", // Default CPM
+        channel_type: channelType,
         country: "",
-        channel_category: defaultChannelCategory,
+        channel_category: channelCategory,
         notes: ""
       });
 
       toast.success("Channel data fetched successfully");
     } catch (error) {
-      console.error('Fetch error:', error);
+      console.error("Error in fetchYoutubeData:", error);
       toast.error(error instanceof Error 
-        ? `Failed to fetch channel data: ${error.message}` 
-        : "Failed to fetch channel data. Please check the URL and try again.");
+        ? error.message 
+        : "Failed to fetch channel data");
     } finally {
       setLoading(false);
     }

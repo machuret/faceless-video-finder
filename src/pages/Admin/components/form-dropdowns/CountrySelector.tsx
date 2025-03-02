@@ -15,35 +15,36 @@ interface CountrySelectorProps {
 }
 
 const CountrySelector = ({ selectedCountry, onSelect }: CountrySelectorProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleSelect = (countryCode: string) => {
     console.log("Selected country:", countryCode);
     onSelect(countryCode);
-    setIsOpen(false);
+    setOpen(false);
   };
 
   // Find the selected country for display
-  const selectedCountryName = selectedCountry 
-    ? countries.find(c => c.code === selectedCountry)?.name || 'Select Country'
-    : 'Select Country';
+  const selectedCountryInfo = countries.find(c => c.code === selectedCountry);
+  const displayValue = selectedCountryInfo ? selectedCountryInfo.name : "Select Country";
 
   return (
     <div className="mb-6">
       <h3 className="text-lg font-medium mb-3">Country</h3>
       <div className="space-y-4">
         <label className="block text-sm font-medium">Country</label>
-        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="outline" 
-              className="w-full justify-between bg-white"
+              className="w-full justify-between bg-white border border-gray-300"
+              type="button"
             >
-              {selectedCountryName}
+              {displayValue}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
-            className="w-[calc(100vw-3rem)] sm:w-[400px] max-h-[300px] overflow-y-auto z-50 bg-white shadow-lg"
+            className="w-[calc(100vw-3rem)] sm:w-[400px] max-h-[300px] overflow-y-auto z-[100] bg-white shadow-lg"
+            forceMount
           >
             {countries.map((country) => (
               <DropdownMenuItem

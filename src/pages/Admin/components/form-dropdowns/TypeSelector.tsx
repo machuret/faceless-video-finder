@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface TypeSelectorProps {
   selectedType: string | undefined;
@@ -15,12 +15,12 @@ interface TypeSelectorProps {
 }
 
 const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleSelect = (typeId: string) => {
     console.log("Selected type in dropdown:", typeId);
     onSelect(typeId);
-    setIsOpen(false);
+    setOpen(false);
   };
 
   // Find the selected type for display
@@ -32,18 +32,20 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
       <h3 className="text-lg font-medium mb-3">Channel Type</h3>
       <div className="space-y-4">
         <label className="block text-sm font-medium">Type</label>
-        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
-              className="w-full justify-between bg-white"
+              className="w-full justify-between bg-white border border-gray-300"
+              type="button"
             >
               {displayValue}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="w-[300px] max-h-[300px] overflow-y-auto bg-white shadow-lg z-50"
+            className="w-[300px] max-h-[300px] overflow-y-auto bg-white shadow-lg z-[100]"
+            forceMount
           >
             {channelTypes.map((type) => (
               <DropdownMenuItem

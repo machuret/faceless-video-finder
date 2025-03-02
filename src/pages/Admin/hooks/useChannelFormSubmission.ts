@@ -1,7 +1,7 @@
 
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { ChannelFormData } from "../components/ChannelForm";
 import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
 
@@ -13,121 +13,86 @@ export const useChannelFormSubmission = (
 ) => {
   const navigate = useNavigate();
 
+  // Utility function to validate channel type
+  const validateChannelType = (type: string | undefined): DatabaseChannelType => {
+    if (!type || !["other", "creator", "brand", "media"].includes(type)) {
+      return "other";
+    }
+    return type as DatabaseChannelType;
+  };
+
+  // Utility function to validate channel category
+  const validateChannelCategory = (category: string | undefined): ChannelCategory => {
+    if (!category || !["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"].includes(category)) {
+      return "other";
+    }
+    return category as ChannelCategory;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
+    
     try {
-      if (!formData.video_id || !formData.channel_title || !formData.channel_url) {
-        throw new Error("Please fill in all required fields: Channel ID, Title, and URL");
-      }
-
-      // Ensure we have valid types that match the database enum
-      const channelType: DatabaseChannelType = validateChannelType(formData.channel_type);
-      const channelCategory: ChannelCategory = validateChannelCategory(formData.channel_category);
-
-      console.log("Prepared data for submission:", {
-        channelType,
-        channelCategory,
-        isEditMode,
-        channelId
-      });
-
-      const dataToSubmit = {
-        video_id: formData.video_id.trim(),
-        channel_title: formData.channel_title.trim(),
-        channel_url: formData.channel_url.trim(),
-        description: formData.description?.trim() || null,
-        screenshot_url: formData.screenshot_url || null,
-        total_subscribers: formData.total_subscribers ? parseInt(formData.total_subscribers) : null,
-        total_views: formData.total_views ? parseInt(formData.total_views) : null,
+      // Convert string values to appropriate types
+      const parsedData = {
+        video_id: formData.video_id,
+        channel_title: formData.channel_title,
+        channel_url: formData.channel_url,
+        description: formData.description,
+        screenshot_url: formData.screenshot_url,
+        total_subscribers: formData.total_subscribers ? parseInt(formData.total_subscribers) : 0,
+        total_views: formData.total_views ? parseInt(formData.total_views) : 0,
         start_date: formData.start_date || null,
-        video_count: formData.video_count ? parseInt(formData.video_count) : null,
+        video_count: formData.video_count ? parseInt(formData.video_count) : 0,
         cpm: formData.cpm ? parseFloat(formData.cpm) : 4,
-        channel_type: channelType,
+        channel_type: validateChannelType(formData.channel_type),
         country: formData.country || null,
-        channel_category: channelCategory,
+        channel_category: validateChannelCategory(formData.channel_category),
         notes: formData.notes || null
       };
 
-      console.log(`${isEditMode ? "EDITING" : "CREATING"} CHANNEL:`, {
-        isEditMode,
-        channelId,
-        dataToSubmit
-      });
+      console.log("Channel data to submit:", parsedData);
+      console.log("Channel type:", parsedData.channel_type);
+      console.log("Channel category:", parsedData.channel_category);
 
-      let result;
-      
       if (isEditMode && channelId) {
-        console.log("🔄 UPDATE OPERATION - Channel ID:", channelId);
-        
-        result = await supabase
+        // Update existing channel
+        console.log("Updating channel with ID:", channelId);
+        const { error } = await supabase
           .from("youtube_channels")
-          .update(dataToSubmit)
+          .update(parsedData)
           .eq("id", channelId);
-        
-        console.log("Update result:", result);
+
+        if (error) {
+          console.error("Error updating channel:", error);
+          throw new Error(`Error updating channel: ${error.message}`);
+        }
+
+        toast.success("Channel updated successfully");
       } else {
-        console.log("➕ INSERT OPERATION");
-        result = await supabase
+        // Create new channel
+        console.log("Creating new channel");
+        const { error } = await supabase
           .from("youtube_channels")
-          .insert(dataToSubmit)
-          .select();
+          .insert(parsedData);
+
+        if (error) {
+          console.error("Error creating channel:", error);
+          throw new Error(`Error creating channel: ${error.message}`);
+        }
+
+        toast.success("Channel created successfully");
       }
 
-      // Handle errors
-      if (result.error) {
-        console.error("Database operation failed:", result.error);
-        throw new Error(`Database error: ${result.error.message || result.error.details || 'Unknown error'}`);
-      }
-
-      // Success message and redirect
-      console.log(`Operation successful - ${isEditMode ? "Update" : "Insert"}:`, result);
-      toast.success(`Channel ${isEditMode ? "updated" : "added"} successfully!`);
-      
-      // Add slight delay before navigation to ensure toast is seen
-      setTimeout(() => {
-        navigate("/admin/dashboard");
-      }, 1000);
+      // Redirect to dashboard after successful operation
+      navigate("/admin/dashboard");
     } catch (error) {
-      console.error(`❌ ${isEditMode ? "Update" : "Create"} error:`, error);
-      toast.error(error instanceof Error 
-        ? `Failed to ${isEditMode ? "update" : "add"} channel: ${error.message}` 
-        : `An unexpected error occurred while ${isEditMode ? "updating" : "adding"} the channel`);
+      console.error("Error in form submission:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save channel");
     } finally {
       setLoading(false);
     }
-  };
-
-  // Helper function to validate channel type
-  const validateChannelType = (type?: string): DatabaseChannelType => {
-    if (!type) return "other";
-    
-    const validTypes: DatabaseChannelType[] = ["creator", "brand", "media", "other"];
-    
-    if (validTypes.includes(type as DatabaseChannelType)) {
-      return type as DatabaseChannelType;
-    }
-    
-    console.warn(`Channel type "${type}" is not valid. Using "other" instead.`);
-    return "other";
-  };
-
-  // Helper function to validate channel category
-  const validateChannelCategory = (category?: string): ChannelCategory => {
-    if (!category) return "other";
-    
-    const validCategories: ChannelCategory[] = [
-      "entertainment", "education", "gaming", "music", 
-      "news", "sports", "technology", "other"
-    ];
-    
-    if (validCategories.includes(category as ChannelCategory)) {
-      return category as ChannelCategory;
-    }
-    
-    console.warn(`Channel category "${category}" is not valid. Using "other" instead.`);
-    return "other";
   };
 
   return { handleSubmit };
