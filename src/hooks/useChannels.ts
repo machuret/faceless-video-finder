@@ -6,6 +6,34 @@ import { toast } from "sonner";
 
 const CHANNELS_PER_PAGE = 9;
 
+// Define simpler types to break circular references
+type SimplifiedVideoStats = {
+  title: string;
+  video_id: string;
+  thumbnail_url?: string | null;
+  views?: number | null;
+  likes?: number | null;
+}
+
+type SimplifiedChannel = {
+  id: string;
+  channel_title: string;
+  channel_url: string;
+  video_id: string;
+  description?: string | null;
+  screenshot_url?: string | null;
+  total_subscribers?: number | null; 
+  total_views?: number | null;
+  channel_category?: ChannelCategory | null;
+  channel_type?: string | null;
+  keywords?: string[] | null;
+  niche?: string | null;
+  country?: string | null;
+  cpm?: number | null;
+  is_featured?: boolean;
+  videoStats?: SimplifiedVideoStats[];
+}
+
 export const useChannels = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [featuredChannels, setFeaturedChannels] = useState<Channel[]>([]);
@@ -57,8 +85,13 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Use type casting to avoid circular references
-      setChannels(data as any);
+      // Convert the data to Channel type without causing infinite type recursion
+      const mappedChannels = (data || []).map((item: SimplifiedChannel): Channel => ({
+        ...(item as any),
+        videoStats: item.videoStats || []
+      }));
+      
+      setChannels(mappedChannels);
     } catch (error: any) {
       console.error("Error fetching channels:", error);
       toast.error("Failed to fetch channels");
@@ -81,8 +114,13 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Use type casting to avoid circular references
-      setFeaturedChannels(data as any);
+      // Convert the data to Channel type without causing infinite type recursion
+      const mappedChannels = (data || []).map((item: SimplifiedChannel): Channel => ({
+        ...(item as any),
+        videoStats: item.videoStats || []
+      }));
+      
+      setFeaturedChannels(mappedChannels);
     } catch (error: any) {
       console.error("Error fetching featured channels:", error);
       setFeaturedChannels([]);
