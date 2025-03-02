@@ -34,10 +34,10 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.type === "text/csv" || file.name.endsWith('.csv')) {
+      if (file.type === "text/csv" || file.type === "text/tab-separated-values" || file.name.endsWith('.csv') || file.name.endsWith('.tsv')) {
         onCsvUpload(file);
       } else {
-        alert("Please select a CSV file");
+        alert("Please select a CSV or TSV file");
       }
       // Reset the input
       if (fileInputRef.current) {
@@ -57,12 +57,12 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="h-4 w-4 mr-2" />
-            Import CSV
+            Import CSV/TSV
           </Button>
           <input
             type="file"
             ref={fileInputRef}
-            accept=".csv"
+            accept=".csv,.tsv,text/csv,text/tab-separated-values"
             onChange={handleFileChange}
             className="hidden"
           />
@@ -76,7 +76,7 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>Label</TableHead>
+              <TableHead>Niche Name</TableHead>
               <TableHead>Description</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -121,16 +121,15 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
       )}
       
       <div className="mt-6">
-        <h3 className="text-lg font-medium mb-2">CSV Import Format</h3>
+        <h3 className="text-lg font-medium mb-2">CSV/TSV Import Format</h3>
         <p className="text-sm text-gray-600 mb-2">
-          Your CSV file should have the following columns:
+          Your file should have the following tab-separated columns:
         </p>
-        <p className="text-sm text-gray-600">
-          <code>id,label,description,production,example</code>
+        <p className="text-sm text-gray-600 font-mono bg-gray-100 p-2 rounded">
+          Niche Name | AI Voice Software (Yes/No) | Heavy Editing (Yes/No) | Complexity Level (Low/Medium/High) | Research Level (Low/Medium/High) | Difficulty (Easy/Medium/Hard) | Notes/Description | Example Channel Name | Example Channel URL
         </p>
         <p className="text-sm text-gray-600 mt-2">
-          The "id" should contain only lowercase letters, numbers, and underscores. The "label" is required.
-          Other fields are optional.
+          Only the "Niche Name" column is required. An ID will be automatically generated from the niche name.
         </p>
       </div>
     </div>

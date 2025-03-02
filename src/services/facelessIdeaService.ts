@@ -112,8 +112,8 @@ export const processCsvImport = async (csvData: string): Promise<{ success: numb
   const lines = csvData.split('\n').filter(line => line.trim() !== '');
   
   // Skip header row if it exists
-  const startIndex = lines[0].toLowerCase().includes('id') || 
-                     lines[0].toLowerCase().includes('label') ? 1 : 0;
+  const startIndex = lines[0].includes('Niche Name') || 
+                     lines[0].includes('AI Voice Software') ? 1 : 0;
   
   let success = 0;
   let failed = 0;
@@ -122,27 +122,67 @@ export const processCsvImport = async (csvData: string): Promise<{ success: numb
     const line = lines[i].trim();
     if (!line) continue;
     
-    const values = line.split(',').map(value => value.trim());
+    const values = line.split('\t').map(value => value.trim());
     
-    // Try to extract values based on CSV format
-    const id = values[0]?.toLowerCase().replace(/[^a-z0-9_]/g, '_') || '';
-    const label = values[1] || '';
-    const description = values[2] || null;
-    const production = values[3] || null;
-    const example = values[4] || null;
-    
-    if (!id || !label) {
+    if (values.length < 1) {
       failed++;
       continue;
     }
     
     try {
+      // Extract values based on the CSV format
+      // Niche Name | AI Voice Software | Heavy Editing | Complexity Level | Research Level | Difficulty | Notes/Description | Example Channel Name | Example Channel URL
+      const label = values[0] || '';
+      const aiVoice = values[1] || 'No';
+      const heavyEditing = values[2] || 'No';
+      const complexityLevel = values[3] || 'Medium';
+      const researchLevel = values[4] || 'Medium';
+      const difficulty = values[5] || 'Medium';
+      const description = values[6] || null;
+      const exampleChannelName = values[7] || null;
+      const exampleChannelUrl = values[8] || null;
+      
+      if (!label) {
+        failed++;
+        continue;
+      }
+      
+      // Generate an ID from the label
+      const id = label.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      
+      // Format the description HTML
+      let formattedDescription = description;
+      if (description) {
+        formattedDescription = `<p>${description}</p>`;
+      }
+      
+      // Format the example HTML with channel info
+      let formattedExample = null;
+      if (exampleChannelName || exampleChannelUrl) {
+        formattedExample = `<p>Example Channel: ${exampleChannelName || 'Not specified'}`;
+        if (exampleChannelUrl) {
+          formattedExample += ` - <a href="${exampleChannelUrl}" target="_blank" rel="noopener noreferrer">${exampleChannelUrl}</a>`;
+        }
+        formattedExample += `</p>`;
+      }
+      
+      // Format the production HTML with details
+      const formattedProduction = `
+        <ul>
+          <li><strong>AI Voice Required:</strong> ${aiVoice}</li>
+          <li><strong>Heavy Editing:</strong> ${heavyEditing}</li>
+          <li><strong>Complexity Level:</strong> ${complexityLevel}</li>
+          <li><strong>Research Level:</strong> ${researchLevel}</li>
+          <li><strong>Difficulty:</strong> ${difficulty}</li>
+        </ul>
+      `;
+      
       await createFacelessIdea({
         id,
         label,
-        description,
-        production,
-        example
+        description: formattedDescription,
+        production: formattedProduction,
+        example: formattedExample
       });
       success++;
     } catch (error) {
