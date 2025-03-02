@@ -16,12 +16,23 @@ const ChannelDetails = () => {
   const [channel, setChannel] = useState<Channel | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoStats, setVideoStats] = useState<any[]>([]);
+  const [typeInfo, setTypeInfo] = useState<any>(null);
 
   useEffect(() => {
     if (channelId) {
       fetchChannelDetails(channelId);
     }
   }, [channelId]);
+
+  useEffect(() => {
+    if (channel?.metadata?.ui_channel_type) {
+      const foundType = channelTypes.find(type => type.id === channel.metadata.ui_channel_type);
+      setTypeInfo(foundType);
+    } else if (channel?.channel_type) {
+      const foundType = channelTypes.find(type => type.id === channel.channel_type.toString());
+      setTypeInfo(foundType);
+    }
+  }, [channel]);
 
   const fetchChannelDetails = async (id: string) => {
     setLoading(true);
@@ -270,6 +281,45 @@ const ChannelDetails = () => {
             </div>
           </div>
         </div>
+
+        {/* Add Channel Type Information Section */}
+        {typeInfo && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Channel Type: {typeInfo.label}</h2>
+              
+              {typeInfo.description && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium mb-2">Description</h3>
+                  <div 
+                    className="prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: typeInfo.description }}
+                  />
+                </div>
+              )}
+              
+              {typeInfo.production && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium mb-2">How to Create</h3>
+                  <div 
+                    className="prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: typeInfo.production }}
+                  />
+                </div>
+              )}
+              
+              {typeInfo.example && (
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Example Ideas</h3>
+                  <div 
+                    className="prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: typeInfo.example }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         {videoStats.length > 0 && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">

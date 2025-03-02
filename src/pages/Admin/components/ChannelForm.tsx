@@ -130,6 +130,7 @@ const ChannelForm = ({
       
       <NotesSection
         notes={formData.notes}
+        channelType={formData.channel_type}
         onFieldChange={onFieldChange}
       />
 
