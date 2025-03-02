@@ -2,6 +2,7 @@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChannelFormData } from "../components/ChannelForm";
+import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
 
 export const useYouTubeDataFetcher = (
   youtubeUrl: string,
@@ -38,6 +39,10 @@ export const useYouTubeDataFetcher = (
         ? new Date(data.start_date).toISOString().split('T')[0]
         : "";
 
+      // Ensure we set valid default types
+      const defaultChannelType: DatabaseChannelType = "other";
+      const defaultChannelCategory: ChannelCategory = "other";
+
       setFormData({
         video_id: data.video_id || "",
         channel_title: data.channel_title || "",
@@ -49,9 +54,9 @@ export const useYouTubeDataFetcher = (
         start_date: formattedStartDate,
         video_count: data.video_count?.toString() || "",
         cpm: "4",
-        channel_type: "other", // Set a valid default
+        channel_type: defaultChannelType,
         country: "",
-        channel_category: "other", // Set a valid default
+        channel_category: defaultChannelCategory,
         notes: ""
       });
 

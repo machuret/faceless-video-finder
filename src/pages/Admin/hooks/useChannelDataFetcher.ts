@@ -39,9 +39,9 @@ export const useChannelDataFetcher = (
         ? new Date(data.start_date).toISOString().split('T')[0]
         : "";
 
-      // Ensure we're mapping from database types to UI types
-      const channelType = data.channel_type || "";
-      const channelCategory = data.channel_category || "";
+      // Map data types properly
+      const channelType = data.channel_type || "other";
+      const channelCategory = data.channel_category || "other";
 
       const formData = {
         video_id: data.video_id || "",
@@ -62,6 +62,7 @@ export const useChannelDataFetcher = (
       
       console.log("📝 Setting form data with:", formData);
       setFormData(formData);
+      setLoading(false);
 
       toast.success("Channel data loaded successfully");
     } catch (error) {
@@ -69,7 +70,6 @@ export const useChannelDataFetcher = (
       toast.error(error instanceof Error 
         ? error.message 
         : "Failed to load channel data");
-    } finally {
       setLoading(false);
     }
   };
