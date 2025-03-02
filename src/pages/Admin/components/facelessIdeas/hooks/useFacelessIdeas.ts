@@ -93,6 +93,28 @@ export const useFacelessIdeas = () => {
     }
   };
   
+  const handleDeleteMultiple = async (ids: string[]) => {
+    try {
+      setLoading(true);
+      const { deleteFacelessIdea } = await import("@/services/facelessIdeaService");
+      
+      // Delete each idea one by one
+      for (const id of ids) {
+        await deleteFacelessIdea(id);
+      }
+      
+      // Update local state
+      setFacelessIdeas(prev => prev.filter(idea => !ids.includes(idea.id)));
+      
+      toast.success(`Successfully deleted ${ids.length} faceless idea${ids.length === 1 ? '' : 's'}`);
+    } catch (error) {
+      console.error("Error deleting multiple faceless ideas:", error);
+      toast.error("Error deleting faceless ideas");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const handleCsvUpload = async (file: File) => {
     try {
       const reader = new FileReader();
@@ -139,6 +161,7 @@ export const useFacelessIdeas = () => {
     handleCreateNew,
     handleSubmit,
     handleDelete,
+    handleDeleteMultiple,
     handleCancel,
     handleCsvUpload
   };

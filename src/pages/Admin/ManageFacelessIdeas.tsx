@@ -30,6 +30,7 @@ export default function ManageFacelessIdeas() {
     handleCreateNew,
     handleSubmit,
     handleDelete,
+    handleDeleteMultiple,
     handleCancel,
     handleCsvUpload
   } = useFacelessIdeas();
@@ -86,6 +87,7 @@ export default function ManageFacelessIdeas() {
                 onEdit={handleSelectIdea}
                 onCreateNew={handleCreateNew}
                 onDelete={handleDelete}
+                onDeleteMultiple={handleDeleteMultiple}
                 onCsvUpload={handleCsvUpload}
               />
             </Card>
