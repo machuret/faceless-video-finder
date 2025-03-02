@@ -21,11 +21,11 @@ export const useChannelFormSubmission = (
         throw new Error("Please fill in all required fields: Channel ID, Title, and URL");
       }
 
-      const dataToSubmit: any = {
+      const dataToSubmit = {
         video_id: formData.video_id.trim(),
         channel_title: formData.channel_title.trim(),
         channel_url: formData.channel_url.trim(),
-        description: formData.description.trim() || null,
+        description: formData.description?.trim() || null,
         screenshot_url: formData.screenshot_url || null,
         total_subscribers: formData.total_subscribers ? parseInt(formData.total_subscribers) : null,
         total_views: formData.total_views ? parseInt(formData.total_views) : null,
@@ -38,49 +38,40 @@ export const useChannelFormSubmission = (
         notes: formData.notes || null
       };
 
-      console.log(`${isEditMode ? "Updating" : "Submitting"} data to Supabase:`, dataToSubmit);
-      console.log("Current mode:", isEditMode ? "EDIT" : "CREATE", "Channel ID:", channelId);
+      console.log(`${isEditMode ? "EDITING" : "CREATING"} CHANNEL:`, {
+        isEditMode,
+        channelId,
+        dataToSubmit
+      });
 
       let result;
       
       if (isEditMode && channelId) {
-        // Ensure we're updating the correct channel
-        console.log("Updating channel with ID:", channelId);
+        console.log("🔄 UPDATE OPERATION - Channel ID:", channelId);
         
-        // Detailed logging of the update operation
-        console.log("Update parameters:", {
-          table: "youtube_channels",
-          data: dataToSubmit,
-          match: { id: channelId }
-        });
-        
+        // Use upsert with explicit ID to ensure update works
         result = await supabase
           .from("youtube_channels")
           .update(dataToSubmit)
-          .eq("id", channelId)
-          .select();
+          .eq("id", channelId);
         
-        console.log("Update operation completed, result:", result);
+        console.log("Update result:", result);
       } else {
+        console.log("➕ INSERT OPERATION");
         result = await supabase
           .from("youtube_channels")
           .insert(dataToSubmit)
           .select();
       }
 
-      const { data, error } = result;
-
-      if (error) {
-        console.error("Database error:", error);
-        throw new Error(`Database error: ${error.message || error.code}`);
+      // Handle errors
+      if (result.error) {
+        console.error("Database operation failed:", result.error);
+        throw new Error(`Database error: ${result.error.message || result.error.details || 'Unknown error'}`);
       }
 
-      if (!data || data.length === 0) {
-        console.error("No data returned from operation");
-        throw new Error("Operation completed but no data was returned");
-      }
-
-      console.log(`${isEditMode ? "Update" : "Insert"} successful:`, data);
+      // Success message and redirect
+      console.log(`Operation successful - ${isEditMode ? "Update" : "Insert"}:`, result);
       toast.success(`Channel ${isEditMode ? "updated" : "added"} successfully!`);
       
       // Add slight delay before navigation to ensure toast is seen
@@ -88,7 +79,7 @@ export const useChannelFormSubmission = (
         navigate("/admin/dashboard");
       }, 1000);
     } catch (error) {
-      console.error("Submit error:", error);
+      console.error(`❌ ${isEditMode ? "Update" : "Create"} error:`, error);
       toast.error(error instanceof Error 
         ? `Failed to ${isEditMode ? "update" : "add"} channel: ${error.message}` 
         : `An unexpected error occurred while ${isEditMode ? "updating" : "adding"} the channel`);

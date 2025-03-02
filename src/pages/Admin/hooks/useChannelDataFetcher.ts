@@ -9,26 +9,30 @@ export const useChannelDataFetcher = (
 ) => {
   const fetchChannelData = async (id: string) => {
     setLoading(true);
-    console.log("Fetching channel data for ID:", id);
+    console.log("🔍 FETCHING CHANNEL DATA - ID:", id);
     
     try {
+      if (!id) {
+        throw new Error("No channel ID provided");
+      }
+
       const { data, error } = await supabase
         .from("youtube_channels")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        console.error("Error fetching channel data:", error);
+        console.error("❌ Database error when fetching channel:", error);
         throw new Error(`Error fetching channel: ${error.message}`);
       }
 
       if (!data) {
-        console.error("No channel data found for ID:", id);
-        throw new Error("Channel not found");
+        console.error("❌ Channel not found - ID:", id);
+        throw new Error(`Channel with ID ${id} not found`);
       }
 
-      console.log("Channel data fetched for editing:", data);
+      console.log("✅ Channel data retrieved successfully:", data);
 
       const formattedStartDate = data.start_date 
         ? new Date(data.start_date).toISOString().split('T')[0]
@@ -51,12 +55,12 @@ export const useChannelDataFetcher = (
         notes: data.notes || ""
       };
       
-      console.log("Setting form data with:", formData);
+      console.log("📝 Setting form data with:", formData);
       setFormData(formData);
 
       toast.success("Channel data loaded successfully");
     } catch (error) {
-      console.error("Error fetching channel data:", error);
+      console.error("❌ Error in fetchChannelData:", error);
       toast.error(error instanceof Error 
         ? error.message 
         : "Failed to load channel data");

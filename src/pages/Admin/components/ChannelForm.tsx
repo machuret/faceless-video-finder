@@ -1,6 +1,5 @@
 
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import ChannelIdentity from "./form-sections/ChannelIdentity";
 import ChannelStats from "./form-sections/ChannelStats";
 import ChannelContent from "./form-sections/ChannelContent";
@@ -48,27 +47,51 @@ const ChannelForm = ({
 
   // Handle type selection
   const handleTypeSelect = (typeId: string) => {
+    console.log("Type selection in form:", typeId);
     onFieldChange("channel_type", typeId);
   };
 
   // Handle category selection
   const handleCategorySelect = (categoryId: string) => {
+    console.log("Category selection in form:", categoryId);
     onFieldChange("channel_category", categoryId);
   };
 
   // Handle country selection
   const handleCountrySelect = (countryCode: string) => {
+    console.log("Country selection in form:", countryCode);
     onFieldChange("country", countryCode);
   };
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      {/* Move ChannelIdentity to the top */}
+      {/* Channel Identity always at the top */}
       <ChannelIdentity
         videoId={formData.video_id}
         channelTitle={formData.channel_title}
         channelUrl={formData.channel_url}
         onChange={onChange}
+      />
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <TypeSelector
+            selectedType={formData.channel_type}
+            onSelect={handleTypeSelect}
+          />
+        </div>
+        
+        <div>
+          <CategorySelector
+            selectedCategory={formData.channel_category}
+            onSelect={handleCategorySelect}
+          />
+        </div>
+      </div>
+      
+      <CountrySelector
+        selectedCountry={formData.country}
+        onSelect={handleCountrySelect}
       />
       
       <ChannelContent
@@ -78,26 +101,6 @@ const ChannelForm = ({
         onChange={onChange}
         onScreenshotChange={onScreenshotChange}
         onFieldChange={onFieldChange}
-      />
-
-      <NotesSection
-        notes={formData.notes}
-        onFieldChange={onFieldChange}
-      />
-
-      <TypeSelector
-        selectedType={formData.channel_type}
-        onSelect={handleTypeSelect}
-      />
-
-      <CategorySelector
-        selectedCategory={formData.channel_category}
-        onSelect={handleCategorySelect}
-      />
-
-      <CountrySelector
-        selectedCountry={formData.country}
-        onSelect={handleCountrySelect}
       />
 
       <ChannelStats
@@ -112,8 +115,13 @@ const ChannelForm = ({
         cpm={formData.cpm}
         onChange={onChange}
       />
+      
+      <NotesSection
+        notes={formData.notes}
+        onFieldChange={onFieldChange}
+      />
 
-      <div className="flex justify-between gap-2">
+      <div className="flex justify-between gap-2 pt-4 border-t">
         <Button 
           type="button" 
           variant="outline" 
@@ -122,8 +130,10 @@ const ChannelForm = ({
           Back to Dashboard
         </Button>
         
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? (isEditMode ? "Updating Channel..." : "Adding Channel...") : (isEditMode ? "Update Channel" : "Add Channel")}
+        <Button type="submit" className="min-w-32" disabled={loading}>
+          {loading 
+            ? (isEditMode ? "Updating..." : "Adding...") 
+            : (isEditMode ? "Update Channel" : "Add Channel")}
         </Button>
       </div>
     </form>
