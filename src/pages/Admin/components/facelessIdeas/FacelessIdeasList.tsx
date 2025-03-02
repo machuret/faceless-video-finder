@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useFacelessIdeas } from "./hooks/useFacelessIdeas";
+import { FacelessIdeaInfo } from "@/services/facelessIdeas";
 import { IdeasTable } from "./components/IdeasTable";
 import { SearchBar } from "./components/SearchBar";
 import { HeaderActions } from "./components/HeaderActions";
@@ -8,26 +8,36 @@ import { ImportHelp } from "./components/ImportHelp";
 import { LoadingState } from "./components/LoadingState";
 import { EmptyState } from "./components/EmptyState";
 
-export const FacelessIdeasList: React.FC = () => {
+interface FacelessIdeasListProps {
+  ideas?: FacelessIdeaInfo[];
+  loading?: boolean;
+  onEdit?: (id: string) => Promise<void> | void;
+  onCreateNew?: () => void;
+  onDelete?: (id: string) => Promise<void> | void;
+  onDeleteMultiple?: (ids: string[]) => Promise<void> | void;
+  onCsvUpload?: (file: File) => Promise<void> | void;
+  onEnhanceDescription?: (ideaId: string) => Promise<void> | void;
+  onEnhanceMultiple?: (ids: string[]) => Promise<void> | void;
+}
+
+export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
+  ideas = [],
+  loading = false,
+  onEdit = () => {},
+  onCreateNew = () => {},
+  onDelete = () => {},
+  onDeleteMultiple = () => {},
+  onCsvUpload = () => {},
+  onEnhanceDescription = () => {},
+  onEnhanceMultiple = () => {}
+}) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [enhancingId, setEnhancingId] = useState<string | null>(null);
   const [enhancingMultiple, setEnhancingMultiple] = useState(false);
   
-  const {
-    facelessIdeas,
-    loading,
-    handleSelectIdea,
-    handleCreateNew,
-    handleDelete,
-    handleDeleteMultiple,
-    handleCsvUpload,
-    handleEnhanceDescription,
-    handleEnhanceMultiple
-  } = useFacelessIdeas();
-  
   // Filter ideas based on search query
-  const filteredIdeas = facelessIdeas.filter(idea => 
+  const filteredIdeas = ideas.filter(idea => 
     idea.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
     idea.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -54,7 +64,7 @@ export const FacelessIdeasList: React.FC = () => {
   const handleEnhanceWithLoadingState = async (id: string) => {
     setEnhancingId(id);
     try {
-      await handleEnhanceDescription(id);
+      await onEnhanceDescription(id);
     } finally {
       setEnhancingId(null);
     }
@@ -64,7 +74,7 @@ export const FacelessIdeasList: React.FC = () => {
   const handleEnhanceMultipleWithLoadingState = async (ids: string[]) => {
     setEnhancingMultiple(true);
     try {
-      await handleEnhanceMultiple(ids);
+      await onEnhanceMultiple(ids);
       // Clear selections after enhancing
       setSelectedIds([]);
     } finally {
@@ -88,9 +98,9 @@ export const FacelessIdeasList: React.FC = () => {
         
         <HeaderActions 
           selectedIds={selectedIds}
-          onCreateNew={handleCreateNew}
-          onCsvUpload={handleCsvUpload}
-          onDeleteMultiple={handleDeleteMultiple}
+          onCreateNew={onCreateNew}
+          onCsvUpload={onCsvUpload}
+          onDeleteMultiple={onDeleteMultiple}
           onEnhanceMultiple={handleEnhanceMultipleWithLoadingState}
           enhancingMultiple={enhancingMultiple}
         />
@@ -105,8 +115,8 @@ export const FacelessIdeasList: React.FC = () => {
           enhancingId={enhancingId}
           onSelectAll={handleSelectAll}
           onSelectOne={handleSelectOne}
-          onEdit={handleSelectIdea}
-          onDelete={handleDelete}
+          onEdit={onEdit}
+          onDelete={onDelete}
           onEnhanceDescription={handleEnhanceWithLoadingState}
         />
       )}
