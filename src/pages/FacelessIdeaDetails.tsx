@@ -3,16 +3,18 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
 import { getFacelessIdeaById, FacelessIdeaInfo } from "@/services/facelessIdeaService";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const FacelessIdeaDetails = () => {
   const { ideaId } = useParams<{ ideaId: string }>();
   const [idea, setIdea] = useState<FacelessIdeaInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [enhancing, setEnhancing] = useState(false);
 
   useEffect(() => {
     const loadIdeaDetails = async () => {
@@ -32,6 +34,36 @@ const FacelessIdeaDetails = () => {
 
     loadIdeaDetails();
   }, [ideaId]);
+
+  const handleEnhanceDescription = async () => {
+    if (!idea) return;
+    
+    setEnhancing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enhance-faceless-idea', {
+        body: { 
+          label: idea.label,
+          description: idea.description
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data?.enhancedDescription) {
+        setIdea(prev => prev ? {...prev, description: data.enhancedDescription} : null);
+        toast.success("Description enhanced successfully!");
+      } else {
+        throw new Error("No enhanced description received");
+      }
+    } catch (error) {
+      console.error("Error enhancing description:", error);
+      toast.error("Failed to enhance description: " + (error instanceof Error ? error.message : "Unknown error"));
+    } finally {
+      setEnhancing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -85,7 +117,19 @@ const FacelessIdeaDetails = () => {
         
         <Card className="mb-8 overflow-hidden">
           <div className="p-6">
-            <h1 className="text-2xl md:text-3xl font-bold mb-6">{idea.label}</h1>
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold">{idea.label}</h1>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEnhanceDescription}
+                disabled={enhancing}
+                className="flex items-center gap-1"
+              >
+                <Sparkles className="h-4 w-4" />
+                {enhancing ? "Enhancing..." : "Enhance Description"}
+              </Button>
+            </div>
             
             {idea.description && (
               <div className="mb-8">

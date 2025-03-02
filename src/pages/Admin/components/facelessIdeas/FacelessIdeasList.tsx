@@ -1,18 +1,10 @@
 
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Edit, Trash, Plus, Upload, Search, Sparkles } from "lucide-react";
 import { FacelessIdeaInfo } from "@/services/facelessIdeaService";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Trash, Upload, AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface FacelessIdeasListProps {
   facelessIdeas: FacelessIdeaInfo[];
@@ -20,8 +12,9 @@ interface FacelessIdeasListProps {
   onEdit: (id: string) => void;
   onCreateNew: () => void;
   onDelete: (id: string) => void;
+  onDeleteMultiple: (ids: string[]) => void;
   onCsvUpload: (file: File) => void;
-  onDeleteMultiple?: (ids: string[]) => void;
+  onEnhanceDescription?: (id: string) => void;
 }
 
 export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
@@ -30,180 +23,203 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
   onEdit,
   onCreateNew,
   onDelete,
+  onDeleteMultiple,
   onCsvUpload,
-  onDeleteMultiple = () => {}
+  onEnhanceDescription
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      // Accept more file types including text files
-      if (file.type === "text/csv" || file.type === "text/tab-separated-values" || 
-          file.type === "text/plain" || file.name.endsWith('.csv') || 
-          file.name.endsWith('.tsv') || file.name.endsWith('.txt')) {
-        onCsvUpload(file);
-      } else {
-        alert("Please select a CSV, TSV, or text file");
-      }
-      // Reset the input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (selectAll) {
+  const [enhancingId, setEnhancingId] = useState<string | null>(null);
+  
+  const filteredIdeas = facelessIdeas.filter(idea => 
+    idea.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    idea.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(filteredIdeas.map(idea => idea.id));
+    } else {
       setSelectedIds([]);
-    } else {
-      setSelectedIds(facelessIdeas.map(idea => idea.id));
-    }
-    setSelectAll(!selectAll);
-  };
-
-  const handleSelectItem = (id: string) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(itemId => itemId !== id));
-      setSelectAll(false);
-    } else {
-      setSelectedIds([...selectedIds, id]);
-      if (selectedIds.length + 1 === facelessIdeas.length) {
-        setSelectAll(true);
-      }
     }
   };
-
+  
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(itemId => itemId !== id));
+    }
+  };
+  
   const handleDeleteSelected = () => {
     if (selectedIds.length === 0) return;
     
-    const confirmMessage = selectedIds.length === 1
-      ? "Are you sure you want to delete this idea?"
-      : `Are you sure you want to delete ${selectedIds.length} ideas?`;
-    
-    if (window.confirm(confirmMessage)) {
+    if (window.confirm(`Are you sure you want to delete ${selectedIds.length} selected ideas? This action cannot be undone.`)) {
       onDeleteMultiple(selectedIds);
       setSelectedIds([]);
-      setSelectAll(false);
+    }
+  };
+  
+  const handleCsvFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onCsvUpload(file);
+      // Reset the input value so the same file can be uploaded again if needed
+      e.target.value = '';
     }
   };
 
+  const handleEnhanceDescription = async (id: string) => {
+    if (!onEnhanceDescription) return;
+    
+    setEnhancingId(id);
+    try {
+      await onEnhanceDescription(id);
+    } finally {
+      setEnhancingId(null);
+    }
+  };
+  
   return (
     <div>
-      <div className="flex justify-between mb-6">
-        <h2 className="text-xl font-semibold">Available Faceless Ideas</h2>
-        <div className="flex gap-2">
-          <Button onClick={onCreateNew}>Add New Idea</Button>
-          <Button 
-            variant="outline" 
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV/TSV
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+        <h2 className="text-xl font-semibold">Faceless Content Ideas</h2>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={onCreateNew} className="flex items-center gap-1">
+            <Plus className="h-4 w-4" /> Add New
           </Button>
+          
+          <div className="relative">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-1"
+              onClick={() => document.getElementById('csv-upload')?.click()}
+            >
+              <Upload className="h-4 w-4" /> Import CSV
+            </Button>
+            <input
+              id="csv-upload"
+              type="file"
+              accept=".csv,.tsv,.txt"
+              className="hidden"
+              onChange={handleCsvFileUpload}
+            />
+          </div>
+          
           {selectedIds.length > 0 && (
             <Button 
               variant="destructive" 
               onClick={handleDeleteSelected}
+              className="flex items-center gap-1"
             >
-              <Trash className="h-4 w-4 mr-2" />
-              Delete Selected ({selectedIds.length})
+              <Trash className="h-4 w-4" /> Delete Selected ({selectedIds.length})
             </Button>
           )}
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
-            onChange={handleFileChange}
-            className="hidden"
+        </div>
+      </div>
+      
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Search ideas..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
           />
         </div>
       </div>
       
-      {loading ? (
-        <p>Loading faceless ideas...</p>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox 
-                  checked={selectAll && facelessIdeas.length > 0} 
-                  onCheckedChange={handleSelectAll}
-                  disabled={facelessIdeas.length === 0}
-                />
-              </TableHead>
-              <TableHead>ID</TableHead>
-              <TableHead>Niche Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {facelessIdeas.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">No faceless ideas found</TableCell>
-              </TableRow>
-            ) : (
-              facelessIdeas.map((idea) => (
-                <TableRow key={idea.id}>
-                  <TableCell>
-                    <Checkbox 
-                      checked={selectedIds.includes(idea.id)} 
-                      onCheckedChange={() => handleSelectItem(idea.id)}
+      <div className="border rounded-md overflow-hidden">
+        {loading ? (
+          <div className="py-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">Loading faceless ideas...</p>
+          </div>
+        ) : filteredIdeas.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="text-gray-500">No faceless ideas found</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.length === filteredIdeas.length && filteredIdeas.length > 0}
+                      onChange={handleSelectAll}
+                      className="h-4 w-4 rounded border-gray-300"
                     />
-                  </TableCell>
-                  <TableCell className="font-medium">{idea.id}</TableCell>
-                  <TableCell>{idea.label}</TableCell>
-                  <TableCell className="max-w-md truncate">
-                    {idea.description ? 
-                      idea.description.replace(/<[^>]*>/g, '').substring(0, 100) + (idea.description.length > 100 ? '...' : '') 
-                      : 'No description'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mr-2"
-                      onClick={() => onEdit(idea.id)}
-                    >
-                      Edit
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => onDelete(idea.id)}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
+                  </TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      )}
+              </TableHeader>
+              <TableBody>
+                {filteredIdeas.map((idea) => (
+                  <TableRow key={idea.id}>
+                    <TableCell>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.includes(idea.id)}
+                        onChange={(e) => handleSelectOne(idea.id, e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{idea.label}</TableCell>
+                    <TableCell className="font-mono text-sm">{idea.id}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => onEdit(idea.id)}
+                          title="Edit"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        
+                        {onEnhanceDescription && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEnhanceDescription(idea.id)}
+                            disabled={enhancingId === idea.id}
+                            title="Enhance Description with AI"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                          </Button>
+                        )}
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => onDelete(idea.id)}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-100"
+                          title="Delete"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
       
-      <div className="mt-6">
-        <Alert className="bg-amber-50 border-amber-200">
-          <AlertCircle className="h-4 w-4 text-amber-500" />
-          <AlertTitle className="text-amber-800">Import Format Instructions</AlertTitle>
-          <AlertDescription className="text-amber-700">
-            <p className="mb-2">
-              Your file should be tab-separated (TSV) with the following columns:
-            </p>
-            <div className="bg-white p-3 rounded border border-amber-200 overflow-x-auto mb-2">
-              <code className="text-xs whitespace-nowrap font-mono">
-                Niche Name &#9; AI Voice Software (Yes/No) &#9; Heavy Editing (Yes/No) &#9; Complexity Level (Low/Medium/High) &#9; Research Level (Low/Medium/High) &#9; Difficulty (Easy/Medium/Hard) &#9; Notes/Description &#9; Example Channel Name &#9; Example Channel URL
-              </code>
-            </div>
-            <p className="text-sm">
-              Only the "Niche Name" column is required. Each field should be separated by a tab character. If your file uses commas instead of tabs, the system will attempt to detect this automatically.
-            </p>
-          </AlertDescription>
-        </Alert>
+      <div className="mt-4 text-sm text-gray-500">
+        <p>CSV Import Format:</p>
+        <p className="text-xs mt-1">
+          Niche Name | AI Voice Software (Yes/No) | Heavy Editing (Yes/No) | Complexity Level (Low/Medium/High) | Research Level (Low/Medium/High) | Difficulty (Easy/Medium/Hard) | Notes/Description | Example Channel Name | Example Channel URL
+        </p>
       </div>
     </div>
   );

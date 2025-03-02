@@ -1,18 +1,20 @@
 
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import React from "react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FacelessIdeaInfo } from "@/services/facelessIdeaService";
+import { Button } from "@/components/ui/button";
 import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
+import { FacelessIdeaInfo } from "@/services/facelessIdeaService";
+import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FacelessIdeaFormProps {
   formData: FacelessIdeaInfo;
   selectedIdea: FacelessIdeaInfo | null;
   submitting: boolean;
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRichTextChange: (name: string, value: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
 }
 
@@ -25,144 +27,150 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
   onSubmit,
   onCancel
 }) => {
-  const [idError, setIdError] = useState<string | null>(null);
-  
-  // Debug log to check form data
-  useEffect(() => {
-    console.log("Faceless Idea Form Data:", formData);
-    console.log("Selected Idea:", selectedIdea);
-  }, [formData, selectedIdea]);
-  
-  const validateId = (value: string) => {
-    const regex = /^[a-z0-9_]+$/;
-    if (!regex.test(value)) {
-      return "ID must contain only lowercase letters, numbers, and underscores";
+  const [enhancing, setEnhancing] = React.useState(false);
+
+  const handleEnhanceDescription = async () => {
+    if (!formData.label) {
+      toast.error("Please enter a label first");
+      return;
     }
-    return null;
-  };
-  
-  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const error = validateId(value);
-    setIdError(error);
-    onInputChange(e);
-  };
-  
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
     
-    // Validate ID field before submission
-    if (!selectedIdea) {
-      const idValidationError = validateId(formData.id);
-      if (idValidationError) {
-        setIdError(idValidationError);
-        return;
+    setEnhancing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enhance-faceless-idea', {
+        body: { 
+          label: formData.label,
+          description: formData.description
+        }
+      });
+      
+      if (error) {
+        throw error;
       }
+      
+      if (data?.enhancedDescription) {
+        onRichTextChange('description', data.enhancedDescription);
+        toast.success("Description enhanced successfully!");
+      } else {
+        throw new Error("No enhanced description received");
+      }
+    } catch (error) {
+      console.error("Error enhancing description:", error);
+      toast.error("Failed to enhance description: " + (error instanceof Error ? error.message : "Unknown error"));
+    } finally {
+      setEnhancing(false);
     }
-    
-    // Set form data in dataset for the submit handler to access
-    (e.currentTarget as HTMLFormElement).dataset.formData = JSON.stringify(formData);
-    (e.currentTarget as HTMLFormElement).dataset.selectedIdea = JSON.stringify(selectedIdea);
-    
-    onSubmit(e);
   };
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-6">
-        {selectedIdea ? `Edit Faceless Idea: ${selectedIdea.label}` : "Create New Faceless Idea"}
-      </h2>
-      
-      <form onSubmit={handleFormSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="id">ID (slug)</Label>
-              <Input 
-                id="id" 
-                name="id" 
-                value={formData.id} 
-                onChange={handleIdChange}
-                placeholder="e.g. compilation_videos"
-                disabled={!!selectedIdea}
-                required
-                className={idError ? "border-red-500" : ""}
-              />
-              {idError ? (
-                <p className="text-sm text-red-500 mt-1">{idError}</p>
-              ) : !selectedIdea && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Use lowercase letters, numbers, and underscores only. This cannot be changed later.
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <Label htmlFor="label">Label</Label>
-              <Input 
-                id="label" 
-                name="label" 
-                value={formData.label} 
-                onChange={onInputChange}
-                placeholder="e.g. Compilation Videos"
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <RichTextEditor
-              id="description"
-              name="description"
-              label="Description"
-              value={formData.description || ''}
-              onChange={(name, value) => {
-                console.log(`Updating ${name} with value:`, value);
-                onRichTextChange(name, value);
-              }}
-              placeholder="Describe this faceless idea concept..."
-              className="min-h-[100px]"
-            />
-          </div>
+    <form onSubmit={onSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">
+          {selectedIdea ? "Edit Faceless Idea" : "Create New Faceless Idea"}
+        </h2>
+        
+        <div className="space-y-2">
+          <label htmlFor="id" className="block text-sm font-medium">
+            ID (lowercase, underscores only)
+          </label>
+          <Input
+            id="id"
+            name="id"
+            value={formData.id}
+            onChange={onInputChange}
+            placeholder="my_faceless_idea"
+            required
+            readOnly={!!selectedIdea}
+            className={selectedIdea ? "bg-gray-100" : ""}
+          />
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="label" className="block text-sm font-medium">
+            Label
+          </label>
+          <Input
+            id="label"
+            name="label"
+            value={formData.label}
+            onChange={onInputChange}
+            placeholder="My Faceless Idea"
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label htmlFor="description" className="block text-sm font-medium">
+              Description
+            </label>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleEnhanceDescription}
+              disabled={enhancing}
+              className="flex items-center gap-1"
+            >
+              <Sparkles className="h-4 w-4" />
+              {enhancing ? "Enhancing..." : "Enhance with AI"}
+            </Button>
+          </div>
+          <RichTextEditor
+            id="description"
+            name="description"
+            label=""
+            value={formData.description || ""}
+            onChange={onRichTextChange}
+            placeholder="Enter description..."
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="production" className="block text-sm font-medium">
+            How to Create
+          </label>
           <RichTextEditor
             id="production"
             name="production"
-            label="How to Create"
-            value={formData.production || ''}
-            onChange={(name, value) => {
-              console.log(`Updating ${name} with value:`, value);
-              onRichTextChange(name, value);
-            }}
-            placeholder="Describe how to create this type of content with step-by-step instructions..."
-            className="min-h-[200px]"
-          />
-          
-          <RichTextEditor
-            id="example"
-            name="example"
-            label="Example Ideas"
-            value={formData.example || ''}
-            onChange={(name, value) => {
-              console.log(`Updating ${name} with value:`, value);
-              onRichTextChange(name, value);
-            }}
-            placeholder="Provide examples of content ideas for this faceless idea concept..."
-            className="min-h-[100px]"
+            label=""
+            value={formData.production || ""}
+            onChange={onRichTextChange}
+            placeholder="Enter production details..."
           />
         </div>
         
-        <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={submitting || (idError !== null && !selectedIdea)}>
-            {submitting ? "Saving..." : (selectedIdea ? "Update Faceless Idea" : "Create Faceless Idea")}
-          </Button>
+        <div className="space-y-2">
+          <label htmlFor="example" className="block text-sm font-medium">
+            Examples
+          </label>
+          <RichTextEditor
+            id="example"
+            name="example"
+            label=""
+            value={formData.example || ""}
+            onChange={onRichTextChange}
+            placeholder="Enter examples..."
+          />
         </div>
-      </form>
-    </div>
+      </div>
+      
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel}
+          disabled={submitting}
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="submit" 
+          disabled={submitting}
+        >
+          {submitting ? "Saving..." : selectedIdea ? "Update" : "Create"}
+        </Button>
+      </div>
+    </form>
   );
 };

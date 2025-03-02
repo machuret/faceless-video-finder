@@ -32,7 +32,8 @@ export default function ManageFacelessIdeas() {
     handleDelete,
     handleDeleteMultiple,
     handleCancel,
-    handleCsvUpload
+    handleCsvUpload,
+    handleEnhanceDescription
   } = useFacelessIdeas();
 
   useEffect(() => {
@@ -89,6 +90,7 @@ export default function ManageFacelessIdeas() {
                 onDelete={handleDelete}
                 onDeleteMultiple={handleDeleteMultiple}
                 onCsvUpload={handleCsvUpload}
+                onEnhanceDescription={handleEnhanceDescription}
               />
             </Card>
           </TabsContent>

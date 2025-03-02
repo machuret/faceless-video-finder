@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { 
@@ -9,6 +10,7 @@ import {
 import { useFacelessIdeaFormState } from "./useFacelessIdeaFormState";
 import { useFormInputHandlers } from "./useFormInputHandlers";
 import { useFormSubmission } from "./useFormSubmission";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useFacelessIdeas = () => {
   const [facelessIdeas, setFacelessIdeas] = useState<FacelessIdeaInfo[]>([]);
@@ -108,6 +110,49 @@ export const useFacelessIdeas = () => {
     }
   };
   
+  const handleEnhanceDescription = async (ideaId: string) => {
+    try {
+      const idea = facelessIdeas.find(idea => idea.id === ideaId);
+      if (!idea) {
+        toast.error("Faceless idea not found");
+        return;
+      }
+      
+      const { data, error } = await supabase.functions.invoke('enhance-faceless-idea', {
+        body: { 
+          label: idea.label,
+          description: idea.description
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.enhancedDescription) {
+        // Update the description in the database
+        const { updateFacelessIdea } = await import("@/services/facelessIdeaService");
+        const updatedIdea = { ...idea, description: data.enhancedDescription };
+        await updateFacelessIdea(updatedIdea);
+        
+        // Update local state
+        setFacelessIdeas(prev => prev.map(i => 
+          i.id === ideaId ? { ...i, description: data.enhancedDescription } : i
+        ));
+        
+        // If we're editing this idea, update the form data
+        if (selectedIdea?.id === ideaId) {
+          setFormData(prev => ({ ...prev, description: data.enhancedDescription }));
+        }
+        
+        toast.success("Description enhanced successfully");
+      } else {
+        throw new Error("No enhanced description received");
+      }
+    } catch (error) {
+      console.error("Error enhancing description:", error);
+      toast.error("Error enhancing description: " + (error instanceof Error ? error.message : "Unknown error"));
+    }
+  };
+  
   const handleCsvUpload = async (file: File) => {
     try {
       const reader = new FileReader();
@@ -161,6 +206,7 @@ export const useFacelessIdeas = () => {
     handleDelete,
     handleDeleteMultiple,
     handleCancel,
-    handleCsvUpload
+    handleCsvUpload,
+    handleEnhanceDescription
   };
 };
