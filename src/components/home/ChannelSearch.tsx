@@ -31,7 +31,7 @@ interface ChannelSearchProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
   selectedCategory: ChannelCategory | "";
-  handleCategorySelect: (category: ChannelCategory) => void;
+  handleCategorySelect: (category: ChannelCategory | "") => void;
   channelCount: number;
 }
 

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Channel } from "@/types/youtube";
+import { Channel, ChannelCategory } from "@/types/youtube";
 import { toast } from "sonner";
 
 const CHANNELS_PER_PAGE = 9;
@@ -15,7 +15,7 @@ export const useChannels = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showFeatured, setShowFeatured] = useState(true);
 
-  const fetchChannels = async (selectedCategory: string = "", page: number = 1) => {
+  const fetchChannels = async (selectedCategory: ChannelCategory | "" = "", page: number = 1) => {
     setLoading(true);
     setError(null);
     try {
@@ -25,7 +25,7 @@ export const useChannels = () => {
         .select("id", { count: "exact" });
 
       if (selectedCategory) {
-        countQuery = countQuery.eq("channel_category", selectedCategory);
+        countQuery = countQuery.eq("channel_category", selectedCategory as ChannelCategory);
       }
 
       const { count, error: countError } = await countQuery;
@@ -43,7 +43,7 @@ export const useChannels = () => {
         .order("created_at", { ascending: false });
 
       if (selectedCategory) {
-        query = query.eq("channel_category", selectedCategory);
+        query = query.eq("channel_category", selectedCategory as ChannelCategory);
       }
 
       // Add pagination
