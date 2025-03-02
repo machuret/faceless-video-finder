@@ -16,7 +16,8 @@ export const useChannelFormState = (initialState: ChannelFormData = {
   channel_type: "",
   country: "",
   channel_category: "",
-  notes: ""
+  notes: "",
+  keywords: []
 }) => {
   const [loading, setLoading] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");

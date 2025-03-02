@@ -20,7 +20,7 @@ export const useChannelForm = () => {
     setFormData
   } = useChannelFormState();
 
-  const { handleChange, handleFieldChange, handleScreenshotChange } = 
+  const { handleChange, handleFieldChange, handleScreenshotChange, handleKeywordsChange } = 
     useChannelFormHandlers(formData, setFormData);
   
   const { fetchYoutubeData } = 
@@ -58,7 +58,8 @@ export const useChannelForm = () => {
         channel_type: "",
         country: "",
         channel_category: "",
-        notes: ""
+        notes: "",
+        keywords: []
       });
     }
   }, [channelId, setIsEditMode, fetchChannelData, setFormData]);
@@ -73,6 +74,7 @@ export const useChannelForm = () => {
     handleSubmit,
     handleChange,
     handleScreenshotChange,
-    handleFieldChange
+    handleFieldChange,
+    handleKeywordsChange
   };
 };

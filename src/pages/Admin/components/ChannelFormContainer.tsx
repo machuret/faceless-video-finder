@@ -14,7 +14,8 @@ const ChannelFormContainer = () => {
     handleSubmit,
     handleChange,
     handleScreenshotChange,
-    handleFieldChange
+    handleFieldChange,
+    handleKeywordsChange
   } = useChannelForm();
 
   return (
@@ -37,6 +38,7 @@ const ChannelFormContainer = () => {
         onSubmit={handleSubmit}
         onScreenshotChange={handleScreenshotChange}
         onFieldChange={handleFieldChange}
+        onKeywordsChange={handleKeywordsChange}
       />
     </div>
   );

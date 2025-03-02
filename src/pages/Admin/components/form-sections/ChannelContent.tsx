@@ -8,28 +8,34 @@ import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ChannelContentProps {
   description: string;
   screenshotUrl: string;
   channelTitle: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  keywords: string[] | undefined;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onScreenshotChange: (url: string) => void;
   onFieldChange: (name: string, value: string) => void;
+  onKeywordsChange: (keywords: string[]) => void;
 }
 
 const ChannelContent = ({
   description,
   screenshotUrl,
   channelTitle,
+  keywords = [],
   onChange,
   onScreenshotChange,
-  onFieldChange
+  onFieldChange,
+  onKeywordsChange
 }: ChannelContentProps) => {
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
+  const [keywordsInput, setKeywordsInput] = useState(keywords?.join(', ') || '');
   
   const handleDescriptionChange = (name: string, value: string) => {
-    console.log("Description change:", name, value);
+    console.log("Description change:", value);
     onFieldChange(name, value);
   };
 
@@ -39,6 +45,13 @@ const ChannelContent = ({
 
   const handleScreenshotUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onScreenshotChange(e.target.value);
+  };
+  
+  const handleKeywordsInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setKeywordsInput(e.target.value);
+    // Split by commas and trim each keyword
+    const keywordArray = e.target.value.split(',').map(keyword => keyword.trim()).filter(k => k !== '');
+    onKeywordsChange(keywordArray);
   };
   
   const generateKeywords = async () => {
@@ -65,8 +78,11 @@ const ChannelContent = ({
       console.log("AI keyword generation response:", data);
       
       if (data?.keywords && Array.isArray(data.keywords)) {
-        // Just display the keywords in a toast since we don't have a field for them yet
-        toast.success('Keywords generated: ' + data.keywords.join(', '));
+        // Update the keywords input field
+        setKeywordsInput(data.keywords.join(', '));
+        // Update the form data
+        onKeywordsChange(data.keywords);
+        toast.success('Keywords generated successfully!');
       } else {
         console.error('No keywords in response:', data);
         throw new Error('No keywords were generated');
@@ -132,6 +148,18 @@ const ChannelContent = ({
             placeholder="Enter channel description..."
             className="w-full"
           />
+        </div>
+        
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Keywords</label>
+          <Textarea
+            name="keywords"
+            value={keywordsInput}
+            onChange={handleKeywordsInputChange}
+            placeholder="Enter keywords separated by commas..."
+            className="w-full min-h-20"
+          />
+          <p className="text-xs text-gray-500">Enter keywords separated by commas (e.g. gaming, tutorials, educational)</p>
         </div>
       </div>
     </FormSection>

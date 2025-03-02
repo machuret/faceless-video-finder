@@ -29,7 +29,7 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
     console.log("TypeSelector - Current selected type:", selectedType);
   }, [selectedType]);
 
-  const handleSelect = (typeId: string) => {
+  const handleSelect = (typeId: DatabaseChannelType) => {
     console.log("TypeSelector - Selecting type:", typeId);
     onSelect(typeId);
     setOpen(false);
@@ -57,7 +57,6 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
           <DropdownMenuContent
             align="start"
             className="w-[300px] max-h-[300px] overflow-y-auto bg-white shadow-lg z-[100]"
-            forceMount
           >
             {dbChannelTypes.map((type) => (
               <DropdownMenuItem

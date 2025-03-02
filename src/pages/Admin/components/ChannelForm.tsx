@@ -25,15 +25,17 @@ export interface ChannelFormData {
   country?: string;
   channel_category?: string;
   notes?: string;
+  keywords?: string[];
 }
 
 interface ChannelFormProps {
   formData: ChannelFormData;
   loading: boolean;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onScreenshotChange: (url: string) => void;
   onFieldChange: (name: string, value: string) => void;
+  onKeywordsChange: (keywords: string[]) => void;
 }
 
 const ChannelForm = ({ 
@@ -42,7 +44,8 @@ const ChannelForm = ({
   onChange, 
   onSubmit, 
   onScreenshotChange,
-  onFieldChange 
+  onFieldChange,
+  onKeywordsChange
 }: ChannelFormProps) => {
   const isEditMode = !!formData.video_id && !!formData.channel_title;
 
@@ -105,9 +108,11 @@ const ChannelForm = ({
         description={formData.description}
         screenshotUrl={formData.screenshot_url}
         channelTitle={formData.channel_title}
+        keywords={formData.keywords}
         onChange={onChange}
         onScreenshotChange={onScreenshotChange}
         onFieldChange={onFieldChange}
+        onKeywordsChange={onKeywordsChange}
       />
 
       <ChannelStats

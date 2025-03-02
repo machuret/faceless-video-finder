@@ -8,7 +8,7 @@ export const useChannelFormHandlers = (
   setFormData: Dispatch<SetStateAction<ChannelFormData>>
 ) => {
   // Standard input handling
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     console.log(`Input change - ${name}: ${value}`);
     
@@ -43,6 +43,16 @@ export const useChannelFormHandlers = (
     }));
   };
 
+  // Keywords handler
+  const handleKeywordsChange = (keywords: string[]) => {
+    console.log("Keywords change:", keywords);
+    
+    setFormData(prev => ({
+      ...prev,
+      keywords
+    }));
+  };
+
   // Screenshot URL handler
   const handleScreenshotChange = (url: string) => {
     if (!url) {
@@ -62,6 +72,7 @@ export const useChannelFormHandlers = (
   return {
     handleChange,
     handleFieldChange,
+    handleKeywordsChange,
     handleScreenshotChange
   };
 };

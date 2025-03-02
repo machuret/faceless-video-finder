@@ -29,7 +29,7 @@ const CategorySelector = ({ selectedCategory, onSelect }: CategorySelectorProps)
     { id: "other", label: "Other" }
   ];
 
-  const handleSelect = (categoryId: string) => {
+  const handleSelect = (categoryId: ChannelCategory) => {
     console.log("CategorySelector - Selected category:", categoryId);
     onSelect(categoryId);
     setOpen(false);
@@ -60,7 +60,6 @@ const CategorySelector = ({ selectedCategory, onSelect }: CategorySelectorProps)
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             className="w-[calc(100vw-3rem)] sm:w-[400px] max-h-[300px] overflow-y-auto z-[100] bg-white shadow-lg"
-            forceMount
           >
             {categories.map((category) => (
               <DropdownMenuItem
