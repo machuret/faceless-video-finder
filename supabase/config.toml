@@ -45,9 +45,8 @@ site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://localhost:3000"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
-# After refreshing a token, how long the tokens are valid for, in seconds. Defaults to
-# auth.jwt_expiry.
-refresh_token_rotation_enabled = true
+# Enable refresh token rotation
+enable_refresh_token_rotation = true
 # Allow/disallow new user signups to your project.
 enable_signup = true
 
@@ -82,13 +81,16 @@ enabled = false
 client_id = ""
 # DO NOT commit your OAuth provider secret to git. Use the dashboard to set this env var.
 # secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
-# Additional scopes to request from this OAuth provider.
-scopes = ["name", "email"]
+# Additional OAuth scopes to request from apple provider
+additional_scopes = ["name", "email"]
 
+# Functions configuration
 [functions]
-# Port to use for Functions.
+# Function ports and settings
+[functions.serve]
 port = 54321
 
+# Individual function configurations
 [functions.generate-channel-content]
 verify_jwt = false
 
