@@ -81,8 +81,6 @@ enabled = false
 client_id = ""
 # DO NOT commit your OAuth provider secret to git. Use the dashboard to set this env var.
 # secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
-# Additional OAuth scopes to request from apple provider
-scopes = ["name", "email"]
 
 # Functions configuration
 [functions]
