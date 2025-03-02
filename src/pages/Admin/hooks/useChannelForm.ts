@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useChannelFormState } from "./useChannelFormState";
@@ -30,9 +29,8 @@ export const useChannelForm = () => {
     useChannelDataFetcher(setLoading, setFormData);
   
   const { handleSubmit } = 
-    useChannelFormSubmission(isEditMode, channelId, formData, setLoading);
+    useChannelFormSubmission(formData, setLoading);
 
-  // Initialize edit mode and fetch data if channelId exists
   useEffect(() => {
     console.log("🔍 Channel ID from URL params:", channelId);
     

@@ -7,7 +7,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
-import { ChannelType, channelTypes } from "@/components/youtube/channel-list/constants";
+import { channelTypes } from "@/components/youtube/channel-list/constants";
+import { ChannelType } from "@/types/youtube";
 
 interface TypeSelectorProps {
   selectedType: string | undefined;
