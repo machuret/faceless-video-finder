@@ -33,7 +33,10 @@ export const useIdeaEnhancement = (
       
       console.log("Response from enhance-faceless-idea:", { data, error });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Edge Function error:", error);
+        throw error;
+      }
       
       if (data?.enhancedDescription) {
         // Update the description in the database

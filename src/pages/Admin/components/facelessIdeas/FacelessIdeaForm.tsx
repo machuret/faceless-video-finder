@@ -4,9 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
 import { FacelessIdeaInfo } from "@/services/facelessIdeaService";
-import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface FacelessIdeaFormProps {
   formData: FacelessIdeaInfo;
@@ -16,6 +14,7 @@ interface FacelessIdeaFormProps {
   onRichTextChange: (name: string, value: string) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
+  onEnhanceDescription: (ideaId: string) => Promise<void>;
 }
 
 export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
@@ -25,47 +24,19 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
   onInputChange,
   onRichTextChange,
   onSubmit,
-  onCancel
+  onCancel,
+  onEnhanceDescription
 }) => {
   const [enhancing, setEnhancing] = React.useState(false);
 
-  const handleEnhanceDescription = async () => {
-    if (!formData.label) {
-      toast.error("Please enter a label first");
+  const handleEnhanceClick = async () => {
+    if (!formData.id || !formData.label) {
       return;
     }
     
     setEnhancing(true);
-    toast.info("Enhancing description...", { duration: 2000 });
-    
     try {
-      console.log("Calling enhance-faceless-idea function with:", { 
-        label: formData.label, 
-        description: formData.description 
-      });
-      
-      const { data, error } = await supabase.functions.invoke('enhance-faceless-idea', {
-        body: { 
-          label: formData.label,
-          description: formData.description
-        }
-      });
-      
-      console.log("Response from enhance-faceless-idea:", { data, error });
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data?.enhancedDescription) {
-        onRichTextChange('description', data.enhancedDescription);
-        toast.success("Description enhanced successfully!");
-      } else {
-        throw new Error("No enhanced description received");
-      }
-    } catch (error) {
-      console.error("Error enhancing description:", error);
-      toast.error("Failed to enhance description: " + (error instanceof Error ? error.message : "Unknown error"));
+      await onEnhanceDescription(formData.id);
     } finally {
       setEnhancing(false);
     }
@@ -117,8 +88,8 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
               type="button"
               size="sm"
               variant="outline"
-              onClick={handleEnhanceDescription}
-              disabled={enhancing}
+              onClick={handleEnhanceClick}
+              disabled={enhancing || !formData.id || !formData.label}
               className="flex items-center gap-1"
             >
               <Sparkles className="h-4 w-4" />
