@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -122,7 +121,18 @@ export const processCsvImport = async (csvData: string): Promise<{ success: numb
     const line = lines[i].trim();
     if (!line) continue;
     
+    // Split by tab character (TSV format)
     const values = line.split('\t').map(value => value.trim());
+    
+    // If we only have one value, try splitting by other common delimiters
+    if (values.length === 1) {
+      // Try comma as delimiter (CSV format)
+      const commaValues = line.split(',').map(value => value.trim());
+      if (commaValues.length > 1) {
+        // If comma splitting gives more values, use that instead
+        values.splice(0, values.length, ...commaValues);
+      }
+    }
     
     if (values.length < 1) {
       failed++;
@@ -133,14 +143,16 @@ export const processCsvImport = async (csvData: string): Promise<{ success: numb
       // Extract values based on the CSV format
       // Niche Name | AI Voice Software | Heavy Editing | Complexity Level | Research Level | Difficulty | Notes/Description | Example Channel Name | Example Channel URL
       const label = values[0] || '';
-      const aiVoice = values[1] || 'No';
-      const heavyEditing = values[2] || 'No';
-      const complexityLevel = values[3] || 'Medium';
-      const researchLevel = values[4] || 'Medium';
-      const difficulty = values[5] || 'Medium';
-      const description = values[6] || null;
-      const exampleChannelName = values[7] || null;
-      const exampleChannelUrl = values[8] || null;
+      const aiVoice = values.length > 1 ? values[1] || 'No' : 'No';
+      const heavyEditing = values.length > 2 ? values[2] || 'No' : 'No';
+      const complexityLevel = values.length > 3 ? values[3] || 'Medium' : 'Medium';
+      const researchLevel = values.length > 4 ? values[4] || 'Medium' : 'Medium';
+      const difficulty = values.length > 5 ? values[5] || 'Medium' : 'Medium';
+      const description = values.length > 6 ? values[6] || null : null;
+      const exampleChannelName = values.length > 7 ? values[7] || null : null;
+      const exampleChannelUrl = values.length > 8 ? values[8] || null : null;
+      
+      console.log("Importing row:", { label, aiVoice, heavyEditing, complexityLevel, researchLevel, difficulty });
       
       if (!label) {
         failed++;

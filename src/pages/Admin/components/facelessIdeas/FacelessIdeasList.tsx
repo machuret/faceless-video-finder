@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/table";
 import { FacelessIdeaInfo } from "@/services/facelessIdeaService";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash, Upload } from "lucide-react";
+import { Trash, Upload, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface FacelessIdeasListProps {
   facelessIdeas: FacelessIdeaInfo[];
@@ -39,10 +40,13 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.type === "text/csv" || file.type === "text/tab-separated-values" || file.name.endsWith('.csv') || file.name.endsWith('.tsv')) {
+      // Accept more file types including text files
+      if (file.type === "text/csv" || file.type === "text/tab-separated-values" || 
+          file.type === "text/plain" || file.name.endsWith('.csv') || 
+          file.name.endsWith('.tsv') || file.name.endsWith('.txt')) {
         onCsvUpload(file);
       } else {
-        alert("Please select a CSV or TSV file");
+        alert("Please select a CSV, TSV, or text file");
       }
       // Reset the input
       if (fileInputRef.current) {
@@ -111,7 +115,7 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
           <input
             type="file"
             ref={fileInputRef}
-            accept=".csv,.tsv,text/csv,text/tab-separated-values"
+            accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
             onChange={handleFileChange}
             className="hidden"
           />
@@ -183,16 +187,23 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
       )}
       
       <div className="mt-6">
-        <h3 className="text-lg font-medium mb-2">CSV/TSV Import Format</h3>
-        <p className="text-sm text-gray-600 mb-2">
-          Your file should have the following tab-separated columns:
-        </p>
-        <p className="text-sm text-gray-600 font-mono bg-gray-100 p-2 rounded">
-          Niche Name | AI Voice Software (Yes/No) | Heavy Editing (Yes/No) | Complexity Level (Low/Medium/High) | Research Level (Low/Medium/High) | Difficulty (Easy/Medium/Hard) | Notes/Description | Example Channel Name | Example Channel URL
-        </p>
-        <p className="text-sm text-gray-600 mt-2">
-          Only the "Niche Name" column is required. An ID will be automatically generated from the niche name.
-        </p>
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-500" />
+          <AlertTitle className="text-amber-800">Import Format Instructions</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            <p className="mb-2">
+              Your file should be tab-separated (TSV) with the following columns:
+            </p>
+            <div className="bg-white p-3 rounded border border-amber-200 overflow-x-auto mb-2">
+              <code className="text-xs whitespace-nowrap font-mono">
+                Niche Name &#9; AI Voice Software (Yes/No) &#9; Heavy Editing (Yes/No) &#9; Complexity Level (Low/Medium/High) &#9; Research Level (Low/Medium/High) &#9; Difficulty (Easy/Medium/Hard) &#9; Notes/Description &#9; Example Channel Name &#9; Example Channel URL
+              </code>
+            </div>
+            <p className="text-sm">
+              Only the "Niche Name" column is required. Each field should be separated by a tab character. If your file uses commas instead of tabs, the system will attempt to detect this automatically.
+            </p>
+          </AlertDescription>
+        </Alert>
       </div>
     </div>
   );

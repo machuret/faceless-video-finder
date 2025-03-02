@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { 
@@ -16,7 +15,6 @@ export const useFacelessIdeas = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("list");
 
-  // Initialize form state
   const initialFormState: FacelessIdeaInfo = {
     id: "",
     label: "",
@@ -25,7 +23,6 @@ export const useFacelessIdeas = () => {
     example: null
   };
 
-  // Use the custom hooks for form state management
   const { formData, setFormData, selectedIdea, setSelectedIdea } = 
     useFacelessIdeaFormState(initialFormState);
     
@@ -67,7 +64,6 @@ export const useFacelessIdeas = () => {
     }
   };
   
-  // Use the custom hook for form submission
   const { submitting, handleSubmit, handleCancel } = useFormSubmission(
     loadFacelessIdeas,
     setActiveTab,
@@ -82,7 +78,6 @@ export const useFacelessIdeas = () => {
         const { deleteFacelessIdea } = await import("@/services/facelessIdeaService");
         await deleteFacelessIdea(id);
         
-        // Update local state
         setFacelessIdeas(prev => prev.filter(idea => idea.id !== id));
         
         toast.success("Faceless idea deleted successfully");
@@ -98,12 +93,10 @@ export const useFacelessIdeas = () => {
       setLoading(true);
       const { deleteFacelessIdea } = await import("@/services/facelessIdeaService");
       
-      // Delete each idea one by one
       for (const id of ids) {
         await deleteFacelessIdea(id);
       }
       
-      // Update local state
       setFacelessIdeas(prev => prev.filter(idea => !ids.includes(idea.id)));
       
       toast.success(`Successfully deleted ${ids.length} faceless idea${ids.length === 1 ? '' : 's'}`);
@@ -123,6 +116,12 @@ export const useFacelessIdeas = () => {
         if (!e.target?.result) return;
         
         const csvContent = e.target.result as string;
+        console.log("CSV content first 100 chars:", csvContent.substring(0, 100));
+        
+        const lines = csvContent.split('\n').slice(0, 3);
+        console.log("First 3 lines:");
+        lines.forEach((line, i) => console.log(`Line ${i}:`, line));
+        
         const result = await processCsvImport(csvContent);
         
         if (result.success > 0) {
@@ -142,7 +141,6 @@ export const useFacelessIdeas = () => {
     }
   };
   
-  // Initial load of faceless ideas
   useEffect(() => {
     loadFacelessIdeas();
   }, []);
