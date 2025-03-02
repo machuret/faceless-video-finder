@@ -24,15 +24,18 @@ const CHANNELS_PER_PAGE = 9; // Number of channels to display per page
 
 const Index = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [featuredChannels, setFeaturedChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<ChannelCategory | "">("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalChannels, setTotalChannels] = useState(0);
+  const [showFeatured, setShowFeatured] = useState(true);
 
   useEffect(() => {
     fetchChannels();
+    fetchFeaturedChannels();
   }, [selectedCategory, currentPage]);
 
   useEffect(() => {
@@ -87,6 +90,7 @@ const Index = () => {
         ...channel,
         // Ensure metadata is properly typed
         metadata: channel.metadata as Channel['metadata'],
+        is_featured: channel.is_featured || false,
       })) as Channel[];
 
       setChannels(typedChannels);
@@ -97,6 +101,34 @@ const Index = () => {
       setChannels([]); // Reset to empty array on error
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFeaturedChannels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("youtube_channels")
+        .select("*, videoStats:youtube_video_stats(*)")
+        .eq("is_featured", true)
+        .limit(3);
+
+      if (error) {
+        throw error;
+      }
+
+      // Properly type-cast the data
+      const typedChannels = data.map(channel => ({
+        ...channel,
+        // Ensure metadata is properly typed
+        metadata: channel.metadata as Channel['metadata'],
+        is_featured: true,
+      })) as Channel[];
+
+      setFeaturedChannels(typedChannels);
+    } catch (error: any) {
+      console.error("Error fetching featured channels:", error);
+      // Don't show error for featured channels, just set to empty
+      setFeaturedChannels([]);
     }
   };
 
@@ -174,6 +206,20 @@ const Index = () => {
         <HeroSection />
 
         <div className="container mx-auto px-4 py-16">
+          {featuredChannels.length > 0 && showFeatured && (
+            <div className="mb-16">
+              <h2 className="font-crimson text-3xl font-bold text-gray-800 mb-6">
+                Featured Channels
+              </h2>
+              <ChannelGrid 
+                channels={featuredChannels}
+                loading={false}
+                resetFilters={() => {}}
+                isFeatured={true}
+              />
+            </div>
+          )}
+
           <ChannelSearch 
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
@@ -193,6 +239,7 @@ const Index = () => {
             channels={filteredChannels}
             loading={loading}
             resetFilters={resetFilters}
+            isFeatured={false}
           />
           
           {/* Pagination */}

@@ -11,7 +11,7 @@ const HeroSection = () => {
           <span className="text-yellow-300">faceless YouTube channel</span>
         </h1>
         <p className="text-xl mb-8 text-blue-100 max-w-3xl mx-auto">
-          Find trending niches, estimate earnings, and analyze growth potential
+          Faceless Finder helps you find trending niches, estimate earnings, and analyze growth potential
           all in one place. Start your faceless YouTube journey today.
         </p>
         <div className="flex justify-center mb-6">

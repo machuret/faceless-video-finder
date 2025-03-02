@@ -1,5 +1,5 @@
 
-import { Home, BookOpen, Mail, HelpCircle, GraduationCap, Info, Calculator, Menu, X } from "lucide-react";
+import { Home, BookOpen, Mail, HelpCircle, GraduationCap, Info, Calculator, Menu, X, Video, Lightbulb, GridIcon } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,8 @@ const MainNavbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Home className="h-6 w-6 text-blue-600" />
-            <span className="font-crimson text-2xl font-bold text-gray-900">YT Channel Explorer</span>
+            <Video className="h-6 w-6 text-blue-600" />
+            <span className="font-crimson text-2xl font-bold text-gray-900">Faceless Finder</span>
           </Link>
           
           <nav className="hidden md:flex items-center gap-6">
@@ -31,13 +31,6 @@ const MainNavbar = () => {
               <span>Home</span>
             </Link>
             <Link 
-              to="/calculators" 
-              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/calculators') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
-            >
-              <Calculator className="h-4 w-4" />
-              <span>Calculators</span>
-            </Link>
-            <Link 
               to="/about" 
               className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/about') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
             >
@@ -45,11 +38,32 @@ const MainNavbar = () => {
               <span>About Us</span>
             </Link>
             <Link 
-              to="/how-it-works" 
-              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/how-it-works') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
+              to="/calculators" 
+              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/calculators') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
             >
-              <HelpCircle className="h-4 w-4" />
-              <span>How This Works</span>
+              <Calculator className="h-4 w-4" />
+              <span>Calculator</span>
+            </Link>
+            <Link 
+              to="/" 
+              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/channels') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
+            >
+              <GridIcon className="h-4 w-4" />
+              <span>Channels</span>
+            </Link>
+            <Link 
+              to="/faceless-channel-ideas" 
+              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/faceless-channel-ideas') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
+            >
+              <Lightbulb className="h-4 w-4" />
+              <span>Ideas</span>
+            </Link>
+            <Link 
+              to="/channel-types" 
+              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/channel-types') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Types</span>
             </Link>
             <Link 
               to="/training" 
@@ -57,13 +71,6 @@ const MainNavbar = () => {
             >
               <GraduationCap className="h-4 w-4" />
               <span>Training</span>
-            </Link>
-            <Link 
-              to="/channel-types" 
-              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/channel-types') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
-            >
-              <BookOpen className="h-4 w-4" />
-              <span>Channel Types</span>
             </Link>
             <Link 
               to="/contact" 
@@ -108,16 +115,6 @@ const MainNavbar = () => {
               </div>
             </Link>
             <Link 
-              to="/calculators" 
-              className={`block py-2 px-3 rounded-md ${isActive('/calculators') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-              onClick={toggleMobileMenu}
-            >
-              <div className="flex items-center">
-                <Calculator className="h-5 w-5 mr-2" />
-                <span>Calculators</span>
-              </div>
-            </Link>
-            <Link 
               to="/about" 
               className={`block py-2 px-3 rounded-md ${isActive('/about') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
               onClick={toggleMobileMenu}
@@ -128,13 +125,43 @@ const MainNavbar = () => {
               </div>
             </Link>
             <Link 
-              to="/how-it-works" 
-              className={`block py-2 px-3 rounded-md ${isActive('/how-it-works') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              to="/calculators" 
+              className={`block py-2 px-3 rounded-md ${isActive('/calculators') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
               onClick={toggleMobileMenu}
             >
               <div className="flex items-center">
-                <HelpCircle className="h-5 w-5 mr-2" />
-                <span>How This Works</span>
+                <Calculator className="h-5 w-5 mr-2" />
+                <span>Calculator</span>
+              </div>
+            </Link>
+            <Link 
+              to="/" 
+              className={`block py-2 px-3 rounded-md ${isActive('/channels') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <GridIcon className="h-5 w-5 mr-2" />
+                <span>Channels</span>
+              </div>
+            </Link>
+            <Link 
+              to="/faceless-channel-ideas" 
+              className={`block py-2 px-3 rounded-md ${isActive('/faceless-channel-ideas') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <Lightbulb className="h-5 w-5 mr-2" />
+                <span>Ideas</span>
+              </div>
+            </Link>
+            <Link 
+              to="/channel-types" 
+              className={`block py-2 px-3 rounded-md ${isActive('/channel-types') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              onClick={toggleMobileMenu}
+            >
+              <div className="flex items-center">
+                <BookOpen className="h-5 w-5 mr-2" />
+                <span>Types</span>
               </div>
             </Link>
             <Link 
@@ -145,16 +172,6 @@ const MainNavbar = () => {
               <div className="flex items-center">
                 <GraduationCap className="h-5 w-5 mr-2" />
                 <span>Training</span>
-              </div>
-            </Link>
-            <Link 
-              to="/channel-types" 
-              className={`block py-2 px-3 rounded-md ${isActive('/channel-types') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-              onClick={toggleMobileMenu}
-            >
-              <div className="flex items-center">
-                <BookOpen className="h-5 w-5 mr-2" />
-                <span>Channel Types</span>
               </div>
             </Link>
             <Link 

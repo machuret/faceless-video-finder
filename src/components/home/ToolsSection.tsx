@@ -13,7 +13,7 @@ const ToolsSection = () => {
             Tools & Resources
           </h2>
           <p className="font-lato text-gray-600 max-w-3xl mx-auto">
-            Explore our collection of free tools and resources designed to help you grow your YouTube channel and maximize your earnings.
+            Explore our collection of free tools and resources designed to help you grow your faceless YouTube channel and maximize your earnings.
           </p>
         </div>
 

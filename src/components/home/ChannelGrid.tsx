@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Channel, VideoStats } from "@/types/youtube";
 import VideoCard from "@/components/youtube/VideoCard";
 import { useInView } from "react-intersection-observer";
+import { Star } from "lucide-react";
 
 interface ChannelGridProps {
   channels: Channel[];
   loading: boolean;
   resetFilters: () => void;
+  isFeatured?: boolean;
 }
 
 // Lazy-loaded image component
@@ -42,7 +43,7 @@ const LazyImage = ({ src, alt, className }: { src: string; alt: string; classNam
   );
 };
 
-const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
+const ChannelGrid = ({ channels, loading, resetFilters, isFeatured = false }: ChannelGridProps) => {
   // State to track which videos to show (for progressive loading)
   const [visibleVideos, setVisibleVideos] = useState(3);
   const { ref: loadMoreRef, inView } = useInView({
@@ -69,13 +70,15 @@ const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
     return (
       <div className="bg-white rounded-lg shadow-md p-8 text-center">
         <p className="text-gray-600 text-lg font-lato">No channels found matching your criteria.</p>
-        <Button 
-          variant="outline" 
-          className="mt-4 font-montserrat"
-          onClick={resetFilters}
-        >
-          Reset filters
-        </Button>
+        {!isFeatured && (
+          <Button 
+            variant="outline" 
+            className="mt-4 font-montserrat"
+            onClick={resetFilters}
+          >
+            Reset filters
+          </Button>
+        )}
       </div>
     );
   }
@@ -91,7 +94,10 @@ const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
       {/* Channel Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {channels.map((channel) => (
-          <Card key={channel.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+          <Card 
+            key={channel.id} 
+            className={`hover:shadow-lg transition-shadow overflow-hidden ${isFeatured ? 'border-yellow-400 border-2' : ''}`}
+          >
             <Link to={`/channel/${channel.id}`}>
               <div className="aspect-video bg-gray-200 relative overflow-hidden">
                 {channel.screenshot_url ? (
@@ -103,6 +109,12 @@ const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
                 ) : (
                   <div className="flex items-center justify-center h-full bg-gray-100">
                     <p className="text-gray-400 font-lato">No screenshot</p>
+                  </div>
+                )}
+                {channel.is_featured && (
+                  <div className="absolute top-2 right-2 bg-yellow-400 text-white px-2 py-1 rounded-full flex items-center text-xs font-semibold">
+                    <Star className="h-3 w-3 mr-1" fill="white" />
+                    Featured
                   </div>
                 )}
               </div>
@@ -140,7 +152,7 @@ const ChannelGrid = ({ channels, loading, resetFilters }: ChannelGridProps) => {
       </div>
 
       {/* Featured Videos Section */}
-      {allVideos.length > 0 && (
+      {allVideos.length > 0 && !isFeatured && (
         <div className="mt-12">
           <h2 className="font-crimson text-2xl font-bold mb-6 text-gray-800">Featured Videos</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
