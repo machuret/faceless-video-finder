@@ -105,6 +105,7 @@ export default function ManageFacelessIdeas() {
                 onRichTextChange={handleRichTextChange}
                 onSubmit={handleSubmit}
                 onCancel={handleCancel}
+                onEnhanceDescription={handleEnhanceDescription}
               />
             </Card>
           </TabsContent>
