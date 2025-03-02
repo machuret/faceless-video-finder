@@ -57,9 +57,8 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Break circular type references by using a more specific assertion
-      const channelsData = data as unknown[];
-      setChannels(channelsData as Channel[]);
+      // Use a simple type assertion without nesting types
+      setChannels(data as any);
     } catch (error: any) {
       console.error("Error fetching channels:", error);
       toast.error("Failed to fetch channels");
@@ -82,9 +81,8 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Break circular type references by using a more specific assertion
-      const featuredData = data as unknown[];
-      setFeaturedChannels(featuredData as Channel[]);
+      // Use a simple type assertion without nesting types
+      setFeaturedChannels(data as any);
     } catch (error: any) {
       console.error("Error fetching featured channels:", error);
       setFeaturedChannels([]);
