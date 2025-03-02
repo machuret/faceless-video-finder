@@ -93,6 +93,8 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
         await onEnhanceMultiple(selectedIds);
       } finally {
         setEnhancingMultiple(false);
+        // Clear selection after enhancement is complete
+        setSelectedIds([]);
       }
     }
   };
