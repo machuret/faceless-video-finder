@@ -14,11 +14,14 @@ import ChannelDetails from './pages/ChannelDetails'
 import AdminLogin from './pages/Admin/AdminLogin'
 import Dashboard from './pages/Admin/Dashboard'
 import ManageChannelTypes from './pages/Admin/ManageChannelTypes'
+import ManageFacelessIdeas from './pages/Admin/ManageFacelessIdeas'
 import AddChannel from './pages/Admin/AddChannel'
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from './context/AuthContext'
 import ChannelTypes from './pages/ChannelTypes'
 import ChannelTypeDetails from './pages/ChannelTypeDetails'
+import FacelessIdeas from './pages/FacelessIdeas'
+import FacelessIdeaDetails from './pages/FacelessIdeaDetails'
 import NotFound from './pages/NotFound'
 import TrainingPage from './pages/Training'
 
@@ -40,12 +43,15 @@ function App() {
         <Route path="/channel/:channelId" element={<ChannelDetails />} />
         <Route path="/channel-types" element={<ChannelTypes />} />
         <Route path="/channel-types/:typeId" element={<ChannelTypeDetails />} />
+        <Route path="/faceless-ideas" element={<FacelessIdeas />} />
+        <Route path="/faceless-ideas/:ideaId" element={<FacelessIdeaDetails />} />
         <Route path="/training" element={<TrainingPage />} />
         
         {/* Admin routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/channel-types" element={<ManageChannelTypes />} />
+        <Route path="/admin/faceless-ideas" element={<ManageFacelessIdeas />} />
         <Route path="/admin/add-channel" element={<AddChannel />} />
         <Route path="/admin/edit-channel/:channelId" element={<AddChannel />} />
         

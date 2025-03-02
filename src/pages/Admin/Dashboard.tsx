@@ -87,6 +87,14 @@ export default function Dashboard() {
               Manage Channel Types
             </Button>
           </Card>
+          
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Faceless Ideas</h2>
+            <p className="text-gray-600 mb-4">Manage faceless content ideas for YouTube creators.</p>
+            <Button onClick={() => navigate("/admin/faceless-ideas")} className="w-full">
+              Manage Faceless Ideas
+            </Button>
+          </Card>
         </div>
         
         <ChannelList isAdmin={true} />
