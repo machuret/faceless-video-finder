@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { FacelessIdeaInfo } from "@/services/facelessIdeaService";
+import { FacelessIdeaInfo } from "@/services/facelessIdeas";
 
 export const useFacelessIdeaFormState = (initialState: FacelessIdeaInfo) => {
   const [formData, setFormData] = useState<FacelessIdeaInfo>(initialState);

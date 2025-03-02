@@ -3,7 +3,7 @@ import { useState } from "react";
 import { 
   FacelessIdeaInfo, 
   validateFacelessIdeaId 
-} from "@/services/facelessIdeaService";
+} from "@/services/facelessIdeas";
 import { toast } from "sonner";
 import { useFormValidation } from "./useFormValidation";
 import { useFormProcessing } from "./useFormProcessing";
@@ -25,14 +25,9 @@ export const useFormSubmission = (
     setSubmitting(true);
     
     try {
-      // Accessing formData and selectedIdea from props
-      const formData = (e.currentTarget as HTMLFormElement).dataset.formData 
-        ? JSON.parse((e.currentTarget as HTMLFormElement).dataset.formData) 
-        : null;
-        
-      const selectedIdea = (e.currentTarget as HTMLFormElement).dataset.selectedIdea 
-        ? JSON.parse((e.currentTarget as HTMLFormElement).dataset.selectedIdea) 
-        : null;
+      // Directly get formData and selectedIdea from the form's handler
+      const formData = (e.target as HTMLFormElement).formData as FacelessIdeaInfo;
+      const selectedIdea = (e.target as HTMLFormElement).selectedIdea as FacelessIdeaInfo | null;
       
       console.log("Form submission data:", formData);
       console.log("Selected idea:", selectedIdea);

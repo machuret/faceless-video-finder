@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { FacelessIdeaInfo, fetchFacelessIdeas } from "@/services/facelessIdeas";
+import { FacelessIdeaInfo } from "@/services/facelessIdeas";
+import { useDataFetching } from "./useDataFetching";
+import { useTabState } from "./useTabState";
 import { useFacelessIdeaFormState } from "./useFacelessIdeaFormState";
 import { useFormInputHandlers } from "./useFormInputHandlers";
 import { useFormSubmission } from "./useFormSubmission";
@@ -11,10 +11,6 @@ import { useCsvImport } from "./useCsvImport";
 import { useIdeaSelection } from "./useIdeaSelection";
 
 export const useFacelessIdeas = () => {
-  const [facelessIdeas, setFacelessIdeas] = useState<FacelessIdeaInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("list");
-
   const initialFormState: FacelessIdeaInfo = {
     id: "",
     label: "",
@@ -23,26 +19,26 @@ export const useFacelessIdeas = () => {
     example: null
   };
 
+  const { 
+    facelessIdeas, 
+    setFacelessIdeas, 
+    loading, 
+    setLoading, 
+    loadFacelessIdeas 
+  } = useDataFetching();
+  
+  const { activeTab, setActiveTab } = useTabState();
+  
   const { formData, setFormData, selectedIdea, setSelectedIdea } = 
     useFacelessIdeaFormState(initialFormState);
     
   const { handleInputChange, handleRichTextChange } = 
     useFormInputHandlers<FacelessIdeaInfo>(setFormData);
-    
-  const loadFacelessIdeas = async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const data = await fetchFacelessIdeas();
-      setFacelessIdeas(data);
-    } catch (error) {
-      console.error("Error loading faceless ideas:", error);
-      toast.error("Error loading faceless ideas");
-    } finally {
-      setLoading(false);
-    }
-  };
   
-  const { handleDelete, handleDeleteMultiple } = useIdeaDeletion(setFacelessIdeas, setLoading);
+  const { handleDelete, handleDeleteMultiple } = useIdeaDeletion(
+    setFacelessIdeas, 
+    setLoading
+  );
   
   const { handleEnhanceDescription, handleEnhanceMultiple } = useIdeaEnhancement(
     facelessIdeas, 
@@ -67,10 +63,6 @@ export const useFacelessIdeas = () => {
     setSelectedIdea,
     initialFormState
   );
-  
-  useEffect(() => {
-    loadFacelessIdeas();
-  }, []);
   
   return {
     facelessIdeas,
