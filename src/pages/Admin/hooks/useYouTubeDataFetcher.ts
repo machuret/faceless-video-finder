@@ -49,9 +49,9 @@ export const useYouTubeDataFetcher = (
         start_date: formattedStartDate,
         video_count: data.video_count?.toString() || "",
         cpm: "4",
-        channel_type: "",
+        channel_type: "other", // Set a valid default
         country: "",
-        channel_category: "",
+        channel_category: "other", // Set a valid default
         notes: ""
       });
 

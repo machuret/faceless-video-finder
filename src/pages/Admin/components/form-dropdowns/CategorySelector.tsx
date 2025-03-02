@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { ChannelCategory } from "@/types/youtube";
 
 interface CategorySelectorProps {
   selectedCategory: string | undefined;
@@ -16,22 +17,16 @@ interface CategorySelectorProps {
 const CategorySelector = ({ selectedCategory, onSelect }: CategorySelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Ensure these match the database enum values
   const channelCategories = [
-    { id: "entertainment", label: "Entertainment" },
-    { id: "education", label: "Education" },
-    { id: "gaming", label: "Gaming" },
-    { id: "sports", label: "Sports" },
-    { id: "music", label: "Music" },
-    { id: "news", label: "News & Politics" },
-    { id: "howto", label: "How-to & Style" },
-    { id: "tech", label: "Technology" },
-    { id: "travel", label: "Travel & Events" },
-    { id: "comedy", label: "Comedy" },
-    { id: "film", label: "Film & Animation" },
-    { id: "beauty", label: "Beauty & Fashion" },
-    { id: "food", label: "Food & Cooking" },
-    { id: "fitness", label: "Fitness & Health" },
-    { id: "other", label: "Other" },
+    { id: "entertainment" as ChannelCategory, label: "Entertainment" },
+    { id: "education" as ChannelCategory, label: "Education" },
+    { id: "gaming" as ChannelCategory, label: "Gaming" },
+    { id: "music" as ChannelCategory, label: "Music" },
+    { id: "news" as ChannelCategory, label: "News & Politics" },
+    { id: "sports" as ChannelCategory, label: "Sports" },
+    { id: "technology" as ChannelCategory, label: "Technology" },
+    { id: "other" as ChannelCategory, label: "Other" },
   ];
 
   const handleSelect = (categoryId: string) => {

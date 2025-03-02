@@ -2,6 +2,7 @@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChannelFormData } from "../components/ChannelForm";
+import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
 
 export const useChannelDataFetcher = (
   setLoading: React.Dispatch<React.SetStateAction<boolean>>,
@@ -38,6 +39,10 @@ export const useChannelDataFetcher = (
         ? new Date(data.start_date).toISOString().split('T')[0]
         : "";
 
+      // Ensure we're mapping from database types to UI types
+      const channelType = data.channel_type || "";
+      const channelCategory = data.channel_category || "";
+
       const formData = {
         video_id: data.video_id || "",
         channel_title: data.channel_title || "",
@@ -49,9 +54,9 @@ export const useChannelDataFetcher = (
         start_date: formattedStartDate,
         video_count: data.video_count?.toString() || "",
         cpm: data.cpm?.toString() || "4",
-        channel_type: data.channel_type || "",
+        channel_type: channelType,
         country: data.country || "",
-        channel_category: data.channel_category || "",
+        channel_category: channelCategory,
         notes: data.notes || ""
       };
       

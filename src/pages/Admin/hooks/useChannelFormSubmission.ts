@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChannelFormData } from "../components/ChannelForm";
+import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
 
 export const useChannelFormSubmission = (
   isEditMode: boolean,
@@ -21,6 +22,13 @@ export const useChannelFormSubmission = (
         throw new Error("Please fill in all required fields: Channel ID, Title, and URL");
       }
 
+      // Validated channel type and category to ensure they match the enum types
+      const validatedChannelType = validateChannelType(formData.channel_type);
+      const validatedChannelCategory = validateChannelCategory(formData.channel_category);
+
+      console.log("Validated channel type:", validatedChannelType);
+      console.log("Validated channel category:", validatedChannelCategory);
+
       const dataToSubmit = {
         video_id: formData.video_id.trim(),
         channel_title: formData.channel_title.trim(),
@@ -32,9 +40,9 @@ export const useChannelFormSubmission = (
         start_date: formData.start_date || null,
         video_count: formData.video_count ? parseInt(formData.video_count) : null,
         cpm: formData.cpm ? parseFloat(formData.cpm) : 4,
-        channel_type: formData.channel_type || "other",
+        channel_type: validatedChannelType,
         country: formData.country || null,
-        channel_category: formData.channel_category || "other",
+        channel_category: validatedChannelCategory,
         notes: formData.notes || null
       };
 
@@ -49,7 +57,7 @@ export const useChannelFormSubmission = (
       if (isEditMode && channelId) {
         console.log("🔄 UPDATE OPERATION - Channel ID:", channelId);
         
-        // Use upsert with explicit ID to ensure update works
+        // Use update with explicit ID to ensure update works
         result = await supabase
           .from("youtube_channels")
           .update(dataToSubmit)
@@ -86,6 +94,41 @@ export const useChannelFormSubmission = (
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to validate channel type
+  const validateChannelType = (type?: string): DatabaseChannelType | null => {
+    if (!type) return null;
+    
+    const validTypes: DatabaseChannelType[] = ["creator", "brand", "media", "other"];
+    
+    // If the type is already valid, return it
+    if (validTypes.includes(type as DatabaseChannelType)) {
+      return type as DatabaseChannelType;
+    }
+    
+    // Default to "other" for unrecognized types
+    console.warn(`Channel type "${type}" is not a valid database type. Using "other" instead.`);
+    return "other";
+  };
+
+  // Helper function to validate channel category
+  const validateChannelCategory = (category?: string): ChannelCategory | null => {
+    if (!category) return null;
+    
+    const validCategories: ChannelCategory[] = [
+      "entertainment", "education", "gaming", "music", 
+      "news", "sports", "technology", "other"
+    ];
+    
+    // If the category is already valid, return it
+    if (validCategories.includes(category as ChannelCategory)) {
+      return category as ChannelCategory;
+    }
+    
+    // Default to "other" for unrecognized categories
+    console.warn(`Channel category "${category}" is not a valid database category. Using "other" instead.`);
+    return "other";
   };
 
   return { handleSubmit };
