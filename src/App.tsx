@@ -1,4 +1,3 @@
-
 import React from 'react'
 import { Route, Routes, Navigate } from 'react-router-dom'
 import Index from './pages/Index'
@@ -22,6 +21,7 @@ import ChannelTypes from './pages/ChannelTypes'
 import ChannelTypeDetails from './pages/ChannelTypeDetails'
 import FacelessIdeas from './pages/FacelessIdeas'
 import FacelessIdeaDetails from './pages/FacelessIdeaDetails'
+import FacelessChannelIdeas from "./pages/FacelessChannelIdeas"
 import NotFound from './pages/NotFound'
 import TrainingPage from './pages/Training'
 
@@ -45,6 +45,7 @@ function App() {
         <Route path="/channel-types/:typeId" element={<ChannelTypeDetails />} />
         <Route path="/faceless-ideas" element={<FacelessIdeas />} />
         <Route path="/faceless-ideas/:ideaId" element={<FacelessIdeaDetails />} />
+        <Route path="/faceless-channel-ideas" element={<FacelessChannelIdeas />} />
         <Route path="/training" element={<TrainingPage />} />
         
         {/* Admin routes */}
