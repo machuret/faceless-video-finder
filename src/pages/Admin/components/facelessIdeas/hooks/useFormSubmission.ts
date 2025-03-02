@@ -1,21 +1,24 @@
 
-import { useState, Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 import { 
   FacelessIdeaInfo, 
-  createFacelessIdea, 
-  updateFacelessIdea,
   validateFacelessIdeaId 
 } from "@/services/facelessIdeaService";
 import { toast } from "sonner";
+import { useFormValidation } from "./useFormValidation";
+import { useFormProcessing } from "./useFormProcessing";
 
 export const useFormSubmission = (
   refreshFacelessIdeas: () => Promise<void>,
   setActiveTab: (tab: string) => void,
-  setFormData: Dispatch<SetStateAction<FacelessIdeaInfo>>,
-  setSelectedIdea: Dispatch<SetStateAction<FacelessIdeaInfo | null>>,
+  setFormData: React.Dispatch<React.SetStateAction<FacelessIdeaInfo>>,
+  setSelectedIdea: React.Dispatch<React.SetStateAction<FacelessIdeaInfo | null>>,
   initialFormState: FacelessIdeaInfo
 ) => {
   const [submitting, setSubmitting] = useState(false);
+  
+  const { validateForm } = useFormValidation();
+  const { processFormSubmission } = useFormProcessing(refreshFacelessIdeas);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,31 +37,15 @@ export const useFormSubmission = (
       console.log("Form submission data:", formData);
       console.log("Selected idea:", selectedIdea);
       
-      // Determine if we're creating or updating based on if we have a selected idea
-      if (!selectedIdea) {
-        // Creating new faceless idea
-        if (!validateFacelessIdeaId(formData.id)) {
-          toast.error("ID must contain only lowercase letters, numbers, and underscores");
-          setSubmitting(false);
-          return;
-        }
-        
-        console.log("Creating new faceless idea:", formData);
-        const result = await createFacelessIdea(formData);
-        console.log("Creation result:", result);
-        
-        toast.success(`Successfully created faceless idea: ${formData.label}`);
-      } else {
-        // Updating existing faceless idea
-        console.log("Updating faceless idea:", formData);
-        const result = await updateFacelessIdea(formData);
-        console.log("Update result:", result);
-        
-        toast.success(`Successfully updated faceless idea: ${formData.label}`);
+      // Validate form data before submission
+      const isValid = validateForm(formData, selectedIdea);
+      if (!isValid) {
+        setSubmitting(false);
+        return;
       }
       
-      // Refresh the list of faceless ideas
-      await refreshFacelessIdeas();
+      // Process the form submission (create or update)
+      await processFormSubmission(formData, selectedIdea);
       
       // Reset form and redirect to list view
       setFormData(initialFormState);
