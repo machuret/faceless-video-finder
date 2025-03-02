@@ -25,6 +25,10 @@ serve(async (req) => {
     console.log(`Enhancing description for: ${label}`);
     console.log(`Original description: ${description || 'None'}`);
 
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key is not configured. Please set the OPENAI_API_KEY environment variable.');
+    }
+
     // Call OpenAI API to enhance the description
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

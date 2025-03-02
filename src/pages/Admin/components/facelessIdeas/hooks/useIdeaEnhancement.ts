@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { FacelessIdeaInfo } from "@/services/facelessIdeaService";
+import { FacelessIdeaInfo, updateFacelessIdea } from "@/services/facelessIdeaService";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useIdeaEnhancement = (
@@ -17,12 +17,19 @@ export const useIdeaEnhancement = (
         return;
       }
       
+      console.log("Calling enhance-faceless-idea function with:", { 
+        label: idea.label, 
+        description: idea.description 
+      });
+      
       const { data, error } = await supabase.functions.invoke('enhance-faceless-idea', {
         body: { 
           label: idea.label,
           description: idea.description
         }
       });
+      
+      console.log("Response from enhance-faceless-idea:", { data, error });
       
       if (error) throw error;
       

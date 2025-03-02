@@ -9,25 +9,41 @@ export const useFormProcessing = (
     formData: FacelessIdeaInfo,
     selectedIdea: FacelessIdeaInfo | null
   ): Promise<void> => {
-    // Determine if we're creating or updating based on if we have a selected idea
-    if (!selectedIdea) {
-      // Creating new faceless idea
-      console.log("Creating new faceless idea:", formData);
-      const result = await createFacelessIdea(formData);
-      console.log("Creation result:", result);
+    try {
+      // Ensure data is properly formatted
+      const processedFormData = {
+        ...formData,
+        id: formData.id.trim(),
+        label: formData.label.trim(),
+        description: formData.description || null,
+        production: formData.production || null,
+        example: formData.example || null
+      };
       
-      toast.success(`Successfully created faceless idea: ${formData.label}`);
-    } else {
-      // Updating existing faceless idea
-      console.log("Updating faceless idea:", formData);
-      const result = await updateFacelessIdea(formData);
-      console.log("Update result:", result);
+      // Determine if we're creating or updating based on if we have a selected idea
+      if (!selectedIdea) {
+        // Creating new faceless idea
+        console.log("Creating new faceless idea:", processedFormData);
+        const result = await createFacelessIdea(processedFormData);
+        console.log("Creation result:", result);
+        
+        toast.success(`Successfully created faceless idea: ${processedFormData.label}`);
+      } else {
+        // Updating existing faceless idea
+        console.log("Updating faceless idea:", processedFormData);
+        const result = await updateFacelessIdea(processedFormData);
+        console.log("Update result:", result);
+        
+        toast.success(`Successfully updated faceless idea: ${processedFormData.label}`);
+      }
       
-      toast.success(`Successfully updated faceless idea: ${formData.label}`);
+      // Refresh the list of faceless ideas
+      await refreshFacelessIdeas();
+    } catch (error) {
+      console.error("Error processing form submission:", error);
+      toast.error("Error: " + (error instanceof Error ? error.message : "Unknown error occurred"));
+      throw error; // Re-throw to allow the calling code to handle it
     }
-    
-    // Refresh the list of faceless ideas
-    await refreshFacelessIdeas();
   };
   
   return { processFormSubmission };
