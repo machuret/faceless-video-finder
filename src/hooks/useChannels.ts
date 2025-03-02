@@ -57,7 +57,8 @@ export const useChannels = () => {
         throw error;
       }
 
-      setChannels(data as Channel[]);
+      // Use type assertion to resolve the circular reference issue
+      setChannels(data as unknown as Channel[]);
     } catch (error: any) {
       console.error("Error fetching channels:", error);
       toast.error("Failed to fetch channels");
@@ -80,7 +81,8 @@ export const useChannels = () => {
         throw error;
       }
 
-      setFeaturedChannels(data as Channel[]);
+      // Use type assertion to resolve the circular reference issue
+      setFeaturedChannels(data as unknown as Channel[]);
     } catch (error: any) {
       console.error("Error fetching featured channels:", error);
       setFeaturedChannels([]);
