@@ -34,9 +34,11 @@ const ChannelStats = ({
         <Input
           name="total_subscribers"
           placeholder="Total Subscribers"
-          type="text"
+          type="number"
           value={totalSubscribers}
           onChange={onChange}
+          min="0"
+          step="1"
         />
       </div>
       <div>
@@ -44,9 +46,11 @@ const ChannelStats = ({
         <Input
           name="total_views"
           placeholder="Total Views"
-          type="text"
+          type="number"
           value={totalViews}
           onChange={onChange}
+          min="0"
+          step="1"
         />
       </div>
       <div>
@@ -54,9 +58,11 @@ const ChannelStats = ({
         <Input
           name="video_count"
           placeholder="Number of Videos"
-          type="text"
+          type="number"
           value={videoCount}
           onChange={onChange}
+          min="0"
+          step="1"
         />
       </div>
     </FormSection>
