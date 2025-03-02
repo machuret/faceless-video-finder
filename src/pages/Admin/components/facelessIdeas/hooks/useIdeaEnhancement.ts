@@ -17,6 +17,8 @@ export const useIdeaEnhancement = (
         return;
       }
       
+      toast.info("Enhancing description...", { duration: 2000 });
+      
       console.log("Calling enhance-faceless-idea function with:", { 
         label: idea.label, 
         description: idea.description 
@@ -35,7 +37,6 @@ export const useIdeaEnhancement = (
       
       if (data?.enhancedDescription) {
         // Update the description in the database
-        const { updateFacelessIdea } = await import("@/services/facelessIdeaService");
         const updatedIdea = { ...idea, description: data.enhancedDescription };
         await updateFacelessIdea(updatedIdea);
         

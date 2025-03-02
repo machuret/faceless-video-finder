@@ -36,13 +36,22 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
     }
     
     setEnhancing(true);
+    toast.info("Enhancing description...", { duration: 2000 });
+    
     try {
+      console.log("Calling enhance-faceless-idea function with:", { 
+        label: formData.label, 
+        description: formData.description 
+      });
+      
       const { data, error } = await supabase.functions.invoke('enhance-faceless-idea', {
         body: { 
           label: formData.label,
           description: formData.description
         }
       });
+      
+      console.log("Response from enhance-faceless-idea:", { data, error });
       
       if (error) {
         throw error;

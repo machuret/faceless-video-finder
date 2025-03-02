@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
-import { getFacelessIdeaById, FacelessIdeaInfo } from "@/services/facelessIdeaService";
+import { getFacelessIdeaById, FacelessIdeaInfo, updateFacelessIdea } from "@/services/facelessIdeaService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -39,7 +39,14 @@ const FacelessIdeaDetails = () => {
     if (!idea) return;
     
     setEnhancing(true);
+    toast.info("Enhancing description...", { duration: 2000 });
+    
     try {
+      console.log("Calling enhance-faceless-idea function with:", { 
+        label: idea.label,
+        description: idea.description
+      });
+      
       const { data, error } = await supabase.functions.invoke('enhance-faceless-idea', {
         body: { 
           label: idea.label,
@@ -47,11 +54,18 @@ const FacelessIdeaDetails = () => {
         }
       });
       
+      console.log("Response from enhance-faceless-idea:", { data, error });
+      
       if (error) {
         throw error;
       }
       
       if (data?.enhancedDescription) {
+        // Save to database
+        const updatedIdea = { ...idea, description: data.enhancedDescription };
+        await updateFacelessIdea(updatedIdea);
+        
+        // Update local state
         setIdea(prev => prev ? {...prev, description: data.enhancedDescription} : null);
         toast.success("Description enhanced successfully!");
       } else {
