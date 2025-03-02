@@ -57,8 +57,8 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Use a simple type assertion without nesting types
-      setChannels(data as any);
+      // Fix: Use explicit type casting to Channel[]
+      setChannels(data as Channel[]);
     } catch (error: any) {
       console.error("Error fetching channels:", error);
       toast.error("Failed to fetch channels");
@@ -81,8 +81,8 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Use a simple type assertion without nesting types
-      setFeaturedChannels(data as any);
+      // Fix: Use explicit type casting to Channel[]
+      setFeaturedChannels(data as Channel[]);
     } catch (error: any) {
       console.error("Error fetching featured channels:", error);
       setFeaturedChannels([]);
