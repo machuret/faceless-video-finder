@@ -25,6 +25,7 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
 
   // Find the selected type for display
   const selectedTypeInfo = channelTypes.find(type => type.id === selectedType);
+  const displayValue = selectedTypeInfo ? selectedTypeInfo.label : "Select Type";
   
   return (
     <div className="mb-6">
@@ -35,15 +36,14 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
-              className="w-full justify-between"
-              onClick={() => setIsOpen(!isOpen)}
+              className="w-full justify-between bg-white"
             >
-              {selectedTypeInfo ? selectedTypeInfo.label : "Select Type"}
+              {displayValue}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="w-[300px] max-h-[300px] overflow-y-auto bg-white"
+            className="w-[300px] max-h-[300px] overflow-y-auto bg-white shadow-lg z-50"
           >
             {channelTypes.map((type) => (
               <DropdownMenuItem

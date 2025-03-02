@@ -39,9 +39,12 @@ export const useChannelDataFetcher = (
         ? new Date(data.start_date).toISOString().split('T')[0]
         : "";
 
-      // Map data types properly
+      // Set proper defaults for enum types
       const channelType = data.channel_type || "other";
       const channelCategory = data.channel_category || "other";
+      
+      console.log("Channel type from database:", channelType);
+      console.log("Channel category from database:", channelCategory);
 
       const formData = {
         video_id: data.video_id || "",

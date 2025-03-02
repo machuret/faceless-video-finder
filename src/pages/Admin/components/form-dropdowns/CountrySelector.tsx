@@ -23,6 +23,11 @@ const CountrySelector = ({ selectedCountry, onSelect }: CountrySelectorProps) =>
     setIsOpen(false);
   };
 
+  // Find the selected country for display
+  const selectedCountryName = selectedCountry 
+    ? countries.find(c => c.code === selectedCountry)?.name || 'Select Country'
+    : 'Select Country';
+
   return (
     <div className="mb-6">
       <h3 className="text-lg font-medium mb-3">Country</h3>
@@ -33,11 +38,8 @@ const CountrySelector = ({ selectedCountry, onSelect }: CountrySelectorProps) =>
             <Button 
               variant="outline" 
               className="w-full justify-between bg-white"
-              onClick={() => setIsOpen(true)}
             >
-              {selectedCountry ? 
-                countries.find(c => c.code === selectedCountry)?.name || 'Select Country' : 
-                'Select Country'}
+              {selectedCountryName}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
