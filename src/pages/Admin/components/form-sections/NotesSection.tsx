@@ -23,7 +23,7 @@ const NotesSection = ({ notes, channelType, onFieldChange }: NotesSectionProps) 
   }, [channelType]);
 
   return (
-    <FormSection title="Channel Notes">
+    <FormSection title="Gabriel Notes">
       {typeInfo && (
         <div className="mb-6 space-y-4">
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
