@@ -29,6 +29,7 @@ const ChannelContent = ({
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
   
   const handleDescriptionChange = (name: string, value: string) => {
+    console.log("Description change:", name, value);
     onFieldChange(name, value);
   };
 

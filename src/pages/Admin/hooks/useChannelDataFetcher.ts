@@ -1,62 +1,59 @@
 
-import { toast } from "sonner";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { ChannelFormData } from "../components/ChannelForm";
-import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
+import { DatabaseChannelType, ChannelCategory } from "@/types/youtube";
 
 export const useChannelDataFetcher = (
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setFormData: React.Dispatch<React.SetStateAction<ChannelFormData>>
+  setLoading: (loading: boolean) => void,
+  setFormData: (data: ChannelFormData) => void
 ) => {
-  const fetchChannelData = async (id: string) => {
-    setLoading(true);
-    console.log("🔍 FETCHING CHANNEL DATA - ID:", id);
-    
-    try {
-      if (!id) {
-        throw new Error("No channel ID provided");
-      }
+  const [error, setError] = useState<string | null>(null);
 
+  const fetchChannelData = async (channelId: string) => {
+    console.log("Fetching channel data for ID:", channelId);
+    setLoading(true);
+    setError(null);
+
+    try {
       const { data, error } = await supabase
         .from("youtube_channels")
         .select("*")
-        .eq("id", id)
-        .maybeSingle();
+        .eq("id", channelId)
+        .single();
 
       if (error) {
-        console.error("❌ Database error when fetching channel:", error);
-        throw new Error(`Error fetching channel: ${error.message}`);
+        console.error("Error fetching channel:", error);
+        setError(error.message);
+        toast.error(`Failed to fetch channel: ${error.message}`);
+        return;
       }
 
       if (!data) {
-        console.error("❌ Channel not found - ID:", id);
-        throw new Error(`Channel with ID ${id} not found`);
+        const notFoundMsg = `Channel with ID ${channelId} not found`;
+        console.error(notFoundMsg);
+        setError(notFoundMsg);
+        toast.error(notFoundMsg);
+        return;
       }
 
-      console.log("✅ Channel data retrieved successfully:", data);
+      console.log("Channel data fetched:", data);
 
-      const formattedStartDate = data.start_date 
-        ? new Date(data.start_date).toISOString().split('T')[0]
-        : "";
+      // Validate channel_type enum values
+      const validChannelTypes: DatabaseChannelType[] = ["creator", "brand", "media", "other"];
+      const channelType = data.channel_type && validChannelTypes.includes(data.channel_type as DatabaseChannelType) 
+        ? data.channel_type 
+        : "other";
 
-      // Explicitly validate channel_type and channel_category
-      const validTypes: DatabaseChannelType[] = ["creator", "brand", "media", "other"];
+      // Validate channel_category enum values
       const validCategories: ChannelCategory[] = ["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"];
-      
-      const channelType: DatabaseChannelType = validTypes.includes(data.channel_type as DatabaseChannelType) 
-        ? data.channel_type as DatabaseChannelType 
+      const channelCategory = data.channel_category && validCategories.includes(data.channel_category as ChannelCategory)
+        ? data.channel_category
         : "other";
-        
-      const channelCategory: ChannelCategory = validCategories.includes(data.channel_category as ChannelCategory)
-        ? data.channel_category as ChannelCategory
-        : "other";
-      
-      console.log("Raw channel type from database:", data.channel_type);
-      console.log("Processed channel type to use:", channelType);
-      console.log("Raw channel category from database:", data.channel_category);
-      console.log("Processed channel category to use:", channelCategory);
 
-      const formData = {
+      // Format the data for the form
+      const formattedData: ChannelFormData = {
         video_id: data.video_id || "",
         channel_title: data.channel_title || "",
         channel_url: data.channel_url || "",
@@ -64,28 +61,27 @@ export const useChannelDataFetcher = (
         screenshot_url: data.screenshot_url || "",
         total_subscribers: data.total_subscribers?.toString() || "",
         total_views: data.total_views?.toString() || "",
-        start_date: formattedStartDate,
+        start_date: data.start_date || "",
         video_count: data.video_count?.toString() || "",
         cpm: data.cpm?.toString() || "4",
-        channel_type: channelType,
-        country: data.country || "",
-        channel_category: channelCategory,
+        channel_type: channelType || undefined,
+        country: data.country || undefined,
+        channel_category: channelCategory || undefined,
         notes: data.notes || ""
       };
-      
-      console.log("📝 Setting form data with:", formData);
-      setFormData(formData);
-      setLoading(false);
 
+      console.log("Formatted channel data for form:", formattedData);
+      setFormData(formattedData);
       toast.success("Channel data loaded successfully");
-    } catch (error) {
-      console.error("❌ Error in fetchChannelData:", error);
-      toast.error(error instanceof Error 
-        ? error.message 
-        : "Failed to load channel data");
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "An unknown error occurred";
+      console.error("Unexpected error fetching channel:", err);
+      setError(errorMsg);
+      toast.error(`Error loading channel: ${errorMsg}`);
+    } finally {
       setLoading(false);
     }
   };
 
-  return { fetchChannelData };
+  return { fetchChannelData, error };
 };

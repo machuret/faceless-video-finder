@@ -21,7 +21,8 @@ export const useChannelFormHandlers = (
       'total_views': 'total_views',
       'start_date': 'start_date',
       'video_count': 'video_count',
-      'cpm': 'cpm'
+      'cpm': 'cpm',
+      'screenshot_url': 'screenshot_url'
     };
     
     const field = fieldMap[name] || name as keyof ChannelFormData;
