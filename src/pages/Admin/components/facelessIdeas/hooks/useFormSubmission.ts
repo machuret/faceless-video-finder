@@ -37,8 +37,8 @@ export const useFormSubmission = (
         example: document.getElementById('example')?.querySelector('.ProseMirror')?.innerHTML || ''
       } as FacelessIdeaInfo;
       
-      // Validate form data
-      if (!validateForm(currentFormData)) {
+      // Validate form data - pass both required arguments
+      if (!validateForm(currentFormData, document.querySelector('[readonly]') ? currentFormData : null)) {
         setSubmitting(false);
         return;
       }
