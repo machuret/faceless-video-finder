@@ -40,8 +40,8 @@ export const useChannelDataFetcher = (
         : "";
 
       // Explicitly validate channel_type and channel_category
-      const validTypes: DatabaseChannelType[] = ["creator", "brand", "publisher", "other"];
-      const validCategories: ChannelCategory[] = ["entertainment", "education", "business", "tech", "lifestyle", "other"];
+      const validTypes: DatabaseChannelType[] = ["creator", "brand", "media", "other"];
+      const validCategories: ChannelCategory[] = ["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"];
       
       const channelType: DatabaseChannelType = validTypes.includes(data.channel_type as DatabaseChannelType) 
         ? data.channel_type as DatabaseChannelType 

@@ -35,8 +35,6 @@ const ChannelStats = ({
           name="total_subscribers"
           placeholder="Total Subscribers"
           type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
           value={totalSubscribers}
           onChange={onChange}
         />
@@ -47,8 +45,6 @@ const ChannelStats = ({
           name="total_views"
           placeholder="Total Views"
           type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
           value={totalViews}
           onChange={onChange}
         />
@@ -59,8 +55,6 @@ const ChannelStats = ({
           name="video_count"
           placeholder="Number of Videos"
           type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
           value={videoCount}
           onChange={onChange}
         />

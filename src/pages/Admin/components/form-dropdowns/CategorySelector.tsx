@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
 import { ChannelCategory } from "@/types/youtube";
+import { channelCategories } from "@/components/youtube/channel-list/constants";
 
 interface CategorySelectorProps {
   selectedCategory: string | undefined;
@@ -17,26 +18,31 @@ interface CategorySelectorProps {
 const CategorySelector = ({ selectedCategory, onSelect }: CategorySelectorProps) => {
   const [open, setOpen] = useState(false);
 
-  // Ensure these match the database enum values
-  const channelCategories = [
-    { id: "entertainment" as ChannelCategory, label: "Entertainment" },
-    { id: "education" as ChannelCategory, label: "Education" },
-    { id: "gaming" as ChannelCategory, label: "Gaming" },
-    { id: "music" as ChannelCategory, label: "Music" },
-    { id: "news" as ChannelCategory, label: "News & Politics" },
-    { id: "sports" as ChannelCategory, label: "Sports" },
-    { id: "technology" as ChannelCategory, label: "Technology" },
-    { id: "other" as ChannelCategory, label: "Other" },
-  ];
-
   const handleSelect = (categoryId: string) => {
     console.log("CategorySelector - Selected category:", categoryId);
     onSelect(categoryId);
     setOpen(false);
   };
 
-  const selectedCategoryInfo = channelCategories.find(cat => cat.id === selectedCategory);
-  const displayValue = selectedCategoryInfo ? selectedCategoryInfo.label : "Select Category";
+  // Map category IDs to display labels
+  const categoryLabels: Record<string, string> = {
+    "entertainment": "Entertainment",
+    "education": "Education",
+    "gaming": "Gaming",
+    "music": "Music",
+    "news": "News & Politics",
+    "sports": "Sports",
+    "technology": "Technology",
+    "other": "Other"
+  };
+
+  const displayValue = selectedCategory && categoryLabels[selectedCategory] 
+    ? categoryLabels[selectedCategory] 
+    : "Select Category";
+
+  useEffect(() => {
+    console.log("CategorySelector - Current selected category:", selectedCategory);
+  }, [selectedCategory]);
 
   return (
     <div className="mb-6">
@@ -59,13 +65,13 @@ const CategorySelector = ({ selectedCategory, onSelect }: CategorySelectorProps)
           >
             {channelCategories.map((category) => (
               <DropdownMenuItem
-                key={category.id}
-                onClick={() => handleSelect(category.id)}
+                key={category}
+                onClick={() => handleSelect(category)}
                 className={`cursor-pointer hover:bg-gray-100 py-2 ${
-                  selectedCategory === category.id ? "bg-gray-100 font-medium" : ""
+                  selectedCategory === category ? "bg-gray-100 font-medium" : ""
                 }`}
               >
-                {category.label}
+                {categoryLabels[category] || category}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
