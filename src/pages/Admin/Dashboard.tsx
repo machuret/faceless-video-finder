@@ -13,9 +13,25 @@ import { ChannelList } from "@/components/youtube/channel-list/ChannelList";
 
 const DashboardHeader = () => {
   return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-bold font-crimson mb-2">Admin Dashboard</h1>
-      <p className="text-gray-600 font-lato">Manage your YouTube channels and application settings.</p>
+    <div className="sticky top-0 z-10 bg-white border-b border-gray-200 py-4 px-4 mb-6">
+      <div className="container mx-auto">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+            <p className="text-gray-600 text-sm">Manage your YouTube channels and application settings.</p>
+          </div>
+          <Button onClick={async () => {
+            try {
+              await supabase.auth.signOut();
+              toast.success("Logged out successfully");
+              window.location.href = "/admin/login";
+            } catch (error) {
+              console.error("Error logging out:", error);
+              toast.error("Error logging out");
+            }
+          }} variant="outline">Logout</Button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -38,17 +54,6 @@ export default function Dashboard() {
     }
   }, [user, isAdmin, loading, navigate]);
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast.success("Logged out successfully");
-      navigate("/admin/login");
-    } catch (error) {
-      console.error("Error logging out:", error);
-      toast.error("Error logging out");
-    }
-  };
-
   // If still loading or not authorized, show loading state
   if (loading || !isAdmin) {
     return (
@@ -64,12 +69,8 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <MainNavbar />
+      <DashboardHeader />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <DashboardHeader />
-          <Button onClick={handleLogout} variant="outline">Logout</Button>
-        </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Channels</h2>

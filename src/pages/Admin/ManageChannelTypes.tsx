@@ -9,6 +9,7 @@ import { useChannelTypes } from "./components/channelTypes/hooks/useChannelTypes
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import AdminHeader from "./components/AdminHeader";
 
 export default function ManageChannelTypes() {
   const navigate = useNavigate();
@@ -63,12 +64,11 @@ export default function ManageChannelTypes() {
   return (
     <div className="min-h-screen bg-gray-50">
       <MainNavbar />
+      <AdminHeader 
+        title="Manage Channel Types" 
+        subtitle="Create, edit, and delete channel types for your YouTube channels"
+      />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold font-crimson mb-2">Manage Channel Types</h1>
-          <p className="text-gray-600 font-lato">Create, edit, and delete channel types used for categorizing YouTube channels.</p>
-        </div>
-        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-6 w-full sm:w-auto">
             <TabsTrigger value="list">Channel Types List</TabsTrigger>
