@@ -84,7 +84,7 @@ export default function ManageFacelessIdeas() {
           <TabsContent value="list" className="mt-6">
             <Card className="p-6">
               <FacelessIdeasList
-                facelessIdeas={facelessIdeas}
+                ideas={facelessIdeas}
                 loading={loading}
                 onEdit={handleSelectIdea}
                 onCreateNew={handleCreateNew}
