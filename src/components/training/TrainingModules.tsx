@@ -44,12 +44,14 @@ const TrainingModules: React.FC = () => {
   ];
 
   return (
-    <div>
-      <h2 className="text-3xl font-crimson font-bold text-center mb-10">Training Modules</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        {trainingModules.map((module, index) => (
-          <TrainingModule key={index} {...module} />
-        ))}
+    <div className="bg-white py-16">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-crimson font-bold text-center mb-10">Training Modules</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          {trainingModules.map((module, index) => (
+            <TrainingModule key={index} {...module} />
+          ))}
+        </div>
       </div>
     </div>
   );
