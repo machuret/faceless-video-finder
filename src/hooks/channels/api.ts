@@ -87,7 +87,7 @@ export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
     if (!data || !Array.isArray(data)) return [];
     
     // Use a type assertion that completely bypasses TypeScript's circular reference detection
-    return processChannelsData(data as unknown as any[]);
+    return processChannelsData(data as any[]);
   } catch (error: any) {
     console.error("Error fetching featured channels:", error);
     return [];
