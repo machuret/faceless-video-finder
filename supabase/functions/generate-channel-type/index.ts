@@ -53,11 +53,13 @@ const getChannelTypeFromOpenAI = async (title: string, description: string) => {
       "found_footage_archival"
     ];
 
+    const cleanDescription = description ? description.replace(/<\/?[^>]+(>|$)/g, "") : "";
+
     const prompt = `
       Analyze this YouTube channel and determine the most likely channel type from the provided list.
       
       Channel Title: ${title}
-      Channel Description: ${description || "No description provided"}
+      Channel Description: ${cleanDescription || "No description provided"}
       
       Available Channel Types: 
       ${channelTypes.join(", ")}
@@ -74,7 +76,7 @@ const getChannelTypeFromOpenAI = async (title: string, description: string) => {
         "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
         max_tokens: 100

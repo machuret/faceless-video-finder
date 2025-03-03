@@ -13,6 +13,7 @@ interface TypeAIGeneratorProps {
 
 const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIGeneratorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const generateChannelType = async () => {
     if (!channelTitle) {
@@ -22,23 +23,29 @@ const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIG
     
     setIsGenerating(true);
     try {
+      // Clean up description (remove HTML) for better processing
+      const cleanDesc = description ? description.replace(/<\/?[^>]+(>|$)/g, "") : "";
+      
       console.log("Calling generate-channel-type function with:", { 
         title: channelTitle, 
-        description: description || '' 
+        description: cleanDesc || '' 
       });
       
-      const { data, error } = await supabase.functions.invoke('generate-channel-type', {
+      const response = await supabase.functions.invoke('generate-channel-type', {
         body: { 
           title: channelTitle, 
-          description: description || '' 
+          description: cleanDesc || '' 
         }
       });
       
-      if (error) {
-        console.error('Edge Function error:', error);
-        throw new Error(`Edge function error: ${error.message}`);
+      console.log("Edge function response:", response);
+      
+      if (response.error) {
+        console.error('Edge Function error:', response.error);
+        throw new Error(`Edge function error: ${response.error.message || 'Unknown error'}`);
       }
       
+      const data = response.data;
       console.log("AI channel type generation response:", data);
       
       if (data?.channelType) {
@@ -50,7 +57,17 @@ const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIG
       }
     } catch (error) {
       console.error('Error generating channel type:', error);
+      
+      // Error handling with retry logic
+      if (retryCount < 2) {
+        toast.error(`Retrying channel type generation (attempt ${retryCount + 1}/2)...`);
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => generateChannelType(), 1000); // Retry after 1 second
+        return;
+      }
+      
       toast.error('Failed to generate channel type: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setRetryCount(0);
     } finally {
       setIsGenerating(false);
     }
