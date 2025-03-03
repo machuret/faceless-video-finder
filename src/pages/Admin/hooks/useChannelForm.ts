@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useChannelFormState } from "./useChannelFormState";
@@ -31,12 +32,15 @@ export const useChannelForm = () => {
   const { handleSubmit } = 
     useChannelFormSubmission(formData, setLoading);
 
+  // Use a more controlled approach with useEffect and add channelId dependency
+  // to prevent multiple calls when params don't change
   useEffect(() => {
     console.log("🔍 Channel ID from URL params:", channelId);
     
     if (channelId) {
       console.log("📝 EDIT MODE ACTIVATED - Channel ID:", channelId);
       setIsEditMode(true);
+      // Fetch channel data once when the component mounts or channelId changes
       fetchChannelData(channelId);
     } else {
       console.log("✨ CREATE MODE ACTIVATED");
@@ -60,7 +64,7 @@ export const useChannelForm = () => {
         keywords: []
       });
     }
-  }, [channelId, setIsEditMode, fetchChannelData, setFormData]);
+  }, [channelId]); // Only dependency is channelId to prevent unnecessary reruns
 
   return {
     loading,

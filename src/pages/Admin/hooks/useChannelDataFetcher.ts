@@ -41,6 +41,16 @@ export const useChannelDataFetcher = (
       
       console.log("Channel data fetched:", data);
       
+      // Extract channel type from metadata if available
+      let channelType = data.channel_type || "";
+      if (data.metadata) {
+        // Safely access metadata properties by checking type
+        const metadata = typeof data.metadata === 'object' ? data.metadata : null;
+        if (metadata && 'ui_channel_type' in metadata) {
+          channelType = (metadata as ChannelMetadata).ui_channel_type || data.channel_type || "";
+        }
+      }
+      
       // Map database data to form data
       const formattedData: ChannelFormData = {
         video_id: data.video_id || "",
@@ -53,9 +63,7 @@ export const useChannelDataFetcher = (
         start_date: data.start_date || "",
         video_count: data.video_count ? String(data.video_count) : "",
         cpm: data.cpm ? String(data.cpm) : "4",
-        channel_type: data.metadata && typeof data.metadata === 'object' ? 
-          (data.metadata as ChannelMetadata).ui_channel_type || data.channel_type || "" : 
-          data.channel_type || "",
+        channel_type: channelType,
         country: data.country || "",
         channel_category: data.channel_category || "",
         notes: data.notes || "",

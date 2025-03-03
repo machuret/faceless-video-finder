@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { DatabaseChannelType } from "@/types/youtube";
 
 interface TypeAIGeneratorProps {
   channelTitle: string;
@@ -23,6 +22,11 @@ const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIG
     
     setIsGenerating(true);
     try {
+      console.log("Calling generate-channel-type function with:", { 
+        title: channelTitle, 
+        description: description || '' 
+      });
+      
       const { data, error } = await supabase.functions.invoke('generate-channel-type', {
         body: { 
           title: channelTitle, 
