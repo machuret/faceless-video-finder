@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Channel, ChannelCategory } from "@/types/youtube";
 import { CHANNELS_PER_PAGE } from "./types";
-import { processChannelsData } from "./utils";
+import { processRawChannelsData } from "./utils";
 import { toast } from "sonner";
 
 /**
@@ -14,7 +14,7 @@ export const fetchChannelCount = async (selectedCategory: ChannelCategory | "" =
     .select("id", { count: "exact" });
 
   if (selectedCategory) {
-    countQuery = countQuery.eq("channel_category", selectedCategory as ChannelCategory);
+    countQuery = countQuery.eq("channel_category", selectedCategory);
   }
 
   const { count, error } = await countQuery;
@@ -28,41 +28,43 @@ export const fetchChannelCount = async (selectedCategory: ChannelCategory | "" =
 
 /**
  * Fetches channels with optional category filter and pagination
+ * Completely rewritten to avoid TypeScript circular references
  */
 export const fetchChannelsData = async (
   selectedCategory: ChannelCategory | "" = "", 
   page: number = 1
 ): Promise<Channel[]> => {
   try {
-    // Build the query in steps to avoid type issues
+    // Simple string-based query to avoid TypeScript circular references
+    const queryStr = "*, videoStats:youtube_video_stats(*)";
+    
+    // Build query in steps
     let query = supabase
       .from("youtube_channels")
-      .select("*, videoStats:youtube_video_stats(*)");
-
-    // Add filters and pagination
-    query = query.order("created_at", { ascending: false });
+      .select(queryStr)
+      .order("created_at", { ascending: false });
 
     if (selectedCategory) {
-      query = query.eq("channel_category", selectedCategory as ChannelCategory);
+      query = query.eq("channel_category", selectedCategory);
     }
 
     const from = (page - 1) * CHANNELS_PER_PAGE;
     const to = from + CHANNELS_PER_PAGE - 1;
     query = query.range(from, to);
 
-    // Execute the query
+    // Execute query
     const { data, error } = await query;
 
     if (error) {
       throw error;
     }
 
-    // If no data, return empty array
-    if (!data) return [];
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
     
-    // Use explicit any[] type assertion to break circular references
-    const typedData: any[] = data;
-    return processChannelsData(typedData);
+    // Process the raw data without type issues
+    return processRawChannelsData(data);
     
   } catch (error: any) {
     console.error("Error fetching channels:", error);
@@ -73,13 +75,17 @@ export const fetchChannelsData = async (
 
 /**
  * Fetches featured channels (limited to 3)
+ * Completely rewritten to avoid TypeScript circular references
  */
 export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
   try {
-    // Simple query with explicit steps
+    // Simple string-based query to avoid TypeScript circular references
+    const queryStr = "*, videoStats:youtube_video_stats(*)";
+    
+    // Execute query
     const { data, error } = await supabase
       .from("youtube_channels")
-      .select("*, videoStats:youtube_video_stats(*)")
+      .select(queryStr)
       .eq("is_featured", true)
       .limit(3);
 
@@ -87,12 +93,12 @@ export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
       throw error;
     }
 
-    // If no data, return empty array
-    if (!data) return [];
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
     
-    // Use explicit any[] type assertion to break circular references
-    const typedData: any[] = data;
-    return processChannelsData(typedData);
+    // Process the raw data without type issues
+    return processRawChannelsData(data);
     
   } catch (error: any) {
     console.error("Error fetching featured channels:", error);

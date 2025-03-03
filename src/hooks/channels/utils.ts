@@ -3,56 +3,81 @@ import { Channel, VideoStats } from "@/types/youtube";
 import { DbChannel } from "./types";
 
 /**
- * Maps database channel data to the Channel type
+ * Safely converts database video stats to VideoStats array
  */
-export const processChannelData = (item: DbChannel): Channel => {
-  // Create an empty array for video stats
-  const videoStats: VideoStats[] = [];
-  
-  // Process video stats if they exist, with careful type handling
-  if (item.videoStats && Array.isArray(item.videoStats)) {
-    item.videoStats.forEach((vs) => {
-      if (vs) {
-        videoStats.push({
-          title: vs.title || '',
-          video_id: vs.video_id || '',
-          thumbnail_url: vs.thumbnail_url || null,
-          views: typeof vs.views === 'number' ? vs.views : null,
-          likes: typeof vs.likes === 'number' ? vs.likes : null
-        });
-      }
-    });
+export const processVideoStats = (rawVideoStats: any[] | null): VideoStats[] => {
+  if (!rawVideoStats || !Array.isArray(rawVideoStats)) {
+    return [];
   }
   
-  // Create and return the channel object
+  return rawVideoStats
+    .filter(Boolean)
+    .map(vs => ({
+      title: vs.title || '',
+      video_id: vs.video_id || '',
+      thumbnail_url: vs.thumbnail_url || null,
+      views: typeof vs.views === 'number' ? vs.views : null,
+      likes: typeof vs.likes === 'number' ? vs.likes : null
+    }));
+};
+
+/**
+ * Maps raw database channel data to the Channel type
+ * Accepts any because we're breaking the circular reference
+ */
+export const processRawChannelData = (raw: any): Channel => {
+  // Extract videoStats separately to avoid circular references
+  const videoStats = processVideoStats(raw.videoStats);
+  
+  // Extract channel data fields excluding videoStats
+  const {
+    id,
+    channel_title,
+    channel_url,
+    video_id,
+    description,
+    screenshot_url,
+    total_subscribers,
+    total_views,
+    channel_category,
+    channel_type,
+    keywords,
+    niche,
+    country,
+    is_featured,
+    cpm
+  } = raw;
+  
+  // Create and return the properly typed channel object
   return {
-    id: item.id,
-    channel_title: item.channel_title,
-    channel_url: item.channel_url,
-    video_id: item.video_id,
-    description: item.description || null,
-    screenshot_url: item.screenshot_url || null,
-    total_subscribers: item.total_subscribers || null,
-    total_views: item.total_views || null,
-    channel_category: item.channel_category || null,
-    channel_type: item.channel_type || null,
-    keywords: item.keywords || null,
-    niche: item.niche || null,
-    country: item.country || null,
-    is_featured: !!item.is_featured,
-    cpm: item.cpm || null,
+    id,
+    channel_title,
+    channel_url,
+    video_id,
+    description: description || null,
+    screenshot_url: screenshot_url || null,
+    total_subscribers: total_subscribers || null,
+    total_views: total_views || null,
+    channel_category: channel_category || null,
+    channel_type: channel_type || null,
+    keywords: keywords || null,
+    niche: niche || null,
+    country: country || null,
+    is_featured: !!is_featured,
+    cpm: cpm || null,
     videoStats
   };
 };
 
 /**
- * Maps an array of database channel data to Channel type
+ * Maps an array of raw database data to Channel[] type
  */
-export const processChannelsData = (data: any[]): Channel[] => {
-  if (!data || !Array.isArray(data)) return [];
+export const processRawChannelsData = (rawData: any[]): Channel[] => {
+  if (!rawData || !Array.isArray(rawData)) {
+    return [];
+  }
   
-  // Use type assertion to any[] to avoid circular references
-  return data
+  return rawData
     .filter(Boolean)
-    .map(item => processChannelData(item as any));
+    .map(processRawChannelData);
 };

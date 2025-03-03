@@ -1,6 +1,7 @@
+
 import { Channel, ChannelCategory } from "@/types/youtube";
 
-// Video stats type for database objects - completely separate from the Channel type
+// Base type for video stats without circular references
 export interface DbVideoStats {
   title: string;
   video_id: string;
@@ -9,7 +10,7 @@ export interface DbVideoStats {
   likes?: number | null;
 }
 
-// Database channel type with simple types to avoid circular references
+// Database channel type with NO reference to videoStats type
 export interface DbChannel {
   id: string;
   channel_title: string;
@@ -26,8 +27,7 @@ export interface DbChannel {
   country?: string | null;
   cpm?: number | null;
   is_featured?: boolean;
-  // Keep videoStats as a plain array of records without specific typing
-  videoStats?: any[] | null;
+  // No videoStats property here - will be handled separately
 }
 
 // State interface for the useChannels hook
