@@ -3,6 +3,7 @@ import { Dispatch, SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChannelFormData } from "@/types/forms";
+import { ChannelMetadata } from "@/types/youtube";
 
 export const useChannelDataFetcher = (
   setLoading: Dispatch<SetStateAction<boolean>>,
@@ -47,7 +48,9 @@ export const useChannelDataFetcher = (
         start_date: data.start_date || "",
         video_count: data.video_count ? String(data.video_count) : "",
         cpm: data.cpm ? String(data.cpm) : "4",
-        channel_type: data.metadata?.ui_channel_type || data.channel_type || "",
+        channel_type: data.metadata && typeof data.metadata === 'object' ? 
+          (data.metadata as ChannelMetadata).ui_channel_type || data.channel_type || "" : 
+          data.channel_type || "",
         country: data.country || "",
         channel_category: data.channel_category || "",
         notes: data.notes || "",
