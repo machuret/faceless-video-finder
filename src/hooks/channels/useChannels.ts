@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChannelsState, CHANNELS_PER_PAGE } from "./types";
 import { fetchChannelCount, fetchChannelsData, fetchFeaturedChannelsData } from "./api";
+import { ChannelCategory } from "@/types/youtube";
 
 export const useChannels = () => {
   // Initial state
@@ -19,7 +20,7 @@ export const useChannels = () => {
   const [state, setState] = useState<ChannelsState>(initialState);
   
   // Fetch channels method 
-  const fetchChannels = useCallback(async (selectedCategory: string = "", page: number = 1) => {
+  const fetchChannels = useCallback(async (selectedCategory: ChannelCategory | "" = "", page: number = 1) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {

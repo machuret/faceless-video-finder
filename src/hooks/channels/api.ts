@@ -3,11 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { CHANNELS_PER_PAGE } from "./types";
 import { processRawChannelsData } from "./utils";
 import { toast } from "sonner";
+import { ChannelCategory } from "@/types/youtube";
 
 /**
  * Fetches channel count for pagination
  */
-export const fetchChannelCount = async (selectedCategory: string = "") => {
+export const fetchChannelCount = async (selectedCategory: ChannelCategory | "" = "") => {
   let countQuery = supabase
     .from("youtube_channels")
     .select("id", { count: "exact" });
@@ -30,7 +31,7 @@ export const fetchChannelCount = async (selectedCategory: string = "") => {
  * Completely rewritten to avoid TypeScript circular references
  */
 export const fetchChannelsData = async (
-  selectedCategory: string = "", 
+  selectedCategory: ChannelCategory | "" = "", 
   page: number = 1
 ): Promise<any[]> => {
   try {
