@@ -1,7 +1,7 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
-import ThemeProvider from "@/components/theme-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "./providers/QueryProvider";
 
 // Pages
@@ -29,7 +29,7 @@ import Dashboard from "@/pages/Admin/Dashboard";
 import AddChannel from "@/pages/Admin/AddChannel";
 import ManageChannelTypes from "@/pages/Admin/ManageChannelTypes";
 import ManageFacelessIdeas from "@/pages/Admin/ManageFacelessIdeas";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 import "./App.css";
 
