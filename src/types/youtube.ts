@@ -65,11 +65,12 @@ export interface Channel {
   channel_url: string;
   description?: string;
   screenshot_url?: string;
-  total_subscribers?: number | string;
-  total_views?: number | string;
+  // Change these to number types to fix TS errors while ensuring backward compatibility
+  total_subscribers?: number;
+  total_views?: number;
   start_date?: string;
-  video_count?: number | string;
-  cpm?: number | string;
+  video_count?: number;
+  cpm?: number;
   channel_type?: string;
   country?: string;
   channel_category?: ChannelCategory;
@@ -78,7 +79,12 @@ export interface Channel {
   keywords?: string[];
   is_featured?: boolean;
   upload_frequency?: string;
-  revenue_per_month?: number | string;
+  revenue_per_month?: number;
+  // Add missing properties that are used in the codebase
+  revenue_per_video?: number;
+  potential_revenue?: number;
+  uses_ai?: boolean;
+  channel_size?: ChannelSize;
   videoStats?: VideoStats[];
   metadata?: ChannelMetadata;
   created_at?: string;

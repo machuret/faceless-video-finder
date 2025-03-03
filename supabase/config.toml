@@ -1,4 +1,5 @@
 
+# This is a single-line comment
 project_id = "sportholic"
 
 [api]
@@ -17,7 +18,6 @@ port = 54324
 
 [auth]
 enabled = true
-port = 54325
 
 [realtime]
 enabled = true
@@ -25,18 +25,30 @@ enabled = true
 [storage]
 enabled = true
 
-[edge_functions]
-[edge_functions.fetch-youtube-data]
+[[functions]]
+name = "fetch-youtube-data"
 verify_jwt = false
-[edge_functions.generate-channel-content]
+
+[[functions]]
+name = "generate-channel-content"
 verify_jwt = false
-[edge_functions.generate-channel-keywords]
+
+[[functions]]
+name = "generate-channel-keywords"
 verify_jwt = false
-[edge_functions.generate-channel-metadata]
+
+[[functions]]
+name = "generate-channel-metadata"
 verify_jwt = false
-[edge_functions.update-channel-metadata]
+
+[[functions]]
+name = "update-channel-metadata"
 verify_jwt = false
-[edge_functions.enhance-faceless-idea]
+
+[[functions]]
+name = "enhance-faceless-idea"
 verify_jwt = false
-[edge_functions.generate-channel-type]
+
+[[functions]]
+name = "generate-channel-type"
 verify_jwt = false
