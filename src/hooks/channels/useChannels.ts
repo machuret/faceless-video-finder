@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { ChannelsState, CHANNELS_PER_PAGE } from "./types";
 import { fetchChannelCount, fetchChannelsData, fetchFeaturedChannelsData } from "./api";
 import { ChannelCategory } from "@/types/youtube";

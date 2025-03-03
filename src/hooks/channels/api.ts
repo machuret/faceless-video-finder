@@ -28,43 +28,61 @@ export const fetchChannelCount = async (selectedCategory: ChannelCategory | "" =
 
 /**
  * Fetches channels with optional category filter and pagination
- * Completely rewritten to avoid TypeScript circular references
+ * Using a different approach to avoid TypeScript circular references
  */
 export const fetchChannelsData = async (
   selectedCategory: ChannelCategory | "" = "", 
   page: number = 1
-): Promise<any[]> => {
+) => {
   try {
-    // Use a raw query string to avoid type inference issues
-    const queryStr = "*, videoStats:youtube_video_stats(*)";
+    // Build query step by step without relying on TypeScript inference
+    let query = supabase.from("youtube_channels");
     
-    // Build query in steps to avoid type inference issues
-    let query: any = supabase
-      .from("youtube_channels")
-      .select(queryStr)
-      .order("created_at", { ascending: false });
-
+    // Select all channel fields without using * to avoid type inference
+    query = query.select(`
+      id, channel_title, channel_url, video_id, description, 
+      screenshot_url, total_subscribers, total_views, 
+      channel_category, channel_type, keywords, niche, 
+      country, cpm, is_featured, created_at
+    `);
+    
+    // Add filter if category is selected
     if (selectedCategory) {
       query = query.eq("channel_category", selectedCategory);
     }
-
+    
+    // Add pagination
     const from = (page - 1) * CHANNELS_PER_PAGE;
     const to = from + CHANNELS_PER_PAGE - 1;
-    query = query.range(from, to);
-
+    query = query.order('created_at', { ascending: false }).range(from, to);
+    
     // Execute query
-    const { data, error } = await query;
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data) {
-      return [];
+    const { data: channelsData, error: channelsError } = await query;
+    
+    if (channelsError) throw channelsError;
+    if (!channelsData) return [];
+    
+    // Fetch video stats separately for each channel to avoid circular references
+    const channels = [];
+    
+    for (const channel of channelsData) {
+      const { data: videoStats, error: statsError } = await supabase
+        .from("youtube_video_stats")
+        .select("title, video_id, thumbnail_url, views, likes")
+        .eq("channel_id", channel.id);
+      
+      if (statsError) {
+        console.error("Error fetching video stats:", statsError);
+      }
+      
+      // Combine channel with its video stats
+      channels.push({
+        ...channel,
+        videoStats: videoStats || []
+      });
     }
     
-    // Process the raw data without type issues
-    return processRawChannelsData(data);
+    return channels;
     
   } catch (error: any) {
     console.error("Error fetching channels:", error);
@@ -75,30 +93,46 @@ export const fetchChannelsData = async (
 
 /**
  * Fetches featured channels (limited to 3)
- * Completely rewritten to avoid TypeScript circular references
+ * Using a different approach to avoid TypeScript circular references
  */
-export const fetchFeaturedChannelsData = async (): Promise<any[]> => {
+export const fetchFeaturedChannelsData = async () => {
   try {
-    // Use a raw query string to avoid type inference issues
-    const queryStr = "*, videoStats:youtube_video_stats(*)";
-    
-    // Execute query with any type to avoid inference issues
-    const { data, error }: any = await supabase
+    // Build query without relying on TypeScript inference
+    const { data: featuredChannels, error: featuredError } = await supabase
       .from("youtube_channels")
-      .select(queryStr)
+      .select(`
+        id, channel_title, channel_url, video_id, description, 
+        screenshot_url, total_subscribers, total_views, 
+        channel_category, channel_type, keywords, niche, 
+        country, cpm, is_featured
+      `)
       .eq("is_featured", true)
       .limit(3);
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data) {
-      return [];
+    
+    if (featuredError) throw featuredError;
+    if (!featuredChannels) return [];
+    
+    // Fetch video stats separately for each channel
+    const channels = [];
+    
+    for (const channel of featuredChannels) {
+      const { data: videoStats, error: statsError } = await supabase
+        .from("youtube_video_stats")
+        .select("title, video_id, thumbnail_url, views, likes")
+        .eq("channel_id", channel.id);
+      
+      if (statsError) {
+        console.error("Error fetching video stats:", statsError);
+      }
+      
+      // Combine channel with its video stats
+      channels.push({
+        ...channel,
+        videoStats: videoStats || []
+      });
     }
     
-    // Process the raw data without type issues
-    return processRawChannelsData(data);
+    return channels;
     
   } catch (error: any) {
     console.error("Error fetching featured channels:", error);
