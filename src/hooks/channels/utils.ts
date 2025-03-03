@@ -6,24 +6,25 @@ import { DbChannel } from "./types";
  * Maps database channel data to the Channel type
  */
 export const processChannelData = (item: DbChannel): Channel => {
-  // Process video stats, treating them as untyped data
+  // Create an empty array for video stats
   const videoStats: VideoStats[] = [];
   
+  // Process video stats if they exist, with careful type handling
   if (item.videoStats && Array.isArray(item.videoStats)) {
-    item.videoStats.forEach((vs: any) => {
+    item.videoStats.forEach((vs) => {
       if (vs) {
         videoStats.push({
           title: vs.title || '',
           video_id: vs.video_id || '',
           thumbnail_url: vs.thumbnail_url || null,
-          views: vs.views || null,
-          likes: vs.likes || null
+          views: typeof vs.views === 'number' ? vs.views : null,
+          likes: typeof vs.likes === 'number' ? vs.likes : null
         });
       }
     });
   }
   
-  // Create channel object
+  // Create and return the channel object
   return {
     id: item.id,
     channel_title: item.channel_title,
@@ -38,9 +39,9 @@ export const processChannelData = (item: DbChannel): Channel => {
     keywords: item.keywords || null,
     niche: item.niche || null,
     country: item.country || null,
-    is_featured: !!item.is_featured, // Convert to boolean
+    is_featured: !!item.is_featured,
     cpm: item.cpm || null,
-    videoStats: videoStats
+    videoStats
   };
 };
 
@@ -50,8 +51,8 @@ export const processChannelData = (item: DbChannel): Channel => {
 export const processChannelsData = (data: any[]): Channel[] => {
   if (!data || !Array.isArray(data)) return [];
   
-  // Use simple map with basic type checking
+  // Use type assertion to any[] to avoid circular references
   return data
     .filter(Boolean)
-    .map(item => processChannelData(item as DbChannel));
+    .map(item => processChannelData(item as any));
 };

@@ -34,34 +34,35 @@ export const fetchChannelsData = async (
   page: number = 1
 ): Promise<Channel[]> => {
   try {
-    // Set up the query
+    // Build the query in steps to avoid type issues
     let query = supabase
       .from("youtube_channels")
       .select("*, videoStats:youtube_video_stats(*)");
 
-    // Add ordering
+    // Add filters and pagination
     query = query.order("created_at", { ascending: false });
 
-    // Add category filter if provided
     if (selectedCategory) {
       query = query.eq("channel_category", selectedCategory as ChannelCategory);
     }
 
-    // Add pagination
     const from = (page - 1) * CHANNELS_PER_PAGE;
     const to = from + CHANNELS_PER_PAGE - 1;
     query = query.range(from, to);
 
-    // Execute query
+    // Execute the query
     const { data, error } = await query;
 
     if (error) {
       throw error;
     }
 
-    // Process the data - use 'as any[]' to avoid TypeScript circular reference
+    // If no data, return empty array
     if (!data) return [];
-    return processChannelsData(data as any[]);
+    
+    // Use explicit any[] type assertion to break circular references
+    const typedData: any[] = data;
+    return processChannelsData(typedData);
     
   } catch (error: any) {
     console.error("Error fetching channels:", error);
@@ -75,6 +76,7 @@ export const fetchChannelsData = async (
  */
 export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
   try {
+    // Simple query with explicit steps
     const { data, error } = await supabase
       .from("youtube_channels")
       .select("*, videoStats:youtube_video_stats(*)")
@@ -85,9 +87,12 @@ export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
       throw error;
     }
 
-    // Process the data - use 'as any[]' to avoid TypeScript circular reference
+    // If no data, return empty array
     if (!data) return [];
-    return processChannelsData(data as any[]);
+    
+    // Use explicit any[] type assertion to break circular references
+    const typedData: any[] = data;
+    return processChannelsData(typedData);
     
   } catch (error: any) {
     console.error("Error fetching featured channels:", error);
