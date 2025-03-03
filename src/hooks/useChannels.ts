@@ -92,9 +92,29 @@ export const useChannels = () => {
         return;
       }
 
-      // Convert DB response to Channel type without causing deep type issues
-      const processedData: Channel[] = data.map((item: DbChannel) => {
-        return {
+      // Process each channel individually to avoid deep nesting issues
+      const processedData: Channel[] = [];
+      
+      for (let i = 0; i < data.length; i++) {
+        const item = data[i] as DbChannel;
+        
+        // Process video stats safely
+        const videoStats = [];
+        if (Array.isArray(item.videoStats)) {
+          for (let j = 0; j < item.videoStats.length; j++) {
+            const vs = item.videoStats[j];
+            videoStats.push({
+              title: vs.title,
+              video_id: vs.video_id,
+              thumbnail_url: vs.thumbnail_url,
+              views: vs.views,
+              likes: vs.likes
+            });
+          }
+        }
+        
+        // Create channel object
+        processedData.push({
           id: item.id,
           channel_title: item.channel_title,
           channel_url: item.channel_url,
@@ -110,15 +130,9 @@ export const useChannels = () => {
           country: item.country,
           is_featured: item.is_featured,
           cpm: item.cpm,
-          videoStats: Array.isArray(item.videoStats) ? item.videoStats.map(vs => ({
-            title: vs.title,
-            video_id: vs.video_id,
-            thumbnail_url: vs.thumbnail_url,
-            views: vs.views,
-            likes: vs.likes,
-          })) : []
-        };
-      });
+          videoStats: videoStats
+        });
+      }
       
       setChannels(processedData);
     } catch (error: any) {
@@ -148,9 +162,29 @@ export const useChannels = () => {
         return;
       }
 
-      // Convert DB response to Channel type without causing deep type issues
-      const processedData: Channel[] = data.map((item: DbChannel) => {
-        return {
+      // Process each channel individually to avoid deep nesting issues
+      const processedData: Channel[] = [];
+      
+      for (let i = 0; i < data.length; i++) {
+        const item = data[i] as DbChannel;
+        
+        // Process video stats safely
+        const videoStats = [];
+        if (Array.isArray(item.videoStats)) {
+          for (let j = 0; j < item.videoStats.length; j++) {
+            const vs = item.videoStats[j];
+            videoStats.push({
+              title: vs.title,
+              video_id: vs.video_id,
+              thumbnail_url: vs.thumbnail_url,
+              views: vs.views,
+              likes: vs.likes
+            });
+          }
+        }
+        
+        // Create channel object
+        processedData.push({
           id: item.id,
           channel_title: item.channel_title,
           channel_url: item.channel_url,
@@ -166,15 +200,9 @@ export const useChannels = () => {
           country: item.country,
           is_featured: item.is_featured,
           cpm: item.cpm,
-          videoStats: Array.isArray(item.videoStats) ? item.videoStats.map(vs => ({
-            title: vs.title,
-            video_id: vs.video_id,
-            thumbnail_url: vs.thumbnail_url,
-            views: vs.views,
-            likes: vs.likes,
-          })) : []
-        };
-      });
+          videoStats: videoStats
+        });
+      }
       
       setFeaturedChannels(processedData);
     } catch (error: any) {
