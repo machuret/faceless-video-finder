@@ -35,9 +35,9 @@ export const useYouTubeDataFetcher = (
 
       console.log("YouTube data fetched successfully:", data);
 
-      // Ensure valid enum values for database
-      const channelType: DatabaseChannelType = "other";
-      const channelCategory: ChannelCategory = "other";
+      // Use the channel type from the API response if available
+      const channelType: DatabaseChannelType = data.channelType || "other";
+      const channelCategory: ChannelCategory = data.channelCategory || "other";
 
       // Convert start date to proper format
       const startDate = data.publishedAt ? 
