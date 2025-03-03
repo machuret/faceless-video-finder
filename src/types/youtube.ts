@@ -1,3 +1,4 @@
+
 export type ChannelCategory = "entertainment" | "education" | "gaming" | "music" | "news" | "sports" | "technology" | "other";
 
 // This is the type that matches with the database 
@@ -44,23 +45,23 @@ export interface ChannelMetadata {
 export interface VideoStats {
   title: string;
   video_id: string;
-  thumbnail_url: string;
-  views: number;
-  likes: number;
+  thumbnail_url?: string | null;
+  views?: number | null;
+  likes?: number | null;
   channel_id?: string;
 }
 
 export interface Channel {
   id: string;
   video_id: string;
-  screenshot_url: string | null;
+  screenshot_url?: string | null;
   channel_title: string;
   channel_url: string;
-  description: string | null;
-  total_views: number | null;
-  total_subscribers: number | null;
-  channel_category?: ChannelCategory;
-  channel_type?: string;
+  description?: string | null;
+  total_views?: number | null;
+  total_subscribers?: number | null;
+  channel_category?: ChannelCategory | null;
+  channel_type?: string | null;
   channel_size?: ChannelSize;
   upload_frequency?: UploadFrequency;
   keywords?: string[] | null;

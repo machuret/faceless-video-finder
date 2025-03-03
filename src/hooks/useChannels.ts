@@ -6,16 +6,8 @@ import { toast } from "sonner";
 
 const CHANNELS_PER_PAGE = 9;
 
-// Define simpler types to break circular references
-type SimplifiedVideoStats = {
-  title: string;
-  video_id: string;
-  thumbnail_url?: string | null;
-  views?: number | null;
-  likes?: number | null;
-}
-
-type SimplifiedChannel = {
+// Define a simplified interface for database response to avoid type recursion
+interface DbChannel {
   id: string;
   channel_title: string;
   channel_url: string;
@@ -31,7 +23,17 @@ type SimplifiedChannel = {
   country?: string | null;
   cpm?: number | null;
   is_featured?: boolean;
-  videoStats?: SimplifiedVideoStats[];
+  videoStats?: DbVideoStats[] | null;
+  [key: string]: any; // Allow for additional properties
+}
+
+interface DbVideoStats {
+  title: string;
+  video_id: string;
+  thumbnail_url?: string | null;
+  views?: number | null;
+  likes?: number | null;
+  [key: string]: any; // Allow for additional properties
 }
 
 export const useChannels = () => {
@@ -90,11 +92,9 @@ export const useChannels = () => {
         return;
       }
 
-      // Safely transform the data without triggering infinite types
-      const processedData: Channel[] = [];
-      
-      for (const item of data) {
-        const channel: Channel = {
+      // Convert DB response to Channel type without causing deep type issues
+      const processedData: Channel[] = data.map((item: DbChannel) => {
+        return {
           id: item.id,
           channel_title: item.channel_title,
           channel_url: item.channel_url,
@@ -109,10 +109,16 @@ export const useChannels = () => {
           niche: item.niche,
           country: item.country,
           is_featured: item.is_featured,
-          videoStats: item.videoStats || []
+          cpm: item.cpm,
+          videoStats: Array.isArray(item.videoStats) ? item.videoStats.map(vs => ({
+            title: vs.title,
+            video_id: vs.video_id,
+            thumbnail_url: vs.thumbnail_url,
+            views: vs.views,
+            likes: vs.likes,
+          })) : []
         };
-        processedData.push(channel);
-      }
+      });
       
       setChannels(processedData);
     } catch (error: any) {
@@ -142,11 +148,9 @@ export const useChannels = () => {
         return;
       }
 
-      // Safely transform the data without triggering infinite types
-      const processedData: Channel[] = [];
-      
-      for (const item of data) {
-        const channel: Channel = {
+      // Convert DB response to Channel type without causing deep type issues
+      const processedData: Channel[] = data.map((item: DbChannel) => {
+        return {
           id: item.id,
           channel_title: item.channel_title,
           channel_url: item.channel_url,
@@ -161,10 +165,16 @@ export const useChannels = () => {
           niche: item.niche,
           country: item.country,
           is_featured: item.is_featured,
-          videoStats: item.videoStats || []
+          cpm: item.cpm,
+          videoStats: Array.isArray(item.videoStats) ? item.videoStats.map(vs => ({
+            title: vs.title,
+            video_id: vs.video_id,
+            thumbnail_url: vs.thumbnail_url,
+            views: vs.views,
+            likes: vs.likes,
+          })) : []
         };
-        processedData.push(channel);
-      }
+      });
       
       setFeaturedChannels(processedData);
     } catch (error: any) {
