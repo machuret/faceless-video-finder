@@ -85,13 +85,36 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Convert the data to Channel type without causing infinite type recursion
-      const mappedChannels = (data || []).map((item: SimplifiedChannel): Channel => ({
-        ...(item as any),
-        videoStats: item.videoStats || []
-      }));
+      if (!data) {
+        setChannels([]);
+        return;
+      }
+
+      // Safely transform the data without triggering infinite types
+      const processedData: Channel[] = [];
       
-      setChannels(mappedChannels);
+      for (const item of data) {
+        const channel: Channel = {
+          id: item.id,
+          channel_title: item.channel_title,
+          channel_url: item.channel_url,
+          video_id: item.video_id,
+          description: item.description,
+          screenshot_url: item.screenshot_url,
+          total_subscribers: item.total_subscribers,
+          total_views: item.total_views,
+          channel_category: item.channel_category,
+          channel_type: item.channel_type,
+          keywords: item.keywords,
+          niche: item.niche,
+          country: item.country,
+          is_featured: item.is_featured,
+          videoStats: item.videoStats || []
+        };
+        processedData.push(channel);
+      }
+      
+      setChannels(processedData);
     } catch (error: any) {
       console.error("Error fetching channels:", error);
       toast.error("Failed to fetch channels");
@@ -114,13 +137,36 @@ export const useChannels = () => {
         throw error;
       }
 
-      // Convert the data to Channel type without causing infinite type recursion
-      const mappedChannels = (data || []).map((item: SimplifiedChannel): Channel => ({
-        ...(item as any),
-        videoStats: item.videoStats || []
-      }));
+      if (!data) {
+        setFeaturedChannels([]);
+        return;
+      }
+
+      // Safely transform the data without triggering infinite types
+      const processedData: Channel[] = [];
       
-      setFeaturedChannels(mappedChannels);
+      for (const item of data) {
+        const channel: Channel = {
+          id: item.id,
+          channel_title: item.channel_title,
+          channel_url: item.channel_url,
+          video_id: item.video_id,
+          description: item.description,
+          screenshot_url: item.screenshot_url,
+          total_subscribers: item.total_subscribers,
+          total_views: item.total_views,
+          channel_category: item.channel_category,
+          channel_type: item.channel_type,
+          keywords: item.keywords,
+          niche: item.niche,
+          country: item.country,
+          is_featured: item.is_featured,
+          videoStats: item.videoStats || []
+        };
+        processedData.push(channel);
+      }
+      
+      setFeaturedChannels(processedData);
     } catch (error: any) {
       console.error("Error fetching featured channels:", error);
       setFeaturedChannels([]);
