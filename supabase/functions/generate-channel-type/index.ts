@@ -1,30 +1,57 @@
 
-// @ts-ignore
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
+// Set up CORS headers for browser requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Handle CORS preflight requests
-const handleCors = (req: Request) => {
+serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-  return null;
-};
 
-const getChannelTypeFromOpenAI = async (title: string, description: string) => {
   try {
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    console.log("Edge function called: generate-channel-type");
     
+    // Get OpenAI API key from environment
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is missing");
+      console.error("OPENAI_API_KEY not found in environment variables");
+      return new Response(
+        JSON.stringify({ error: "API key not configured" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
     }
 
+    // Parse request body
+    let body;
+    try {
+      body = await req.json();
+      console.log("Request body:", JSON.stringify(body));
+    } catch (e) {
+      console.error("Failed to parse request body:", e);
+      return new Response(
+        JSON.stringify({ error: "Invalid request body" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    const { title, description } = body;
+    
+    if (!title) {
+      console.error("Missing required field: title");
+      return new Response(
+        JSON.stringify({ error: "Missing required field: title" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+    
+    console.log(`Processing request for channel: ${title}`);
+    
+    // List of available channel types
     const channelTypes = [
       "compilation_montage",
       "no_face_reaction",
@@ -53,23 +80,28 @@ const getChannelTypeFromOpenAI = async (title: string, description: string) => {
       "found_footage_archival"
     ];
 
+    // Clean description and remove HTML tags
     const cleanDescription = description ? description.replace(/<\/?[^>]+(>|$)/g, "") : "";
+    // Limit description length to avoid token limits
+    const truncatedDescription = cleanDescription ? cleanDescription.substring(0, 1000) : "No description provided";
 
     const prompt = `
       Analyze this YouTube channel and determine the most likely channel type from the provided list.
       
       Channel Title: ${title}
-      Channel Description: ${cleanDescription || "No description provided"}
+      Channel Description: ${truncatedDescription}
       
       Available Channel Types: 
       ${channelTypes.join(", ")}
       
-      Respond with only one channel type from the list.
+      Return only one channel type from the list that best matches this channel.
+      Format your response as a single word or phrase from the list, nothing else.
     `;
 
     console.log("Sending request to OpenAI");
     
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Call OpenAI API
+    const openAIResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -82,75 +114,44 @@ const getChannelTypeFromOpenAI = async (title: string, description: string) => {
         max_tokens: 100
       })
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log("OpenAI response:", data);
     
-    const channelType = data.choices[0].message.content.trim().toLowerCase();
+    // Process OpenAI response
+    if (!openAIResponse.ok) {
+      const errorText = await openAIResponse.text();
+      console.error("OpenAI API error:", openAIResponse.status, errorText);
+      return new Response(
+        JSON.stringify({ error: `OpenAI API error: ${openAIResponse.status}` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
+    }
     
-    // Validate that the returned type is in our list
-    if (channelTypes.includes(channelType)) {
-      return channelType;
-    } else {
-      // If not an exact match, find the closest match in our list
-      for (const type of channelTypes) {
-        if (channelType.includes(type)) {
-          return type;
-        }
-      }
-      // Default fallback
-      return "other";
+    const openAIData = await openAIResponse.json();
+    console.log("OpenAI response:", JSON.stringify(openAIData));
+    
+    // Extract channel type from response
+    const channelType = openAIData.choices[0]?.message?.content.trim();
+    
+    if (!channelType) {
+      console.error("No channel type found in OpenAI response");
+      return new Response(
+        JSON.stringify({ error: "Failed to generate channel type" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
     }
+    
+    console.log(`Generated channel type: ${channelType}`);
+    
+    // Return the channel type
+    return new Response(
+      JSON.stringify({ channelType }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+    
   } catch (error) {
-    console.error("Error getting channel type from OpenAI:", error);
-    throw error;
-  }
-};
-
-serve(async (req) => {
-  // Handle CORS
-  const corsResponse = handleCors(req);
-  if (corsResponse) return corsResponse;
-
-  try {
-    // Only process POST requests
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Parse the request body
-    const { title, description } = await req.json();
-
-    if (!title) {
-      return new Response(JSON.stringify({ error: 'Channel title is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    console.log("Processing channel type generation for:", { title, description });
-
-    // Get channel type from OpenAI
-    const channelType = await getChannelTypeFromOpenAI(title, description || "");
-
-    // Return the result
-    return new Response(JSON.stringify({ channelType }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    console.error("Error in generate-channel-type function:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error("Unexpected error:", error);
+    return new Response(
+      JSON.stringify({ error: `Unexpected error: ${error.message}` }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+    );
   }
 });

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ interface TypeAIGeneratorProps {
 const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIGeneratorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const isRequestInProgress = useRef(false);
 
   const generateChannelType = async () => {
     if (!channelTitle) {
@@ -21,7 +22,15 @@ const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIG
       return;
     }
     
+    // Prevent multiple simultaneous requests
+    if (isRequestInProgress.current) {
+      console.log("Request already in progress, skipping");
+      return;
+    }
+    
     setIsGenerating(true);
+    isRequestInProgress.current = true;
+    
     try {
       // Clean up description (remove HTML) for better processing
       const cleanDesc = description ? description.replace(/<\/?[^>]+(>|$)/g, "") : "";
@@ -51,6 +60,8 @@ const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIG
       if (data?.channelType) {
         onTypeGenerated(data.channelType);
         toast.success('Channel type generated successfully!');
+        // Reset retry count on success
+        setRetryCount(0);
       } else {
         console.error('No channel type in response:', data);
         throw new Error('No channel type was generated');
@@ -58,18 +69,26 @@ const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIG
     } catch (error) {
       console.error('Error generating channel type:', error);
       
-      // Error handling with retry logic
+      // Error handling with retry logic - but limit retries appropriately
       if (retryCount < 2) {
         toast.error(`Retrying channel type generation (attempt ${retryCount + 1}/2)...`);
         setRetryCount(prev => prev + 1);
-        setTimeout(() => generateChannelType(), 1000); // Retry after 1 second
+        // Set a timeout before retrying
+        setTimeout(() => {
+          isRequestInProgress.current = false; // Release the lock before retrying
+          generateChannelType();
+        }, 2000); // Retry after 2 seconds
         return;
       }
       
       toast.error('Failed to generate channel type: ' + (error instanceof Error ? error.message : 'Unknown error'));
       setRetryCount(0);
     } finally {
-      setIsGenerating(false);
+      // Only set generating to false if we're not about to retry
+      if (retryCount >= 2) {
+        setIsGenerating(false);
+        isRequestInProgress.current = false;
+      }
     }
   };
 
