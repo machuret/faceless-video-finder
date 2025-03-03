@@ -2,7 +2,7 @@
 import { FormEvent, Dispatch, SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ChannelFormData } from "../components/ChannelForm";
+import { ChannelFormData } from "@/types/forms";
 import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
 
 export const useChannelFormSubmission = (

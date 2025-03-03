@@ -1,6 +1,6 @@
 
 import { ChangeEvent, Dispatch, SetStateAction } from "react";
-import { ChannelFormData } from "../components/ChannelForm";
+import { ChannelFormData } from "@/types/forms";
 import { toast } from "sonner";
 
 export const useChannelFormHandlers = (

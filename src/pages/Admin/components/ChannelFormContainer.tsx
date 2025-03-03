@@ -1,7 +1,6 @@
 
-import ChannelForm from "./ChannelForm";
 import { useChannelForm } from "../hooks/useChannelForm";
-import YouTubeUrlInput from "./YouTubeUrlInput";
+import ChannelForm from "./ChannelForm";
 
 const ChannelFormContainer = () => {
   const {
@@ -20,25 +19,18 @@ const ChannelFormContainer = () => {
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-sm">
-      {!isEditMode && (
-        <div className="mb-6">
-          <YouTubeUrlInput 
-            youtubeUrl={youtubeUrl}
-            setYoutubeUrl={setYoutubeUrl}
-            onFetch={fetchYoutubeData}
-            loading={loading}
-          />
-        </div>
-      )}
-      
       <ChannelForm 
         formData={formData}
         loading={loading}
-        onChange={handleChange}
-        onSubmit={handleSubmit}
-        onScreenshotChange={handleScreenshotChange}
-        onFieldChange={handleFieldChange}
-        onKeywordsChange={handleKeywordsChange}
+        youtubeUrl={youtubeUrl}
+        isEditMode={isEditMode}
+        setYoutubeUrl={setYoutubeUrl}
+        fetchYoutubeData={fetchYoutubeData}
+        handleSubmit={handleSubmit}
+        handleChange={handleChange}
+        handleScreenshotChange={handleScreenshotChange}
+        handleFieldChange={handleFieldChange}
+        handleKeywordsChange={handleKeywordsChange}
       />
     </div>
   );

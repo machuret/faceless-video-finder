@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { ChannelFormData } from "../components/ChannelForm";
+import { ChannelFormData } from "@/types/forms";
 
 export const useChannelFormState = (initialState: ChannelFormData = {
   video_id: "",

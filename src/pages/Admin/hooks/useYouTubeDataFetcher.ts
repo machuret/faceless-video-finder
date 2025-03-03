@@ -1,76 +1,72 @@
 
+import { Dispatch, SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ChannelFormData } from "../components/ChannelForm";
-import { DatabaseChannelType, ChannelCategory } from "@/types/youtube";
+import { ChannelFormData } from "@/types/forms";
 
 export const useYouTubeDataFetcher = (
   youtubeUrl: string,
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setFormData: React.Dispatch<React.SetStateAction<ChannelFormData>>
+  setLoading: Dispatch<SetStateAction<boolean>>,
+  setFormData: Dispatch<SetStateAction<ChannelFormData>>
 ) => {
   const fetchYoutubeData = async () => {
     if (!youtubeUrl) {
       toast.error("Please enter a YouTube URL");
       return;
     }
-
+    
     console.log("Fetching YouTube data for URL:", youtubeUrl);
     setLoading(true);
-
+    
     try {
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: { url: youtubeUrl }
       });
-
+      
       if (error) {
-        console.error("Error fetching YouTube data:", error);
-        throw new Error(`Error fetching YouTube data: ${error.message}`);
+        console.error('Edge Function error:', error);
+        throw error;
       }
-
-      if (!data || !data.channelId) {
-        console.error("Invalid YouTube data returned:", data);
-        throw new Error("Could not extract channel data from the provided URL");
+      
+      if (!data?.channelData) {
+        console.error('No channel data in response:', data);
+        throw new Error('No channel data was found');
       }
-
-      console.log("YouTube data fetched successfully:", data);
-
-      // Use the channel type from the API response if available
-      const channelType: DatabaseChannelType = data.channelType || "other";
-      const channelCategory: ChannelCategory = data.channelCategory || "other";
-
-      // Convert start date to proper format
-      const startDate = data.publishedAt ? 
-        new Date(data.publishedAt).toISOString().split('T')[0] : 
-        "";
-
-      setFormData({
-        video_id: data.channelId || "",
-        channel_title: data.title || "",
-        channel_url: data.channelUrl || youtubeUrl,
-        description: data.description || "",
-        screenshot_url: data.thumbnailUrl || "",
-        total_subscribers: data.subscriberCount?.toString() || "",
-        total_views: data.viewCount?.toString() || "",
-        start_date: startDate,
-        video_count: data.videoCount?.toString() || "",
+      
+      console.log("YouTube data fetched:", data);
+      
+      const channelData = data.channelData;
+      
+      // Map API data to form data
+      const formattedData: ChannelFormData = {
+        video_id: channelData.channelId || "",
+        channel_title: channelData.title || "",
+        channel_url: channelData.url || "",
+        description: channelData.description || "",
+        screenshot_url: channelData.thumbnailUrl || "",
+        total_subscribers: channelData.subscriberCount ? String(channelData.subscriberCount) : "",
+        total_views: channelData.viewCount ? String(channelData.viewCount) : "",
+        start_date: channelData.publishedAt || "",
+        video_count: channelData.videoCount ? String(channelData.videoCount) : "",
         cpm: "4", // Default CPM
-        channel_type: channelType,
-        country: "",
-        channel_category: channelCategory,
-        notes: ""
-      });
-
-      toast.success("Channel data fetched successfully");
+        channel_type: channelData.channelType || "other",
+        country: channelData.country || "",
+        channel_category: "other", // Default category
+        notes: "",
+        keywords: channelData.keywords || []
+      };
+      
+      setFormData(formattedData);
+      console.log("Form data updated:", formattedData);
+      toast.success("YouTube data loaded successfully");
+      
     } catch (error) {
-      console.error("Error in fetchYoutubeData:", error);
-      toast.error(error instanceof Error 
-        ? error.message 
-        : "Failed to fetch channel data");
+      console.error("Error fetching YouTube data:", error);
+      toast.error(`Failed to fetch YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
   };
-
+  
   return { fetchYoutubeData };
 };

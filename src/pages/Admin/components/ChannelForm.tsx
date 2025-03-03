@@ -1,26 +1,18 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import YouTubeUrlInput from "./form-sections/YouTubeUrlInput";
-import ScreenshotUploader from "./form-sections/ScreenshotUploader";
-import AIContentGenerator from "./form-sections/AIContentGenerator";
-import KeywordsInput from "./form-sections/KeywordsInput";
 import TypeSelector from "./form-dropdowns/TypeSelector";
 import CategorySelector from "./form-dropdowns/CategorySelector";
 import CountrySelector from "./form-dropdowns/CountrySelector";
+import YouTubeUrlInput from "./YouTubeUrlInput";
+import { ChannelFormData } from "@/types/forms";
 
 interface ChannelFormProps {
-  formData: any;
+  formData: ChannelFormData;
   loading: boolean;
   youtubeUrl: string;
   isEditMode: boolean;
@@ -81,10 +73,15 @@ const ChannelIdentity = ({ formData, handleChange, handleScreenshotChange, isEdi
       />
     </div>
     <div className="mt-4">
-      <ScreenshotUploader
-        imageUrl={formData.screenshot_url}
-        onUpload={handleScreenshotChange}
-        isEditMode={isEditMode}
+      {/* We're not implementing ScreenshotUploader for now since the component is missing */}
+      <Label htmlFor="screenshot_url">Screenshot URL</Label>
+      <Input
+        type="url"
+        id="screenshot_url"
+        name="screenshot_url"
+        value={formData.screenshot_url}
+        onChange={handleChange}
+        placeholder="Enter screenshot URL"
       />
     </div>
   </FormSection>
@@ -102,11 +99,15 @@ const ChannelContent = ({ title, description, onDescriptionChange }: { title: st
           onChange={(e) => onDescriptionChange(e.target.value)}
           className="flex-grow mr-2"
         />
-        <AIContentGenerator
-          channelTitle={title}
-          description={description}
-          onDescriptionGenerated={onDescriptionChange}
-        />
+        {/* We're not implementing AIContentGenerator for now since the component is missing */}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => console.log("Generate content")}
+          size="sm"
+        >
+          Generate
+        </Button>
       </div>
     </div>
   </FormSection>
@@ -195,7 +196,7 @@ const NotesSection = ({ notes, onNotesChange }: { notes: string; onNotesChange: 
   </FormSection>
 );
 
-export const ChannelForm: React.FC<ChannelFormProps> = ({
+const ChannelForm: React.FC<ChannelFormProps> = ({
   formData,
   loading,
   youtubeUrl,
@@ -221,7 +222,7 @@ export const ChannelForm: React.FC<ChannelFormProps> = ({
           <YouTubeUrlInput
             youtubeUrl={youtubeUrl}
             setYoutubeUrl={setYoutubeUrl}
-            fetchYoutubeData={fetchYoutubeData}
+            onFetch={fetchYoutubeData}
             loading={loading}
           />
         </FormSection>
@@ -287,3 +288,5 @@ export const ChannelForm: React.FC<ChannelFormProps> = ({
     </form>
   );
 };
+
+export default ChannelForm;

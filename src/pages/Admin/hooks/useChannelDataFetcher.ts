@@ -1,20 +1,24 @@
 
-import { Dispatch, SetStateAction, useCallback } from "react";
+import { Dispatch, SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ChannelFormData } from "../components/ChannelForm";
-import { ChannelCategory, Channel, DatabaseChannelType } from "@/types/youtube";
+import { ChannelFormData } from "@/types/forms";
 
 export const useChannelDataFetcher = (
   setLoading: Dispatch<SetStateAction<boolean>>,
   setFormData: Dispatch<SetStateAction<ChannelFormData>>
 ) => {
-  const fetchChannelData = useCallback(async (channelId: string) => {
+  const fetchChannelData = async (channelId: string) => {
     console.log("Fetching channel data for ID:", channelId);
+    
+    if (!channelId) {
+      console.error("No channel ID provided");
+      return;
+    }
+    
     setLoading(true);
     
     try {
-      // Fetch channel data from database
       const { data, error } = await supabase
         .from("youtube_channels")
         .select("*")
@@ -22,65 +26,45 @@ export const useChannelDataFetcher = (
         .single();
       
       if (error) {
-        console.error("Error fetching channel data:", error);
-        toast.error(`Failed to load channel data: ${error.message}`);
-        return;
+        throw error;
       }
       
       if (!data) {
-        console.error("No channel found with ID:", channelId);
-        toast.error("Channel not found");
-        return;
+        throw new Error("Channel not found");
       }
       
       console.log("Channel data fetched:", data);
       
       // Map database data to form data
-      const channel = data as Channel;
-      
-      // Handle enum types and validate
-      let channelType = channel.channel_type as DatabaseChannelType;
-      if (!channelType || !["creator", "brand", "media", "other"].includes(channelType)) {
-        channelType = "other";
-      }
-      
-      let channelCategory = channel.channel_category as ChannelCategory;
-      if (!channelCategory || !["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"].includes(channelCategory)) {
-        channelCategory = "other";
-      }
-      
-      // Check for UI channel type in metadata
-      const uiChannelType = channel.metadata?.ui_channel_type || "other";
-      
-      // Format data for the form
       const formattedData: ChannelFormData = {
-        video_id: channel.video_id,
-        channel_title: channel.channel_title,
-        channel_url: channel.channel_url,
-        description: channel.description || "",
-        screenshot_url: channel.screenshot_url || "",
-        total_subscribers: channel.total_subscribers?.toString() || "",
-        total_views: channel.total_views?.toString() || "",
-        start_date: channel.start_date || "",
-        video_count: channel.video_count?.toString() || "",
-        cpm: channel.cpm?.toString() || "4",
-        channel_type: uiChannelType, // Use UI channel type from metadata
-        country: channel.country || "",
-        channel_category: channelCategory,
-        notes: channel.notes || "",
-        keywords: channel.keywords || []
+        video_id: data.video_id || "",
+        channel_title: data.channel_title || "",
+        channel_url: data.channel_url || "",
+        description: data.description || "",
+        screenshot_url: data.screenshot_url || "",
+        total_subscribers: data.total_subscribers ? String(data.total_subscribers) : "",
+        total_views: data.total_views ? String(data.total_views) : "",
+        start_date: data.start_date || "",
+        video_count: data.video_count ? String(data.video_count) : "",
+        cpm: data.cpm ? String(data.cpm) : "4",
+        channel_type: data.metadata?.ui_channel_type || data.channel_type || "",
+        country: data.country || "",
+        channel_category: data.channel_category || "",
+        notes: data.notes || "",
+        keywords: data.keywords || []
       };
       
-      console.log("Formatted channel data for form:", formattedData);
       setFormData(formattedData);
+      console.log("Form data updated:", formattedData);
+      toast.success("Channel data loaded successfully");
       
     } catch (error) {
-      console.error("Unexpected error:", error);
-      toast.error("An unexpected error occurred while loading channel data");
+      console.error("Error fetching channel data:", error);
+      toast.error(`Failed to fetch channel data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
-  }, [setLoading, setFormData]);
+  };
   
   return { fetchChannelData };
 };
