@@ -9,13 +9,16 @@ import {
 import { useState, useEffect } from "react";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
 import { ChannelType } from "@/types/youtube";
+import TypeAIGenerator from "./TypeAIGenerator";
 
 interface TypeSelectorProps {
   selectedType: string | undefined;
   onSelect: (typeId: string) => void;
+  channelTitle?: string;
+  description?: string;
 }
 
-const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
+const TypeSelector = ({ selectedType, onSelect, channelTitle = "", description = "" }: TypeSelectorProps) => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -36,7 +39,16 @@ const TypeSelector = ({ selectedType, onSelect }: TypeSelectorProps) => {
     <div className="mb-6">
       <h3 className="text-lg font-medium mb-3">Channel Type</h3>
       <div className="space-y-4">
-        <label className="block text-sm font-medium">Type</label>
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium">Type</label>
+          {channelTitle && (
+            <TypeAIGenerator 
+              channelTitle={channelTitle}
+              description={description}
+              onTypeGenerated={handleSelect}
+            />
+          )}
+        </div>
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
             <Button

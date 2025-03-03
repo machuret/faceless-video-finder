@@ -1,113 +1,42 @@
 
-project_id = "dhbuaffdzhjzsqjfkesg"
+project_id = "sportholic"
 
 [api]
-# Port to use for the API URL.
+enabled = true
 port = 54321
-# Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
-# endpoints. public and storage are always included.
-schemas = ["public", "storage", "extensions"]
-# Extra schemas to add to the search_path of every request. public is always included.
-extra_search_path = ["public", "extensions"]
-# Maximum rows returns in a single response. Default is 1000.
-max_rows = 1000
+schemas = ["public", "storage", "graphql_public"]
 
 [db]
-# Port to use for the local database URL.
 port = 54322
-# Port used by db diff command to initialize the shadow database.
-shadow_port = 54320
-# The database major version to use. This has to be the same as your remote database's. Run `SHOW
-# server_version;` on the remote database to check.
-major_version = 15
 
 [studio]
-# Port to use for Supabase Studio.
 port = 54323
 
-# Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
-# are monitored, and you can view the emails that would have been sent from the web interface.
 [inbucket]
-# Port to use for the email testing server web interface.
 port = 54324
-smtp_port = 54325
-pop3_port = 54326
-
-[storage]
-# The maximum file size allowed (e.g. "5MB", "500KB").
-file_size_limit = "50MiB"
 
 [auth]
-# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
-# in emails.
-site_url = "http://localhost:3000"
-# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://localhost:3000"]
-# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
-jwt_expiry = 3600
-# Enable refresh token rotation
-enable_refresh_token_rotation = true
-# Allow/disallow new user signups to your project.
-enable_signup = true
+enabled = true
+port = 54325
 
-[auth.email]
-# Allow/disallow new user signups via email to your project.
-enable_signup = true
-# If enabled, a user will be required to confirm any email change on both the old, and new email
-# addresses. If disabled, only the new email is required to confirm.
-double_confirm_changes = true
-# If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+[realtime]
+enabled = true
 
-[auth.sms]
-# Allow/disallow new user signups via SMS to your project.
-enable_signup = true
-# If enabled, users need to confirm their phone number before signing in.
-enable_confirmations = false
+[storage]
+enabled = true
 
-# Configure one of the supported SMS providers: `twilio`, `messagebird`, `textlocal`, `vonage`.
-[auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
-# DO NOT commit your Twilio auth token to git. Use the dashboard to set this env var.
-# auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
-
-# Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
-# `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin`, `notion`, `twitch`,
-# `twitter`, `slack`, `spotify`, `workos`, `zoom`.
-[auth.external.apple]
-enabled = false
-client_id = ""
-# DO NOT commit your OAuth provider secret to git. Use the dashboard to set this env var.
-# secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
-
-# Functions configuration
-[functions]
-# Function settings
-
-# Individual function configurations
-[functions.generate-channel-content]
+[edge_functions]
+[edge_functions.fetch-youtube-data]
 verify_jwt = false
-
-[functions.generate-channel-keywords]
+[edge_functions.generate-channel-content]
 verify_jwt = false
-
-[functions.fetch-youtube-data]
+[edge_functions.generate-channel-keywords]
 verify_jwt = false
-
-[functions.generate-channel-metadata]
+[edge_functions.generate-channel-metadata]
 verify_jwt = false
-
-[functions.update-channel-metadata]
+[edge_functions.update-channel-metadata]
 verify_jwt = false
-
-[functions.enhance-faceless-idea]
+[edge_functions.enhance-faceless-idea]
 verify_jwt = false
-
-[analytics]
-enabled = false
-port = 54327
-vector_port = 54328
-# Configure one of the supported backends: `postgres`, `bigquery`.
-backend = "postgres"
+[edge_functions.generate-channel-type]
+verify_jwt = false
