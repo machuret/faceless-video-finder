@@ -36,7 +36,7 @@ const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIG
       
       if (error) {
         console.error('Edge Function error:', error);
-        throw error;
+        throw new Error(`Edge function error: ${error.message}`);
       }
       
       console.log("AI channel type generation response:", data);
