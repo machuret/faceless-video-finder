@@ -1,269 +1,185 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { corsHeaders } from '../_shared/cors.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
 
 const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+// Create Supabase client
+const supabase = createClient(
+  SUPABASE_URL || '',
+  SUPABASE_SERVICE_ROLE_KEY || ''
+);
+
 serve(async (req) => {
-  // CORS preflight
+  console.log('Edge Function: fetch-youtube-data invoked');
+  
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    
     // Parse request body
-    let body;
-    try {
-      body = await req.json();
-    } catch (e) {
-      return new Response(JSON.stringify({ error: 'Invalid request body' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    
-    const { url, videoId, channelId } = body;
-    
-    // Handle both URL and direct video ID cases
-    let targetVideoId = videoId;
-    
-    // If we received a URL instead of a direct video ID, extract the video ID from the URL
-    if (url && !targetVideoId) {
-      // Extract video ID from YouTube URL
-      console.log(`Parsing YouTube URL: ${url}`);
-      const urlObj = new URL(url);
-      if (urlObj.hostname.includes('youtube.com')) {
-        if (urlObj.pathname.includes('/watch')) {
-          targetVideoId = urlObj.searchParams.get('v');
-        } else if (urlObj.pathname.includes('/channel/') || urlObj.pathname.includes('/c/') || urlObj.pathname.includes('/@')) {
-          // This is a channel URL, use the path segment as the channel ID
-          targetVideoId = urlObj.pathname.split('/').pop();
-        }
-      } else if (urlObj.hostname.includes('youtu.be')) {
-        targetVideoId = urlObj.pathname.slice(1);
-      }
-      
-      if (!targetVideoId) {
-        return new Response(JSON.stringify({ error: 'Could not extract video/channel ID from URL' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-    }
-    
-    if (!targetVideoId) {
-      return new Response(JSON.stringify({ error: 'No video ID provided' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    const requestData = await req.json();
+    const { url } = requestData;
+
+    if (!url) {
+      throw new Error('URL is required');
     }
 
-    console.log(`Fetching data for video/channel ID: ${targetVideoId}`);
-
-    // First try to get channel details using the video ID
-    let channelUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${targetVideoId}&key=${YOUTUBE_API_KEY}`;
-    console.log("Fetching video data from YouTube API...");
-    
-    let response = await fetch(channelUrl);
-    let videoData = await response.json();
-    
-    let channelId, channelTitle, channelData;
-    
-    // If we got video data, extract the channel ID
-    if (videoData.items && videoData.items.length > 0) {
-      channelId = videoData.items[0].snippet.channelId;
-      channelTitle = videoData.items[0].snippet.channelTitle;
-      console.log(`Found channel ID: ${channelId} for video ID: ${targetVideoId}`);
-      
-      // Now get channel details using the channel ID
-      channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${YOUTUBE_API_KEY}`;
-      console.log("Fetching channel data from YouTube API...");
-      
-      response = await fetch(channelUrl);
-      channelData = await response.json();
-    } else {
-      // If no video found, maybe targetVideoId is already a channel ID
-      channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${targetVideoId}&key=${YOUTUBE_API_KEY}`;
-      console.log("Trying to fetch channel data directly...");
-      
-      response = await fetch(channelUrl);
-      channelData = await response.json();
-    }
-    
-    if (channelData.error) {
-      console.error("YouTube API Error:", channelData.error);
-      return new Response(JSON.stringify({ error: `YouTube API error: ${channelData.error.message}` }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    if (!YOUTUBE_API_KEY) {
+      throw new Error('YouTube API key is not configured');
     }
 
-    if (!channelData.items || channelData.items.length === 0) {
-      // Try searching for the channel if direct ID lookup failed
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(targetVideoId)}&type=channel&key=${YOUTUBE_API_KEY}`;
-      console.log("Searching for channel...");
-      
-      const searchResponse = await fetch(searchUrl);
-      const searchData = await searchResponse.json();
-      
-      if (searchData.error) {
-        console.error("YouTube API Search Error:", searchData.error);
-        return new Response(JSON.stringify({ error: `YouTube API search error: ${searchData.error.message}` }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      if (!searchData.items || searchData.items.length === 0) {
-        return new Response(JSON.stringify({ error: 'No channel found with that ID or name' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      // Use the first search result
-      channelId = searchData.items[0].snippet.channelId;
-      console.log(`Found channel ID via search: ${channelId}`);
-      
-      // Get full channel details
-      channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${YOUTUBE_API_KEY}`;
-      console.log("Fetching channel data from search result...");
-      
-      response = await fetch(channelUrl);
-      channelData = await response.json();
-      
-      if (!channelData.items || channelData.items.length === 0) {
-        return new Response(JSON.stringify({ error: 'Failed to get channel details from search result' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+    console.log(`Processing URL: ${url}`);
+    
+    // Extract channel ID or handle from URL
+    const channelInfo = await extractChannelInfo(url);
+    
+    if (!channelInfo) {
+      throw new Error('Could not extract channel information from URL');
     }
-
-    // Extract the channel data
-    const channel = channelData.items[0];
-    const snippet = channel.snippet;
-    const statistics = channel.statistics;
     
-    // Format channel URL consistently
-    const channel_url = `https://www.youtube.com/channel/${channel.id}`;
+    // Get channel details
+    const channelData = await fetchChannelData(channelInfo);
     
-    // Get high-quality thumbnail if available
-    let screenshot_url = null;
-    if (snippet.thumbnails) {
-      screenshot_url = snippet.thumbnails.high?.url || 
-                      snippet.thumbnails.medium?.url || 
-                      snippet.thumbnails.default?.url;
-    }
-
-    // Get channel creation date in YYYY-MM-DD format
-    const publishedAt = snippet.publishedAt ? new Date(snippet.publishedAt).toISOString().split('T')[0] : null;
+    console.log('Successfully fetched channel data');
     
-    // Prepare response data
-    const channelInfo = {
-      video_id: channel.id,
-      channel_title: snippet.title,
-      channel_url: channel_url,
-      description: snippet.description,
-      screenshot_url: screenshot_url,
-      total_subscribers: statistics.subscriberCount ? parseInt(statistics.subscriberCount) : null,
-      total_views: statistics.viewCount ? parseInt(statistics.viewCount) : null,
-      video_count: statistics.videoCount ? parseInt(statistics.videoCount) : null,
-      start_date: publishedAt
+    // Merge the data and return it
+    const responseData = {
+      ...channelInfo,
+      ...channelData
     };
     
-    console.log("Extracted channel info:", channelInfo);
-    
-    // If channel ID was provided, fetch and update video stats
-    if (channelId && body.channelId) {
-      try {
-        // Get the uploads playlist ID
-        const uploadsPlaylistId = channel.contentDetails?.relatedPlaylists?.uploads;
-        
-        if (uploadsPlaylistId) {
-          // Get videos from the uploads playlist
-          const playlistUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&maxResults=10&playlistId=${uploadsPlaylistId}&key=${YOUTUBE_API_KEY}`;
-          console.log("Fetching playlist items from YouTube API...");
-          
-          const playlistResponse = await fetch(playlistUrl);
-          const playlistData = await playlistResponse.json();
-    
-          if (playlistData.error) {
-            console.error("YouTube API Error:", playlistData.error);
-            // We don't want to fail the entire request if this part fails
-            console.log("Continuing without video stats...");
-          } else if (playlistData.items && playlistData.items.length > 0) {
-            // Extract video IDs for stats
-            const videoIds = playlistData.items.map(item => item.contentDetails.videoId).join(',');
-            const videoStatsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
-            console.log("Fetching video statistics from YouTube API...");
-            
-            const videoStatsResponse = await fetch(videoStatsUrl);
-            const videoStatsData = await videoStatsResponse.json();
-    
-            if (!videoStatsData.error && videoStatsData.items && videoStatsData.items.length > 0) {
-              // Process video stats
-              console.log("Preparing video stats data for database...");
-              const videoStats = videoStatsData.items.map(video => ({
-                video_id: video.id,
-                title: video.snippet.title,
-                thumbnail_url: video.snippet.thumbnails.medium.url,
-                views: parseInt(video.statistics.viewCount, 10),
-                likes: video.statistics.likeCount ? parseInt(video.statistics.likeCount, 10) : 0,
-                channel_id: body.channelId
-              }));
-    
-              // Save to Supabase
-              console.log("Saving video stats to Supabase...");
-              
-              // First, delete any existing stats for this channel
-              const { error: deleteError } = await supabase
-                .from('youtube_video_stats')
-                .delete()
-                .eq('channel_id', body.channelId);
-                
-              if (deleteError) {
-                console.error("Error deleting existing video stats:", deleteError);
-              } else {
-                // Then insert the new stats
-                const { error: insertError } = await supabase
-                  .from('youtube_video_stats')
-                  .insert(videoStats);
-                  
-                if (insertError) {
-                  console.error("Error inserting video stats:", insertError);
-                } else {
-                  console.log(`Successfully saved ${videoStats.length} video stats to the database`);
-                }
-              }
-            }
-          }
-        }
-      } catch (statsError) {
-        console.error("Error processing video stats:", statsError);
-        // Continue without video stats
-      }
-    }
-    
-    return new Response(JSON.stringify(channelInfo), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    return new Response(JSON.stringify(responseData), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
     });
-    
   } catch (error) {
-    console.error("Unexpected error:", error);
+    console.error('Error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
     });
   }
 });
+
+// Function to extract channel ID or handle from URL
+async function extractChannelInfo(url: string) {
+  console.log(`Extracting channel info from: ${url}`);
+  
+  let channelId = '';
+  let videoId = '';
+  let handle = '';
+  let queryType = '';
+  
+  // Extract video ID from watch URL
+  const videoMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+  if (videoMatch && videoMatch[1]) {
+    videoId = videoMatch[1];
+    queryType = 'video';
+    console.log(`Extracted video ID: ${videoId}`);
+  }
+  
+  // Extract channel ID from channel URL
+  const channelMatch = url.match(/(?:youtube\.com\/(?:channel\/|c\/)|youtube\.com\/@)([^\/\s?]+)/);
+  if (channelMatch && channelMatch[1]) {
+    if (channelMatch[0].includes('@')) {
+      handle = channelMatch[1];
+      queryType = 'handle';
+      console.log(`Extracted channel handle: ${handle}`);
+    } else {
+      channelId = channelMatch[1];
+      queryType = 'channel';
+      console.log(`Extracted channel ID: ${channelId}`);
+    }
+  }
+  
+  // If it's just a handle with no youtube.com
+  if (!channelId && !videoId && !handle && url.startsWith('@')) {
+    handle = url.substring(1);
+    queryType = 'handle';
+    console.log(`Extracted raw handle: ${handle}`);
+  }
+  
+  // If we have a video ID, get the channel ID from the video
+  if (videoId) {
+    console.log(`Fetching channel ID for video: ${videoId}`);
+    const videoResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`
+    );
+    
+    const videoData = await videoResponse.json();
+    
+    if (videoData.items && videoData.items.length > 0) {
+      channelId = videoData.items[0].snippet.channelId;
+      console.log(`Found channel ID from video: ${channelId}`);
+    } else {
+      throw new Error('Video not found or invalid video ID');
+    }
+  }
+  
+  // If we have a handle but no channel ID, get the channel ID from the handle
+  if (handle && !channelId) {
+    console.log(`Fetching channel ID for handle: ${handle}`);
+    const handleUrl = handle.startsWith('@') ? handle : `@${handle}`;
+    
+    const channelResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(handleUrl)}&type=channel&key=${YOUTUBE_API_KEY}`
+    );
+    
+    const channelData = await channelResponse.json();
+    
+    if (channelData.items && channelData.items.length > 0) {
+      channelId = channelData.items[0].id.channelId;
+      console.log(`Found channel ID from handle: ${channelId}`);
+    } else {
+      throw new Error('Channel not found or invalid handle');
+    }
+  }
+  
+  if (!channelId) {
+    throw new Error('Could not extract channel ID from the URL');
+  }
+  
+  return { 
+    channelId,
+    queryType,
+    channelUrl: `https://www.youtube.com/channel/${channelId}`
+  };
+}
+
+// Function to fetch channel data
+async function fetchChannelData(channelInfo: { channelId: string }) {
+  console.log(`Fetching data for channel ID: ${channelInfo.channelId}`);
+  
+  const channelResponse = await fetch(
+    `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelInfo.channelId}&key=${YOUTUBE_API_KEY}`
+  );
+  
+  const channelData = await channelResponse.json();
+  
+  if (!channelData.items || channelData.items.length === 0) {
+    throw new Error('Channel not found or invalid channel ID');
+  }
+  
+  const channel = channelData.items[0];
+  
+  console.log(`Successfully fetched data for channel: ${channel.snippet.title}`);
+  
+  // Return formatted channel data
+  return {
+    title: channel.snippet.title,
+    description: channel.snippet.description,
+    thumbnailUrl: channel.snippet.thumbnails.high.url,
+    subscriberCount: parseInt(channel.statistics.subscriberCount, 10),
+    viewCount: parseInt(channel.statistics.viewCount, 10),
+    videoCount: parseInt(channel.statistics.videoCount, 10),
+    publishedAt: channel.snippet.publishedAt,
+    country: channel.snippet.country || null
+  };
+}
