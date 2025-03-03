@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Channel, ChannelCategory } from "@/types/youtube";
 import { CHANNELS_PER_PAGE } from "./types";
 import { processRawChannelsData } from "./utils";
 import { toast } from "sonner";
@@ -8,7 +7,7 @@ import { toast } from "sonner";
 /**
  * Fetches channel count for pagination
  */
-export const fetchChannelCount = async (selectedCategory: ChannelCategory | "" = "") => {
+export const fetchChannelCount = async (selectedCategory: string = "") => {
   let countQuery = supabase
     .from("youtube_channels")
     .select("id", { count: "exact" });
@@ -31,15 +30,15 @@ export const fetchChannelCount = async (selectedCategory: ChannelCategory | "" =
  * Completely rewritten to avoid TypeScript circular references
  */
 export const fetchChannelsData = async (
-  selectedCategory: ChannelCategory | "" = "", 
+  selectedCategory: string = "", 
   page: number = 1
-): Promise<Channel[]> => {
+): Promise<any[]> => {
   try {
-    // Simple string-based query to avoid TypeScript circular references
+    // Use a raw query string to avoid type inference issues
     const queryStr = "*, videoStats:youtube_video_stats(*)";
     
-    // Build query in steps
-    let query = supabase
+    // Build query in steps to avoid type inference issues
+    let query: any = supabase
       .from("youtube_channels")
       .select(queryStr)
       .order("created_at", { ascending: false });
@@ -59,7 +58,7 @@ export const fetchChannelsData = async (
       throw error;
     }
 
-    if (!data || !Array.isArray(data)) {
+    if (!data) {
       return [];
     }
     
@@ -77,13 +76,13 @@ export const fetchChannelsData = async (
  * Fetches featured channels (limited to 3)
  * Completely rewritten to avoid TypeScript circular references
  */
-export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
+export const fetchFeaturedChannelsData = async (): Promise<any[]> => {
   try {
-    // Simple string-based query to avoid TypeScript circular references
+    // Use a raw query string to avoid type inference issues
     const queryStr = "*, videoStats:youtube_video_stats(*)";
     
-    // Execute query
-    const { data, error } = await supabase
+    // Execute query with any type to avoid inference issues
+    const { data, error }: any = await supabase
       .from("youtube_channels")
       .select(queryStr)
       .eq("is_featured", true)
@@ -93,7 +92,7 @@ export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
       throw error;
     }
 
-    if (!data || !Array.isArray(data)) {
+    if (!data) {
       return [];
     }
     

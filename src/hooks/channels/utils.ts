@@ -1,11 +1,8 @@
 
-import { Channel, VideoStats } from "@/types/youtube";
-import { DbChannel } from "./types";
-
 /**
  * Safely converts database video stats to VideoStats array
  */
-export const processVideoStats = (rawVideoStats: any[] | null): VideoStats[] => {
+export const processVideoStats = (rawVideoStats: any[] | null): any[] => {
   if (!rawVideoStats || !Array.isArray(rawVideoStats)) {
     return [];
   }
@@ -23,48 +20,30 @@ export const processVideoStats = (rawVideoStats: any[] | null): VideoStats[] => 
 
 /**
  * Maps raw database channel data to the Channel type
- * Accepts any because we're breaking the circular reference
  */
-export const processRawChannelData = (raw: any): Channel => {
-  // Extract videoStats separately to avoid circular references
+export const processRawChannelData = (raw: any): any => {
+  if (!raw) return null;
+  
+  // Extract videoStats separately
   const videoStats = processVideoStats(raw.videoStats);
   
-  // Extract channel data fields excluding videoStats
-  const {
-    id,
-    channel_title,
-    channel_url,
-    video_id,
-    description,
-    screenshot_url,
-    total_subscribers,
-    total_views,
-    channel_category,
-    channel_type,
-    keywords,
-    niche,
-    country,
-    is_featured,
-    cpm
-  } = raw;
-  
-  // Create and return the properly typed channel object
+  // Return a plain object without explicit type references
   return {
-    id,
-    channel_title,
-    channel_url,
-    video_id,
-    description: description || null,
-    screenshot_url: screenshot_url || null,
-    total_subscribers: total_subscribers || null,
-    total_views: total_views || null,
-    channel_category: channel_category || null,
-    channel_type: channel_type || null,
-    keywords: keywords || null,
-    niche: niche || null,
-    country: country || null,
-    is_featured: !!is_featured,
-    cpm: cpm || null,
+    id: raw.id,
+    channel_title: raw.channel_title,
+    channel_url: raw.channel_url,
+    video_id: raw.video_id,
+    description: raw.description || null,
+    screenshot_url: raw.screenshot_url || null,
+    total_subscribers: raw.total_subscribers || null,
+    total_views: raw.total_views || null,
+    channel_category: raw.channel_category || null,
+    channel_type: raw.channel_type || null,
+    keywords: raw.keywords || null,
+    niche: raw.niche || null,
+    country: raw.country || null,
+    is_featured: !!raw.is_featured,
+    cpm: raw.cpm || null,
     videoStats
   };
 };
@@ -72,7 +51,7 @@ export const processRawChannelData = (raw: any): Channel => {
 /**
  * Maps an array of raw database data to Channel[] type
  */
-export const processRawChannelsData = (rawData: any[]): Channel[] => {
+export const processRawChannelsData = (rawData: any[]): any[] => {
   if (!rawData || !Array.isArray(rawData)) {
     return [];
   }
