@@ -9,7 +9,7 @@ import { toast } from "sonner";
  */
 export const fetchChannelCount = async (selectedCategory: ChannelCategory | "" = "") => {
   try {
-    // Build the count query
+    // Build the count query with explicit string-based selection to avoid type issues
     let query = supabase.from("youtube_channels").select("*", { count: "exact", head: true });
     
     // Add category filter if provided
@@ -43,13 +43,15 @@ export const fetchChannelsData = async (
     const from = (page - 1) * CHANNELS_PER_PAGE;
     const to = from + CHANNELS_PER_PAGE - 1;
     
-    // Build the base query
-    let query = supabase.from("youtube_channels").select(`
-      id, channel_title, channel_url, video_id, description, 
-      screenshot_url, total_subscribers, total_views, 
-      channel_category, channel_type, keywords, niche, 
-      country, cpm, created_at
-    `);
+    // Build the query with explicit field selection to avoid type inference issues
+    let query = supabase
+      .from("youtube_channels")
+      .select(`
+        id, channel_title, channel_url, video_id, description, 
+        screenshot_url, total_subscribers, total_views, 
+        channel_category, channel_type, keywords, niche, 
+        country, cpm, created_at
+      `);
     
     // Add category filter if selected
     if (selectedCategory) {
@@ -105,7 +107,7 @@ export const fetchChannelsData = async (
  */
 export const fetchFeaturedChannelsData = async () => {
   try {
-    // Direct query with string to avoid type inference issues
+    // Direct query with string-based selection to avoid type inference issues
     const { data, error } = await supabase
       .from("youtube_channels")
       .select(`
