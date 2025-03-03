@@ -1,5 +1,5 @@
 
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChannelFormData } from "@/types/forms";
@@ -9,6 +9,9 @@ export const useChannelDataFetcher = (
   setLoading: Dispatch<SetStateAction<boolean>>,
   setFormData: Dispatch<SetStateAction<ChannelFormData>>
 ) => {
+  // Add a reference to track if we've already shown the success toast
+  const successToastShown = useRef(false);
+
   const fetchChannelData = async (channelId: string) => {
     console.log("Fetching channel data for ID:", channelId);
     
@@ -18,6 +21,8 @@ export const useChannelDataFetcher = (
     }
     
     setLoading(true);
+    // Reset the toast tracking ref when starting a new fetch
+    successToastShown.current = false;
     
     try {
       const { data, error } = await supabase
@@ -59,7 +64,12 @@ export const useChannelDataFetcher = (
       
       setFormData(formattedData);
       console.log("Form data updated:", formattedData);
-      toast.success("Channel data loaded successfully");
+      
+      // Only show the toast if we haven't shown it yet for this fetch
+      if (!successToastShown.current) {
+        toast.success("Channel data loaded successfully");
+        successToastShown.current = true;
+      }
       
     } catch (error) {
       console.error("Error fetching channel data:", error);
