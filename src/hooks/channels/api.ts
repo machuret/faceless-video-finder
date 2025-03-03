@@ -37,9 +37,12 @@ export const fetchChannelsData = async (
     // Set up the query
     let query = supabase
       .from("youtube_channels")
-      .select("*, videoStats:youtube_video_stats(*)")
-      .order("created_at", { ascending: false });
+      .select("*, videoStats:youtube_video_stats(*)");
 
+    // Add ordering
+    query = query.order("created_at", { ascending: false });
+
+    // Add category filter if provided
     if (selectedCategory) {
       query = query.eq("channel_category", selectedCategory as ChannelCategory);
     }
@@ -49,17 +52,17 @@ export const fetchChannelsData = async (
     const to = from + CHANNELS_PER_PAGE - 1;
     query = query.range(from, to);
 
+    // Execute query
     const { data, error } = await query;
 
     if (error) {
       throw error;
     }
 
-    // Process the data with safety checks
-    if (!data || !Array.isArray(data)) return [];
+    // Process the data - use 'as any[]' to avoid TypeScript circular reference
+    if (!data) return [];
+    return processChannelsData(data as any[]);
     
-    // Use a completely separate type assertion to avoid TypeScript's circular reference detection
-    return processChannelsData(data as any);
   } catch (error: any) {
     console.error("Error fetching channels:", error);
     toast.error("Failed to fetch channels");
@@ -82,11 +85,10 @@ export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
       throw error;
     }
 
-    // Process the data with safety checks
-    if (!data || !Array.isArray(data)) return [];
+    // Process the data - use 'as any[]' to avoid TypeScript circular reference
+    if (!data) return [];
+    return processChannelsData(data as any[]);
     
-    // Use a completely separate type assertion to avoid circular reference issues
-    return processChannelsData(data as any);
   } catch (error: any) {
     console.error("Error fetching featured channels:", error);
     return [];

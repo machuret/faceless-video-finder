@@ -1,20 +1,20 @@
 
 import { Channel, VideoStats } from "@/types/youtube";
-import { DbChannel, DbVideoStats } from "./types";
+import { DbChannel } from "./types";
 
 /**
  * Maps database channel data to the Channel type
  */
 export const processChannelData = (item: DbChannel): Channel => {
-  // Process video stats safely
+  // Process video stats, treating them as untyped data
   const videoStats: VideoStats[] = [];
   
   if (item.videoStats && Array.isArray(item.videoStats)) {
-    item.videoStats.forEach((vs: DbVideoStats) => {
+    item.videoStats.forEach((vs: any) => {
       if (vs) {
         videoStats.push({
-          title: vs.title,
-          video_id: vs.video_id,
+          title: vs.title || '',
+          video_id: vs.video_id || '',
           thumbnail_url: vs.thumbnail_url || null,
           views: vs.views || null,
           likes: vs.likes || null
@@ -38,7 +38,7 @@ export const processChannelData = (item: DbChannel): Channel => {
     keywords: item.keywords || null,
     niche: item.niche || null,
     country: item.country || null,
-    is_featured: item.is_featured || false,
+    is_featured: !!item.is_featured, // Convert to boolean
     cpm: item.cpm || null,
     videoStats: videoStats
   };
@@ -50,5 +50,8 @@ export const processChannelData = (item: DbChannel): Channel => {
 export const processChannelsData = (data: any[]): Channel[] => {
   if (!data || !Array.isArray(data)) return [];
   
-  return data.filter(Boolean).map(item => processChannelData(item as DbChannel));
+  // Use simple map with basic type checking
+  return data
+    .filter(Boolean)
+    .map(item => processChannelData(item as DbChannel));
 };

@@ -1,17 +1,15 @@
-
 import { Channel, ChannelCategory } from "@/types/youtube";
 
-// Base interface without circular references
+// Simple types to prevent circular references
 export interface DbVideoStats {
   title: string;
   video_id: string;
   thumbnail_url?: string | null;
   views?: number | null;
   likes?: number | null;
-  [key: string]: any; // Allow for additional properties
 }
 
-// Base interface without circular references
+// Simplified database channel type without circular references
 export interface DbChannel {
   id: string;
   channel_title: string;
@@ -28,9 +26,8 @@ export interface DbChannel {
   country?: string | null;
   cpm?: number | null;
   is_featured?: boolean;
-  // Use a simpler structure that doesn't create circular references
-  videoStats?: DbVideoStats[] | null;
-  [key: string]: any; // Allow for additional properties
+  // Note: we're keeping this as a record type, not a typed array
+  videoStats?: Record<string, any>[] | null;
 }
 
 // State interface for the useChannels hook
