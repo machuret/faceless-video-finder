@@ -47,8 +47,10 @@ function App() {
         <Route path="/reach-calculator" element={<ReachCalculator />} />
         <Route path="/growth-calculator" element={<GrowthRateCalculator />} />
         <Route path="/channels/:channelId" element={<ChannelDetails />} />
+        <Route path="/channel/:channelId" element={<ChannelDetails />} />
         <Route path="/faceless-ideas" element={<FacelessIdeas />} />
         <Route path="/faceless-channels" element={<FacelessChannelIdeas />} />
+        <Route path="/faceless-channel-ideas" element={<FacelessChannelIdeas />} />
         <Route path="/faceless-ideas/:ideaId" element={<FacelessIdeaDetails />} />
         <Route path="/channel-types" element={<ChannelTypes />} />
         <Route path="/channel-types/:typeId" element={<ChannelTypeDetails />} />

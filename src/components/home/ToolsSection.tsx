@@ -36,7 +36,7 @@ const ToolsSection = () => {
               <p className="font-lato text-gray-600 text-sm mb-4">
                 Discover profitable faceless YouTube content ideas that you can create without showing your face on camera.
               </p>
-              <Link to="/faceless-channel-ideas" className="text-blue-600 hover:text-blue-800 inline-flex items-center font-medium text-sm">
+              <Link to="/faceless-channels" className="text-blue-600 hover:text-blue-800 inline-flex items-center font-medium text-sm">
                 Browse Ideas <MoveRight className="ml-1 h-4 w-4" />
               </Link>
             </CardContent>

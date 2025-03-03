@@ -15,7 +15,7 @@ const ChannelCard = ({ channel, isFeatured = false }: ChannelCardProps) => {
     <Card 
       className={`hover:shadow-lg transition-shadow overflow-hidden ${isFeatured ? 'border-yellow-400 border-2' : ''}`}
     >
-      <Link to={`/channel/${channel.id}`}>
+      <Link to={`/channels/${channel.id}`}>
         <div className="aspect-video bg-gray-200 relative overflow-hidden">
           {channel.screenshot_url ? (
             <LazyImage 

@@ -52,8 +52,8 @@ const MainNavbar = () => {
               <span>Channels</span>
             </Link>
             <Link 
-              to="/faceless-channel-ideas" 
-              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/faceless-channel-ideas') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
+              to="/faceless-channels" 
+              className={`font-montserrat text-sm font-medium flex items-center gap-1.5 ${isActive('/faceless-channels') || isActive('/faceless-channel-ideas') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`}
             >
               <Lightbulb className="h-4 w-4" />
               <span>Ideas</span>
@@ -83,7 +83,7 @@ const MainNavbar = () => {
           
           <div className="flex items-center gap-4">
             <Link 
-              to="/admin/login" 
+              to="/admin" 
               className="hidden md:block font-montserrat text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
             >
               Admin
@@ -145,8 +145,8 @@ const MainNavbar = () => {
               </div>
             </Link>
             <Link 
-              to="/faceless-channel-ideas" 
-              className={`block py-2 px-3 rounded-md ${isActive('/faceless-channel-ideas') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+              to="/faceless-channels" 
+              className={`block py-2 px-3 rounded-md ${isActive('/faceless-channels') || isActive('/faceless-channel-ideas') ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
               onClick={toggleMobileMenu}
             >
               <div className="flex items-center">
@@ -185,7 +185,7 @@ const MainNavbar = () => {
               </div>
             </Link>
             <Link 
-              to="/admin/login" 
+              to="/admin" 
               className="block py-2 px-3 mt-2 rounded-md bg-blue-600 text-white"
               onClick={toggleMobileMenu}
             >
