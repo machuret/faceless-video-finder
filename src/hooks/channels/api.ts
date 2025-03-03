@@ -9,7 +9,7 @@ import { toast } from "sonner";
  */
 export const fetchChannelCount = async (selectedCategory: ChannelCategory | "" = "") => {
   try {
-    // Build the count query with explicit string-based selection to avoid type issues
+    // Build the count query
     let query = supabase.from("youtube_channels").select("*", { count: "exact", head: true });
     
     // Add category filter if provided
@@ -39,11 +39,13 @@ export const fetchChannelsData = async (
   page: number = 1
 ) => {
   try {
+    console.log(`Fetching channels for category: "${selectedCategory}", page: ${page}`);
+    
     // Calculate pagination range
     const from = (page - 1) * CHANNELS_PER_PAGE;
     const to = from + CHANNELS_PER_PAGE - 1;
     
-    // Build the query with explicit field selection to avoid type inference issues
+    // Build the query
     let query = supabase
       .from("youtube_channels")
       .select(`
@@ -70,8 +72,11 @@ export const fetchChannelsData = async (
     }
     
     if (!channelsData) {
+      console.log("No channel data returned");
       return [];
     }
+    
+    console.log(`Found ${channelsData.length} channels`);
     
     // For each channel, fetch its video stats
     const channels = [];
@@ -107,7 +112,9 @@ export const fetchChannelsData = async (
  */
 export const fetchFeaturedChannelsData = async () => {
   try {
-    // Direct query with string-based selection to avoid type inference issues
+    console.log("Fetching featured channels");
+    
+    // Query for featured channels (assuming there's a column for featured)
     const { data, error } = await supabase
       .from("youtube_channels")
       .select(`
@@ -124,8 +131,11 @@ export const fetchFeaturedChannelsData = async () => {
     }
     
     if (!data || data.length === 0) {
+      console.log("No featured channels found");
       return [];
     }
+    
+    console.log(`Found ${data.length} featured channels`);
     
     // For each channel, fetch its video stats
     const featuredChannels = [];

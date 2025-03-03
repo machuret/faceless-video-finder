@@ -6,7 +6,7 @@ import ToolsSection from "@/components/home/ToolsSection";
 import StatsSection from "@/components/home/StatsSection";
 import PageFooter from "@/components/home/PageFooter";
 import ChannelSection from "@/components/home/ChannelSection";
-import { useChannels } from "@/hooks/useChannels";
+import { useChannels } from "@/hooks/channels/useChannels";
 
 const Index = () => {
   const {
@@ -24,9 +24,17 @@ const Index = () => {
   } = useChannels();
 
   useEffect(() => {
+    console.log("Index page: Fetching channels...");
     fetchChannels("", currentPage);
     fetchFeaturedChannels();
-  }, [currentPage]);
+  }, [currentPage, fetchChannels, fetchFeaturedChannels]);
+
+  console.log("Index page render:", { 
+    channelsCount: channels.length,
+    featuredCount: featuredChannels.length,
+    loading,
+    error
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
