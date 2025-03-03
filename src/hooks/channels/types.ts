@@ -18,7 +18,8 @@ export interface DbChannel {
   country?: string | null;
   cpm?: number | null;
   is_featured?: boolean;
-  videoStats?: DbVideoStats[] | null;
+  // Use a more generic type for videoStats to avoid circular references
+  videoStats?: any[] | null;
   [key: string]: any; // Allow for additional properties
 }
 

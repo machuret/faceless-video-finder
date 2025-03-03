@@ -47,12 +47,14 @@ export const processChannelData = (item: DbChannel): Channel => {
 /**
  * Maps an array of database channel data to Channel type
  */
-export const processChannelsData = (data: DbChannel[] | null): Channel[] => {
+export const processChannelsData = (data: any[]): Channel[] => {
   if (!data || !Array.isArray(data)) return [];
   
   const processedData: Channel[] = [];
   for (let i = 0; i < data.length; i++) {
-    processedData.push(processChannelData(data[i]));
+    if (data[i]) {
+      processedData.push(processChannelData(data[i]));
+    }
   }
   
   return processedData;

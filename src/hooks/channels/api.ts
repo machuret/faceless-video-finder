@@ -55,10 +55,12 @@ export const fetchChannelsData = async (
       throw error;
     }
 
-    // Process the data manually to avoid type instantiation issues
+    // Process the data safely - this is where the error was happening
     if (!data || !Array.isArray(data)) return [];
     
-    return processChannelsData(data as DbChannel[]);
+    // Instead of directly passing data to processChannelsData, we'll use an explicit type cast
+    // to break the potential circular type reference
+    return processChannelsData(data as any[]);
   } catch (error: any) {
     console.error("Error fetching channels:", error);
     toast.error("Failed to fetch channels");
@@ -81,10 +83,11 @@ export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
       throw error;
     }
 
-    // Process the data manually to avoid type instantiation issues
+    // Process the data safely - using the same pattern as above
     if (!data || !Array.isArray(data)) return [];
     
-    return processChannelsData(data as DbChannel[]);
+    // Use an explicit type cast to avoid the circular type reference
+    return processChannelsData(data as any[]);
   } catch (error: any) {
     console.error("Error fetching featured channels:", error);
     return [];
