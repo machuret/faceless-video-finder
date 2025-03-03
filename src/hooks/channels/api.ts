@@ -55,6 +55,9 @@ export const fetchChannelsData = async (
       throw error;
     }
 
+    // Process the data manually to avoid type instantiation issues
+    if (!data || !Array.isArray(data)) return [];
+    
     return processChannelsData(data as DbChannel[]);
   } catch (error: any) {
     console.error("Error fetching channels:", error);
@@ -78,6 +81,9 @@ export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
       throw error;
     }
 
+    // Process the data manually to avoid type instantiation issues
+    if (!data || !Array.isArray(data)) return [];
+    
     return processChannelsData(data as DbChannel[]);
   } catch (error: any) {
     console.error("Error fetching featured channels:", error);
