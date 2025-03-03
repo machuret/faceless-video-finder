@@ -25,30 +25,23 @@ enabled = true
 [storage]
 enabled = true
 
-[[functions]]
-name = "fetch-youtube-data"
+[functions.fetch-youtube-data]
 verify_jwt = false
 
-[[functions]]
-name = "generate-channel-content"
+[functions.generate-channel-content]
 verify_jwt = false
 
-[[functions]]
-name = "generate-channel-keywords"
+[functions.generate-channel-keywords]
 verify_jwt = false
 
-[[functions]]
-name = "generate-channel-metadata"
+[functions.generate-channel-metadata]
 verify_jwt = false
 
-[[functions]]
-name = "update-channel-metadata"
+[functions.update-channel-metadata]
 verify_jwt = false
 
-[[functions]]
-name = "enhance-faceless-idea"
+[functions.enhance-faceless-idea]
 verify_jwt = false
 
-[[functions]]
-name = "generate-channel-type"
+[functions.generate-channel-type]
 verify_jwt = false
