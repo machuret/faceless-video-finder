@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Channel, ChannelCategory } from "@/types/youtube";
-import { DbChannel, CHANNELS_PER_PAGE } from "./types";
+import { CHANNELS_PER_PAGE } from "./types";
 import { processChannelsData } from "./utils";
 import { toast } from "sonner";
 
@@ -55,11 +55,11 @@ export const fetchChannelsData = async (
       throw error;
     }
 
-    // Process the data safely - this is where the error was happening
+    // Process the data with safety checks
     if (!data || !Array.isArray(data)) return [];
     
-    // Instead of directly passing data to processChannelsData, we'll use an explicit type cast
-    // to break the potential circular type reference
+    // Use a type assertion to avoid TypeScript's circular reference detection
+    // We know the structure is compatible because our processChannelData handles the conversion safely
     return processChannelsData(data as any[]);
   } catch (error: any) {
     console.error("Error fetching channels:", error);
@@ -83,11 +83,11 @@ export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
       throw error;
     }
 
-    // Process the data safely - using the same pattern as above
+    // Process the data with safety checks
     if (!data || !Array.isArray(data)) return [];
     
-    // Use an explicit type cast to avoid the circular type reference
-    return processChannelsData(data as any[]);
+    // Use a type assertion that completely bypasses TypeScript's circular reference detection
+    return processChannelsData(data as unknown as any[]);
   } catch (error: any) {
     console.error("Error fetching featured channels:", error);
     return [];

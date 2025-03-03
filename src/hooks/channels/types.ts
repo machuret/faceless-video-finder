@@ -1,5 +1,5 @@
 
-import { Channel, ChannelCategory, VideoStats } from "@/types/youtube";
+import { Channel, ChannelCategory } from "@/types/youtube";
 
 // Interface for database channel response to avoid type recursion
 export interface DbChannel {
@@ -18,8 +18,8 @@ export interface DbChannel {
   country?: string | null;
   cpm?: number | null;
   is_featured?: boolean;
-  // Use a more generic type for videoStats to avoid circular references
-  videoStats?: any[] | null;
+  // Break circular references by using an explicit DbVideoStats array
+  videoStats?: DbVideoStats[] | null;
   [key: string]: any; // Allow for additional properties
 }
 
