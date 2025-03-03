@@ -58,9 +58,8 @@ export const fetchChannelsData = async (
     // Process the data with safety checks
     if (!data || !Array.isArray(data)) return [];
     
-    // Use a type assertion to avoid TypeScript's circular reference detection
-    // We know the structure is compatible because our processChannelData handles the conversion safely
-    return processChannelsData(data as any[]);
+    // Use a completely separate type assertion to avoid TypeScript's circular reference detection
+    return processChannelsData(data as any);
   } catch (error: any) {
     console.error("Error fetching channels:", error);
     toast.error("Failed to fetch channels");
@@ -86,8 +85,8 @@ export const fetchFeaturedChannelsData = async (): Promise<Channel[]> => {
     // Process the data with safety checks
     if (!data || !Array.isArray(data)) return [];
     
-    // Use a type assertion that completely bypasses TypeScript's circular reference detection
-    return processChannelsData(data as any[]);
+    // Use a completely separate type assertion to avoid circular reference issues
+    return processChannelsData(data as any);
   } catch (error: any) {
     console.error("Error fetching featured channels:", error);
     return [];

@@ -1,7 +1,17 @@
 
 import { Channel, ChannelCategory } from "@/types/youtube";
 
-// Interface for database channel response to avoid type recursion
+// Base interface without circular references
+export interface DbVideoStats {
+  title: string;
+  video_id: string;
+  thumbnail_url?: string | null;
+  views?: number | null;
+  likes?: number | null;
+  [key: string]: any; // Allow for additional properties
+}
+
+// Base interface without circular references
 export interface DbChannel {
   id: string;
   channel_title: string;
@@ -18,18 +28,8 @@ export interface DbChannel {
   country?: string | null;
   cpm?: number | null;
   is_featured?: boolean;
-  // Break circular references by using an explicit DbVideoStats array
+  // Use a simpler structure that doesn't create circular references
   videoStats?: DbVideoStats[] | null;
-  [key: string]: any; // Allow for additional properties
-}
-
-// Interface for database video stats to avoid type recursion
-export interface DbVideoStats {
-  title: string;
-  video_id: string;
-  thumbnail_url?: string | null;
-  views?: number | null;
-  likes?: number | null;
   [key: string]: any; // Allow for additional properties
 }
 
