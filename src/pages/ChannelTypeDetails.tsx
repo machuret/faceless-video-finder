@@ -34,6 +34,7 @@ const ChannelTypeDetails = () => {
   const [loading, setLoading] = useState(true);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [typeInfo, setTypeInfo] = useState<any>(null);
+  const [otherChannelTypes, setOtherChannelTypes] = useState<any[]>([]);
   
   useEffect(() => {
     if (!typeId) return;
@@ -89,9 +90,20 @@ const ChannelTypeDetails = () => {
         setLoading(false);
       }
     };
+
+    const fetchOtherChannelTypes = () => {
+      // Filter out the current channel type and get 4 random other types
+      const others = channelTypes
+        .filter(type => type.id !== typeId && type.id !== 'other')
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 4);
+      
+      setOtherChannelTypes(others);
+    };
     
     fetchTypeInfo();
     fetchChannelsByType();
+    fetchOtherChannelTypes();
   }, [typeId]);
   
   if (!typeInfo) {
@@ -157,16 +169,24 @@ const ChannelTypeDetails = () => {
         {loading ? (
           <div className="text-center py-8 font-lato">Loading channels...</div>
         ) : channels.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {channels.map(channel => (
               <ChannelCard key={channel.id} channel={channel} />
             ))}
           </div>
         ) : (
-          <Card className="p-6">
+          <Card className="p-6 mb-8">
             <p className="font-lato">No channels found for this type.</p>
           </Card>
         )}
+
+        {/* Other Channel Types Section */}
+        <h2 className="font-crimson text-xl font-semibold mb-4">Other Channel Types You Might Like</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {otherChannelTypes.map(type => (
+            <OtherChannelTypeCard key={type.id} type={type} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -239,6 +259,27 @@ const ChannelCard = ({ channel }: { channel: Channel }) => {
         >
           View YouTube Channel
         </a>
+      </div>
+    </Card>
+  );
+};
+
+const OtherChannelTypeCard = ({ type }: { type: typeof channelTypes[0] }) => {
+  return (
+    <Card className="overflow-hidden h-full flex flex-col">
+      <Link to={`/channel-types/${type.id}`} className="flex-grow p-4 hover:bg-gray-50 transition-colors">
+        <h3 className="text-lg font-semibold mb-2">{type.label}</h3>
+        <p className="text-sm text-gray-700 line-clamp-3">
+          {type.description?.replace(/<[^>]*>?/gm, '') || ''}
+        </p>
+      </Link>
+      <div className="p-3 bg-blue-50 border-t">
+        <Link 
+          to={`/channel-types/${type.id}`}
+          className="text-blue-600 hover:underline text-sm font-medium flex items-center justify-center"
+        >
+          View Details
+        </Link>
       </div>
     </Card>
   );
