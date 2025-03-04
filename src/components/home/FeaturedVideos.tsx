@@ -29,7 +29,7 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
           // Use a fallback for channel_id if it's not available
           const channelId = video.channel_id || "";
           
-          // Create SEO-friendly channel URL with a default label if channel_id is not available
+          // Create SEO-friendly channel URL with a default label
           const channelLabel = "channel"; // Default label
           const channelSlug = generateChannelSlug(channelLabel);
           const seoUrl = `/channel/${channelSlug}-${channelId}`;
