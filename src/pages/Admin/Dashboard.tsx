@@ -9,7 +9,7 @@ import { ChannelList } from "@/components/youtube/channel-list/components/Channe
 const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader />
+      <AdminHeader title="Admin Dashboard" />
       
       <div className="container mx-auto px-4 pt-8 pb-16">
         <DashboardHeader />
@@ -18,7 +18,7 @@ const Dashboard = () => {
         
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
           <h2 className="text-xl font-semibold mb-6">All Channels</h2>
-          <ChannelList />
+          <ChannelList isAdmin={true} />
         </div>
       </div>
     </div>

@@ -34,7 +34,7 @@ export function useChannelOperations() {
       const typedChannels: Channel[] = (data || []).map(channel => ({
         ...channel,
         // Ensure metadata is treated as ChannelMetadata or undefined
-        metadata: channel.metadata
+        metadata: channel.metadata as Channel['metadata']
       }));
       
       setChannels(typedChannels);
