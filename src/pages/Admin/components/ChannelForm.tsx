@@ -1,17 +1,15 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import TypeSelector from "./form-dropdowns/TypeSelector";
-import CategorySelector from "./form-dropdowns/CategorySelector";
-import CountrySelector from "./form-dropdowns/CountrySelector";
-import YouTubeUrlInput from "./YouTubeUrlInput";
 import { ChannelFormData } from "@/types/forms";
-import { Camera } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import YouTubeUrlInput from "./YouTubeUrlInput";
+import ChannelIdentitySection from "./form-sections/ChannelIdentitySection";
+import ChannelTypeCategories from "./form-sections/ChannelTypeCategories";
+import ChannelContentSection from "./form-sections/ChannelContentSection";
+import ChannelStatsSection from "./form-sections/ChannelStatsSection";
+import RevenueDetailsSection from "./form-sections/RevenueDetailsSection";
+import NotesFormSection from "./form-sections/NotesFormSection";
 
 interface ChannelFormProps {
   formData: ChannelFormData;
@@ -26,243 +24,6 @@ interface ChannelFormProps {
   handleFieldChange: (field: string, value: string) => void;
   handleKeywordsChange: (keywords: string[]) => void;
 }
-
-const FormSection = ({ title, description, children }: { title: string; description: string; children: React.ReactNode }) => (
-  <div className="mb-8">
-    <h2 className="text-xl font-semibold mb-2">{title}</h2>
-    <p className="text-sm text-gray-500 mb-4">{description}</p>
-    {children}
-  </div>
-);
-
-const ChannelIdentity = ({ formData, handleChange, handleScreenshotChange, isEditMode }: any) => {
-  const [takingScreenshot, setTakingScreenshot] = useState(false);
-  
-  const handleTakeScreenshot = async () => {
-    if (!formData.channel_url) {
-      toast.error("Channel URL is required to take a screenshot");
-      return;
-    }
-    
-    if (!formData.id) {
-      toast.error("Please save the channel first before taking a screenshot");
-      return;
-    }
-    
-    setTakingScreenshot(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
-        body: {
-          channelUrl: formData.channel_url,
-          channelId: formData.id
-        }
-      });
-      
-      if (error) {
-        console.error("Error taking screenshot:", error);
-        toast.error("Failed to take channel screenshot");
-        return;
-      }
-      
-      if (data.success) {
-        toast.success("Channel screenshot taken successfully!");
-        handleScreenshotChange(data.screenshotUrl);
-      } else {
-        toast.error(data.message || "Failed to take channel screenshot");
-      }
-    } catch (err) {
-      console.error("Error invoking screenshot function:", err);
-      toast.error("An error occurred while taking the screenshot");
-    } finally {
-      setTakingScreenshot(false);
-    }
-  };
-  
-  return (
-    <FormSection title="Channel Identity" description="Basic information about the YouTube channel">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Label htmlFor="channel_title">Channel Title</Label>
-          <Input
-            type="text"
-            id="channel_title"
-            name="channel_title"
-            value={formData.channel_title}
-            onChange={handleChange}
-            placeholder="Enter channel title"
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="channel_url">Channel URL</Label>
-          <Input
-            type="url"
-            id="channel_url"
-            name="channel_url"
-            value={formData.channel_url}
-            onChange={handleChange}
-            placeholder="Enter channel URL"
-            required
-          />
-        </div>
-      </div>
-      <div className="mt-4">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          placeholder="Enter channel description"
-          rows={3}
-        />
-      </div>
-      <div className="mt-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="screenshot_url">Screenshot URL</Label>
-          {isEditMode && (
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              onClick={handleTakeScreenshot}
-              disabled={takingScreenshot}
-              className="flex items-center gap-2 mb-2"
-            >
-              <Camera className="h-4 w-4" />
-              {takingScreenshot ? "Taking Screenshot..." : "Take Screenshot"}
-            </Button>
-          )}
-        </div>
-        <Input
-          type="url"
-          id="screenshot_url"
-          name="screenshot_url"
-          value={formData.screenshot_url}
-          onChange={handleChange}
-          placeholder="Enter screenshot URL"
-        />
-        {formData.screenshot_url && (
-          <div className="mt-2">
-            <img 
-              src={formData.screenshot_url} 
-              alt="Channel Screenshot" 
-              className="max-h-40 border rounded-md" 
-            />
-          </div>
-        )}
-      </div>
-    </FormSection>
-  );
-};
-
-const ChannelContent = ({ title, description, onDescriptionChange }: { title: string; description: string; onDescriptionChange: (value: string) => void }) => (
-  <FormSection title="Channel Content" description="Details about the type of content the channel produces">
-    <div className="mb-4">
-      <Label htmlFor="ai-description">AI Generated Description</Label>
-      <div className="flex items-center">
-        <Textarea
-          id="ai-description"
-          placeholder="AI Generated Description"
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          className="flex-grow mr-2"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => console.log("Generate content")}
-          size="sm"
-        >
-          Generate
-        </Button>
-      </div>
-    </div>
-  </FormSection>
-);
-
-const ChannelStats = ({ formData, handleChange }: any) => (
-  <FormSection title="Channel Stats" description="Statistics and metrics for the YouTube channel">
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div>
-        <Label htmlFor="total_subscribers">Total Subscribers</Label>
-        <Input
-          type="number"
-          id="total_subscribers"
-          name="total_subscribers"
-          value={formData.total_subscribers}
-          onChange={handleChange}
-          placeholder="Enter total subscribers"
-        />
-      </div>
-      <div>
-        <Label htmlFor="total_views">Total Views</Label>
-        <Input
-          type="number"
-          id="total_views"
-          name="total_views"
-          value={formData.total_views}
-          onChange={handleChange}
-          placeholder="Enter total views"
-        />
-      </div>
-      <div>
-        <Label htmlFor="start_date">Start Date</Label>
-        <Input
-          type="date"
-          id="start_date"
-          name="start_date"
-          value={formData.start_date}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <Label htmlFor="video_count">Video Count</Label>
-        <Input
-          type="number"
-          id="video_count"
-          name="video_count"
-          value={formData.video_count}
-          onChange={handleChange}
-          placeholder="Enter video count"
-        />
-      </div>
-    </div>
-  </FormSection>
-);
-
-const RevenueDetails = ({ formData, handleChange }: any) => (
-  <FormSection title="Revenue Details" description="Monetization and revenue information for the channel">
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div>
-        <Label htmlFor="cpm">CPM (Cost Per Mille)</Label>
-        <Input
-          type="number"
-          id="cpm"
-          name="cpm"
-          value={formData.cpm}
-          onChange={handleChange}
-          placeholder="Enter CPM"
-        />
-      </div>
-    </div>
-  </FormSection>
-);
-
-const NotesSection = ({ notes, onNotesChange }: { notes: string; onNotesChange: (value: string) => void }) => (
-  <FormSection title="Notes" description="Additional notes or comments about the channel">
-    <div>
-      <Label htmlFor="notes">Notes</Label>
-      <Textarea
-        id="notes"
-        placeholder="Enter notes"
-        value={notes}
-        onChange={(e) => onNotesChange(e.target.value)}
-        rows={4}
-      />
-    </div>
-  </FormSection>
-);
 
 const ChannelForm: React.FC<ChannelFormProps> = ({
   formData,
@@ -286,61 +47,43 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {!isEditMode && (
-        <FormSection title="YouTube URL" description="Enter a YouTube channel URL to auto-populate the form">
-          <YouTubeUrlInput
-            youtubeUrl={youtubeUrl}
-            setYoutubeUrl={setYoutubeUrl}
-            onFetch={fetchYoutubeData}
-            loading={loading}
-          />
-        </FormSection>
+        <YouTubeUrlInput
+          youtubeUrl={youtubeUrl}
+          setYoutubeUrl={setYoutubeUrl}
+          onFetch={fetchYoutubeData}
+          loading={loading}
+        />
       )}
 
-      <ChannelIdentity
+      <ChannelIdentitySection
         formData={formData}
         handleChange={handleChange}
         handleScreenshotChange={handleScreenshotChange}
         isEditMode={isEditMode}
       />
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TypeSelector 
-          selectedType={formData.channel_type} 
-          onSelect={(typeId) => handleFieldChange('channel_type', typeId)} 
-          channelTitle={formData.channel_title}
-          description={formData.description}
-        />
-        
-        <CategorySelector 
-          selectedCategory={formData.channel_category} 
-          onSelect={(category) => handleFieldChange('channel_category', category)} 
-        />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <CountrySelector 
-          selectedCountry={formData.country} 
-          onSelect={(country) => handleFieldChange('country', country)} 
-        />
-      </div>
+      <ChannelTypeCategories 
+        formData={formData}
+        handleFieldChange={handleFieldChange}
+      />
 
-      <ChannelContent
+      <ChannelContentSection
         title={formData.channel_title}
         description={formData.description || ""}
         onDescriptionChange={(value) => handleFieldChange('description', value)}
       />
 
-      <ChannelStats
+      <ChannelStatsSection
         formData={formData}
         handleChange={handleChange}
       />
       
-      <RevenueDetails
+      <RevenueDetailsSection
         formData={formData}
         handleChange={handleChange}
       />
       
-      <NotesSection
+      <NotesFormSection
         notes={formData.notes || ""}
         onNotesChange={(value) => handleFieldChange('notes', value)}
       />

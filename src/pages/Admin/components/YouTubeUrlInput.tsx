@@ -2,6 +2,7 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import FormSectionWrapper from "./form-sections/FormSectionWrapper";
 
 interface YouTubeUrlInputProps {
   youtubeUrl: string;
@@ -22,24 +23,25 @@ const YouTubeUrlInput = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-      <h2 className="text-lg font-medium">Fetch Channel Data</h2>
-      <p className="text-sm text-gray-500">
-        Enter a YouTube URL (channel URL, video URL, or @handle) to fetch channel data
-      </p>
-      <div className="flex gap-2">
-        <Input
-          value={youtubeUrl}
-          onChange={(e) => setYoutubeUrl(e.target.value)}
-          placeholder="https://youtube.com/..."
-          className="flex-1"
-          required
-        />
-        <Button type="submit" disabled={loading || !youtubeUrl}>
-          {loading ? "Fetching..." : "Fetch"}
-        </Button>
-      </div>
-    </form>
+    <FormSectionWrapper 
+      title="YouTube URL" 
+      description="Enter a YouTube channel URL to auto-populate the form"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex gap-2">
+          <Input
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            placeholder="https://youtube.com/..."
+            className="flex-1"
+            required
+          />
+          <Button type="submit" disabled={loading || !youtubeUrl}>
+            {loading ? "Fetching..." : "Fetch"}
+          </Button>
+        </div>
+      </form>
+    </FormSectionWrapper>
   );
 };
 
