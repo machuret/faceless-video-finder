@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import { VideoStats } from "@/types/youtube";
-import VideoCard from "@/components/youtube/VideoCard";
-import { useInView } from "react-intersection-observer";
+import { Play } from "lucide-react";
+import LazyImage from "@/components/ui/lazy-image";
+import { generateChannelSlug } from "@/pages/ChannelDetails";
 
 interface FeaturedVideosProps {
   videos: VideoStats[];
@@ -11,62 +12,70 @@ interface FeaturedVideosProps {
 }
 
 const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => {
-  // State to track which videos to show (for progressive loading)
-  const [visibleVideos, setVisibleVideos] = useState(3);
-  const { ref: loadMoreRef, inView } = useInView({
-    threshold: 0.1,
-  });
-
-  // Increase visible videos when the load more marker comes into view
-  useEffect(() => {
-    if (inView) {
-      setVisibleVideos(prev => Math.min(prev + 3, 12)); // Max 12 videos
-    }
-  }, [inView]);
-
-  if (videos.length === 0 || isFeatured) {
+  if (!videos || videos.length === 0) {
     return null;
   }
 
+  // Only show top 6 videos
+  const topVideos = videos.slice(0, 6);
+
   return (
     <div className="mt-12">
-      <h2 className="font-crimson text-2xl font-bold mb-6 text-gray-800">Featured Videos</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {videos
-          .slice(0, visibleVideos)
-          .map((video: VideoStats) => (
-            <VideoCard
-              key={video.video_id}
-              title={video.title || "Untitled Video"}
-              video_id={video.video_id}
-              thumbnail_url={video.thumbnail_url || ""}
-              stats={`${video.views?.toLocaleString() || 0} views`}
-            />
-          ))}
+      <h2 className="font-crimson text-2xl font-bold text-gray-800 mb-4">
+        {isFeatured ? "Featured Videos" : "Popular Videos"}
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {topVideos.map((video) => {
+          // Create SEO-friendly channel URL
+          const channelSlug = generateChannelSlug(video.channel_title || "");
+          const seoUrl = `/channel/${channelSlug}-${video.channel_id}`;
+          
+          return (
+            <Card key={video.id} className="hover:shadow-md transition-shadow">
+              <Link to={seoUrl}>
+                <div className="aspect-video bg-gray-100 relative overflow-hidden">
+                  {video.thumbnail_url ? (
+                    <LazyImage
+                      src={video.thumbnail_url}
+                      alt={video.title || "Video thumbnail"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-400">No thumbnail</p>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <Play className="h-12 w-12 text-white" />
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-crimson text-lg font-semibold mb-2 line-clamp-2">
+                    {video.title || "Untitled video"}
+                  </h3>
+                  <div className="flex items-center gap-x-4 text-sm text-gray-500">
+                    {video.views && (
+                      <div className="flex items-center">
+                        <span className="font-medium">{parseInt(video.views.toString()).toLocaleString()}</span>
+                        <span className="ml-1">views</span>
+                      </div>
+                    )}
+                    {video.likes && (
+                      <div>
+                        <span className="font-medium">{parseInt(video.likes.toString()).toLocaleString()}</span>
+                        <span className="ml-1">likes</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-blue-600 mt-2 font-montserrat">
+                    {video.channel_title || "Unknown channel"}
+                  </p>
+                </CardContent>
+              </Link>
+            </Card>
+          );
+        })}
       </div>
-      
-      {/* Load more marker */}
-      {visibleVideos < videos.length && visibleVideos < 12 && (
-        <div
-          ref={loadMoreRef}
-          className="text-center py-8"
-        >
-          <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-blue-400 border-r-transparent"></div>
-          <p className="text-gray-500 text-sm mt-2">Loading more videos...</p>
-        </div>
-      )}
-      
-      {visibleVideos < videos.length && visibleVideos >= 12 && (
-        <div className="text-center mt-8">
-          <Button
-            onClick={() => setVisibleVideos(prev => Math.min(prev + 6, videos.length))}
-            variant="outline"
-            className="mx-auto"
-          >
-            Load More Videos
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
