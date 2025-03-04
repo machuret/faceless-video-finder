@@ -53,6 +53,7 @@ export const useChannelDataFetcher = (
       
       // Map database data to form data
       const formattedData: ChannelFormData = {
+        id: data.id || "",
         video_id: data.video_id || "",
         channel_title: data.channel_title || "",
         channel_url: data.channel_url || "",

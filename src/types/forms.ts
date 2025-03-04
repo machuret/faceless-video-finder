@@ -1,5 +1,5 @@
-
 export interface ChannelFormData {
+  id?: string;
   video_id: string;
   channel_title: string;
   channel_url: string;
