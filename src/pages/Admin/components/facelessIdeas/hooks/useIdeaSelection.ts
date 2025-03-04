@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { FacelessIdeaInfo } from "@/services/facelessIdeas/types";
 import { fetchFacelessIdeaById } from "@/services/facelessIdeas";

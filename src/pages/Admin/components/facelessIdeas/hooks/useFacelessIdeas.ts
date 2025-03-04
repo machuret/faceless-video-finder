@@ -7,7 +7,7 @@ import { useFormSubmission } from "./useFormSubmission";
 import { useIdeaDeletion } from "./useIdeaDeletion";
 import { useIdeaEnhancement } from "./useIdeaEnhancement";
 import { useCsvImport } from "./useCsvImport";
-import { useIdeaSelection } from "./useIdeaSelection";
+import useIdeaSelection from "./useIdeaSelection";
 
 export const useFacelessIdeas = () => {
   const initialFormState: FacelessIdeaInfo = {
