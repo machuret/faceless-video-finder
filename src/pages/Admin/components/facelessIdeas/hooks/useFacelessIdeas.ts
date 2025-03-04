@@ -1,4 +1,3 @@
-
 import { FacelessIdeaInfo } from "@/services/facelessIdeas";
 import { useDataFetching } from "./useDataFetching";
 import { useTabState } from "./useTabState";
@@ -16,7 +15,8 @@ export const useFacelessIdeas = () => {
     label: "",
     description: null,
     production: null,
-    example: null
+    example: null,
+    image_url: null
   };
 
   const { 

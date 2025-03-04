@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { createFacelessIdea } from "./mutationService";
 
@@ -90,7 +89,8 @@ export const processCsvImport = async (csvData: string): Promise<{ success: numb
         label,
         description: formattedDescription,
         production: formattedProduction,
-        example: formattedExample
+        example: formattedExample,
+        image_url: null
       });
       success++;
     } catch (error) {

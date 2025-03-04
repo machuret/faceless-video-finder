@@ -1,34 +1,42 @@
+import { useState } from "react";
+import { FacelessIdeaInfo } from "@/services/facelessIdeas/types";
+import { fetchFacelessIdeaById } from "@/services/facelessIdeas";
 
-import { toast } from "sonner";
-import { FacelessIdeaInfo, getFacelessIdeaById } from "@/services/facelessIdeas";
+const useIdeaSelection = () => {
+  const [selectedIdea, setSelectedIdea] = useState<FacelessIdeaInfo | null>(null);
+  const [loadingIdea, setLoadingIdea] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export const useIdeaSelection = (
-  setSelectedIdea: React.Dispatch<React.SetStateAction<FacelessIdeaInfo | null>>,
-  setFormData: React.Dispatch<React.SetStateAction<FacelessIdeaInfo>>,
-  setActiveTab: (tab: string) => void,
-  initialFormState: FacelessIdeaInfo
-) => {
-  const handleSelectIdea = async (id: string) => {
+  const selectIdea = async (id: string) => {
+    setLoadingIdea(true);
+    setError(null);
     try {
-      const idea = await getFacelessIdeaById(id);
+      const idea = await fetchFacelessIdeaById(id);
       if (idea) {
         setSelectedIdea(idea);
-        setFormData(idea);
-        setActiveTab("edit");
       } else {
-        toast.error("Faceless idea not found");
+        setError(`Faceless idea with ID ${id} not found.`);
+        setSelectedIdea(null);
       }
-    } catch (error) {
-      console.error("Error selecting faceless idea:", error);
-      toast.error("Error loading faceless idea details");
+    } catch (e: any) {
+      setError(`Failed to fetch faceless idea: ${e.message}`);
+      setSelectedIdea(null);
+    } finally {
+      setLoadingIdea(false);
     }
   };
-  
-  const handleCreateNew = () => {
+
+  const clearSelection = () => {
     setSelectedIdea(null);
-    setFormData(initialFormState);
-    setActiveTab("edit");
   };
 
-  return { handleSelectIdea, handleCreateNew };
+  return {
+    selectedIdea,
+    loadingIdea,
+    error,
+    selectIdea,
+    clearSelection,
+  };
 };
+
+export default useIdeaSelection;
