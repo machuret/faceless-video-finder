@@ -27,12 +27,17 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
   }, [channelId, slug]);
 
   const extractIdFromSlug = (slug: string): string | null => {
-    // The ID is expected to be the last part after the last hyphen
-    const lastHyphenIndex = slug.lastIndexOf('-');
-    if (lastHyphenIndex === -1) return null;
+    // UUID pattern: 8-4-4-4-12 hex digits with hyphens
+    // Example: ac004f01-4aad-439d-b1ab-59988473f7fc
+    const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const match = slug.match(uuidPattern);
     
-    // Return everything after the last hyphen
-    return slug.substring(lastHyphenIndex + 1);
+    if (match && match[0]) {
+      console.log("Extracted UUID from slug:", match[0]);
+      return match[0];
+    }
+    
+    return null;
   };
 
   const fetchChannelDetails = async (id: string) => {
