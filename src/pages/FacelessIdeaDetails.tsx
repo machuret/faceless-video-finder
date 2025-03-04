@@ -1,101 +1,48 @@
 
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
-import { getFacelessIdeaById, FacelessIdeaInfo, updateFacelessIdea } from "@/services/facelessIdeas";
+import { fetchFacelessIdeaById } from "@/services/facelessIdeas";
+import { FacelessIdeaInfo } from "@/services/facelessIdeas/types";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 const FacelessIdeaDetails = () => {
-  const { ideaId } = useParams<{ ideaId: string }>();
+  const { id } = useParams<{ id: string }>();
   const [idea, setIdea] = useState<FacelessIdeaInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [enhancing, setEnhancing] = useState(false);
 
   useEffect(() => {
-    const loadIdeaDetails = async () => {
-      if (!ideaId) return;
-      
+    if (!id) return;
+
+    const loadIdea = async () => {
       try {
         setLoading(true);
-        const data = await getFacelessIdeaById(ideaId);
+        const data = await fetchFacelessIdeaById(id);
         setIdea(data);
       } catch (error) {
-        console.error("Error loading faceless idea details:", error);
+        console.error("Error loading faceless idea:", error);
         toast.error("Failed to load faceless idea details");
       } finally {
         setLoading(false);
       }
     };
 
-    loadIdeaDetails();
-  }, [ideaId]);
-
-  const handleEnhanceDescription = async () => {
-    if (!idea) return;
-    
-    setEnhancing(true);
-    toast.info("Enhancing description...", { duration: 2000 });
-    
-    try {
-      console.log("Calling enhance-faceless-idea function with:", { 
-        label: idea.label,
-        description: idea.description
-      });
-      
-      const { data, error } = await supabase.functions.invoke('enhance-faceless-idea', {
-        body: { 
-          label: idea.label,
-          description: idea.description
-        }
-      });
-      
-      console.log("Response from enhance-faceless-idea:", { data, error });
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data?.enhancedDescription) {
-        // Clean the description from markdown/HTML code blocks
-        let cleanedDescription = data.enhancedDescription;
-        
-        // Remove ```html and ``` tags that might be in the response
-        cleanedDescription = cleanedDescription.replace(/```html/g, "");
-        cleanedDescription = cleanedDescription.replace(/```/g, "");
-        
-        // Save to database
-        const updatedIdea = { ...idea, description: cleanedDescription };
-        await updateFacelessIdea(updatedIdea);
-        
-        // Update local state
-        setIdea(prev => prev ? {...prev, description: cleanedDescription} : null);
-        toast.success("Description enhanced successfully!");
-      } else {
-        throw new Error("No enhanced description received");
-      }
-    } catch (error) {
-      console.error("Error enhancing description:", error);
-      toast.error("Failed to enhance description: " + (error instanceof Error ? error.message : "Unknown error"));
-    } finally {
-      setEnhancing(false);
-    }
-  };
+    loadIdea();
+  }, [id]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <MainNavbar />
         <div className="container mx-auto px-4 py-12">
-          <div className="flex justify-center py-10">
+          <div className="flex justify-center py-16">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         </div>
-        <PageFooter />
       </div>
     );
   }
@@ -105,18 +52,13 @@ const FacelessIdeaDetails = () => {
       <div className="min-h-screen bg-gray-50">
         <MainNavbar />
         <div className="container mx-auto px-4 py-12">
-          <Card className="p-8 text-center">
-            <h2 className="text-xl font-semibold mb-4">Faceless Idea Not Found</h2>
-            <p className="text-gray-600 mb-6">The faceless content idea you're looking for doesn't exist or has been removed.</p>
-            <Link to="/faceless-ideas">
-              <Button>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to All Ideas
-              </Button>
+          <Card className="p-6 text-center">
+            <p className="text-gray-500">Faceless idea not found.</p>
+            <Link to="/faceless-ideas" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
+              Back to all ideas
             </Link>
           </Card>
         </div>
-        <PageFooter />
       </div>
     );
   }
@@ -129,59 +71,64 @@ const FacelessIdeaDetails = () => {
         <div className="mb-6">
           <Link 
             to="/faceless-ideas" 
-            className="inline-flex items-center text-blue-600 hover:text-blue-800"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Faceless Ideas
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back to all ideas
           </Link>
+          
+          <h1 className="font-crimson text-3xl font-bold text-gray-800">{idea.label}</h1>
         </div>
         
-        <Card className="mb-8 overflow-hidden">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl md:text-3xl font-bold">{idea.label}</h1>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEnhanceDescription}
-                disabled={enhancing}
-                className="flex items-center gap-1"
-              >
-                <Sparkles className="h-4 w-4" />
-                {enhancing ? "Enhancing..." : "Enhance Description"}
-              </Button>
-            </div>
-            
-            {idea.description && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-3">Description</h2>
-                <div 
-                  className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: idea.description }}
-                />
-              </div>
-            )}
-            
-            {idea.production && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-3">How to Create</h2>
-                <div 
-                  className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: idea.production }}
-                />
-              </div>
-            )}
-            
-            {idea.example && (
-              <div>
-                <h2 className="text-xl font-semibold mb-3">Examples</h2>
-                <div 
-                  className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: idea.example }}
-                />
-              </div>
-            )}
+        {idea.image_url && (
+          <div className="mb-8 max-w-3xl w-full mx-auto">
+            <img 
+              src={idea.image_url} 
+              alt={idea.label}
+              className="w-full rounded-lg shadow-md object-cover max-h-96" 
+            />
           </div>
+        )}
+        
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="font-crimson text-xl font-semibold mb-4">Description</h2>
+            {idea.description ? (
+              <div 
+                className="font-lato text-gray-700 prose max-w-none" 
+                dangerouslySetInnerHTML={{ __html: idea.description }}
+              />
+            ) : (
+              <p className="text-gray-500">No description available.</p>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="font-crimson text-xl font-semibold mb-4">How to Create</h2>
+            {idea.production ? (
+              <div 
+                className="font-lato text-gray-700 prose max-w-none" 
+                dangerouslySetInnerHTML={{ __html: idea.production }}
+              />
+            ) : (
+              <p className="text-gray-500">No production details available.</p>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="font-crimson text-xl font-semibold mb-4">Examples</h2>
+            {idea.example ? (
+              <div 
+                className="font-lato text-gray-700 prose max-w-none" 
+                dangerouslySetInnerHTML={{ __html: idea.example }}
+              />
+            ) : (
+              <p className="text-gray-500">No examples available.</p>
+            )}
+          </CardContent>
         </Card>
       </div>
       

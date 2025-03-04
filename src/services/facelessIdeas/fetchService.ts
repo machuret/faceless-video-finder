@@ -18,14 +18,14 @@ export const fetchFacelessIdeas = async (): Promise<FacelessIdeaInfo[]> => {
   }
 };
 
-// Get a specific faceless idea by ID
-export const getFacelessIdeaById = async (id: string): Promise<FacelessIdeaInfo | null> => {
+// Fetch a single faceless idea by ID
+export const fetchFacelessIdeaById = async (id: string): Promise<FacelessIdeaInfo | null> => {
   try {
     const { data, error } = await supabase
       .from("faceless_ideas")
       .select("*")
       .eq("id", id)
-      .maybeSingle();
+      .single();
 
     if (error) throw error;
     return data;

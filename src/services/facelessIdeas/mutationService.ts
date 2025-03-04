@@ -29,6 +29,7 @@ export const updateFacelessIdea = async (idea: FacelessIdeaUpdateInput): Promise
         description: idea.description,
         production: idea.production,
         example: idea.example,
+        image_url: idea.image_url,
         updated_at: new Date().toISOString(),
       })
       .eq("id", idea.id)

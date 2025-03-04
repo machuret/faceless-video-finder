@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -59,44 +58,42 @@ const FeaturedChannels = () => {
 
       if (error) throw error;
       
-      // Fix the deep type instantiation issue by simplifying the type handling
-      // First, cast the raw data to any, then convert to the Channel type
+      // Create a properly typed array to avoid deep type instantiation
       const typedChannels: Channel[] = [];
       
-      if (data && data.length > 0) {
-        // Process each item separately to avoid deep type instantiation
-        data.forEach((item: any) => {
-          const channel: Channel = {
+      if (data) {
+        for (const item of data) {
+          // Explicitly construct each channel object to avoid type recursion
+          typedChannels.push({
             id: item.id,
             video_id: item.video_id,
             channel_title: item.channel_title,
             channel_url: item.channel_url,
-            description: item.description,
-            screenshot_url: item.screenshot_url,
-            total_subscribers: item.total_subscribers ? Number(item.total_subscribers) : undefined,
-            total_views: item.total_views ? Number(item.total_views) : undefined,
-            start_date: item.start_date,
-            video_count: item.video_count ? Number(item.video_count) : undefined,
-            cpm: item.cpm ? Number(item.cpm) : undefined,
-            channel_type: item.channel_type,
-            country: item.country,
-            channel_category: item.channel_category,
-            notes: item.notes,
-            niche: item.niche,
-            keywords: item.keywords,
-            is_featured: item.is_featured,
-            upload_frequency: item.upload_frequency,
-            revenue_per_month: item.revenue_per_month ? Number(item.revenue_per_month) : undefined,
-            revenue_per_video: item.revenue_per_video ? Number(item.revenue_per_video) : undefined,
-            potential_revenue: item.potential_revenue ? Number(item.potential_revenue) : undefined,
-            uses_ai: item.uses_ai,
-            channel_size: item.channel_size,
-            metadata: item.metadata,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-          };
-          typedChannels.push(channel);
-        });
+            description: item.description || undefined,
+            screenshot_url: item.screenshot_url || undefined,
+            total_subscribers: typeof item.total_subscribers === 'number' ? item.total_subscribers : undefined,
+            total_views: typeof item.total_views === 'number' ? item.total_views : undefined,
+            start_date: item.start_date || undefined,
+            video_count: typeof item.video_count === 'number' ? item.video_count : undefined,
+            cpm: typeof item.cpm === 'number' ? item.cpm : undefined,
+            channel_type: item.channel_type || undefined,
+            country: item.country || undefined,
+            channel_category: item.channel_category || undefined,
+            notes: item.notes || undefined,
+            niche: item.niche || undefined,
+            keywords: item.keywords || undefined,
+            is_featured: !!item.is_featured,
+            upload_frequency: item.upload_frequency || undefined,
+            revenue_per_month: typeof item.revenue_per_month === 'number' ? item.revenue_per_month : undefined,
+            revenue_per_video: typeof item.revenue_per_video === 'number' ? item.revenue_per_video : undefined,
+            potential_revenue: typeof item.potential_revenue === 'number' ? item.potential_revenue : undefined,
+            uses_ai: !!item.uses_ai,
+            channel_size: item.channel_size || undefined,
+            metadata: item.metadata || undefined,
+            created_at: item.created_at || undefined,
+            updated_at: item.updated_at || undefined,
+          });
+        }
       }
       
       setChannels(typedChannels);
@@ -184,7 +181,6 @@ export default function Dashboard() {
     }
   }, [user, isAdmin, loading, navigate]);
 
-  // If still loading or not authorized, show loading state
   if (loading || !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -201,7 +197,6 @@ export default function Dashboard() {
       <MainNavbar />
       <DashboardHeader />
       <div className="container mx-auto px-4 py-8">
-        {/* Featured Channels Section */}
         <FeaturedChannels />
         
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">

@@ -54,8 +54,17 @@ const FacelessIdeas = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {ideas.map((idea) => (
-              <Card key={idea.id} className="hover:shadow-lg transition-shadow h-full">
-                <CardContent className="p-6 flex flex-col h-full">
+              <Card key={idea.id} className="hover:shadow-lg transition-shadow h-full overflow-hidden">
+                {idea.image_url && (
+                  <div className="w-full h-48 overflow-hidden">
+                    <img 
+                      src={idea.image_url} 
+                      alt={idea.label}
+                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                    />
+                  </div>
+                )}
+                <CardContent className={`p-6 flex flex-col ${idea.image_url ? 'h-auto' : 'h-full'}`}>
                   <CardTitle className="font-crimson text-xl mb-3">{idea.label}</CardTitle>
                   <p className="font-lato text-sm text-gray-600 mb-4 flex-grow">
                     {idea.description ? (
