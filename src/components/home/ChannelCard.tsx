@@ -54,7 +54,7 @@ const ChannelCard = ({ channel, isFeatured = false }: ChannelCardProps) => {
               <span className="ml-1">views</span>
             </div>
           </div>
-          <p className="font-lato text-gray-600 line-clamp-2 text-sm mb-2">
+          <p className="font-crimson text-black line-clamp-2 text-base mb-2">
             {channel.description || "No description available"}
           </p>
           <div className="flex flex-wrap gap-1 mt-2">
