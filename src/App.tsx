@@ -1,4 +1,3 @@
-
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -47,9 +46,11 @@ function App() {
         <Route path="/reach-calculator" element={<ReachCalculator />} />
         <Route path="/growth-calculator" element={<GrowthRateCalculator />} />
         
-        {/* SEO-friendly channel routes */}
-        <Route path="/channel/:slug" element={<ChannelDetails />} />
+        {/* Legacy channel route - keep for backward compatibility */}
         <Route path="/channels/:channelId" element={<ChannelDetails />} />
+        
+        {/* SEO-friendly channel route */}
+        <Route path="/channel/:slug" element={<ChannelDetails />} />
         
         <Route path="/faceless-ideas" element={<FacelessIdeas />} />
         <Route path="/faceless-channels" element={<FacelessChannelIdeas />} />

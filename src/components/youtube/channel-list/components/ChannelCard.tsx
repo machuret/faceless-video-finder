@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Star, StarOff } from "lucide-react";
+import { generateChannelSlug } from "@/pages/ChannelDetails";
 
 interface ChannelCardProps {
   channel: Channel;
@@ -31,6 +32,10 @@ export const ChannelCard: React.FC<ChannelCardProps> = ({
   onToggleFeatured
 }) => {
   const navigate = useNavigate();
+  
+  // Generate a SEO-friendly URL like the homepage does
+  const channelSlug = generateChannelSlug(channel.channel_title);
+  const seoUrl = `/channel/${channelSlug}-${channel.id}`;
 
   return (
     <Card key={channel.id} className={`overflow-hidden hover:shadow-md transition-shadow ${channel.is_featured ? 'border-yellow-400 border-2' : ''}`}>
@@ -95,7 +100,7 @@ export const ChannelCard: React.FC<ChannelCardProps> = ({
             variant="outline" 
             size="sm" 
             className="w-full"
-            onClick={() => navigate(`/channel/${channel.id}`)}
+            onClick={() => navigate(seoUrl)}
           >
             View Details
           </Button>

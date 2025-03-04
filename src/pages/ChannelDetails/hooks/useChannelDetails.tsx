@@ -39,6 +39,8 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
   const fetchChannelDetails = async (id: string) => {
     setLoading(true);
     try {
+      console.log(`Fetching channel details for ID: ${id}`);
+      
       // Fetch channel details
       const { data: channelData, error: channelError } = await supabase
         .from("youtube_channels")
@@ -46,7 +48,15 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
         .eq("id", id)
         .single();
 
-      if (channelError) throw channelError;
+      if (channelError) {
+        console.error("Error fetching channel details:", channelError);
+        throw channelError;
+      }
+      
+      if (!channelData) {
+        console.error("No channel found with ID:", id);
+        throw new Error("Channel not found");
+      }
       
       // Fetch video stats for this channel
       const { data: videoData, error: videoError } = await supabase
