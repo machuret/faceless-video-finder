@@ -66,6 +66,7 @@ export type Database = {
           description: string | null
           example: string | null
           id: string
+          image_url: string | null
           label: string
           production: string | null
           updated_at: string | null
@@ -75,6 +76,7 @@ export type Database = {
           description?: string | null
           example?: string | null
           id: string
+          image_url?: string | null
           label: string
           production?: string | null
           updated_at?: string | null
@@ -84,6 +86,7 @@ export type Database = {
           description?: string | null
           example?: string | null
           id?: string
+          image_url?: string | null
           label?: string
           production?: string | null
           updated_at?: string | null

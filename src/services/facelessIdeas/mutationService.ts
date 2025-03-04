@@ -17,7 +17,7 @@ export const createFacelessIdea = async (idea: FacelessIdeaCreateInput): Promise
     return {
       ...data,
       image_url: data.image_url || null
-    };
+    } as FacelessIdeaInfo;
   } catch (error: any) {
     console.error("Error creating faceless idea:", error.message);
     throw error;
@@ -47,7 +47,7 @@ export const updateFacelessIdea = async (idea: FacelessIdeaUpdateInput): Promise
     return {
       ...data,
       image_url: data.image_url || null
-    };
+    } as FacelessIdeaInfo;
   } catch (error: any) {
     console.error(`Error updating faceless idea with ID ${idea.id}:`, error.message);
     throw error;

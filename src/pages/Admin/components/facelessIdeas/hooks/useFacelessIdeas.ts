@@ -54,11 +54,14 @@ export const useFacelessIdeas = () => {
   
   // Create utility functions to handle selection and new idea creation
   const handleSelectIdea = async (id: string) => {
-    await selectIdea(id);
+    const selectedIdea = await selectIdea(id);
+    setSelectedIdea(selectedIdea);
+    setFormData(selectedIdea || initialFormState);
     setActiveTab("edit");
   };
   
   const handleCreateNew = () => {
+    clearSelection();
     setSelectedIdea(null);
     setFormData(initialFormState);
     setActiveTab("edit");

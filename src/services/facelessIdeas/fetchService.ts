@@ -16,7 +16,7 @@ export const fetchFacelessIdeas = async (): Promise<FacelessIdeaInfo[]> => {
     return (data || []).map(item => ({
       ...item,
       image_url: item.image_url || null
-    }));
+    })) as FacelessIdeaInfo[];
   } catch (error: any) {
     console.error("Error fetching faceless ideas:", error.message);
     throw error;
@@ -38,7 +38,7 @@ export const fetchFacelessIdeaById = async (id: string): Promise<FacelessIdeaInf
     return data ? {
       ...data,
       image_url: data.image_url || null
-    } : null;
+    } as FacelessIdeaInfo : null;
   } catch (error: any) {
     console.error(`Error fetching faceless idea with ID ${id}:`, error.message);
     throw error;

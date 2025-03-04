@@ -8,20 +8,23 @@ const useIdeaSelection = () => {
   const [loadingIdea, setLoadingIdea] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectIdea = async (id: string) => {
+  const selectIdea = async (id: string): Promise<FacelessIdeaInfo | null> => {
     setLoadingIdea(true);
     setError(null);
     try {
       const idea = await fetchFacelessIdeaById(id);
       if (idea) {
         setSelectedIdea(idea);
+        return idea;
       } else {
         setError(`Faceless idea with ID ${id} not found.`);
         setSelectedIdea(null);
+        return null;
       }
     } catch (e: any) {
       setError(`Failed to fetch faceless idea: ${e.message}`);
       setSelectedIdea(null);
+      return null;
     } finally {
       setLoadingIdea(false);
     }
