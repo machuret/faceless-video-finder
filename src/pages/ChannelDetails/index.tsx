@@ -1,5 +1,5 @@
 
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
 import { Loader2 } from "lucide-react";
@@ -7,10 +7,20 @@ import { useChannelDetails } from "./hooks/useChannelDetails";
 import ChannelHeader from "./components/ChannelHeader";
 import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
+import { useEffect } from "react";
 
 const ChannelDetails = () => {
-  const { channelId } = useParams();
-  const { channel, videoStats, loading, error } = useChannelDetails(channelId);
+  const { channelId, slug } = useParams();
+  const navigate = useNavigate();
+  const { channel, videoStats, loading, error } = useChannelDetails(channelId, slug);
+
+  // Redirect to SEO-friendly URL if user arrived via channelId
+  useEffect(() => {
+    if (!loading && channel && channelId && !slug) {
+      const channelSlug = generateChannelSlug(channel.channel_title);
+      navigate(`/channel/${channelSlug}-${channel.id}`, { replace: true });
+    }
+  }, [loading, channel, channelId, slug, navigate]);
 
   if (loading) {
     return (
@@ -55,6 +65,16 @@ const ChannelDetails = () => {
       <PageFooter />
     </div>
   );
+};
+
+// Helper function to generate slug from channel title
+export const generateChannelSlug = (title: string): string => {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-')     // Replace spaces with hyphens
+    .replace(/-+/g, '-')      // Remove consecutive hyphens
+    .trim();                  // Trim leading/trailing spaces
 };
 
 export default ChannelDetails;

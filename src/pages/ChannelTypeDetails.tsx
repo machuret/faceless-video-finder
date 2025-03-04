@@ -11,6 +11,7 @@ import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { getChannelTypeById } from "@/services/channelTypeService";
+import { generateChannelSlug } from "@/pages/ChannelDetails";
 
 interface SupabaseChannelData {
   id: string;
@@ -172,9 +173,12 @@ const ChannelTypeDetails = () => {
 };
 
 const ChannelCard = ({ channel }: { channel: Channel }) => {
+  const channelSlug = generateChannelSlug(channel.channel_title);
+  const seoUrl = `/channel/${channelSlug}-${channel.id}`;
+  
   return (
     <Card className="overflow-hidden h-full flex flex-col">
-      <Link to={`/channel/${channel.id}`} className="flex-grow p-4 hover:bg-gray-50 transition-colors">
+      <Link to={seoUrl} className="flex-grow p-4 hover:bg-gray-50 transition-colors">
         <div className="flex items-start gap-4 mb-4">
           {channel.screenshot_url && (
             <img

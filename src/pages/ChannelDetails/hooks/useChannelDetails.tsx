@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Channel } from "@/types/youtube";
 import { toast } from "sonner";
 
-export const useChannelDetails = (channelId: string | undefined) => {
+export const useChannelDetails = (channelId?: string, slug?: string) => {
   const [channel, setChannel] = useState<Channel | null>(null);
   const [videoStats, setVideoStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,9 +12,29 @@ export const useChannelDetails = (channelId: string | undefined) => {
 
   useEffect(() => {
     if (channelId) {
+      // Direct ID lookup
       fetchChannelDetails(channelId);
+    } else if (slug) {
+      // Extract ID from slug (format: title-id)
+      const idFromSlug = extractIdFromSlug(slug);
+      if (idFromSlug) {
+        fetchChannelDetails(idFromSlug);
+      } else {
+        setError("Invalid channel URL");
+        setLoading(false);
+      }
     }
-  }, [channelId]);
+  }, [channelId, slug]);
+
+  const extractIdFromSlug = (slug: string): string | null => {
+    // The ID is expected to be the last part after the last hyphen
+    const parts = slug.split('-');
+    const potentialId = parts[parts.length - 1];
+    
+    // Basic UUID validation (simple regex for UUID format)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(potentialId) ? potentialId : null;
+  };
 
   const fetchChannelDetails = async (id: string) => {
     setLoading(true);

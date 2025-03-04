@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { CHANNELS_PER_PAGE } from "./types";
-import { ChannelCategory } from "@/types/youtube";
+import { Channel, ChannelCategory } from "@/types/youtube";
 import { toast } from "sonner";
 
 /**
@@ -52,7 +52,7 @@ export const fetchChannelsData = async (
         id, channel_title, channel_url, video_id, description, 
         screenshot_url, total_subscribers, total_views, 
         channel_category, channel_type, keywords, niche, 
-        country, cpm, created_at
+        country, cpm, created_at, metadata, is_featured
       `);
     
     // Add category filter if selected
@@ -96,10 +96,10 @@ export const fetchChannelsData = async (
       channels.push({
         ...channel,
         videoStats: videoStats || []
-      });
+      } as Channel);
     }
     
-    return channels;
+    return channels as Channel[];
   } catch (error: any) {
     console.error("Error in fetchChannelsData:", error);
     toast.error("Failed to fetch channels data");
@@ -121,7 +121,7 @@ export const fetchFeaturedChannelsData = async () => {
         id, channel_title, channel_url, video_id, description, 
         screenshot_url, total_subscribers, total_views, 
         channel_category, channel_type, keywords, niche, 
-        country, cpm, is_featured
+        country, cpm, is_featured, metadata
       `)
       .eq("is_featured", true)
       .limit(3);
@@ -156,10 +156,10 @@ export const fetchFeaturedChannelsData = async () => {
       featuredChannels.push({
         ...channel,
         videoStats: videoStats || []
-      });
+      } as Channel);
     }
     
-    return featuredChannels;
+    return featuredChannels as Channel[];
   } catch (error) {
     console.error("Error in fetchFeaturedChannelsData:", error);
     return [];

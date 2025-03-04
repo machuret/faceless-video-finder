@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Channel } from "@/types/youtube";
 import { Star } from "lucide-react";
 import LazyImage from "@/components/ui/lazy-image";
+import { generateChannelSlug } from "@/pages/ChannelDetails";
 
 interface ChannelCardProps {
   channel: Channel;
@@ -11,11 +12,15 @@ interface ChannelCardProps {
 }
 
 const ChannelCard = ({ channel, isFeatured = false }: ChannelCardProps) => {
+  // Create SEO-friendly URL
+  const channelSlug = generateChannelSlug(channel.channel_title);
+  const seoUrl = `/channel/${channelSlug}-${channel.id}`;
+
   return (
     <Card 
       className={`hover:shadow-lg transition-shadow overflow-hidden ${isFeatured ? 'border-yellow-400 border-2' : ''}`}
     >
-      <Link to={`/channels/${channel.id}`}>
+      <Link to={seoUrl}>
         <div className="aspect-video bg-gray-200 relative overflow-hidden">
           {channel.screenshot_url ? (
             <LazyImage 
