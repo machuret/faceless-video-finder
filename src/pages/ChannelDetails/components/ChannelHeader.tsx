@@ -1,13 +1,19 @@
 
-import { Globe, BarChart, Bookmark, Upload } from "lucide-react";
+import { Globe, BarChart, Bookmark, Upload, Camera } from "lucide-react";
 import { Channel } from "@/types/youtube";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ChannelHeaderProps {
   channel: Channel;
 }
 
 const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
+  const [takingScreenshot, setTakingScreenshot] = useState(false);
+  
   // Get channel type label
   const getChannelTypeLabel = (typeId: string | undefined) => {
     if (!typeId) return 'N/A';
@@ -24,10 +30,60 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
       .join(' ');
   };
 
+  // Handle taking a screenshot of the channel
+  const handleTakeScreenshot = async () => {
+    if (!channel.channel_url) {
+      toast.error("Channel URL is required to take a screenshot");
+      return;
+    }
+    
+    setTakingScreenshot(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
+        body: {
+          channelUrl: channel.channel_url,
+          channelId: channel.id
+        }
+      });
+      
+      if (error) {
+        console.error("Error taking screenshot:", error);
+        toast.error("Failed to take channel screenshot");
+        return;
+      }
+      
+      if (data.success) {
+        toast.success("Channel screenshot taken successfully!");
+        // Reload the page to show the updated screenshot
+        window.location.reload();
+      } else {
+        toast.error(data.message || "Failed to take channel screenshot");
+      }
+    } catch (err) {
+      console.error("Error invoking screenshot function:", err);
+      toast.error("An error occurred while taking the screenshot");
+    } finally {
+      setTakingScreenshot(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
-        <h1 className="text-3xl font-bold mb-2">{channel.channel_title}</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold mb-2">{channel.channel_title}</h1>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={handleTakeScreenshot}
+            disabled={takingScreenshot}
+            className="flex items-center gap-2"
+          >
+            <Camera className="h-4 w-4" />
+            {takingScreenshot ? "Taking Screenshot..." : "Take Screenshot"}
+          </Button>
+        </div>
         {channel.niche && (
           <div className="inline-block px-3 py-1 bg-blue-500 bg-opacity-30 rounded-full text-sm font-medium">
             {channel.niche}

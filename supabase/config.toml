@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.generate-channel-type]
 verify_jwt = false
+
+[functions.take-channel-screenshot]
+verify_jwt = false
