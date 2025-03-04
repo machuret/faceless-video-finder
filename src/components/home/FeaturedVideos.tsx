@@ -5,6 +5,8 @@ import { VideoStats } from "@/types/youtube";
 import { Play } from "lucide-react";
 import LazyImage from "@/components/ui/lazy-image";
 import { generateChannelSlug } from "@/pages/ChannelDetails";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 interface FeaturedVideosProps {
   videos: VideoStats[];
@@ -12,6 +14,38 @@ interface FeaturedVideosProps {
 }
 
 const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => {
+  const [channelTitles, setChannelTitles] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    // Get unique channel IDs from videos
+    const channelIds = [...new Set(videos.filter(v => v.channel_id).map(v => v.channel_id))];
+    
+    if (channelIds.length === 0) return;
+    
+    // Fetch channel titles for these IDs
+    const fetchChannelTitles = async () => {
+      const { data, error } = await supabase
+        .from("youtube_channels")
+        .select("id, channel_title")
+        .in("id", channelIds);
+      
+      if (error) {
+        console.error("Error fetching channel titles:", error);
+        return;
+      }
+      
+      // Create a map of channel ID to channel title
+      const titleMap = data.reduce((acc, channel) => {
+        acc[channel.id] = channel.channel_title;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      setChannelTitles(titleMap);
+    };
+    
+    fetchChannelTitles();
+  }, [videos]);
+
   if (!videos || videos.length === 0) {
     return null;
   }
@@ -29,9 +63,11 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
           // Use a fallback for channel_id if it's not available
           const channelId = video.channel_id || "";
           
-          // Create SEO-friendly channel URL
-          const channelLabel = "channel";
-          const channelSlug = generateChannelSlug(channelLabel);
+          // Get channel title from our state
+          const channelTitle = channelTitles[channelId] || "Unknown channel";
+          
+          // Create SEO-friendly channel URL with actual channel title
+          const channelSlug = generateChannelSlug(channelTitle);
           const seoUrl = `/channel/${channelSlug}-${channelId}`;
           
           // Direct link to YouTube video if available
@@ -41,51 +77,84 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
           
           return (
             <Card key={video.id} className="hover:shadow-md transition-shadow">
-              <a href={videoUrl} target="_blank" rel="noopener noreferrer">
-                <div className="aspect-video bg-gray-100 relative overflow-hidden">
-                  {video.thumbnail_url ? (
-                    <LazyImage
-                      src={video.thumbnail_url}
-                      alt={video.title || "Video thumbnail"}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-gray-400">No thumbnail</p>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <Play className="h-12 w-12 text-white" />
-                  </div>
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-crimson text-lg font-semibold mb-2 line-clamp-2">
-                    {video.title || "Untitled video"}
-                  </h3>
-                  <div className="flex items-center gap-x-4 text-sm text-gray-500">
-                    {video.views && (
-                      <div className="flex items-center">
-                        <span className="font-medium">{parseInt(video.views.toString()).toLocaleString()}</span>
-                        <span className="ml-1">views</span>
-                      </div>
-                    )}
-                    {video.likes && (
-                      <div>
-                        <span className="font-medium">{parseInt(video.likes.toString()).toLocaleString()}</span>
-                        <span className="ml-1">likes</span>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-sm text-blue-600 mt-2 font-montserrat">
-                    {channelId ? `Channel ID: ${channelId.substring(0, 8)}...` : "Unknown channel"}
-                  </p>
-                </CardContent>
-              </a>
+              {video.video_id ? (
+                // External link for YouTube videos
+                <a href={videoUrl} target="_blank" rel="noopener noreferrer">
+                  <VideoCardContent 
+                    video={video} 
+                    channelId={channelId} 
+                    channelTitle={channelTitle}
+                  />
+                </a>
+              ) : (
+                // Internal link for channel pages
+                <Link to={seoUrl}>
+                  <VideoCardContent 
+                    video={video} 
+                    channelId={channelId} 
+                    channelTitle={channelTitle}
+                  />
+                </Link>
+              )}
             </Card>
           );
         })}
       </div>
     </div>
+  );
+};
+
+// Extracted card content into a separate component for reuse
+const VideoCardContent = ({ 
+  video, 
+  channelId, 
+  channelTitle 
+}: { 
+  video: VideoStats, 
+  channelId: string, 
+  channelTitle: string 
+}) => {
+  return (
+    <>
+      <div className="aspect-video bg-gray-100 relative overflow-hidden">
+        {video.thumbnail_url ? (
+          <LazyImage
+            src={video.thumbnail_url}
+            alt={video.title || "Video thumbnail"}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-400">No thumbnail</p>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+          <Play className="h-12 w-12 text-white" />
+        </div>
+      </div>
+      <CardContent className="p-4">
+        <h3 className="font-crimson text-lg font-semibold mb-2 line-clamp-2">
+          {video.title || "Untitled video"}
+        </h3>
+        <div className="flex items-center gap-x-4 text-sm text-gray-500">
+          {video.views && (
+            <div className="flex items-center">
+              <span className="font-medium">{parseInt(video.views.toString()).toLocaleString()}</span>
+              <span className="ml-1">views</span>
+            </div>
+          )}
+          {video.likes && (
+            <div>
+              <span className="font-medium">{parseInt(video.likes.toString()).toLocaleString()}</span>
+              <span className="ml-1">likes</span>
+            </div>
+          )}
+        </div>
+        <p className="text-sm text-blue-600 mt-2 font-montserrat">
+          {channelTitle}
+        </p>
+      </CardContent>
+    </>
   );
 };
 
