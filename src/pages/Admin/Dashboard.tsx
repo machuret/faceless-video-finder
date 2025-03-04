@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -59,11 +58,12 @@ const FeaturedChannels = () => {
 
       if (error) throw error;
       
-      // Properly cast the data to Channel[] type with correct metadata typing
-      const typedChannels: Channel[] = data ? data.map(channel => ({
+      // Fix type instantiation by explicitly typing the data transformation
+      const typedChannels = data ? data.map((channel: any) => ({
         ...channel,
-        metadata: channel.metadata ? channel.metadata as unknown as Channel["metadata"] : undefined
-      })) : [];
+        // Properly cast metadata
+        metadata: channel.metadata as unknown as Channel["metadata"]
+      })) as Channel[] : [];
       
       setChannels(typedChannels);
     } catch (error) {

@@ -54,6 +54,7 @@ export interface VideoStats {
 // Channel Metadata Type
 export interface ChannelMetadata {
   ui_channel_type?: string;
+  is_featured_updated_at?: string;
   [key: string]: any;
 }
 
