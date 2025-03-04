@@ -12,9 +12,11 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, AlertCircle, Loader2 } from "lucide-react";
+import { MoreVertical, AlertCircle, Loader2, Star, StarOff } from "lucide-react";
 import { Channel, ChannelMetadata } from "@/types/youtube";
+import { Badge } from "@/components/ui/badge";
 
 interface ChannelListProps {
   isAdmin: boolean;
@@ -95,6 +97,31 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin, limit }) => {
     }
   };
 
+  const toggleFeatured = async (channelId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("youtube_channels")
+        .update({ is_featured: !currentStatus })
+        .eq("id", channelId);
+      
+      if (error) throw error;
+      
+      toast.success(`Channel ${!currentStatus ? "featured" : "unfeatured"} successfully`);
+      
+      // Update local state to avoid refetching
+      setChannels(prev => 
+        prev.map(channel => 
+          channel.id === channelId 
+            ? { ...channel, is_featured: !currentStatus } 
+            : channel
+        )
+      );
+    } catch (error: any) {
+      console.error("Error toggling featured status:", error);
+      toast.error("Failed to update featured status: " + error.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-10">
@@ -143,12 +170,17 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin, limit }) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {channels.map((channel) => (
-          <Card key={channel.id} className="overflow-hidden hover:shadow-md transition-shadow">
+          <Card key={channel.id} className={`overflow-hidden hover:shadow-md transition-shadow ${channel.is_featured ? 'border-yellow-400 border-2' : ''}`}>
             <div className="p-4">
               <div className="flex justify-between items-start">
-                <h3 className="font-semibold text-lg truncate">
-                  {channel.channel_title}
-                </h3>
+                <div>
+                  <h3 className="font-semibold text-lg truncate">
+                    {channel.channel_title}
+                  </h3>
+                  {channel.is_featured && (
+                    <Badge className="bg-yellow-500 text-white mt-1">Featured</Badge>
+                  )}
+                </div>
                 
                 {isAdmin && (
                   <DropdownMenu>
@@ -162,6 +194,22 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin, limit }) => {
                       <DropdownMenuItem onClick={() => handleEdit(channel.id)}>
                         Edit
                       </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => toggleFeatured(channel.id, Boolean(channel.is_featured))}
+                      >
+                        {channel.is_featured ? (
+                          <>
+                            <StarOff className="h-4 w-4 mr-2" />
+                            Remove Featured
+                          </>
+                        ) : (
+                          <>
+                            <Star className="h-4 w-4 mr-2" />
+                            Make Featured
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => handleDelete(channel.id)}
                         className="text-red-500"

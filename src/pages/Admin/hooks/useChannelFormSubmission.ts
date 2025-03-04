@@ -57,7 +57,8 @@ export const useChannelFormSubmission = (
         channel_category: channelCategory,
         notes: formData.notes || null,
         keywords: formData.keywords || [],
-        metadata: metadata
+        metadata: metadata,
+        is_featured: formData.is_featured || false
       };
       
       console.log("Formatted data for submission:", channelData);
