@@ -29,14 +29,19 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
           // Use a fallback for channel_id if it's not available
           const channelId = video.channel_id || "";
           
-          // Create SEO-friendly channel URL with a default label
-          const channelLabel = "channel"; // Default label
+          // Create SEO-friendly channel URL
+          const channelLabel = "channel";
           const channelSlug = generateChannelSlug(channelLabel);
           const seoUrl = `/channel/${channelSlug}-${channelId}`;
           
+          // Direct link to YouTube video if available
+          const videoUrl = video.video_id ? 
+            `https://www.youtube.com/watch?v=${video.video_id}` : 
+            seoUrl;
+          
           return (
             <Card key={video.id} className="hover:shadow-md transition-shadow">
-              <Link to={seoUrl}>
+              <a href={videoUrl} target="_blank" rel="noopener noreferrer">
                 <div className="aspect-video bg-gray-100 relative overflow-hidden">
                   {video.thumbnail_url ? (
                     <LazyImage
@@ -72,10 +77,10 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
                     )}
                   </div>
                   <p className="text-sm text-blue-600 mt-2 font-montserrat">
-                    Channel: {channelId ? `ID: ${channelId.substring(0, 8)}...` : "Unknown"}
+                    {channelId ? `Channel ID: ${channelId.substring(0, 8)}...` : "Unknown channel"}
                   </p>
                 </CardContent>
-              </Link>
+              </a>
             </Card>
           );
         })}
