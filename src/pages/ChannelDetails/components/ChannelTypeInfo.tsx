@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
 import { getChannelTypeById } from "@/services/channelTypeService";
 import { ChannelTypeInfo as ChannelTypeInfoType } from "@/services/channelTypeService";
@@ -56,7 +57,15 @@ const ChannelTypeInfo = ({ channelType }: ChannelTypeInfoProps) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
       <div className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Channel Type: {typeInfo.label}</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          Channel Type: {' '}
+          <Link 
+            to={`/channel-types/${typeInfo.id}`}
+            className="text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            {typeInfo.label}
+          </Link>
+        </h2>
         
         {typeInfo.description && (
           <div className="mb-6">

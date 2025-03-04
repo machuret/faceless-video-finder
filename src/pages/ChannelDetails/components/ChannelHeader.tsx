@@ -1,5 +1,6 @@
 
 import { Globe, BarChart, Bookmark, Upload } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Channel } from "@/types/youtube";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
 
@@ -8,11 +9,11 @@ interface ChannelHeaderProps {
 }
 
 const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
-  // Get channel type label
-  const getChannelTypeLabel = (typeId: string | undefined) => {
-    if (!typeId) return 'N/A';
+  // Get channel type label and ID
+  const getChannelTypeInfo = (typeId: string | undefined) => {
+    if (!typeId) return { label: 'N/A', id: '' };
     const foundType = channelTypes.find(type => type.id === typeId);
-    return foundType ? foundType.label : typeId;
+    return foundType ? { label: foundType.label, id: typeId } : { label: typeId, id: typeId };
   };
   
   // Format upload frequency to be more readable
@@ -23,6 +24,8 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
+  const channelTypeInfo = getChannelTypeInfo(channel.metadata?.ui_channel_type || channel.channel_type?.toString());
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
@@ -69,7 +72,12 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
                     <h4 className="text-sm text-gray-500 mb-1">Channel Type</h4>
                     <div className="flex items-center">
                       <BarChart className="h-4 w-4 text-blue-600 mr-2" />
-                      <span>{getChannelTypeLabel(channel.metadata?.ui_channel_type || channel.channel_type.toString())}</span>
+                      <Link 
+                        to={`/channel-types/${channelTypeInfo.id}`}
+                        className="text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        {channelTypeInfo.label}
+                      </Link>
                     </div>
                   </div>
                 )}
