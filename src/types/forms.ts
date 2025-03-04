@@ -15,4 +15,5 @@ export interface ChannelFormData {
   channel_category?: string;
   notes?: string;
   keywords?: string[];
+  is_featured?: boolean;
 }

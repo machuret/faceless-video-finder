@@ -58,7 +58,14 @@ const FeaturedChannels = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setChannels(data || []);
+      
+      // Properly cast the data to Channel[] type with correct metadata typing
+      const typedChannels: Channel[] = data ? data.map(channel => ({
+        ...channel,
+        metadata: channel.metadata ? channel.metadata as unknown as Channel["metadata"] : undefined
+      })) : [];
+      
+      setChannels(typedChannels);
     } catch (error) {
       console.error("Error fetching featured channels:", error);
     } finally {
