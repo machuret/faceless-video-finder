@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
+import { generateChannelSlug } from "@/pages/ChannelDetails";
 
 interface Channel {
   id: string;
@@ -75,29 +77,36 @@ const FeaturedChannels = () => {
     <Card className="p-6 mb-8">
       <h2 className="text-xl font-semibold mb-4">Featured Channels</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {featuredChannels.map((channel) => (
-          <div key={channel.id} className="border rounded-md p-4">
-            <div className="flex items-center space-x-3">
-              {channel.screenshot_url ? (
-                <img 
-                  src={channel.screenshot_url} 
-                  alt={channel.channel_title} 
-                  className="w-12 h-12 object-cover rounded-full"
-                />
-              ) : (
-                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-gray-500">No img</span>
+        {featuredChannels.map((channel) => {
+          const channelSlug = generateChannelSlug(channel.channel_title);
+          const seoUrl = `/channel/${channelSlug}-${channel.id}`;
+          
+          return (
+            <Link key={channel.id} to={seoUrl}>
+              <div className="border rounded-md p-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center space-x-3">
+                  {channel.screenshot_url ? (
+                    <img 
+                      src={channel.screenshot_url} 
+                      alt={channel.channel_title} 
+                      className="w-12 h-12 object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                      <span className="text-gray-500">No img</span>
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-medium truncate">{channel.channel_title}</h3>
+                    <p className="text-sm text-gray-600">
+                      {channel.total_subscribers ? `${(channel.total_subscribers / 1000).toFixed(1)}K subscribers` : 'N/A'}
+                    </p>
+                  </div>
                 </div>
-              )}
-              <div>
-                <h3 className="font-medium truncate">{channel.channel_title}</h3>
-                <p className="text-sm text-gray-600">
-                  {channel.total_subscribers ? `${(channel.total_subscribers / 1000).toFixed(1)}K subscribers` : 'N/A'}
-                </p>
               </div>
-            </div>
-          </div>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </Card>
   );
