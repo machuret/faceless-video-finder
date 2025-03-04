@@ -114,15 +114,16 @@ export const fetchFeaturedChannelsData = async () => {
   try {
     console.log("Fetching featured channels");
     
-    // Query for featured channels (assuming there's a column for featured)
+    // Query for featured channels using the is_featured column
     const { data, error } = await supabase
       .from("youtube_channels")
       .select(`
         id, channel_title, channel_url, video_id, description, 
         screenshot_url, total_subscribers, total_views, 
         channel_category, channel_type, keywords, niche, 
-        country, cpm
+        country, cpm, is_featured
       `)
+      .eq("is_featured", true)
       .limit(3);
     
     if (error) {

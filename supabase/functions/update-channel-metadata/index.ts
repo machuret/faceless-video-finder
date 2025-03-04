@@ -12,6 +12,7 @@ const corsHeaders = {
 interface RequestParams {
   channelId: string;
   metadata: Record<string, any>;
+  is_featured?: boolean;
 }
 
 serve(async (req) => {
@@ -24,7 +25,7 @@ serve(async (req) => {
     console.log('Request received in update-channel-metadata function');
     
     // Parse request
-    const { channelId, metadata } = await req.json() as RequestParams
+    const { channelId, metadata, is_featured } = await req.json() as RequestParams
 
     if (!channelId) {
       console.error('Missing channelId parameter');
@@ -34,22 +35,22 @@ serve(async (req) => {
       )
     }
 
-    if (!metadata) {
-      console.error('Missing metadata parameter');
+    if (!metadata && is_featured === undefined) {
+      console.error('Missing metadata or is_featured parameter');
       return new Response(
-        JSON.stringify({ error: 'Metadata is required' }),
+        JSON.stringify({ error: 'Either metadata or is_featured is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
     
-    console.log(`Updating metadata for channel ${channelId}:`, JSON.stringify(metadata));
+    console.log(`Updating channel ${channelId}:`, JSON.stringify({ metadata, is_featured }));
 
     // Create a Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the current metadata to merge with new data
+    // Get the current metadata to merge with new data if needed
     const { data: currentData, error: fetchError } = await supabase
       .from('youtube_channels')
       .select('metadata')
@@ -61,43 +62,42 @@ serve(async (req) => {
       console.error('Error fetching current metadata:', fetchError);
     }
     
-    // Merge existing metadata with new metadata
-    const currentMetadata = currentData?.metadata || {};
-    const updatedMetadata = { ...currentMetadata, ...metadata };
+    // Prepare update data
+    const updateData: Record<string, any> = {};
     
-    console.log('Merged metadata:', JSON.stringify(updatedMetadata));
-
-    // Directly execute a SQL query to update the metadata
-    const { error } = await supabase.rpc('update_channel_metadata', {
-      channel_id: channelId,
-      metadata_json: updatedMetadata
-    });
+    // Only include metadata in the update if it was provided
+    if (metadata) {
+      // Merge existing metadata with new metadata
+      const currentMetadata = currentData?.metadata || {};
+      updateData.metadata = { ...currentMetadata, ...metadata };
+      console.log('Merged metadata:', JSON.stringify(updateData.metadata));
+    }
+    
+    // Include is_featured in the update if it was provided
+    if (is_featured !== undefined) {
+      updateData.is_featured = is_featured;
+      console.log('Setting is_featured to:', is_featured);
+    }
+    
+    // Update the channel
+    const { error } = await supabase
+      .from('youtube_channels')
+      .update(updateData)
+      .eq('id', channelId);
 
     if (error) {
-      console.error('Error calling RPC function:', error);
+      console.error('Error updating channel:', error);
+      throw error;
+    } 
       
-      // Try a direct SQL update as a fallback
-      const { error: sqlError } = await supabase.rpc('raw_sql', {
-        query: `UPDATE youtube_channels SET metadata = $1::jsonb WHERE id = $2`,
-        params: [JSON.stringify(updatedMetadata), channelId]
-      });
-      
-      if (sqlError) {
-        console.error('Error with direct SQL update:', sqlError);
-        throw sqlError;
-      }
-      
-      console.log('Metadata updated via direct SQL');
-    } else {
-      console.log('Metadata updated via RPC function');
-    }
+    console.log('Channel updated successfully');
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Metadata updated successfully',
+        message: 'Channel updated successfully',
         channelId,
-        metadata: updatedMetadata
+        ...updateData
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )

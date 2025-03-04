@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,16 +98,11 @@ export const ChannelList: React.FC<ChannelListProps> = ({ isAdmin, limit }) => {
 
   const toggleFeatured = async (channelId: string, currentStatus: boolean) => {
     try {
-      // The issue is here with the is_featured property not being recognized in the TypeScript type
-      // We need to ensure it's a valid field in the Database type
+      // Update using the dedicated is_featured column instead of metadata
       const { error } = await supabase
         .from("youtube_channels")
         .update({ 
-          is_featured: !currentStatus,
-          // Add metadata to ensure TypeScript recognizes this is a valid update
-          metadata: { 
-            is_featured_updated_at: new Date().toISOString() 
-          }
+          is_featured: !currentStatus 
         })
         .eq("id", channelId);
       

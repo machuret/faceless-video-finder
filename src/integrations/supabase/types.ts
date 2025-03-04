@@ -106,6 +106,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          is_featured: boolean | null
           keywords: string[] | null
           metadata: Json | null
           niche: string | null
@@ -134,6 +135,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_featured?: boolean | null
           keywords?: string[] | null
           metadata?: Json | null
           niche?: string | null
@@ -162,6 +164,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_featured?: boolean | null
           keywords?: string[] | null
           metadata?: Json | null
           niche?: string | null

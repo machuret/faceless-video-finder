@@ -23,6 +23,7 @@ const FeaturedChannels = () => {
         const { data, error } = await supabase
           .from('youtube_channels')
           .select('id, channel_title, channel_url, total_subscribers, total_views, screenshot_url')
+          .eq('is_featured', true)
           .order('total_subscribers', { ascending: false })
           .limit(3);
         
