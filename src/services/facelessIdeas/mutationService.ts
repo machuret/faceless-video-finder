@@ -12,7 +12,12 @@ export const createFacelessIdea = async (idea: FacelessIdeaCreateInput): Promise
       .single();
 
     if (error) throw error;
-    return data;
+    
+    // Ensure the returned record has the required image_url property
+    return {
+      ...data,
+      image_url: data.image_url || null
+    };
   } catch (error: any) {
     console.error("Error creating faceless idea:", error.message);
     throw error;
@@ -37,7 +42,12 @@ export const updateFacelessIdea = async (idea: FacelessIdeaUpdateInput): Promise
       .single();
 
     if (error) throw error;
-    return data;
+    
+    // Ensure the returned record has the required image_url property
+    return {
+      ...data,
+      image_url: data.image_url || null
+    };
   } catch (error: any) {
     console.error(`Error updating faceless idea with ID ${idea.id}:`, error.message);
     throw error;

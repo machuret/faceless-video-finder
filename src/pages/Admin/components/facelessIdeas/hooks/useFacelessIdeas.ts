@@ -1,3 +1,4 @@
+
 import { FacelessIdeaInfo } from "@/services/facelessIdeas";
 import { useDataFetching } from "./useDataFetching";
 import { useTabState } from "./useTabState";
@@ -49,12 +50,19 @@ export const useFacelessIdeas = () => {
   
   const { handleCsvUpload } = useCsvImport(loadFacelessIdeas);
   
-  const { handleSelectIdea, handleCreateNew } = useIdeaSelection(
-    setSelectedIdea, 
-    setFormData, 
-    setActiveTab, 
-    initialFormState
-  );
+  const { selectIdea, clearSelection } = useIdeaSelection();
+  
+  // Create utility functions to handle selection and new idea creation
+  const handleSelectIdea = async (id: string) => {
+    await selectIdea(id);
+    setActiveTab("edit");
+  };
+  
+  const handleCreateNew = () => {
+    setSelectedIdea(null);
+    setFormData(initialFormState);
+    setActiveTab("edit");
+  };
   
   const { submitting, handleSubmit, handleCancel } = useFormSubmission(
     loadFacelessIdeas,

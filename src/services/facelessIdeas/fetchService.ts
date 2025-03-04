@@ -11,7 +11,12 @@ export const fetchFacelessIdeas = async (): Promise<FacelessIdeaInfo[]> => {
       .order("label");
 
     if (error) throw error;
-    return data || [];
+    
+    // Ensure all returned records have the required image_url property
+    return (data || []).map(item => ({
+      ...item,
+      image_url: item.image_url || null
+    }));
   } catch (error: any) {
     console.error("Error fetching faceless ideas:", error.message);
     throw error;
@@ -28,7 +33,12 @@ export const fetchFacelessIdeaById = async (id: string): Promise<FacelessIdeaInf
       .single();
 
     if (error) throw error;
-    return data;
+    
+    // Ensure the returned record has the required image_url property
+    return data ? {
+      ...data,
+      image_url: data.image_url || null
+    } : null;
   } catch (error: any) {
     console.error(`Error fetching faceless idea with ID ${id}:`, error.message);
     throw error;
