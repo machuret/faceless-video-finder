@@ -1,4 +1,3 @@
-
 // Channel Types
 export type ChannelCategory = "entertainment" | "education" | "gaming" | "music" | "news" | "sports" | "technology" | "other";
 

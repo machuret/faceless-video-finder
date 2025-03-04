@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -58,12 +59,45 @@ const FeaturedChannels = () => {
 
       if (error) throw error;
       
-      // Fix type instantiation by explicitly typing the data transformation
-      const typedChannels = data ? data.map((channel: any) => ({
-        ...channel,
-        // Properly cast metadata
-        metadata: channel.metadata as unknown as Channel["metadata"]
-      })) as Channel[] : [];
+      // Fix the deep type instantiation issue by simplifying the type handling
+      // First, cast the raw data to any, then convert to the Channel type
+      const typedChannels: Channel[] = [];
+      
+      if (data && data.length > 0) {
+        // Process each item separately to avoid deep type instantiation
+        data.forEach((item: any) => {
+          const channel: Channel = {
+            id: item.id,
+            video_id: item.video_id,
+            channel_title: item.channel_title,
+            channel_url: item.channel_url,
+            description: item.description,
+            screenshot_url: item.screenshot_url,
+            total_subscribers: item.total_subscribers ? Number(item.total_subscribers) : undefined,
+            total_views: item.total_views ? Number(item.total_views) : undefined,
+            start_date: item.start_date,
+            video_count: item.video_count ? Number(item.video_count) : undefined,
+            cpm: item.cpm ? Number(item.cpm) : undefined,
+            channel_type: item.channel_type,
+            country: item.country,
+            channel_category: item.channel_category,
+            notes: item.notes,
+            niche: item.niche,
+            keywords: item.keywords,
+            is_featured: item.is_featured,
+            upload_frequency: item.upload_frequency,
+            revenue_per_month: item.revenue_per_month ? Number(item.revenue_per_month) : undefined,
+            revenue_per_video: item.revenue_per_video ? Number(item.revenue_per_video) : undefined,
+            potential_revenue: item.potential_revenue ? Number(item.potential_revenue) : undefined,
+            uses_ai: item.uses_ai,
+            channel_size: item.channel_size,
+            metadata: item.metadata,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+          };
+          typedChannels.push(channel);
+        });
+      }
       
       setChannels(typedChannels);
     } catch (error) {
