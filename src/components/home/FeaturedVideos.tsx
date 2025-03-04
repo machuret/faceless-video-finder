@@ -26,9 +26,13 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {topVideos.map((video) => {
-          // Create SEO-friendly channel URL
-          const channelSlug = generateChannelSlug(video.channel_title || "");
-          const seoUrl = `/channel/${channelSlug}-${video.channel_id}`;
+          // Use a fallback for channel_id if it's not available
+          const channelId = video.channel_id || "";
+          
+          // Create SEO-friendly channel URL with a default label if channel_id is not available
+          const channelLabel = "channel"; // Default label
+          const channelSlug = generateChannelSlug(channelLabel);
+          const seoUrl = `/channel/${channelSlug}-${channelId}`;
           
           return (
             <Card key={video.id} className="hover:shadow-md transition-shadow">
@@ -68,7 +72,7 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
                     )}
                   </div>
                   <p className="text-sm text-blue-600 mt-2 font-montserrat">
-                    {video.channel_title || "Unknown channel"}
+                    Channel: {channelId ? `ID: ${channelId.substring(0, 8)}...` : "Unknown"}
                   </p>
                 </CardContent>
               </Link>
