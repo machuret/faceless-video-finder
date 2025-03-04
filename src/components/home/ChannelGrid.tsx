@@ -27,6 +27,8 @@ const ChannelGrid = ({ channels, loading, resetFilters, isFeatured = false }: Ch
     .filter((video): video is VideoStats => !!video)
     .sort((a, b) => (b.views || 0) - (a.views || 0)); // Sort by views, most viewed first
 
+  console.log('ChannelGrid rendering with channels:', channels.map(c => c.channel_title));
+
   return (
     <div>
       {/* Channel Grid */}

@@ -37,6 +37,8 @@ export const ChannelCard: React.FC<ChannelCardProps> = ({
   const channelSlug = generateChannelSlug(channel.channel_title);
   const seoUrl = `/channel/${channelSlug}-${channel.id}`;
 
+  console.log(`Admin ChannelCard for ${channel.channel_title} using URL: ${seoUrl}`);
+
   return (
     <Card key={channel.id} className={`overflow-hidden hover:shadow-md transition-shadow ${channel.is_featured ? 'border-yellow-400 border-2' : ''}`}>
       <div className="p-4">

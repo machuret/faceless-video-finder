@@ -15,6 +15,8 @@ const ChannelCard = ({ channel, isFeatured = false }: ChannelCardProps) => {
   // Create SEO-friendly URL
   const channelSlug = generateChannelSlug(channel.channel_title);
   const seoUrl = `/channel/${channelSlug}-${channel.id}`;
+  
+  console.log(`ChannelCard for ${channel.channel_title} using URL: ${seoUrl}`);
 
   return (
     <Card 

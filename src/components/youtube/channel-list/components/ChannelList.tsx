@@ -30,14 +30,14 @@ export const ChannelList: React.FC<ChannelListProps> = ({
 
   useEffect(() => {
     fetchChannels(limit);
-  }, [limit]);
+  }, [fetchChannels, limit]);
 
   if (loading) {
     return <LoadingState />;
   }
 
   if (error) {
-    return <ErrorState error={error} onRetry={fetchChannels} />;
+    return <ErrorState error={error} onRetry={() => fetchChannels(limit)} />;
   }
 
   if (channels.length === 0) {
