@@ -28,12 +28,11 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
 
   const extractIdFromSlug = (slug: string): string | null => {
     // The ID is expected to be the last part after the last hyphen
-    const parts = slug.split('-');
-    const potentialId = parts[parts.length - 1];
+    const lastHyphenIndex = slug.lastIndexOf('-');
+    if (lastHyphenIndex === -1) return null;
     
-    // Basic UUID validation (simple regex for UUID format)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(potentialId) ? potentialId : null;
+    // Return everything after the last hyphen
+    return slug.substring(lastHyphenIndex + 1);
   };
 
   const fetchChannelDetails = async (id: string) => {
