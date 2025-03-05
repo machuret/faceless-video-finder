@@ -95,22 +95,42 @@ const ScreenshotUploader = ({
     
     try {
       // First extract the file path from the screenshot URL
-      const fileUrlParts = screenshotUrl.split('channel-screenshots/');
-      if (fileUrlParts.length < 2) {
+      const bucketName = 'channel-screenshots';
+      
+      // Log the full URL to help with debugging
+      console.log("Deleting screenshot with URL:", screenshotUrl);
+      
+      // Parse the URL to get just the path part after the bucket name
+      let filePath = "";
+      
+      // Handle both URL formats (with or without public/)
+      if (screenshotUrl.includes(`/${bucketName}/`)) {
+        filePath = screenshotUrl.split(`/${bucketName}/`)[1];
+      } else if (screenshotUrl.includes(`/${bucketName}/public/`)) {
+        filePath = screenshotUrl.split(`/${bucketName}/public/`)[1];
+      } else {
+        console.error("Could not parse URL format:", screenshotUrl);
         toast.error("Invalid screenshot URL format");
         return;
       }
       
-      const filePath = fileUrlParts[1];
-      console.log("Attempting to delete file:", filePath);
+      // Remove any query parameters if present
+      if (filePath.includes('?')) {
+        filePath = filePath.split('?')[0];
+      }
+      
+      console.log("Attempting to delete file path:", filePath);
       
       // Remove the file from storage
-      const { error: storageError } = await supabase.storage
-        .from('channel-screenshots')
+      const { error: storageError, data } = await supabase.storage
+        .from(bucketName)
         .remove([filePath]);
         
+      console.log("Delete response:", data);
+      
       if (storageError) {
         console.error("Error removing file from storage:", storageError);
+        toast.error(`Error removing file: ${storageError.message}`);
         // Continue anyway to update the database
         console.warn("Continuing to update database despite storage error");
       } else {
