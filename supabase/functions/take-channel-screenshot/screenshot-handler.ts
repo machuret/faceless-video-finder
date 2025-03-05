@@ -97,7 +97,7 @@ export async function handleScreenshot(
   }
 }
 
-// Take screenshot using screenshotapi.net
+// Take screenshot using screenshotapi.net with stronger cookie bypass methods
 async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | null> {
   try {
     console.log("Taking screenshot via screenshotapi.net:", url);
@@ -114,14 +114,44 @@ async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | null> {
     const output = "image";
     const fileType = "png";
     
-    // Additional parameters to help bypass consent dialogs
-    const delay = 3000; // Give the page 3 seconds to load
+    // Enhanced parameters to bypass cookie consent popups and delayed loading
+    const delay = 5000; // Increase delay to 5 seconds to ensure page fully loads
     const fullPage = false; // Get only the first viewport
-    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"; // Desktop user agent
-    const acceptCookies = true; // Attempt to auto-accept cookies
+    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36"; // Updated Chrome user agent
+    const acceptCookies = true; // Auto-accept cookies
+    const width = 1280; // Set a standard desktop width
+    const height = 800; // Set a standard desktop height
     
-    // Construct the API URL with all parameters
-    const apiUrl = `https://shot.screenshotapi.net/screenshot?token=${apiKey}&url=${encodedUrl}&output=${output}&file_type=${fileType}&delay=${delay}&full_page=${fullPage}&user_agent=${encodeURIComponent(userAgent)}&accept_cookies=${acceptCookies}`;
+    // Additional script to auto-accept cookie consent
+    const script = encodeURIComponent(`
+      // Wait for consent dialog
+      setTimeout(() => {
+        // Try to click common cookie consent buttons
+        const consentButtons = document.querySelectorAll('button[aria-label*="Accept"], button[aria-label*="Agree"], button[aria-label*="accept"], button[aria-label*="agree"], button:contains("Accept"), button:contains("I agree"), .accept-cookies-button');
+        if (consentButtons.length > 0) {
+          for (let button of consentButtons) {
+            button.click();
+          }
+        }
+      }, 2000);
+    `);
+    
+    // Try to optimize the URL to target channel page specifically
+    let optimizedUrl = url;
+    if (url.includes("youtube.com/channel/") || url.includes("youtube.com/c/")) {
+      // Add /featured to go directly to channel homepage, avoiding some consent screens
+      if (!url.endsWith("/")) {
+        optimizedUrl = url + "/featured";
+      } else {
+        optimizedUrl = url + "featured";
+      }
+    }
+    
+    console.log("Using optimized URL for screenshot:", optimizedUrl);
+    const encodedOptimizedUrl = encodeURIComponent(optimizedUrl);
+    
+    // Construct the API URL with all enhanced parameters
+    const apiUrl = `https://shot.screenshotapi.net/screenshot?token=${apiKey}&url=${encodedOptimizedUrl}&output=${output}&file_type=${fileType}&delay=${delay}&full_page=${fullPage}&user_agent=${encodeURIComponent(userAgent)}&accept_cookies=${acceptCookies}&width=${width}&height=${height}&script=${script}`;
     
     console.log("Calling screenshot API with enhanced parameters");
     
