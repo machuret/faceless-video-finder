@@ -15,18 +15,27 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
     return null;
   }
 
+  // Calculate total revenue from views and CPM
+  const calculateTotalRevenue = () => {
+    if (!channel.total_views || !channel.cpm) return null;
+    // Formula: Total Revenue = (Total Views / 1000) * CPM
+    return (channel.total_views / 1000) * channel.cpm;
+  };
+
+  const totalRevenue = calculateTotalRevenue();
+
   // Calculate revenue per subscriber
-  const revenuePerSubscriber = channel.revenue_per_month && channel.total_subscribers && channel.total_subscribers > 0
-    ? channel.revenue_per_month / channel.total_subscribers
+  const revenuePerSubscriber = totalRevenue && channel.total_subscribers && channel.total_subscribers > 0
+    ? totalRevenue / channel.total_subscribers
     : null;
 
   // Calculate potential revenue for next 12 months
   // Assuming a modest 5% growth rate per month if not specified
   const calculatePotentialRevenue = () => {
-    if (!channel.revenue_per_month) return null;
+    if (!totalRevenue) return null;
     
     // Base calculation is current monthly revenue * 12
-    let baseYearlyRevenue = channel.revenue_per_month * 12;
+    let baseYearlyRevenue = totalRevenue / 12; // Monthly revenue
     
     // Add growth component - assuming 5% monthly growth compounded
     const monthlyGrowthRate = 0.05; // 5% monthly growth
@@ -34,7 +43,7 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
     
     for (let i = 0; i < 12; i++) {
       // For each month, calculate that month's revenue with compound growth
-      const monthRevenue = channel.revenue_per_month * Math.pow(1 + monthlyGrowthRate, i);
+      const monthRevenue = baseYearlyRevenue * Math.pow(1 + monthlyGrowthRate, i);
       potentialRevenue += monthRevenue;
     }
     
@@ -121,8 +130,8 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
               <div>
                 <p className="text-sm text-gray-500">Total Revenue</p>
                 <p className="text-xl font-bold text-green-600">
-                  {channel.revenue_per_month ? 
-                    `$${parseFloat(channel.revenue_per_month.toString()).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
+                  {totalRevenue ? 
+                    `$${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
                     'N/A'}
                 </p>
               </div>
@@ -135,8 +144,8 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
               <div>
                 <p className="text-sm text-gray-500">Revenue per Video</p>
                 <p className="text-xl font-bold text-green-600">
-                  {channel.revenue_per_video ? 
-                    `$${parseFloat(channel.revenue_per_video.toString()).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
+                  {totalRevenue && channel.video_count && channel.video_count > 0 ? 
+                    `$${(totalRevenue / channel.video_count).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
                     'N/A'}
                 </p>
               </div>

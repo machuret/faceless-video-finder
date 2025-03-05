@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
@@ -24,7 +23,6 @@ const ChannelDetails = () => {
     mostEngagingVideo 
   } = useChannelDetails(channelId, slug);
 
-  // Redirect to SEO-friendly URL if user arrived via channelId
   useEffect(() => {
     if (!loading && channel && channelId && !slug) {
       const channelSlug = generateChannelSlug(channel.channel_title);
@@ -84,6 +82,7 @@ const ChannelDetails = () => {
         )}
         
         <div className="mt-8">
+          <ChannelStats channel={channel} />
           <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
           <ChannelVideos videos={videoStats} />
         </div>
@@ -94,7 +93,6 @@ const ChannelDetails = () => {
   );
 };
 
-// Helper function to generate slug from channel title
 export const generateChannelSlug = (title: string): string => {
   return title
     .toLowerCase()
