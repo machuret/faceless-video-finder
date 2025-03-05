@@ -97,7 +97,7 @@ export async function handleScreenshot(
   }
 }
 
-// Take screenshot using screenshotapi.net with stronger cookie bypass methods
+// Take screenshot using screenshotapi.net with YouTube-specific cookie bypass
 async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | null> {
   try {
     console.log("Taking screenshot via screenshotapi.net:", url);
@@ -115,45 +115,109 @@ async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | null> {
     const fileType = "png";
     
     // Enhanced parameters to bypass cookie consent popups and delayed loading
-    const delay = 5000; // Increase delay to 5 seconds to ensure page fully loads
+    const delay = 7000; // Increase delay to 7 seconds to ensure page and dialogs fully load
     const fullPage = false; // Get only the first viewport
-    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36"; // Updated Chrome user agent
+    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"; // Updated Chrome user agent
     const acceptCookies = true; // Auto-accept cookies
-    const width = 1280; // Set a standard desktop width
-    const height = 800; // Set a standard desktop height
+    const width = 1366; // Common desktop width
+    const height = 768; // Common desktop height
     
-    // Additional script to auto-accept cookie consent
+    // YouTube-specific script to handle cookie consent dialog
+    // This targets the exact selector pattern used by YouTube's cookie consent dialog
     const script = encodeURIComponent(`
-      // Wait for consent dialog
-      setTimeout(() => {
-        // Try to click common cookie consent buttons
-        const consentButtons = document.querySelectorAll('button[aria-label*="Accept"], button[aria-label*="Agree"], button[aria-label*="accept"], button[aria-label*="agree"], button:contains("Accept"), button:contains("I agree"), .accept-cookies-button');
-        if (consentButtons.length > 0) {
-          for (let button of consentButtons) {
-            button.click();
+      function clickConsentButton() {
+        console.log("Looking for YouTube consent buttons...");
+        
+        // YouTube's "Accept all" button - multiple approaches
+        const selectors = [
+          // Primary approach - most specific to YouTube
+          'button[aria-label="Accept all"]',
+          'button[data-style="accept-all"]',
+          'form button.VfPpkd-LgbsSe:first-child',
+          
+          // Secondary approaches - more generic
+          'button:contains("Accept all")',
+          'button.yt-spec-button-shape-next--filled',
+          
+          // Fallbacks for different languages/variations
+          'button:contains("I Agree")',
+          'button:contains("Accept")',
+          'button:contains("Agree")',
+          'button[data-testid="cookie-policy-dialog-accept-button"]',
+          '.consent-bump-dialog button:first-of-type'
+        ];
+        
+        let buttonFound = false;
+        
+        for (const selector of selectors) {
+          const buttons = document.querySelectorAll(selector);
+          console.log(\`Found \${buttons.length} buttons with selector: \${selector}\`);
+          
+          if (buttons.length > 0) {
+            for (const button of buttons) {
+              console.log("Clicking button:", button);
+              button.click();
+              buttonFound = true;
+            }
+            if (buttonFound) break;
           }
+        }
+        
+        if (!buttonFound) {
+          console.log("No consent buttons found, trying dialog approach");
+          
+          // Try to find and handle any dialog element
+          const dialogs = document.querySelectorAll('div[role="dialog"]');
+          if (dialogs.length > 0) {
+            for (const dialog of dialogs) {
+              const acceptButtons = dialog.querySelectorAll('button');
+              for (const button of acceptButtons) {
+                // Check if button text contains accept-related words
+                const text = button.textContent.toLowerCase();
+                if (text.includes('accept') || text.includes('agree') || text.includes('ok') || text.includes('yes')) {
+                  console.log("Clicking dialog button:", button);
+                  button.click();
+                  buttonFound = true;
+                  break;
+                }
+              }
+              if (buttonFound) break;
+            }
+          }
+        }
+        
+        return buttonFound;
+      }
+      
+      // Try multiple times with delays
+      setTimeout(() => {
+        if (!clickConsentButton()) {
+          console.log("First attempt failed, trying again...");
+          setTimeout(() => {
+            clickConsentButton();
+          }, 1500);
         }
       }, 2000);
     `);
     
     // Try to optimize the URL to target channel page specifically
     let optimizedUrl = url;
-    if (url.includes("youtube.com/channel/") || url.includes("youtube.com/c/")) {
-      // Add /featured to go directly to channel homepage, avoiding some consent screens
+    if (url.includes("youtube.com/channel/") || url.includes("youtube.com/c/") || url.includes("youtube.com/@")) {
+      // Add /featured to go directly to channel homepage
       if (!url.endsWith("/")) {
         optimizedUrl = url + "/featured";
       } else {
         optimizedUrl = url + "featured";
       }
+      console.log("Optimized URL for screenshot:", optimizedUrl);
     }
     
-    console.log("Using optimized URL for screenshot:", optimizedUrl);
     const encodedOptimizedUrl = encodeURIComponent(optimizedUrl);
     
     // Construct the API URL with all enhanced parameters
     const apiUrl = `https://shot.screenshotapi.net/screenshot?token=${apiKey}&url=${encodedOptimizedUrl}&output=${output}&file_type=${fileType}&delay=${delay}&full_page=${fullPage}&user_agent=${encodeURIComponent(userAgent)}&accept_cookies=${acceptCookies}&width=${width}&height=${height}&script=${script}`;
     
-    console.log("Calling screenshot API with enhanced parameters");
+    console.log("Calling screenshot API with YouTube-specific cookie handling");
     
     // Make the request to the screenshot API
     const response = await fetch(apiUrl);
