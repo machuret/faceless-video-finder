@@ -37,7 +37,7 @@ const ChannelIdentitySection = ({
     }
     
     setTakingScreenshot(true);
-    toast.info("Taking screenshot... This may take a few moments");
+    toast.info("Taking screenshot via API... This may take a few moments");
     
     try {
       console.log("Taking screenshot for channel:", formData.id);
@@ -64,7 +64,7 @@ const ChannelIdentitySection = ({
         toast.success("Channel screenshot taken successfully!");
         handleScreenshotChange(data.screenshotUrl);
       } else {
-        toast.error(data.message || "Failed to take channel screenshot");
+        toast.error(data.error || "Failed to take channel screenshot");
         console.error("Screenshot error:", data.error || "Unknown error");
       }
     } catch (err) {

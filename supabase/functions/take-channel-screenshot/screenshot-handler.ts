@@ -1,7 +1,6 @@
 
 import { 
   ensureStorageBucket, 
-  getPlaceholderImage, 
   generateScreenshotFilename 
 } from "../_shared/screenshot-utils.ts";
 
@@ -29,10 +28,10 @@ export async function handleScreenshot(
       return { success: false, error: bucketResult.error };
     }
     
-    // Get placeholder image
-    const imageBuffer = await getPlaceholderImage();
-    if (!imageBuffer) {
-      return { success: false, error: "Failed to generate placeholder image" };
+    // Get actual screenshot from screenshotapi.net
+    const screenshotBuffer = await takeScreenshotViaAPI(channelUrl);
+    if (!screenshotBuffer) {
+      return { success: false, error: "Failed to generate screenshot" };
     }
     
     // Generate filename
@@ -42,7 +41,7 @@ export async function handleScreenshot(
     // Upload the screenshot to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucketName)
-      .upload(filename, imageBuffer, {
+      .upload(filename, screenshotBuffer, {
         contentType: "image/png",
         upsert: true,
       });
@@ -95,5 +94,42 @@ export async function handleScreenshot(
       success: false,
       error: error.message || "An error occurred while taking the screenshot",
     };
+  }
+}
+
+// Take screenshot using screenshotapi.net
+async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | null> {
+  try {
+    console.log("Taking screenshot via screenshotapi.net:", url);
+    
+    // Get API key from environment
+    const apiKey = Deno.env.get("SCREENSHOT_API_KEY");
+    if (!apiKey) {
+      console.error("SCREENSHOT_API_KEY not configured");
+      throw new Error("Screenshot API key not configured");
+    }
+    
+    // Prepare the API request
+    const encodedUrl = encodeURIComponent(url);
+    const output = "image";
+    const fileType = "png";
+    
+    const apiUrl = `https://shot.screenshotapi.net/screenshot?token=${apiKey}&url=${encodedUrl}&output=${output}&file_type=${fileType}`;
+    
+    console.log("Calling screenshot API:", apiUrl);
+    
+    // Make the request to the screenshot API
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      console.error("Screenshot API error:", response.status, response.statusText);
+      throw new Error(`Screenshot API returned ${response.status}: ${response.statusText}`);
+    }
+    
+    console.log("Screenshot API response received");
+    return await response.arrayBuffer();
+  } catch (err) {
+    console.error("Error taking screenshot via API:", err);
+    return null;
   }
 }

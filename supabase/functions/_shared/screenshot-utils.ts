@@ -48,24 +48,6 @@ export function generateScreenshotFilename(channelId: string): string {
   return `channel_${channelId}_${timestamp}.png`;
 }
 
-// Get a placeholder image from an external service
-export async function getPlaceholderImage(): Promise<ArrayBuffer | null> {
-  try {
-    console.log("Fetching placeholder image");
-    const placeholderImageResponse = await fetch(`https://picsum.photos/1280/800`);
-    
-    if (!placeholderImageResponse.ok) {
-      console.error("Error fetching placeholder image:", placeholderImageResponse.statusText);
-      return null;
-    }
-    
-    return await placeholderImageResponse.arrayBuffer();
-  } catch (err) {
-    console.error("Error fetching placeholder image:", err);
-    return null;
-  }
-}
-
 // Initialize Supabase client
 export function initSupabaseClient(): { 
   client: any; 
