@@ -27,7 +27,7 @@ export const useScreenshotUpload = ({
       
       const file = e.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const fileName = `channel_${channelId}_${new Date().toISOString().replace(/[:.]/g, "-")}.${fileExt}`;
+      const fileName = `channel_${channelId}_${new Date().getTime()}.${fileExt}`;
       
       setUploading(true);
       toast.info("Uploading screenshot...");
@@ -50,7 +50,7 @@ export const useScreenshotUpload = ({
         return;
       }
       
-      console.log("✅ File uploaded successfully:", uploadData);
+      console.log("✅ File uploaded successfully");
       
       // Get public URL
       const { data: publicUrlData } = supabase.storage
@@ -63,12 +63,16 @@ export const useScreenshotUpload = ({
         return;
       }
       
-      console.log("🔗 Public URL generated:", publicUrlData.publicUrl);
+      const screenshotUrl = publicUrlData.publicUrl;
+      console.log("🔗 Public URL generated:", screenshotUrl);
       
-      // Update channel record with screenshot URL
+      // First update the UI
+      onScreenshotChange(screenshotUrl);
+      
+      // Then update database
       const { error: updateError } = await supabase
         .from("youtube_channels")
-        .update({ screenshot_url: publicUrlData.publicUrl })
+        .update({ screenshot_url: screenshotUrl })
         .eq("id", channelId);
       
       if (updateError) {
@@ -78,10 +82,8 @@ export const useScreenshotUpload = ({
       }
       
       console.log("✅ Database updated with screenshot URL");
-      toast.success("Screenshot uploaded successfully!");
+      toast.success("Screenshot uploaded successfully");
       
-      // Update the form state
-      onScreenshotChange(publicUrlData.publicUrl);
     } catch (err) {
       console.error("❌ Unexpected error in upload process:", err);
       toast.error("An error occurred while uploading the screenshot");

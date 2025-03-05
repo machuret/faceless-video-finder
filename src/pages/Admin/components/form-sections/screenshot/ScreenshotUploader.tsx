@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useScreenshotHandler } from "./hooks/useScreenshotHandler";
@@ -27,17 +27,23 @@ const ScreenshotUploader = ({
     onScreenshotChange
   });
   
-  const onDelete = () => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const onDelete = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent form submission
+    
     if (screenshotUrl) {
       handleDeleteScreenshot(screenshotUrl);
-      // No navigation or page change occurs after deletion
+      // No navigation occurs as the function updates state directly
     }
   };
   
   const onUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileUpload(e);
-    // Ensure the file input is cleared so the same file can be selected again if needed
-    e.target.value = "";
+    // Clear the file input value after upload attempt
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
   
   return (
