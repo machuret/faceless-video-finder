@@ -37,8 +37,10 @@ const ChannelIdentitySection = ({
     }
     
     setTakingScreenshot(true);
+    toast.info("Taking screenshot... This may take a few moments");
     
     try {
+      console.log("Taking screenshot for channel:", formData.id);
       const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: {
           channelUrl: formData.channel_url,
@@ -106,7 +108,7 @@ const ChannelIdentitySection = ({
         />
       </div>
       <div className="mt-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <Label htmlFor="screenshot_url">Screenshot URL</Label>
           {isEditMode && (
             <Button 
@@ -114,7 +116,7 @@ const ChannelIdentitySection = ({
               size="sm" 
               onClick={handleTakeScreenshot}
               disabled={takingScreenshot}
-              className="flex items-center gap-2 mb-2"
+              className="flex items-center gap-2"
             >
               <Camera className="h-4 w-4" />
               {takingScreenshot ? "Taking Screenshot..." : "Take Screenshot"}

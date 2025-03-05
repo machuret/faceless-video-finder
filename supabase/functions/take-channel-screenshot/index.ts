@@ -69,9 +69,31 @@ serve(async (req) => {
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
       const supabase = createClient(supabaseUrl, supabaseKey);
       
+      // Check if bucket exists, and create it if it doesn't
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      
+      if (listError) {
+        throw new Error(`Error checking buckets: ${listError.message}`);
+      }
+      
+      const bucketName = "channel_screenshots";
+      const bucketExists = buckets.some(bucket => bucket.name === bucketName);
+      
+      if (!bucketExists) {
+        console.log(`Creating bucket: ${bucketName}`);
+        const { error: createError } = await supabase.storage.createBucket(bucketName, {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+        });
+        
+        if (createError) {
+          throw new Error(`Error creating bucket: ${createError.message}`);
+        }
+      }
+      
       // Upload the screenshot to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("channel_screenshots")
+        .from(bucketName)
         .upload(filename, screenshot, {
           contentType: "image/png",
           upsert: true,
@@ -83,7 +105,7 @@ serve(async (req) => {
       
       // Get the public URL of the uploaded screenshot
       const { data: urlData } = await supabase.storage
-        .from("channel_screenshots")
+        .from(bucketName)
         .getPublicUrl(filename);
       
       const screenshotUrl = urlData.publicUrl;
