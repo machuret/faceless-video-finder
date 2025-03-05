@@ -38,7 +38,7 @@ const ChannelIdentitySection = ({
     const file = e.target.files[0];
     const fileExt = file.name.split('.').pop();
     const fileName = `${formData.id}/screenshot.${fileExt}`;
-    const filePath = `channel_screenshots/${fileName}`;
+    const filePath = `${fileName}`;
     
     setUploading(true);
     toast.info("Uploading screenshot...");
