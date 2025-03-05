@@ -65,8 +65,6 @@ export const useChannelFormHandlers = (
       ...prev,
       screenshot_url: url
     }));
-
-    // Toast is now handled in the component that calls the screenshot function
   };
 
   return {

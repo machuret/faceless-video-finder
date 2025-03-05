@@ -43,12 +43,14 @@ const ChannelIdentitySection = ({
       console.log("Taking screenshot for channel:", formData.id);
       console.log("Channel URL:", formData.channel_url);
       
-      const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
+      const response = await supabase.functions.invoke('take-channel-screenshot', {
         body: {
           channelUrl: formData.channel_url,
           channelId: formData.id
         }
       });
+      
+      const { data, error } = response;
       
       if (error) {
         console.error("Error invoking screenshot function:", error);
