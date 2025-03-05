@@ -95,7 +95,9 @@ const ChannelIdentitySection = ({
       }
       
       toast.success("Screenshot removed successfully");
-      handleScreenshotChange(""); // Clear the screenshot URL in the form
+      
+      // Only update the form state instead of redirecting
+      handleScreenshotChange("");
     } catch (err) {
       console.error("Error deleting screenshot:", err);
       toast.error("An error occurred while deleting the screenshot");
