@@ -15,23 +15,23 @@ export const useScreenshotUpload = ({
   const [uploading, setUploading] = useState(false);
   
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) {
-      return;
-    }
-    
-    if (!channelId) {
-      toast.error("Please save the channel first before uploading a screenshot");
-      return;
-    }
-    
-    const file = e.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `channel_${channelId}_${new Date().toISOString().replace(/[:.]/g, "-")}.${fileExt}`;
-    
-    setUploading(true);
-    toast.info("Uploading screenshot...");
-    
     try {
+      if (!e.target.files || e.target.files.length === 0) {
+        return;
+      }
+      
+      if (!channelId) {
+        toast.error("Please save the channel first before uploading a screenshot");
+        return;
+      }
+      
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `channel_${channelId}_${new Date().toISOString().replace(/[:.]/g, "-")}.${fileExt}`;
+      
+      setUploading(true);
+      toast.info("Uploading screenshot...");
+      
       console.log("📤 Starting screenshot upload process");
       console.log("📌 Channel ID:", channelId);
       console.log("📂 File name:", fileName);
@@ -47,7 +47,6 @@ export const useScreenshotUpload = ({
       if (uploadError) {
         console.error("❌ Error uploading screenshot:", uploadError);
         toast.error(`Failed to upload screenshot: ${uploadError.message}`);
-        setUploading(false);
         return;
       }
       
@@ -61,7 +60,6 @@ export const useScreenshotUpload = ({
       if (!publicUrlData?.publicUrl) {
         console.error("❌ Failed to get public URL");
         toast.error("Failed to get public URL for screenshot");
-        setUploading(false);
         return;
       }
       
@@ -76,7 +74,6 @@ export const useScreenshotUpload = ({
       if (updateError) {
         console.error("❌ Error updating screenshot URL:", updateError);
         toast.error(`Failed to update screenshot URL: ${updateError.message}`);
-        setUploading(false);
         return;
       }
       

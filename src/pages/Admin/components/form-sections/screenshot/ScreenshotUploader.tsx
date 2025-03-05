@@ -30,7 +30,14 @@ const ScreenshotUploader = ({
   const onDelete = () => {
     if (screenshotUrl) {
       handleDeleteScreenshot(screenshotUrl);
+      // No navigation or page change occurs after deletion
     }
+  };
+  
+  const onUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileUpload(e);
+    // Ensure the file input is cleared so the same file can be selected again if needed
+    e.target.value = "";
   };
   
   return (
@@ -41,7 +48,7 @@ const ScreenshotUploader = ({
           <div className="flex space-x-2">
             <UploadButton 
               uploading={uploading}
-              onChange={handleFileUpload}
+              onChange={onUpload}
             />
             {screenshotUrl && (
               <DeleteButton onClick={onDelete} />
@@ -58,7 +65,9 @@ const ScreenshotUploader = ({
         readOnly
         className="bg-gray-50"
       />
-      <ScreenshotPreview screenshotUrl={screenshotUrl} />
+      {screenshotUrl && (
+        <ScreenshotPreview screenshotUrl={screenshotUrl} />
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
@@ -10,9 +10,18 @@ interface UploadButtonProps {
 }
 
 const UploadButton = ({ uploading, onChange }: UploadButtonProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+  
   return (
     <div className="relative">
       <Input
+        ref={fileInputRef}
         type="file"
         id="screenshot_file"
         accept="image/*"
@@ -23,7 +32,7 @@ const UploadButton = ({ uploading, onChange }: UploadButtonProps) => {
       <Button 
         variant="secondary" 
         size="sm" 
-        onClick={() => document.getElementById('screenshot_file')?.click()}
+        onClick={handleClick}
         disabled={uploading}
         className="flex items-center gap-2"
       >

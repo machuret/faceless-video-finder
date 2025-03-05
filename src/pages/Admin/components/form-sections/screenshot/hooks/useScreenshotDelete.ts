@@ -7,17 +7,11 @@ interface UseScreenshotDeleteProps {
   onScreenshotChange: (url: string) => void;
 }
 
-/**
- * Hook for handling screenshot deletion
- */
 export const useScreenshotDelete = ({ 
   channelId, 
   onScreenshotChange
 }: UseScreenshotDeleteProps) => {
   
-  /**
-   * Handles the deletion of a screenshot
-   */
   const handleDeleteScreenshot = async (screenshotUrl: string) => {
     if (!channelId || !screenshotUrl) {
       toast.error("No screenshot to delete");
@@ -48,46 +42,50 @@ export const useScreenshotDelete = ({
       onScreenshotChange("");
       toast.success("Screenshot removed successfully");
       
-      // STEP 2: Extract storage path from URL (non-blocking)
-      console.log("🔍 Attempting to extract storage path from URL:", screenshotUrl);
+      // STEP 2: Handle storage deletion in background (non-blocking)
+      console.log("🗑️ Attempting storage cleanup in background");
       
-      // Don't block the UI - run storage deletion in background
       setTimeout(async () => {
         try {
-          // Try to extract bucket name and path from the URL
+          // Try to extract storage path from URL
+          let storageDeleted = false;
+          
+          // Method 1: Extract from full URL path
           const urlRegex = /\/storage\/v1\/object\/public\/([^\/]+)\/(.+?)(?:\?.*)?$/;
           const match = screenshotUrl.match(urlRegex);
           
           if (match) {
             const [, bucketName, filePath] = match;
-            console.log(`📂 Extracted bucket: ${bucketName}`);
-            console.log(`📄 Extracted path: ${filePath}`);
+            console.log(`📂 Extracted bucket: ${bucketName}, path: ${filePath}`);
             
-            // Try to delete from storage
             const { error: storageError } = await supabase.storage
               .from(bucketName)
               .remove([filePath]);
             
-            if (storageError) {
-              console.warn("⚠️ Storage deletion warning:", storageError);
+            if (!storageError) {
+              console.log(`✅ File successfully removed from ${bucketName}`);
+              storageDeleted = true;
             } else {
-              console.log("✅ File successfully removed from storage");
+              console.warn(`⚠️ Failed to delete from ${bucketName}:`, storageError);
             }
-          } else {
-            // Alternative bucket names to try
+          }
+          
+          // Method 2: Try predefined buckets with filename
+          if (!storageDeleted) {
             const possibleBuckets = ['channel-screenshots', 'channel_screenshots'];
             const filenameMatch = screenshotUrl.split('/').pop()?.split('?')[0];
             
             if (filenameMatch) {
               for (const bucket of possibleBuckets) {
                 try {
-                  console.log(`Attempting to delete from bucket ${bucket} with filename ${filenameMatch}`);
+                  console.log(`Attempting to delete ${filenameMatch} from bucket ${bucket}`);
                   const { error } = await supabase.storage
                     .from(bucket)
                     .remove([filenameMatch]);
                   
                   if (!error) {
                     console.log(`✅ Successfully deleted from ${bucket}`);
+                    storageDeleted = true;
                     break;
                   }
                 } catch (e) {
@@ -96,9 +94,46 @@ export const useScreenshotDelete = ({
               }
             }
           }
+          
+          // Method 3: Try with channelId in filename pattern
+          if (!storageDeleted && channelId) {
+            const possibleBuckets = ['channel-screenshots', 'channel_screenshots'];
+            
+            for (const bucket of possibleBuckets) {
+              try {
+                console.log(`Listing files in ${bucket} for channel ${channelId}`);
+                const { data, error } = await supabase.storage
+                  .from(bucket)
+                  .list('', {
+                    search: `channel_${channelId}`
+                  });
+                
+                if (!error && data && data.length > 0) {
+                  const files = data.map(item => item.name);
+                  console.log(`Found files for channel: ${files.join(', ')}`);
+                  
+                  const { error: deleteError } = await supabase.storage
+                    .from(bucket)
+                    .remove(files);
+                  
+                  if (!deleteError) {
+                    console.log(`✅ Successfully deleted channel files from ${bucket}`);
+                    storageDeleted = true;
+                    break;
+                  }
+                }
+              } catch (e) {
+                console.warn(`Error listing/deleting files for channel in ${bucket}:`, e);
+              }
+            }
+          }
+          
+          if (!storageDeleted) {
+            console.log("⚠️ Could not delete storage item, but UI was updated successfully");
+          }
         } catch (storageErr) {
           console.warn("⚠️ Storage cleanup error:", storageErr);
-          // Non-blocking - won't affect UI update
+          // Non-blocking - UI is already updated
         }
       }, 0);
       
