@@ -5,6 +5,7 @@ import PageFooter from "@/components/home/PageFooter";
 import { Loader2 } from "lucide-react";
 import { useChannelDetails } from "./hooks/useChannelDetails";
 import ChannelHeader from "./components/ChannelHeader";
+import ChannelStats from "./components/ChannelStats";
 import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
 import { useEffect } from "react";
@@ -58,8 +59,15 @@ const ChannelDetails = () => {
 
       <main className="container mx-auto px-4 py-8">
         <ChannelHeader channel={channel} />
-        <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
-        <ChannelVideos videos={videoStats} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+          <div className="lg:col-span-1">
+            <ChannelStats channel={channel} />
+          </div>
+          <div className="lg:col-span-2">
+            <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
+            <ChannelVideos videos={videoStats} />
+          </div>
+        </div>
       </main>
 
       <PageFooter />

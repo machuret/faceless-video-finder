@@ -2,6 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Play, Calendar, CircleDollarSign } from "lucide-react";
 import { Channel } from "@/types/youtube";
+import LazyImage from "@/components/ui/lazy-image";
 
 interface ChannelStatsProps {
   channel: Channel;
@@ -75,6 +76,22 @@ const ChannelStats = ({ channel }: ChannelStatsProps) => {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Channel Screenshot Section */}
+      {channel.screenshot_url && (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-3">Channel Screenshot</h3>
+          <Card>
+            <CardContent className="p-4">
+              <LazyImage 
+                src={channel.screenshot_url} 
+                alt={`${channel.channel_title} screenshot`}
+                className="w-full h-auto rounded-md"
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
