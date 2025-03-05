@@ -19,7 +19,7 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
   const calculateTotalRevenue = () => {
     if (!channel.total_views || !channel.cpm) return null;
     // Formula: Total Revenue = (Total Views / 1000) * CPM
-    return (channel.total_views / 1000) * channel.cpm;
+    return Math.round((channel.total_views / 1000) * channel.cpm);
   };
 
   const totalRevenue = calculateTotalRevenue();
@@ -47,7 +47,7 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
       potentialRevenue += monthRevenue;
     }
     
-    return potentialRevenue;
+    return Math.round(potentialRevenue);
   };
 
   const potentialRevenue = calculatePotentialRevenue();
@@ -131,7 +131,7 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
                 <p className="text-sm text-gray-500">Total Revenue</p>
                 <p className="text-xl font-bold text-green-600">
                   {totalRevenue ? 
-                    `$${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
+                    `$${totalRevenue.toLocaleString()}` : 
                     'N/A'}
                 </p>
               </div>
@@ -145,7 +145,7 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
                 <p className="text-sm text-gray-500">Revenue per Video</p>
                 <p className="text-xl font-bold text-green-600">
                   {totalRevenue && channel.video_count && channel.video_count > 0 ? 
-                    `$${(totalRevenue / channel.video_count).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
+                    `$${Math.round(totalRevenue / channel.video_count).toLocaleString()}` : 
                     'N/A'}
                 </p>
               </div>
@@ -174,7 +174,7 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
                 <p className="text-sm text-gray-500">Potential Revenue (12 months)</p>
                 <p className="text-xl font-bold text-green-600">
                   {potentialRevenue ? 
-                    `$${potentialRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
+                    `$${potentialRevenue.toLocaleString()}` : 
                     'N/A'}
                 </p>
               </div>
