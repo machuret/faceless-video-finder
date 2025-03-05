@@ -29,7 +29,11 @@ export const ChannelList: React.FC<ChannelListProps> = ({
   } = useChannelOperations();
 
   useEffect(() => {
+    // Pass the limit to fetchChannels to limit the number of channels fetched
     fetchChannels(limit);
+    
+    // Only include limit in the dependency array if we want to refetch when it changes
+    // This should normally be fine as limit is a prop that shouldn't change often
   }, [fetchChannels, limit]);
 
   if (loading) {
@@ -67,6 +71,18 @@ export const ChannelList: React.FC<ChannelListProps> = ({
           />
         ))}
       </div>
+      
+      {/* Add a View All button if we're showing a limited set of channels */}
+      {limit && channels.length >= limit && isAdmin && (
+        <div className="flex justify-center mt-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/admin/channels")}
+          >
+            View All Channels
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
