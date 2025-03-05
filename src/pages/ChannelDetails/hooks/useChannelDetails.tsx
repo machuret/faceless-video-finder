@@ -105,9 +105,11 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
         loading: false
       }));
 
-      // After basic channel data is loaded, fetch top performing videos if YouTube channel ID is available
-      if (channelData.youtube_channel_id) {
-        fetchTopPerformingVideosWithYouTubeId(channelData.youtube_channel_id);
+      // After basic channel data is loaded, fetch top performing videos
+      // Extract YouTube channel ID from URL if available
+      const youtubeChannelId = extractYouTubeChannelId(channelData.channel_url);
+      if (youtubeChannelId) {
+        fetchTopPerformingVideosWithYouTubeId(youtubeChannelId);
       } else {
         // Set top videos loading to false since we can't fetch them
         setState(prev => ({
@@ -126,6 +128,26 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
         topVideosLoading: false
       }));
     }
+  };
+
+  // Function to extract YouTube channel ID from channel URL
+  const extractYouTubeChannelId = (url: string): string | null => {
+    if (!url) return null;
+    
+    // Pattern for channel URLs like: https://www.youtube.com/channel/UC...
+    const channelPattern = /youtube\.com\/channel\/(UC[\w-]{21}[AQgw])/i;
+    const channelMatch = url.match(channelPattern);
+    
+    if (channelMatch && channelMatch[1]) {
+      console.log("Extracted YouTube channel ID from URL:", channelMatch[1]);
+      return channelMatch[1];
+    }
+    
+    // Pattern for user URLs like: https://www.youtube.com/user/username
+    // or handle URLs like: https://www.youtube.com/@username
+    // These require an additional API call to get the channel ID, which we'll skip for now
+    
+    return null;
   };
 
   const fetchTopPerformingVideosWithYouTubeId = async (youtubeChannelId: string) => {
