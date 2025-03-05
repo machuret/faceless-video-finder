@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Trash2 } from "lucide-react";
+import { Upload, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import FormSectionWrapper from "./FormSectionWrapper";
@@ -23,55 +23,72 @@ const ChannelIdentitySection = ({
   handleScreenshotChange, 
   isEditMode 
 }: ChannelIdentitySectionProps) => {
-  const [takingScreenshot, setTakingScreenshot] = useState(false);
+  const [uploading, setUploading] = useState(false);
   
-  const handleTakeScreenshot = async () => {
-    if (!formData.channel_url) {
-      toast.error("Channel URL is required to take a screenshot");
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) {
       return;
     }
     
     if (!formData.id) {
-      toast.error("Please save the channel first before taking a screenshot");
+      toast.error("Please save the channel first before uploading a screenshot");
       return;
     }
     
-    setTakingScreenshot(true);
-    toast.info("Taking screenshot via API... This may take a few moments");
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${formData.id}/screenshot.${fileExt}`;
+    const filePath = `channel_screenshots/${fileName}`;
+    
+    setUploading(true);
+    toast.info("Uploading screenshot...");
     
     try {
-      console.log("Taking screenshot for channel:", formData.id);
-      console.log("Channel URL:", formData.channel_url);
+      // Upload file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('channel-screenshots')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
       
-      const response = await supabase.functions.invoke('take-channel-screenshot', {
-        body: {
-          channelUrl: formData.channel_url,
-          channelId: formData.id
-        }
-      });
-      
-      console.log("Screenshot response:", response);
-      
-      if (response.error) {
-        console.error("Error invoking screenshot function:", response.error);
-        toast.error(`Failed to take channel screenshot: ${response.error.message}`);
+      if (uploadError) {
+        console.error("Error uploading screenshot:", uploadError);
+        toast.error(`Failed to upload screenshot: ${uploadError.message}`);
         return;
       }
       
-      const { data } = response;
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('channel-screenshots')
+        .getPublicUrl(filePath);
       
-      if (data.success) {
-        toast.success("Channel screenshot taken successfully!");
-        handleScreenshotChange(data.screenshotUrl);
-      } else {
-        toast.error(data.error || "Failed to take channel screenshot");
-        console.error("Screenshot error:", data.error || "Unknown error");
+      if (!publicUrlData.publicUrl) {
+        toast.error("Failed to get public URL for screenshot");
+        return;
       }
+      
+      // Update channel record with screenshot URL
+      const { error: updateError } = await supabase
+        .from("youtube_channels")
+        .update({ screenshot_url: publicUrlData.publicUrl })
+        .eq("id", formData.id);
+      
+      if (updateError) {
+        console.error("Error updating screenshot URL:", updateError);
+        toast.error(`Failed to update screenshot URL: ${updateError.message}`);
+        return;
+      }
+      
+      toast.success("Screenshot uploaded successfully!");
+      
+      // Update the form state
+      handleScreenshotChange(publicUrlData.publicUrl);
     } catch (err) {
-      console.error("Error invoking screenshot function:", err);
-      toast.error("An error occurred while taking the screenshot");
+      console.error("Error in upload process:", err);
+      toast.error("An error occurred while uploading the screenshot");
     } finally {
-      setTakingScreenshot(false);
+      setUploading(false);
     }
   };
   
@@ -145,19 +162,29 @@ const ChannelIdentitySection = ({
       </div>
       <div className="mt-4">
         <div className="flex items-center justify-between mb-2">
-          <Label htmlFor="screenshot_url">Screenshot URL</Label>
+          <Label htmlFor="screenshot_url">Screenshot</Label>
           {formData.id && (
             <div className="flex space-x-2">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                onClick={handleTakeScreenshot}
-                disabled={takingScreenshot}
-                className="flex items-center gap-2"
-              >
-                <Camera className="h-4 w-4" />
-                {takingScreenshot ? "Taking Screenshot..." : "Take Screenshot"}
-              </Button>
+              <div className="relative">
+                <Input
+                  type="file"
+                  id="screenshot_file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  disabled={uploading}
+                />
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  onClick={() => document.getElementById('screenshot_file')?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploading ? "Uploading..." : "Upload Screenshot"}
+                </Button>
+              </div>
               {formData.screenshot_url && (
                 <Button
                   variant="destructive"
@@ -178,7 +205,9 @@ const ChannelIdentitySection = ({
           name="screenshot_url"
           value={formData.screenshot_url}
           onChange={handleChange}
-          placeholder="Enter screenshot URL"
+          placeholder="Screenshot URL (auto-filled when uploaded)"
+          readOnly
+          className="bg-gray-50"
         />
         {formData.screenshot_url && (
           <div className="mt-2">
