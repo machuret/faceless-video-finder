@@ -29,6 +29,7 @@ export const ChannelList: React.FC<ChannelListProps> = ({
   } = useChannelOperations();
 
   useEffect(() => {
+    console.log("Fetching channels with limit:", limit);
     // Pass the limit to fetchChannels to limit the number of channels fetched
     fetchChannels(limit);
     
