@@ -115,86 +115,135 @@ async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | null> {
     const fileType = "png";
     
     // Enhanced parameters to bypass cookie consent popups and delayed loading
-    const delay = 7000; // Increase delay to 7 seconds to ensure page and dialogs fully load
+    const delay = 8000; // Increase delay to 8 seconds to ensure page and dialogs fully load
     const fullPage = false; // Get only the first viewport
-    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"; // Updated Chrome user agent
+    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"; // Updated Chrome user agent
     const acceptCookies = true; // Auto-accept cookies
     const width = 1366; // Common desktop width
     const height = 768; // Common desktop height
     
-    // YouTube-specific script to handle cookie consent dialog
-    // This targets the exact selector pattern used by YouTube's cookie consent dialog
+    // YouTube-specific script to handle cookie consent dialog with improved targeting
     const script = encodeURIComponent(`
       function clickConsentButton() {
         console.log("Looking for YouTube consent buttons...");
         
-        // YouTube's "Accept all" button - multiple approaches
+        // Target the 'Accept all' button with more specific selectors
+        // These selectors are specifically for YouTube's cookie consent dialogs
         const selectors = [
-          // Primary approach - most specific to YouTube
+          // Primary selectors for the "Accept all" button
           'button[aria-label="Accept all"]',
-          'button[data-style="accept-all"]',
-          'form button.VfPpkd-LgbsSe:first-child',
+          'button.yt-spec-button-shape-next--call-to-action',
+          'button.VfPpkd-LgbsSe-OWXEXe-k8QpJ',
           
-          // Secondary approaches - more generic
+          // Targeting by content
           'button:contains("Accept all")',
-          'button.yt-spec-button-shape-next--filled',
+          'button:contains("I Accept")',
+          'button:contains("Accept All")',
           
-          // Fallbacks for different languages/variations
-          'button:contains("I Agree")',
-          'button:contains("Accept")',
-          'button:contains("Agree")',
-          'button[data-testid="cookie-policy-dialog-accept-button"]',
-          '.consent-bump-dialog button:first-of-type'
+          // Targeting by HTML structure (some YouTube variants)
+          'form[action*="consent"] button:first-child',
+          'div[role="dialog"] button.yt-spec-button-shape-next:first-child',
+          '#dialog button:first-child',
+          
+          // Targeting the dialog container and then its buttons
+          'ytd-consent-bump-v2-lightbox button.yt-spec-button-shape-next:first-child',
+          'tp-yt-paper-dialog button.yt-spec-button-shape-next:first-child',
+          
+          // Very generic fallbacks (last resort)
+          'div[aria-modal="true"] button:first-child',
+          'div.consent-bump-v2-lightbox button:first-child',
+          'ytd-consent-bump-v2-renderer button:first-child'
         ];
         
-        let buttonFound = false;
+        // First try direct "Accept all" text match
+        const textButtons = Array.from(document.querySelectorAll('button')).filter(
+          button => button.textContent && 
+            (button.textContent.trim().toLowerCase() === 'accept all' || 
+             button.textContent.trim().toLowerCase() === 'i accept' ||
+             button.textContent.trim().toLowerCase() === 'agree')
+        );
         
-        for (const selector of selectors) {
-          const buttons = document.querySelectorAll(selector);
-          console.log(\`Found \${buttons.length} buttons with selector: \${selector}\`);
-          
-          if (buttons.length > 0) {
-            for (const button of buttons) {
-              console.log("Clicking button:", button);
-              button.click();
-              buttonFound = true;
-            }
-            if (buttonFound) break;
-          }
+        if (textButtons.length > 0) {
+          console.log("Found text match button:", textButtons[0]);
+          textButtons[0].click();
+          return true;
         }
         
-        if (!buttonFound) {
-          console.log("No consent buttons found, trying dialog approach");
-          
-          // Try to find and handle any dialog element
-          const dialogs = document.querySelectorAll('div[role="dialog"]');
-          if (dialogs.length > 0) {
-            for (const dialog of dialogs) {
-              const acceptButtons = dialog.querySelectorAll('button');
-              for (const button of acceptButtons) {
-                // Check if button text contains accept-related words
-                const text = button.textContent.toLowerCase();
-                if (text.includes('accept') || text.includes('agree') || text.includes('ok') || text.includes('yes')) {
-                  console.log("Clicking dialog button:", button);
+        // Then try selectors
+        for (const selector of selectors) {
+          try {
+            const buttons = document.querySelectorAll(selector);
+            console.log(\`Found \${buttons.length} buttons with selector: \${selector}\`);
+            
+            if (buttons.length > 0) {
+              // Try each button found
+              for (const button of buttons) {
+                try {
+                  console.log("Clicking button:", button);
                   button.click();
-                  buttonFound = true;
-                  break;
+                  return true;
+                } catch (e) {
+                  console.log("Error clicking button:", e);
                 }
               }
-              if (buttonFound) break;
             }
+          } catch (e) {
+            console.log("Error with selector:", selector, e);
           }
         }
         
-        return buttonFound;
+        // If all else fails, try to find any dialog and click the first visible button
+        try {
+          const dialogs = document.querySelectorAll('div[role="dialog"], div.ytd-consent-bump-v2-renderer, ytd-consent-bump-v2-lightbox');
+          console.log("Found dialog elements:", dialogs.length);
+          
+          for (const dialog of dialogs) {
+            const buttons = dialog.querySelectorAll('button');
+            console.log("Dialog has buttons:", buttons.length);
+            
+            for (const button of buttons) {
+              const style = window.getComputedStyle(button);
+              if (style.display !== 'none' && style.visibility !== 'hidden') {
+                console.log("Clicking visible dialog button:", button);
+                button.click();
+                return true;
+              }
+            }
+          }
+        } catch (e) {
+          console.log("Error with dialog approach:", e);
+        }
+        
+        return false;
       }
       
-      // Try multiple times with delays
+      // Execute multiple attempts with delays
       setTimeout(() => {
         if (!clickConsentButton()) {
-          console.log("First attempt failed, trying again...");
+          console.log("First attempt failed, trying again in 1 second...");
           setTimeout(() => {
-            clickConsentButton();
+            if (!clickConsentButton()) {
+              console.log("Second attempt failed, trying final approach...");
+              setTimeout(() => {
+                // Last resort: Force removal of consent dialogs and overlay
+                try {
+                  // Try to remove consent dialogs by force
+                  const elements = document.querySelectorAll('ytd-consent-bump-v2-lightbox, .consent-bump-v2-lightbox, div[role="dialog"]');
+                  elements.forEach(el => {
+                    console.log("Removing element:", el);
+                    el.remove();
+                  });
+                  
+                  // Remove any overlay
+                  document.querySelectorAll('div.consent-overlay, .dialog-overlay').forEach(el => el.remove());
+                  
+                  // Force body to be scrollable
+                  document.body.style.overflow = 'auto';
+                } catch (e) {
+                  console.log("Error in final approach:", e);
+                }
+              }, 1500);
+            }
           }, 1500);
         }
       }, 2000);
@@ -217,7 +266,7 @@ async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | null> {
     // Construct the API URL with all enhanced parameters
     const apiUrl = `https://shot.screenshotapi.net/screenshot?token=${apiKey}&url=${encodedOptimizedUrl}&output=${output}&file_type=${fileType}&delay=${delay}&full_page=${fullPage}&user_agent=${encodeURIComponent(userAgent)}&accept_cookies=${acceptCookies}&width=${width}&height=${height}&script=${script}`;
     
-    console.log("Calling screenshot API with YouTube-specific cookie handling");
+    console.log("Calling screenshot API with improved YouTube cookie handling");
     
     // Make the request to the screenshot API
     const response = await fetch(apiUrl);
