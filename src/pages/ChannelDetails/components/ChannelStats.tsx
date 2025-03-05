@@ -1,6 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Play, Calendar, CircleDollarSign } from "lucide-react";
+import { Users, Play, Calendar, CircleDollarSign, TrendingUp, Clock, Globe } from "lucide-react";
 import { Channel } from "@/types/youtube";
 import LazyImage from "@/components/ui/lazy-image";
 
@@ -15,12 +15,52 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
     return null;
   }
 
+  // Calculate revenue per subscriber
+  const revenuePerSubscriber = channel.revenue_per_month && channel.total_subscribers && channel.total_subscribers > 0
+    ? channel.revenue_per_month / channel.total_subscribers
+    : null;
+
+  // Calculate potential revenue for next 12 months
+  // Assuming a modest 5% growth rate per month if not specified
+  const calculatePotentialRevenue = () => {
+    if (!channel.revenue_per_month) return null;
+    
+    // Base calculation is current monthly revenue * 12
+    let baseYearlyRevenue = channel.revenue_per_month * 12;
+    
+    // Add growth component - assuming 5% monthly growth compounded
+    const monthlyGrowthRate = 0.05; // 5% monthly growth
+    let potentialRevenue = 0;
+    
+    for (let i = 0; i < 12; i++) {
+      // For each month, calculate that month's revenue with compound growth
+      const monthRevenue = channel.revenue_per_month * Math.pow(1 + monthlyGrowthRate, i);
+      potentialRevenue += monthRevenue;
+    }
+    
+    return potentialRevenue;
+  };
+
+  const potentialRevenue = calculatePotentialRevenue();
+
+  // Format start date
+  const formatStartDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
   return (
     <div>
       {!showOnlyRevenue && <h2 className="text-xl font-semibold mb-4">Channel Statistics</h2>}
       
       {!showOnlyRevenue && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {/* Row 1 */}
           <Card>
             <CardContent className="p-4 flex items-center">
               <Users className="h-8 w-8 text-blue-600 mr-3" />
@@ -39,7 +79,7 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
             <CardContent className="p-4 flex items-center">
               <Play className="h-8 w-8 text-blue-600 mr-3" />
               <div>
-                <p className="text-sm text-gray-500">Views</p>
+                <p className="text-sm text-gray-500">Total Views</p>
                 <p className="text-xl font-bold">
                   {channel.total_views ? 
                     parseInt(channel.total_views.toString()).toLocaleString() : 
@@ -49,6 +89,7 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
             </CardContent>
           </Card>
           
+          {/* Row 2 */}
           <Card>
             <CardContent className="p-4 flex items-center">
               <Calendar className="h-8 w-8 text-blue-600 mr-3" />
@@ -72,11 +113,94 @@ const ChannelStats = ({ channel, showOnlyRevenue = false }: ChannelStatsProps) =
               </div>
             </CardContent>
           </Card>
+          
+          {/* Row 3 */}
+          <Card>
+            <CardContent className="p-4 flex items-center">
+              <CircleDollarSign className="h-8 w-8 text-green-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-500">Total Revenue</p>
+                <p className="text-xl font-bold text-green-600">
+                  {channel.revenue_per_month ? 
+                    `$${parseFloat(channel.revenue_per_month.toString()).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
+                    'N/A'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 flex items-center">
+              <CircleDollarSign className="h-8 w-8 text-green-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-500">Revenue per Video</p>
+                <p className="text-xl font-bold text-green-600">
+                  {channel.revenue_per_video ? 
+                    `$${parseFloat(channel.revenue_per_video.toString()).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
+                    'N/A'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Row 4 */}
+          <Card>
+            <CardContent className="p-4 flex items-center">
+              <Users className="h-8 w-8 text-green-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-500">Revenue per Subscriber</p>
+                <p className="text-xl font-bold text-green-600">
+                  {revenuePerSubscriber ? 
+                    `$${revenuePerSubscriber.toFixed(4)}` : 
+                    'N/A'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 flex items-center">
+              <TrendingUp className="h-8 w-8 text-green-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-500">Potential Revenue (12 months)</p>
+                <p className="text-xl font-bold text-green-600">
+                  {potentialRevenue ? 
+                    `$${potentialRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : 
+                    'N/A'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Additional info: Start Date and Country */}
+          <Card>
+            <CardContent className="p-4 flex items-center">
+              <Clock className="h-8 w-8 text-blue-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-500">Date of Start</p>
+                <p className="text-xl font-bold">
+                  {formatStartDate(channel.start_date)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 flex items-center">
+              <Globe className="h-8 w-8 text-blue-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-500">Country</p>
+                <p className="text-xl font-bold">
+                  {channel.country || 'N/A'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
       
       {/* Revenue Card - Always shown */}
-      {channel.revenue_per_month && (
+      {channel.revenue_per_month && showOnlyRevenue && (
         <Card className={showOnlyRevenue ? "" : "mt-4"}>
           <CardContent className="p-4">
             <h3 className="text-lg font-medium mb-1">Estimated Monthly Revenue</h3>
