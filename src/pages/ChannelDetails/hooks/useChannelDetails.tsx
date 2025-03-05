@@ -105,8 +105,16 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
         loading: false
       }));
 
-      // After basic channel data is loaded, fetch top performing videos
-      fetchTopPerformingVideos(channelData.channel_title);
+      // After basic channel data is loaded, fetch top performing videos if YouTube channel ID is available
+      if (channelData.youtube_channel_id) {
+        fetchTopPerformingVideosWithYouTubeId(channelData.youtube_channel_id);
+      } else {
+        // Set top videos loading to false since we can't fetch them
+        setState(prev => ({
+          ...prev,
+          topVideosLoading: false
+        }));
+      }
       
     } catch (err) {
       console.error("Error fetching channel details:", err);
@@ -114,29 +122,35 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
       setState(prev => ({
         ...prev,
         error: err instanceof Error ? err.message : "Unknown error",
-        loading: false
+        loading: false,
+        topVideosLoading: false
       }));
     }
   };
 
-  const fetchTopPerformingVideos = async (channelTitle: string) => {
+  const fetchTopPerformingVideosWithYouTubeId = async (youtubeChannelId: string) => {
     setState(prev => ({ ...prev, topVideosLoading: true }));
     try {
-      // We need the actual YouTube channel ID, not our internal UUID
-      // Let's try to get it from the channel data first using the channel title as a search term
-      const { data: searchData, error: searchError } = await supabase.functions.invoke('fetch-top-videos', {
-        body: { channelId: channelTitle }
+      console.log(`Fetching top videos with YouTube channel ID: ${youtubeChannelId}`);
+      
+      const { data, error } = await supabase.functions.invoke('fetch-top-videos', {
+        body: { channelId: youtubeChannelId }
       });
 
-      if (searchError) {
-        console.error("Error fetching top videos:", searchError);
-        throw searchError;
+      if (error) {
+        console.error("Error fetching top videos:", error);
+        throw error;
+      }
+
+      if (data.error) {
+        console.error("API error fetching top videos:", data.error);
+        throw new Error(data.error);
       }
 
       setState(prev => ({
         ...prev,
-        mostViewedVideo: searchData.mostViewed || null,
-        mostEngagingVideo: searchData.mostEngaging || null,
+        mostViewedVideo: data.mostViewed || null,
+        mostEngagingVideo: data.mostEngaging || null,
         topVideosLoading: false
       }));
     } catch (err) {

@@ -27,6 +27,19 @@ serve(async (req) => {
     }
 
     console.log(`Fetching top videos for channel ID: ${channelId}`);
+
+    // Check if channelId is a YouTube channel ID
+    const youtubeChannelIdPattern = /^UC[\w-]{21}[AQgw]$/;
+    if (!youtubeChannelIdPattern.test(channelId)) {
+      // If not a YouTube channel ID, try to get it from our database channel title
+      // For now, just return a meaningful error
+      return new Response(JSON.stringify({
+        error: "Not a valid YouTube channel ID. Please use the YouTube channel ID that starts with 'UC'."
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
     
     // Fetch videos sorted by view count (most viewed)
     const mostViewedVideosResponse = await fetch(

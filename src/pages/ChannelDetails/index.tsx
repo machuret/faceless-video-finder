@@ -70,11 +70,13 @@ const ChannelDetails = () => {
         <ChannelHeader channel={channel} />
         
         {/* Top Performing Videos Section */}
-        <TopPerformingVideos 
-          mostViewed={mostViewedVideo} 
-          mostEngaging={mostEngagingVideo} 
-          loading={topVideosLoading}
-        />
+        {(mostViewedVideo || mostEngagingVideo || topVideosLoading) && (
+          <TopPerformingVideos 
+            mostViewed={mostViewedVideo} 
+            mostEngaging={mostEngagingVideo} 
+            loading={topVideosLoading}
+          />
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-1">
