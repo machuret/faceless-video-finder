@@ -29,13 +29,11 @@ export const ChannelList: React.FC<ChannelListProps> = ({
   } = useChannelOperations();
 
   useEffect(() => {
-    console.log("Fetching channels with limit:", limit);
-    // Pass the limit to fetchChannels to limit the number of channels fetched
+    console.log("ChannelList useEffect running, fetching channels with limit:", limit);
     fetchChannels(limit);
-    
-    // Only include limit in the dependency array if we want to refetch when it changes
-    // This should normally be fine as limit is a prop that shouldn't change often
-  }, [fetchChannels, limit]);
+    // Don't include fetchChannels in the dependency array as it would cause infinite rerenders
+    // since useCallback doesn't memoize based on arguments
+  }, [limit]); // Only re-run if limit changes
 
   if (loading) {
     return <LoadingState />;
@@ -45,9 +43,11 @@ export const ChannelList: React.FC<ChannelListProps> = ({
     return <ErrorState error={error} onRetry={() => fetchChannels(limit)} />;
   }
 
-  if (channels.length === 0) {
+  if (!channels || channels.length === 0) {
     return <EmptyState isAdmin={isAdmin} />;
   }
+
+  console.log(`Rendering ${channels.length} channels`);
 
   return (
     <div className="space-y-4">

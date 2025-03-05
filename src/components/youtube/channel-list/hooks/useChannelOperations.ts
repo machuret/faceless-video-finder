@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Channel } from "@/types/youtube";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -11,8 +11,9 @@ export function useChannelOperations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchChannels = async (limit?: number) => {
+  const fetchChannels = useCallback(async (limit?: number) => {
     try {
+      console.log("fetchChannels called with limit:", limit);
       setLoading(true);
       setError(null);
       
@@ -22,13 +23,19 @@ export function useChannelOperations() {
         .order("created_at", { ascending: false });
       
       // Apply limit if provided
-      if (limit) {
+      if (limit && typeof limit === 'number') {
+        console.log("Applying limit to query:", limit);
         query = query.limit(limit);
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+      
+      console.log(`Fetched ${data?.length || 0} channels from Supabase`);
       
       // Transform the data to ensure metadata is properly typed
       const typedChannels: Channel[] = (data || []).map(channel => ({
@@ -45,7 +52,7 @@ export function useChannelOperations() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleEdit = (channelId: string) => {
     navigate(`/admin/edit-channel/${channelId}`);
