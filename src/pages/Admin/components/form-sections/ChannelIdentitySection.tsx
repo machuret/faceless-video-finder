@@ -50,15 +50,15 @@ const ChannelIdentitySection = ({
         }
       });
       
-      const { data, error } = response;
+      console.log("Screenshot response:", response);
       
-      if (error) {
-        console.error("Error invoking screenshot function:", error);
-        toast.error(`Failed to take channel screenshot: ${error.message}`);
+      if (response.error) {
+        console.error("Error invoking screenshot function:", response.error);
+        toast.error(`Failed to take channel screenshot: ${response.error.message}`);
         return;
       }
       
-      console.log("Screenshot response:", data);
+      const { data } = response;
       
       if (data.success) {
         toast.success("Channel screenshot taken successfully!");

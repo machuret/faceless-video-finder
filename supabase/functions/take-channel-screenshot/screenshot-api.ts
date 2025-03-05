@@ -17,7 +17,7 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     const fileType = "png";
     
     // Set parameters to handle YouTube's consent screen
-    const delay = 5000; // 5 seconds should be enough as we're using cookies instead of button clicks
+    const delay = 5000; // 5 seconds delay to ensure page is fully loaded
     const fullPage = false; // Get only the first viewport
     const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     const width = 1366; // Common desktop width
