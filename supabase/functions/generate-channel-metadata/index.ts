@@ -1,9 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { countries } from "../_shared/constants.ts";
-import { channelTypes } from "../_shared/constants.ts";
-import { niches } from "../_shared/constants.ts";
+import { countries, niches, channelTypes } from "../_shared/index.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
