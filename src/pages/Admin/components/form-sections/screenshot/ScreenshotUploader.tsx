@@ -94,6 +94,29 @@ const ScreenshotUploader = ({
     }
     
     try {
+      // First extract the file path from the screenshot URL
+      const fileUrlParts = screenshotUrl.split('channel-screenshots/');
+      if (fileUrlParts.length < 2) {
+        toast.error("Invalid screenshot URL format");
+        return;
+      }
+      
+      const filePath = fileUrlParts[1];
+      console.log("Attempting to delete file:", filePath);
+      
+      // Remove the file from storage
+      const { error: storageError } = await supabase.storage
+        .from('channel-screenshots')
+        .remove([filePath]);
+        
+      if (storageError) {
+        console.error("Error removing file from storage:", storageError);
+        // Continue anyway to update the database
+        console.warn("Continuing to update database despite storage error");
+      } else {
+        console.log("File successfully removed from storage");
+      }
+      
       // Update channel record to remove screenshot URL
       const { error } = await supabase
         .from("youtube_channels")
@@ -108,7 +131,7 @@ const ScreenshotUploader = ({
       
       toast.success("Screenshot removed successfully");
       
-      // Only update the form state instead of redirecting
+      // Update the form state
       onScreenshotChange("");
     } catch (err) {
       console.error("Error deleting screenshot:", err);
