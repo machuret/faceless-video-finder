@@ -56,7 +56,7 @@ export const useChannelFormHandlers = (
   // Screenshot URL handler
   const handleScreenshotChange = (url: string) => {
     if (!url) {
-      toast.error("Screenshot URL is required");
+      console.log("Empty screenshot URL provided");
       return;
     }
 
@@ -66,7 +66,7 @@ export const useChannelFormHandlers = (
       screenshot_url: url
     }));
 
-    toast.success("Screenshot updated");
+    // Toast is now handled in the component that calls the screenshot function
   };
 
   return {

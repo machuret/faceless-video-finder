@@ -41,6 +41,8 @@ const ChannelIdentitySection = ({
     
     try {
       console.log("Taking screenshot for channel:", formData.id);
+      console.log("Channel URL:", formData.channel_url);
+      
       const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: {
           channelUrl: formData.channel_url,
@@ -49,16 +51,19 @@ const ChannelIdentitySection = ({
       });
       
       if (error) {
-        console.error("Error taking screenshot:", error);
-        toast.error("Failed to take channel screenshot");
+        console.error("Error invoking screenshot function:", error);
+        toast.error(`Failed to take channel screenshot: ${error.message}`);
         return;
       }
+      
+      console.log("Screenshot response:", data);
       
       if (data.success) {
         toast.success("Channel screenshot taken successfully!");
         handleScreenshotChange(data.screenshotUrl);
       } else {
         toast.error(data.message || "Failed to take channel screenshot");
+        console.error("Screenshot error:", data.error || "Unknown error");
       }
     } catch (err) {
       console.error("Error invoking screenshot function:", err);
@@ -110,7 +115,7 @@ const ChannelIdentitySection = ({
       <div className="mt-4">
         <div className="flex items-center justify-between mb-2">
           <Label htmlFor="screenshot_url">Screenshot URL</Label>
-          {isEditMode && (
+          {formData.id && (
             <Button 
               variant="secondary" 
               size="sm" 
