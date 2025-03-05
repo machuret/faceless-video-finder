@@ -8,12 +8,21 @@ import ChannelHeader from "./components/ChannelHeader";
 import ChannelStats from "./components/ChannelStats";
 import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
+import TopPerformingVideos from "./components/TopPerformingVideos";
 import { useEffect } from "react";
 
 const ChannelDetails = () => {
   const { channelId, slug } = useParams();
   const navigate = useNavigate();
-  const { channel, videoStats, loading, error } = useChannelDetails(channelId, slug);
+  const { 
+    channel, 
+    videoStats, 
+    loading, 
+    error, 
+    topVideosLoading, 
+    mostViewedVideo, 
+    mostEngagingVideo 
+  } = useChannelDetails(channelId, slug);
 
   // Redirect to SEO-friendly URL if user arrived via channelId
   useEffect(() => {
@@ -59,6 +68,14 @@ const ChannelDetails = () => {
 
       <main className="container mx-auto px-4 py-8">
         <ChannelHeader channel={channel} />
+        
+        {/* Top Performing Videos Section */}
+        <TopPerformingVideos 
+          mostViewed={mostViewedVideo} 
+          mostEngaging={mostEngagingVideo} 
+          loading={topVideosLoading}
+        />
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-1">
             <ChannelStats channel={channel} />

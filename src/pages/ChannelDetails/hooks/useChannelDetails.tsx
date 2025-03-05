@@ -4,11 +4,36 @@ import { supabase } from "@/integrations/supabase/client";
 import { Channel } from "@/types/youtube";
 import { toast } from "sonner";
 
+interface TopVideo {
+  id: string;
+  title: string;
+  thumbnailUrl: string;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  publishedAt: string;
+}
+
+interface ChannelDetailsState {
+  channel: Channel | null;
+  videoStats: any[];
+  loading: boolean;
+  error: string | null;
+  topVideosLoading: boolean;
+  mostViewedVideo: TopVideo | null;
+  mostEngagingVideo: TopVideo | null;
+}
+
 export const useChannelDetails = (channelId?: string, slug?: string) => {
-  const [channel, setChannel] = useState<Channel | null>(null);
-  const [videoStats, setVideoStats] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<ChannelDetailsState>({
+    channel: null,
+    videoStats: [],
+    loading: true,
+    error: null,
+    topVideosLoading: true,
+    mostViewedVideo: null,
+    mostEngagingVideo: null
+  });
 
   useEffect(() => {
     if (channelId) {
@@ -20,8 +45,11 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
       if (idFromSlug) {
         fetchChannelDetails(idFromSlug);
       } else {
-        setError("Invalid channel URL");
-        setLoading(false);
+        setState(prev => ({
+          ...prev,
+          error: "Invalid channel URL",
+          loading: false
+        }));
       }
     }
   }, [channelId, slug]);
@@ -41,7 +69,7 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
   };
 
   const fetchChannelDetails = async (id: string) => {
-    setLoading(true);
+    setState(prev => ({ ...prev, loading: true }));
     try {
       console.log(`Fetching channel details for ID: ${id}`);
       
@@ -70,16 +98,63 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
         
       if (videoError) throw videoError;
 
-      setChannel(channelData as unknown as Channel);
-      setVideoStats(videoData || []);
+      setState(prev => ({
+        ...prev,
+        channel: channelData as unknown as Channel,
+        videoStats: videoData || [],
+        loading: false
+      }));
+
+      // After basic channel data is loaded, fetch top performing videos
+      fetchTopPerformingVideos(channelData.channel_title);
+      
     } catch (err) {
       console.error("Error fetching channel details:", err);
       toast.error("Failed to load channel details");
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
+      setState(prev => ({
+        ...prev,
+        error: err instanceof Error ? err.message : "Unknown error",
+        loading: false
+      }));
     }
   };
 
-  return { channel, videoStats, loading, error };
+  const fetchTopPerformingVideos = async (channelTitle: string) => {
+    setState(prev => ({ ...prev, topVideosLoading: true }));
+    try {
+      // We need the actual YouTube channel ID, not our internal UUID
+      // Let's try to get it from the channel data first using the channel title as a search term
+      const { data: searchData, error: searchError } = await supabase.functions.invoke('fetch-top-videos', {
+        body: { channelId: channelTitle }
+      });
+
+      if (searchError) {
+        console.error("Error fetching top videos:", searchError);
+        throw searchError;
+      }
+
+      setState(prev => ({
+        ...prev,
+        mostViewedVideo: searchData.mostViewed || null,
+        mostEngagingVideo: searchData.mostEngaging || null,
+        topVideosLoading: false
+      }));
+    } catch (err) {
+      console.error("Error fetching top performing videos:", err);
+      setState(prev => ({
+        ...prev,
+        topVideosLoading: false
+      }));
+    }
+  };
+
+  return {
+    channel: state.channel,
+    videoStats: state.videoStats,
+    loading: state.loading,
+    error: state.error,
+    topVideosLoading: state.topVideosLoading,
+    mostViewedVideo: state.mostViewedVideo,
+    mostEngagingVideo: state.mostEngagingVideo
+  };
 };
