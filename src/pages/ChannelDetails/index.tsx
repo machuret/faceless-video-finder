@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
@@ -82,9 +83,16 @@ const ChannelDetails = () => {
         )}
         
         <div className="mt-8">
-          <ChannelStats channel={channel} />
+          {/* Only show the channel type info and videos, not the full stats again */}
           <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
           <ChannelVideos videos={videoStats} />
+          
+          {/* Add screenshot display here if it's not already shown */}
+          {channel.screenshot_url && (
+            <div className="mt-6">
+              <ChannelStats showOnlyScreenshot={true} channel={channel} />
+            </div>
+          )}
         </div>
       </main>
 
