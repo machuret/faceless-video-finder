@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera } from "lucide-react";
+import { Camera, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import FormSectionWrapper from "./FormSectionWrapper";
@@ -75,6 +75,33 @@ const ChannelIdentitySection = ({
     }
   };
   
+  const handleDeleteScreenshot = async () => {
+    if (!formData.id || !formData.screenshot_url) {
+      toast.error("No screenshot to delete");
+      return;
+    }
+    
+    try {
+      // Update channel record to remove screenshot URL
+      const { error } = await supabase
+        .from("youtube_channels")
+        .update({ screenshot_url: null })
+        .eq("id", formData.id);
+      
+      if (error) {
+        console.error("Error removing screenshot URL:", error);
+        toast.error(`Failed to remove screenshot: ${error.message}`);
+        return;
+      }
+      
+      toast.success("Screenshot removed successfully");
+      handleScreenshotChange(""); // Clear the screenshot URL in the form
+    } catch (err) {
+      console.error("Error deleting screenshot:", err);
+      toast.error("An error occurred while deleting the screenshot");
+    }
+  };
+  
   return (
     <FormSectionWrapper title="Channel Identity" description="Basic information about the YouTube channel">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -118,16 +145,29 @@ const ChannelIdentitySection = ({
         <div className="flex items-center justify-between mb-2">
           <Label htmlFor="screenshot_url">Screenshot URL</Label>
           {formData.id && (
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              onClick={handleTakeScreenshot}
-              disabled={takingScreenshot}
-              className="flex items-center gap-2"
-            >
-              <Camera className="h-4 w-4" />
-              {takingScreenshot ? "Taking Screenshot..." : "Take Screenshot"}
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={handleTakeScreenshot}
+                disabled={takingScreenshot}
+                className="flex items-center gap-2"
+              >
+                <Camera className="h-4 w-4" />
+                {takingScreenshot ? "Taking Screenshot..." : "Take Screenshot"}
+              </Button>
+              {formData.screenshot_url && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteScreenshot}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Screenshot
+                </Button>
+              )}
+            </div>
           )}
         </div>
         <Input
