@@ -114,9 +114,16 @@ async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | null> {
     const output = "image";
     const fileType = "png";
     
-    const apiUrl = `https://shot.screenshotapi.net/screenshot?token=${apiKey}&url=${encodedUrl}&output=${output}&file_type=${fileType}`;
+    // Additional parameters to help bypass consent dialogs
+    const delay = 3000; // Give the page 3 seconds to load
+    const fullPage = false; // Get only the first viewport
+    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"; // Desktop user agent
+    const acceptCookies = true; // Attempt to auto-accept cookies
     
-    console.log("Calling screenshot API:", apiUrl);
+    // Construct the API URL with all parameters
+    const apiUrl = `https://shot.screenshotapi.net/screenshot?token=${apiKey}&url=${encodedUrl}&output=${output}&file_type=${fileType}&delay=${delay}&full_page=${fullPage}&user_agent=${encodeURIComponent(userAgent)}&accept_cookies=${acceptCookies}`;
+    
+    console.log("Calling screenshot API with enhanced parameters");
     
     // Make the request to the screenshot API
     const response = await fetch(apiUrl);
