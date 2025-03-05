@@ -26,36 +26,46 @@ export const useScreenshotUpload = ({
     
     const file = e.target.files[0];
     const fileExt = file.name.split('.').pop();
-    const fileName = `${channelId}/screenshot.${fileExt}`;
-    const filePath = `${fileName}`;
+    const fileName = `channel_${channelId}_${new Date().toISOString().replace(/[:.]/g, "-")}.${fileExt}`;
     
     setUploading(true);
     toast.info("Uploading screenshot...");
     
     try {
+      console.log("📤 Starting screenshot upload process");
+      console.log("📌 Channel ID:", channelId);
+      console.log("📂 File name:", fileName);
+      
       // Upload file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('channel-screenshots')
-        .upload(filePath, file, {
+        .upload(fileName, file, {
           cacheControl: '3600',
           upsert: true
         });
       
       if (uploadError) {
-        console.error("Error uploading screenshot:", uploadError);
+        console.error("❌ Error uploading screenshot:", uploadError);
         toast.error(`Failed to upload screenshot: ${uploadError.message}`);
+        setUploading(false);
         return;
       }
+      
+      console.log("✅ File uploaded successfully:", uploadData);
       
       // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('channel-screenshots')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
       
-      if (!publicUrlData.publicUrl) {
+      if (!publicUrlData?.publicUrl) {
+        console.error("❌ Failed to get public URL");
         toast.error("Failed to get public URL for screenshot");
+        setUploading(false);
         return;
       }
+      
+      console.log("🔗 Public URL generated:", publicUrlData.publicUrl);
       
       // Update channel record with screenshot URL
       const { error: updateError } = await supabase
@@ -64,17 +74,19 @@ export const useScreenshotUpload = ({
         .eq("id", channelId);
       
       if (updateError) {
-        console.error("Error updating screenshot URL:", updateError);
+        console.error("❌ Error updating screenshot URL:", updateError);
         toast.error(`Failed to update screenshot URL: ${updateError.message}`);
+        setUploading(false);
         return;
       }
       
+      console.log("✅ Database updated with screenshot URL");
       toast.success("Screenshot uploaded successfully!");
       
       // Update the form state
       onScreenshotChange(publicUrlData.publicUrl);
     } catch (err) {
-      console.error("Error in upload process:", err);
+      console.error("❌ Unexpected error in upload process:", err);
       toast.error("An error occurred while uploading the screenshot");
     } finally {
       setUploading(false);

@@ -27,6 +27,12 @@ const ScreenshotUploader = ({
     onScreenshotChange
   });
   
+  const onDelete = () => {
+    if (screenshotUrl) {
+      handleDeleteScreenshot(screenshotUrl);
+    }
+  };
+  
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-2">
@@ -38,9 +44,7 @@ const ScreenshotUploader = ({
               onChange={handleFileUpload}
             />
             {screenshotUrl && (
-              <DeleteButton 
-                onClick={() => handleDeleteScreenshot(screenshotUrl)}
-              />
+              <DeleteButton onClick={onDelete} />
             )}
           </div>
         )}

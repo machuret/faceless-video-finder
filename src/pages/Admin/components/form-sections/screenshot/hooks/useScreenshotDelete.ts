@@ -45,102 +45,62 @@ export const useScreenshotDelete = ({
       console.log("✅ Database updated successfully");
       
       // Update UI immediately after database update succeeds
-      toast.success("Screenshot removed successfully");
       onScreenshotChange("");
+      toast.success("Screenshot removed successfully");
       
-      // STEP 2: Try to extract file path from URL (non-blocking)
+      // STEP 2: Extract storage path from URL (non-blocking)
       console.log("🔍 Attempting to extract storage path from URL:", screenshotUrl);
       
-      try {
-        let filePath = '';
-        let bucketName = '';
-        
-        // Try different URL parsing strategies
-        
-        // Strategy 1: Standard Supabase URL format
-        if (screenshotUrl.includes('/storage/v1/object/public/')) {
-          const storagePrefix = '/storage/v1/object/public/';
-          const startIndex = screenshotUrl.indexOf(storagePrefix) + storagePrefix.length;
-          const pathWithBucket = screenshotUrl.substring(startIndex).split('?')[0];
+      // Don't block the UI - run storage deletion in background
+      setTimeout(async () => {
+        try {
+          // Try to extract bucket name and path from the URL
+          const urlRegex = /\/storage\/v1\/object\/public\/([^\/]+)\/(.+?)(?:\?.*)?$/;
+          const match = screenshotUrl.match(urlRegex);
           
-          // First segment is bucket name, rest is file path
-          const segments = pathWithBucket.split('/');
-          bucketName = segments[0];
-          filePath = pathWithBucket.substring(bucketName.length + 1);
-          
-          console.log("Strategy 1 - Extracted bucket:", bucketName);
-          console.log("Strategy 1 - Extracted path:", filePath);
-        } 
-        // Strategy 2: Direct bucket URL
-        else if (screenshotUrl.includes('/channel-screenshots/') || 
-                screenshotUrl.includes('/channel_screenshots/')) {
-          
-          // Determine bucket name from URL
-          bucketName = screenshotUrl.includes('/channel-screenshots/') 
-            ? 'channel-screenshots' 
-            : 'channel_screenshots';
+          if (match) {
+            const [, bucketName, filePath] = match;
+            console.log(`📂 Extracted bucket: ${bucketName}`);
+            console.log(`📄 Extracted path: ${filePath}`);
             
-          // Extract the file path after the bucket name
-          const bucketPrefix = `/${bucketName}/`;
-          const startIndex = screenshotUrl.indexOf(bucketPrefix) + bucketPrefix.length;
-          filePath = screenshotUrl.substring(startIndex).split('?')[0];
-          
-          console.log("Strategy 2 - Using bucket:", bucketName);
-          console.log("Strategy 2 - Extracted path:", filePath);
-        }
-        // Strategy 3: Fallback - try to get filename from URL
-        else {
-          console.log("Strategy 3 - Fallback extraction");
-          bucketName = 'channel-screenshots'; // Assume default bucket
-          
-          // Try to get the last segment of the URL as filename
-          const urlSegments = screenshotUrl.split('/');
-          filePath = urlSegments[urlSegments.length - 1].split('?')[0];
-          
-          console.log("Strategy 3 - Using default bucket:", bucketName);
-          console.log("Strategy 3 - Using filename:", filePath);
-        }
-        
-        // Only attempt storage deletion if we extracted something
-        if (bucketName && filePath) {
-          console.log("🗑️ Attempting to delete file from storage");
-          console.log(`📂 Bucket: ${bucketName}`);
-          console.log(`📄 File path: ${filePath}`);
-          
-          // Try both known bucket naming conventions
-          const buckets = [bucketName];
-          if (bucketName === 'channel-screenshots') {
-            buckets.push('channel_screenshots');
-          } else if (bucketName === 'channel_screenshots') {
-            buckets.push('channel-screenshots');
-          }
-          
-          // Try deletion from all possible buckets
-          for (const bucket of buckets) {
-            try {
-              console.log(`Attempting deletion from bucket: ${bucket}`);
-              const { error: storageError } = await supabase.storage
-                .from(bucket)
-                .remove([filePath]);
-              
-              if (storageError) {
-                console.warn(`⚠️ Storage deletion warning for bucket ${bucket}:`, storageError);
-              } else {
-                console.log(`✅ File successfully removed from bucket ${bucket}`);
-                break; // Stop trying other buckets if successful
+            // Try to delete from storage
+            const { error: storageError } = await supabase.storage
+              .from(bucketName)
+              .remove([filePath]);
+            
+            if (storageError) {
+              console.warn("⚠️ Storage deletion warning:", storageError);
+            } else {
+              console.log("✅ File successfully removed from storage");
+            }
+          } else {
+            // Alternative bucket names to try
+            const possibleBuckets = ['channel-screenshots', 'channel_screenshots'];
+            const filenameMatch = screenshotUrl.split('/').pop()?.split('?')[0];
+            
+            if (filenameMatch) {
+              for (const bucket of possibleBuckets) {
+                try {
+                  console.log(`Attempting to delete from bucket ${bucket} with filename ${filenameMatch}`);
+                  const { error } = await supabase.storage
+                    .from(bucket)
+                    .remove([filenameMatch]);
+                  
+                  if (!error) {
+                    console.log(`✅ Successfully deleted from ${bucket}`);
+                    break;
+                  }
+                } catch (e) {
+                  console.warn(`Failed to delete from ${bucket}:`, e);
+                }
               }
-            } catch (bucketError) {
-              console.warn(`⚠️ Error with bucket ${bucket}:`, bucketError);
-              // Continue to next bucket
             }
           }
-        } else {
-          console.warn("⚠️ Could not parse storage path from URL:", screenshotUrl);
+        } catch (storageErr) {
+          console.warn("⚠️ Storage cleanup error:", storageErr);
+          // Non-blocking - won't affect UI update
         }
-      } catch (storageErr) {
-        // Non-blocking - won't affect UI update
-        console.warn("⚠️ Storage deletion error:", storageErr);
-      }
+      }, 0);
       
     } catch (err) {
       console.error("❌ Unexpected error in screenshot deletion:", err);
