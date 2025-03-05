@@ -5,6 +5,7 @@ import PageFooter from "@/components/home/PageFooter";
 import { Loader2 } from "lucide-react";
 import { useChannelDetails } from "./hooks/useChannelDetails";
 import ChannelHeader from "./components/ChannelHeader";
+import ChannelStats from "./components/ChannelStats";
 import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
 import TopPerformingVideos from "./components/TopPerformingVideos";
@@ -67,6 +68,11 @@ const ChannelDetails = () => {
 
       <main className="container mx-auto px-4 py-8">
         <ChannelHeader channel={channel} />
+        
+        {/* Revenue Statistics */}
+        <div className="mt-8">
+          <ChannelStats showOnlyRevenue={true} channel={channel} />
+        </div>
         
         {/* Top Performing Videos Section */}
         {(mostViewedVideo || mostEngagingVideo || topVideosLoading) && (
