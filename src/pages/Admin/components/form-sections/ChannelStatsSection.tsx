@@ -29,17 +29,6 @@ const ChannelStatsSection = ({
     if (stats.channel_title && (!formData.channel_title || formData.channel_title === "Channel")) {
       handleFieldChange('channel_title', stats.channel_title);
     }
-    
-    // If we received a description and it's not empty, update it
-    if (stats.description && stats.description.trim() !== "") {
-      handleFieldChange('description', stats.description);
-    }
-  };
-  
-  const handleDescriptionReceived = (description: string) => {
-    if (description && description.trim() !== "") {
-      handleFieldChange('description', description);
-    }
   };
 
   // Determine what to use for fetching - channel URL, channel title, or a combination
@@ -75,12 +64,6 @@ const ChannelStatsSection = ({
             <ChannelStatsFetcher 
               channelUrl={determineChannelReference()} 
               onStatsReceived={handleStatsReceived} 
-            />
-            <ChannelStatsFetcher 
-              channelUrl={determineChannelReference()} 
-              onStatsReceived={handleStatsReceived}
-              onDescriptionReceived={handleDescriptionReceived}
-              fetchDescriptionOnly={true}
             />
           </div>
         ) : null
