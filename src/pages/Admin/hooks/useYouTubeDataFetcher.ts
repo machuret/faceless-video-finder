@@ -28,39 +28,51 @@ export const useYouTubeDataFetcher = (
       setAttempts(prev => prev + 1);
       console.log(`[${timestamp}] 📡 Calling edge function with URL:`, youtubeUrl.trim(), `(Attempt: ${attempts + 1})`);
       
-      // Add a client-side timeout for the edge function call
-      const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30-second timeout
+      // Set up timeout for the request
+      let timeoutId: number | null = null;
       
-      // Call the edge function with improved error handling
-      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+      const timeoutPromise = new Promise<{data: null, error: Error}>((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error('Request timed out after 30 seconds'));
+        }, 30000); // 30-second timeout
+      });
+      
+      // Call the edge function with request body
+      const functionPromise = supabase.functions.invoke('fetch-youtube-data', {
         body: { 
           url: youtubeUrl.trim(),
           allowMockData: useMockData,
           timestamp,
           attempt: attempts + 1
-        },
-        signal: abortController.signal
+        }
       });
       
-      // Clear timeout as soon as response is received
-      clearTimeout(timeoutId);
+      // Race between the timeout and the actual request
+      const result = await Promise.race([functionPromise, timeoutPromise])
+        .finally(() => {
+          // Clear timeout when either the request completes or times out
+          if (timeoutId !== null) {
+            clearTimeout(timeoutId);
+          }
+        });
       
       // Store response for debugging
-      setLastResponse(data);
-      console.log(`[${timestamp}] 📡 Edge function response:`, { data, error });
+      setLastResponse(result.data);
+      console.log(`[${timestamp}] 📡 Edge function response:`, result);
       
-      if (error) {
-        console.error(`[${timestamp}] ❌ Edge function error:`, error);
-        setLastError(error.message);
+      if (result.error) {
+        console.error(`[${timestamp}] ❌ Edge function error:`, result.error);
+        setLastError(result.error.message);
         
-        if (error.message.includes('AbortError') || error.message.includes('timeout')) {
+        if (result.error.message.includes('timeout') || result.error.message.includes('timed out')) {
           toast.error("Request timed out. The YouTube API may be experiencing issues.");
         } else {
-          toast.error(`Edge function error: ${error.message}`);
+          toast.error(`Edge function error: ${result.error.message}`);
         }
         return;
       }
+      
+      const { data } = result;
       
       if (!data) {
         console.error(`[${timestamp}] ❌ No data received from edge function`);
@@ -129,7 +141,7 @@ export const useYouTubeDataFetcher = (
       console.error(`[${timestamp}] ❌ Unexpected error:`, error);
       setLastError(error instanceof Error ? error.message : 'Unknown error');
       
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.message.includes('timed out')) {
         toast.error("Request timed out. Please try again or use mock data.");
       } else {
         toast.error(`Failed to load YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
