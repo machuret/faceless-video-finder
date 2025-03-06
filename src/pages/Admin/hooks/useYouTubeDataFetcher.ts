@@ -32,6 +32,8 @@ export const useYouTubeDataFetcher = (
       
       // Call the Supabase edge function with explicit content type
       console.log(`[${timestamp}] 🔄 [useYouTubeDataFetcher] Invoking edge function now...`);
+      
+      // Direct fetch to debug
       const { data: functionData, error: functionError } = await supabase.functions.invoke(
         'fetch-youtube-data',
         {
@@ -43,7 +45,7 @@ export const useYouTubeDataFetcher = (
       );
       
       console.log(`[${timestamp}] 📦 [useYouTubeDataFetcher] Response received:`, 
-        { functionData: JSON.stringify(functionData), functionError });
+        { functionData, functionError });
       
       if (functionError) {
         console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] Function error:`, functionError);
