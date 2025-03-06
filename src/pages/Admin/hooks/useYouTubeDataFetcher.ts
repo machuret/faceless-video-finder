@@ -26,7 +26,7 @@ export const useYouTubeDataFetcher = (
       setLastError(null);
       console.log(`[${timestamp}] 📡 Calling edge function with URL:`, youtubeUrl.trim());
       
-      // Call the edge function
+      // Call the edge function with improved error handling
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: { 
           url: youtubeUrl.trim(),
@@ -42,25 +42,29 @@ export const useYouTubeDataFetcher = (
       if (error) {
         console.error(`[${timestamp}] ❌ Edge function error:`, error);
         setLastError(error.message);
-        throw new Error(`Edge function error: ${error.message}`);
+        toast.error(`Edge function error: ${error.message}`);
+        return; // Exit early to prevent further processing
       }
       
       if (!data) {
         console.error(`[${timestamp}] ❌ No data received from edge function`);
         setLastError('No data received from edge function');
-        throw new Error('No data received from edge function');
+        toast.error("No data received from the server");
+        return; // Exit early
       }
       
       if (data.error) {
         console.error(`[${timestamp}] ❌ Error from edge function:`, data.error);
         setLastError(data.error);
-        throw new Error(`Error from edge function: ${data.error}`);
+        toast.error(`Error: ${data.error}`);
+        return; // Exit early
       }
       
       if (!data.channelData) {
         console.error(`[${timestamp}] ❌ No channel data in response:`, data);
         setLastError('No channel data received');
-        throw new Error('No channel data received');
+        toast.error("No channel data received");
+        return; // Exit early
       }
       
       const { channelData } = data;
@@ -68,6 +72,9 @@ export const useYouTubeDataFetcher = (
       if (data.isMockData) {
         console.log(`[${timestamp}] ⚠️ Using mock data as fallback`);
         toast.warning("Using mock data as fallback. YouTube API extraction failed.");
+      } else {
+        console.log(`[${timestamp}] ✅ Successfully received channel data`);
+        toast.success("Successfully fetched YouTube channel data");
       }
       
       // Map the data to our form structure
@@ -95,7 +102,7 @@ export const useYouTubeDataFetcher = (
       toast.success("YouTube data loaded successfully");
       
     } catch (error) {
-      console.error(`[${timestamp}] ❌ Error:`, error);
+      console.error(`[${timestamp}] ❌ Unexpected error:`, error);
       setLastError(error instanceof Error ? error.message : 'Unknown error');
       toast.error(`Failed to load YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {

@@ -7,6 +7,52 @@ export const corsHeaders = {
 };
 
 /**
+ * Helper function to make YouTube API requests with consistent error handling
+ */
+async function fetchFromYouTubeAPI(url: string, timestamp: string) {
+  console.log(`🔍 [${timestamp}] Fetching from YouTube API:`, url);
+  
+  try {
+    const response = await fetch(url, { 
+      headers: { 'Content-Type': 'application/json' },
+      // Add timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000) // 10-second timeout
+    });
+    
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { status: response.status, statusText: response.statusText };
+      }
+      
+      console.error(`❌ [${timestamp}] YouTube API error (${response.status}):`, errorData);
+      
+      // Format error message based on YouTube API error format
+      const apiErrorMessage = errorData?.error?.message || 
+                             errorData?.error?.errors?.[0]?.message ||
+                             `API request failed with status ${response.status}`;
+      
+      throw new Error(`YouTube API error: ${apiErrorMessage}`);
+    }
+    
+    const data = await response.json();
+    console.log(`✅ [${timestamp}] YouTube API response successful`);
+    return data;
+  } catch (error) {
+    // Check if the error is due to timeout
+    if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+      console.error(`❌ [${timestamp}] YouTube API request timed out`);
+      throw new Error('YouTube API request timed out. Please try again.');
+    }
+    
+    console.error(`❌ [${timestamp}] Error fetching from YouTube API:`, error);
+    throw error;
+  }
+}
+
+/**
  * Extracts channel data directly from a channel ID, custom URL, or handle
  */
 export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string) {
@@ -30,23 +76,21 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
       const customUrl = customUrlMatch[1];
       console.log(`🔹 [${timestamp}] Found custom URL: ${customUrl}, searching for channel ID`);
       
-      const searchResponse = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(customUrl)}&type=channel&key=${YOUTUBE_API_KEY}`,
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      
-      if (!searchResponse.ok) {
-        const errorData = await searchResponse.json();
-        console.error(`❌ [${timestamp}] YouTube API error for custom URL search:`, errorData);
-        throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
-      }
-      
-      const searchData = await searchResponse.json();
-      console.log(`🔍 [${timestamp}] Search results for custom URL:`, searchData);
-      
-      if (searchData.items && searchData.items.length > 0) {
-        channelId = searchData.items[0].id.channelId;
-        console.log(`✅ [${timestamp}] Resolved custom URL to channel ID: ${channelId}`);
+      try {
+        const searchData = await fetchFromYouTubeAPI(
+          `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(customUrl)}&type=channel&key=${YOUTUBE_API_KEY}`,
+          timestamp
+        );
+        
+        console.log(`🔍 [${timestamp}] Search results for custom URL:`, searchData);
+        
+        if (searchData.items && searchData.items.length > 0) {
+          channelId = searchData.items[0].id.channelId;
+          console.log(`✅ [${timestamp}] Resolved custom URL to channel ID: ${channelId}`);
+        }
+      } catch (error) {
+        console.error(`❌ [${timestamp}] Error resolving custom URL:`, error);
+        throw error;
       }
     }
   }
@@ -61,24 +105,22 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
       const handle = handleMatch[1];
       console.log(`🔹 [${timestamp}] Found handle: @${handle}, searching for channel ID`);
       
-      // First try direct search with @ prefix
-      const searchResponse = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('@' + handle)}&type=channel&key=${YOUTUBE_API_KEY}`,
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      
-      if (!searchResponse.ok) {
-        const errorData = await searchResponse.json();
-        console.error(`❌ [${timestamp}] YouTube API error for handle search:`, errorData);
-        throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
-      }
-      
-      const searchData = await searchResponse.json();
-      console.log(`🔍 [${timestamp}] Search results for handle:`, searchData);
-      
-      if (searchData.items && searchData.items.length > 0) {
-        channelId = searchData.items[0].id.channelId;
-        console.log(`✅ [${timestamp}] Resolved handle to channel ID: ${channelId}`);
+      try {
+        // First try direct search with @ prefix
+        const searchData = await fetchFromYouTubeAPI(
+          `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('@' + handle)}&type=channel&key=${YOUTUBE_API_KEY}`,
+          timestamp
+        );
+        
+        console.log(`🔍 [${timestamp}] Search results for handle:`, searchData);
+        
+        if (searchData.items && searchData.items.length > 0) {
+          channelId = searchData.items[0].id.channelId;
+          console.log(`✅ [${timestamp}] Resolved handle to channel ID: ${channelId}`);
+        }
+      } catch (error) {
+        console.error(`❌ [${timestamp}] Error resolving handle:`, error);
+        throw error;
       }
     }
   }
@@ -90,28 +132,25 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
   
   // Fetch channel data
   console.log(`🔍 [${timestamp}] Fetching channel data for ID: ${channelId}`);
-  const channelResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${YOUTUBE_API_KEY}`,
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  
-  if (!channelResponse.ok) {
-    const errorData = await channelResponse.json();
-    console.error(`❌ [${timestamp}] YouTube API error for channel data:`, errorData);
-    throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
+  try {
+    const channelData = await fetchFromYouTubeAPI(
+      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${YOUTUBE_API_KEY}`,
+      timestamp
+    );
+    
+    console.log(`📊 [${timestamp}] Raw channel data:`, channelData);
+    
+    if (!channelData.items || channelData.items.length === 0) {
+      console.error(`❌ [${timestamp}] Channel not found or invalid channel ID`);
+      throw new Error('Channel not found or invalid channel ID');
+    }
+    
+    const channel = channelData.items[0];
+    return { channel, channelId };
+  } catch (error) {
+    console.error(`❌ [${timestamp}] Error fetching channel data:`, error);
+    throw error;
   }
-  
-  const channelData = await channelResponse.json();
-  console.log(`📊 [${timestamp}] Raw channel data:`, channelData);
-  
-  if (!channelData.items || channelData.items.length === 0) {
-    console.error(`❌ [${timestamp}] Channel not found or invalid channel ID`);
-    throw new Error('Channel not found or invalid channel ID');
-  }
-  
-  const channel = channelData.items[0];
-  
-  return { channel, channelId };
 }
 
 /**
@@ -132,51 +171,41 @@ export async function fetchChannelViaVideo(url: string, YOUTUBE_API_KEY: string)
   console.log(`🔹 [${timestamp}] Extracted video ID: ${videoId}`);
   
   // Get channel ID from video
-  const videoResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`,
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  
-  if (!videoResponse.ok) {
-    const errorData = await videoResponse.json();
-    console.error(`❌ [${timestamp}] YouTube API error for video data:`, errorData);
-    throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
+  try {
+    const videoData = await fetchFromYouTubeAPI(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`,
+      timestamp
+    );
+    
+    console.log(`📊 [${timestamp}] Video data:`, videoData);
+    
+    if (!videoData.items || videoData.items.length === 0) {
+      console.error(`❌ [${timestamp}] Video not found or invalid video ID`);
+      throw new Error('Video not found or invalid video ID');
+    }
+    
+    const channelId = videoData.items[0].snippet.channelId;
+    console.log(`🔹 [${timestamp}] Found channel ID from video: ${channelId}`);
+    
+    // Get channel details
+    const channelData = await fetchFromYouTubeAPI(
+      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${YOUTUBE_API_KEY}`,
+      timestamp
+    );
+    
+    console.log(`📊 [${timestamp}] Channel data via video:`, channelData);
+    
+    if (!channelData.items || channelData.items.length === 0) {
+      console.error(`❌ [${timestamp}] Channel not found using video method`);
+      throw new Error('Channel not found using video method');
+    }
+    
+    const channel = channelData.items[0];
+    return { channel, channelId };
+  } catch (error) {
+    console.error(`❌ [${timestamp}] Error fetching channel via video:`, error);
+    throw error;
   }
-  
-  const videoData = await videoResponse.json();
-  console.log(`📊 [${timestamp}] Video data:`, videoData);
-  
-  if (!videoData.items || videoData.items.length === 0) {
-    console.error(`❌ [${timestamp}] Video not found or invalid video ID`);
-    throw new Error('Video not found or invalid video ID');
-  }
-  
-  const channelId = videoData.items[0].snippet.channelId;
-  console.log(`🔹 [${timestamp}] Found channel ID from video: ${channelId}`);
-  
-  // Get channel details
-  const channelResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${YOUTUBE_API_KEY}`,
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  
-  if (!channelResponse.ok) {
-    const errorData = await channelResponse.json();
-    console.error(`❌ [${timestamp}] YouTube API error for channel data via video:`, errorData);
-    throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
-  }
-  
-  const channelData = await channelResponse.json();
-  console.log(`📊 [${timestamp}] Channel data via video:`, channelData);
-  
-  if (!channelData.items || channelData.items.length === 0) {
-    console.error(`❌ [${timestamp}] Channel not found using video method`);
-    throw new Error('Channel not found using video method');
-  }
-  
-  const channel = channelData.items[0];
-  
-  return { channel, channelId };
 }
 
 /**
@@ -200,51 +229,41 @@ export async function fetchChannelViaSearch(url: string, YOUTUBE_API_KEY: string
   
   console.log(`🔍 [${timestamp}] Searching for channel with term: "${searchTerm}"`);
   
-  // Search YouTube API
-  const searchResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=channel&maxResults=1&key=${YOUTUBE_API_KEY}`,
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  
-  if (!searchResponse.ok) {
-    const errorData = await searchResponse.json();
-    console.error(`❌ [${timestamp}] YouTube API error for search:`, errorData);
-    throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
+  try {
+    // Search YouTube API
+    const searchData = await fetchFromYouTubeAPI(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=channel&maxResults=1&key=${YOUTUBE_API_KEY}`,
+      timestamp
+    );
+    
+    console.log(`📊 [${timestamp}] Search results:`, searchData);
+    
+    if (!searchData.items || searchData.items.length === 0) {
+      console.error(`❌ [${timestamp}] No channels found matching the search term`);
+      throw new Error('No channels found matching the search term');
+    }
+    
+    // Take the first result (most relevant)
+    const channelId = searchData.items[0].id.channelId;
+    console.log(`🔹 [${timestamp}] Found channel ID via search: ${channelId}`);
+    
+    // Get full channel details
+    const channelData = await fetchFromYouTubeAPI(
+      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${YOUTUBE_API_KEY}`,
+      timestamp
+    );
+    
+    console.log(`📊 [${timestamp}] Channel data from search:`, channelData);
+    
+    if (!channelData.items || channelData.items.length === 0) {
+      console.error(`❌ [${timestamp}] Could not fetch channel details after finding via search`);
+      throw new Error('Could not fetch channel details after finding via search');
+    }
+    
+    const channel = channelData.items[0];
+    return { channel, channelId };
+  } catch (error) {
+    console.error(`❌ [${timestamp}] Error fetching channel via search:`, error);
+    throw error;
   }
-  
-  const searchData = await searchResponse.json();
-  console.log(`📊 [${timestamp}] Search results:`, searchData);
-  
-  if (!searchData.items || searchData.items.length === 0) {
-    console.error(`❌ [${timestamp}] No channels found matching the search term`);
-    throw new Error('No channels found matching the search term');
-  }
-  
-  // Take the first result (most relevant)
-  const channelId = searchData.items[0].id.channelId;
-  console.log(`🔹 [${timestamp}] Found channel ID via search: ${channelId}`);
-  
-  // Get full channel details
-  const channelResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${YOUTUBE_API_KEY}`,
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  
-  if (!channelResponse.ok) {
-    const errorData = await channelResponse.json();
-    console.error(`❌ [${timestamp}] YouTube API error for channel data from search:`, errorData);
-    throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
-  }
-  
-  const channelData = await channelResponse.json();
-  console.log(`📊 [${timestamp}] Channel data from search:`, channelData);
-  
-  if (!channelData.items || channelData.items.length === 0) {
-    console.error(`❌ [${timestamp}] Could not fetch channel details after finding via search`);
-    throw new Error('Could not fetch channel details after finding via search');
-  }
-  
-  const channel = channelData.items[0];
-  
-  return { channel, channelId };
 }

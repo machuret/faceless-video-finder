@@ -24,41 +24,89 @@ serve(async (req) => {
     const now = new Date().toISOString();
     console.log(`[${now}] 🚀 Edge function called`);
 
-    // Parse request body
-    const body = await req.json();
-    console.log(`[${now}] 📝 Request body:`, JSON.stringify(body));
+    let requestBody;
+    try {
+      // Parse request body with error handling
+      requestBody = await req.json();
+      console.log(`[${now}] 📝 Request body:`, JSON.stringify(requestBody));
+    } catch (parseError) {
+      console.error(`[${now}] ❌ Failed to parse request body:`, parseError);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid JSON in request body", 
+          timestamp: now,
+          success: false 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
     // Handle test ping
-    if (body?.test === true) {
-      console.log(`[${now}] 🧪 Test request received with timestamp: ${body.timestamp}`);
+    if (requestBody?.test === true) {
+      console.log(`[${now}] 🧪 Test request received with timestamp: ${requestBody.timestamp}`);
       return new Response(
         JSON.stringify({ 
           message: "Edge function is working correctly", 
           receivedAt: now,
-          requestTimestamp: body.timestamp,
+          requestTimestamp: requestBody.timestamp,
           success: true 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get YouTube API key
-    const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
-    console.log(`[${now}] 🔑 API Key exists:`, !!YOUTUBE_API_KEY);
+    // Check for mock data request
+    if (requestBody?.allowMockData === true && requestBody?.url) {
+      console.log(`[${now}] 🧪 Returning mock data for URL: ${requestBody.url}`);
+      const mockData = createMockChannelData(requestBody.url);
+      return new Response(
+        JSON.stringify({ 
+          channelData: mockData,
+          isMockData: true,
+          timestamp: now
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
+    // Get YouTube API key with better error handling
+    const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
     if (!YOUTUBE_API_KEY) {
       console.error(`[${now}] ❌ YouTube API key not configured`);
-      throw new Error('YouTube API key not configured');
+      return new Response(
+        JSON.stringify({ 
+          error: 'YouTube API key not configured on the server. Please check edge function configuration.',
+          timestamp: now,
+          success: false 
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
+    console.log(`[${now}] 🔑 API Key exists and is properly configured`);
 
     // Regular URL processing
-    const url = body?.url;
-    console.log(`[${now}] 📝 Received URL:`, url);
-
+    const url = requestBody?.url;
     if (!url) {
       console.error(`[${now}] ❌ URL is required but was not provided`);
-      throw new Error('URL is required');
+      return new Response(
+        JSON.stringify({ 
+          error: 'URL is required',
+          timestamp: now,
+          success: false 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
+    console.log(`[${now}] 📝 Processing URL:`, url);
 
     // Try different extraction methods
     let channel = null;
@@ -112,20 +160,31 @@ serve(async (req) => {
       console.error(`[${now}] ❌ ${errorMessage}`);
       
       // For development purposes, return mock data if real extraction fails
-      if (body?.allowMockData === true) {
+      if (requestBody?.allowMockData === true) {
         console.log(`[${now}] 🧪 Returning mock data as fallback`);
         const mockData = createMockChannelData(url);
         return new Response(
           JSON.stringify({ 
             channelData: mockData,
             isMockData: true,
-            error: errorMessage
+            error: errorMessage,
+            timestamp: now
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      throw error || new Error('Failed to extract channel data using all methods');
+      return new Response(
+        JSON.stringify({ 
+          error: errorMessage,
+          timestamp: now,
+          success: false 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // Format channel data
@@ -134,22 +193,27 @@ serve(async (req) => {
     console.log(`[${now}] ✅ Returning channel data for: ${channelData.title}`);
     
     return new Response(
-      JSON.stringify({ channelData }),
+      JSON.stringify({ 
+        channelData,
+        timestamp: now,
+        success: true 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     const timestamp = new Date().toISOString();
-    console.error(`[${timestamp}] ❌ Error:`, error);
+    console.error(`[${timestamp}] ❌ Unhandled error:`, error);
     
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error.message || 'Unknown server error',
+        stack: error.stack, // Include stack trace for better debugging
         timestamp,
         success: false
       }),
       { 
-        status: 400,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
