@@ -9,7 +9,8 @@ console.log(`[${new Date().toISOString()}] 🚀 fetch-youtube-data edge function
 
 serve(async (req) => {
   // Add more detailed logging for diagnostics
-  console.log(`[${new Date().toISOString()}] 📥 Request received: ${req.method} ${req.url}`);
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] 📥 Request received: ${req.method} ${req.url}`);
   
   try {
     // Handle CORS preflight quickly to avoid wasting resources
@@ -25,19 +26,15 @@ serve(async (req) => {
     // Set a generous but not too long timeout to ensure a response
     // This is a safety net in case requestHandler internal timeouts fail
     const timeoutId = setTimeout(() => {
-      console.log(`[${new Date().toISOString()}] ⚠️ Safety timeout triggered, aborting request`);
+      console.log(`[${timestamp}] ⚠️ Safety timeout triggered, aborting request`);
       controller.abort();
-    }, 8000); // 8 seconds, significantly below Supabase's ~12s limit
+    }, 9000); // 9 seconds, significantly below Supabase's ~12s limit
     
     try {
       // Process the actual request with our improved handler
-      const responsePromise = handleRequest(req);
-      
-      // Race the handler against an abort - this should be redundant with
-      // the handler's internal timeouts, but provides an extra safety net
-      const response = await Promise.race([
-        responsePromise,
-        new Promise<Response>((_, reject) => {
+      const result = await Promise.race([
+        handleRequest(req),
+        new Promise((_, reject) => {
           signal.addEventListener('abort', () => {
             reject(new Error('Request aborted by safety timeout'));
           });
@@ -45,17 +42,19 @@ serve(async (req) => {
       ]);
       
       clearTimeout(timeoutId);
-      return response;
+      return result;
     } catch (handlerError) {
       clearTimeout(timeoutId);
-      console.error(`[${new Date().toISOString()}] 🚨 Handler error:`, handlerError);
+      console.error(`[${timestamp}] 🚨 Handler error:`, handlerError);
       
       return new Response(
         JSON.stringify({ 
           error: "Function timed out",
           message: handlerError.message || "Request processing exceeded time limit",
           success: false,
-          timestamp: new Date().toISOString()
+          timestamp: timestamp,
+          // Add flag to indicate the client should use mock data
+          useMockData: true
         }),
         { 
           status: 408,
@@ -71,7 +70,9 @@ serve(async (req) => {
         error: "Internal server error",
         message: error.message || "Unknown error",
         success: false,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        // Add flag to indicate the client should use mock data
+        useMockData: true
       }),
       { 
         status: 500,

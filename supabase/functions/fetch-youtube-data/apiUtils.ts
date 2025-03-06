@@ -8,7 +8,7 @@ export async function fetchFromYouTubeAPI(url: string, timestamp: string) {
   try {
     // Set a specific timeout for each API request - reduced to improve response times
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout (reduced from 2.5s)
+    const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
     
     try {
       const response = await fetch(url, { 

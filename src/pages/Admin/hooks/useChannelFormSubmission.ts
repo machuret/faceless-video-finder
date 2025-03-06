@@ -15,8 +15,16 @@ export const useChannelFormSubmission = (
     console.log("Form submission initiated");
     console.log("Form data:", formData);
     
-    if (!formData.video_id || !formData.channel_title || !formData.channel_url) {
-      toast.error("Video ID, Channel Title, and Channel URL are required");
+    // Check if this is a manual entry or YouTube channel
+    const isManualEntry = !formData.video_id && formData.channel_title && formData.channel_url;
+    
+    if (!isManualEntry && (!formData.video_id || !formData.channel_title || !formData.channel_url)) {
+      toast.error("Either provide YouTube data (Video ID, Channel Title, and Channel URL) or manually enter Channel Title and Channel URL");
+      return;
+    }
+    
+    if (!formData.channel_title || !formData.channel_url) {
+      toast.error("Channel Title and Channel URL are required");
       return;
     }
     
@@ -37,12 +45,16 @@ export const useChannelFormSubmission = (
       
       // Prepare metadata with UI channel type
       const metadata = {
-        ui_channel_type: formData.channel_type || "other"
+        ui_channel_type: formData.channel_type || "other",
+        is_manual_entry: isManualEntry
       };
+      
+      // For manual entries without a video_id, generate a placeholder
+      const video_id = formData.video_id || `manual-${Date.now()}`;
       
       // Format data for database
       const channelData = {
-        video_id: formData.video_id,
+        video_id: video_id,
         channel_title: formData.channel_title,
         channel_url: formData.channel_url,
         description: formData.description || null,
@@ -63,12 +75,20 @@ export const useChannelFormSubmission = (
       
       console.log("Formatted data for submission:", channelData);
       
-      // Check if channel already exists by video_id
-      const { data: existingChannel, error: queryError } = await supabase
+      // Check if channel already exists by video_id or (channel_url for manual entries)
+      let query = supabase
         .from("youtube_channels")
-        .select("id")
-        .eq("video_id", formData.video_id)
-        .maybeSingle();
+        .select("id");
+        
+      if (formData.video_id) {
+        // If we have a video_id, use that for lookup
+        query = query.eq("video_id", formData.video_id);
+      } else {
+        // For manual entries, check by channel_url
+        query = query.eq("channel_url", formData.channel_url);
+      }
+      
+      const { data: existingChannel, error: queryError } = await query.maybeSingle();
       
       if (queryError) {
         throw new Error(`Error checking existing channel: ${queryError.message}`);
