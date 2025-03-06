@@ -11,55 +11,49 @@ export const useYouTubeDataFetcher = (
 ) => {
   const fetchYoutubeData = async () => {
     try {
-      // Clear console to make logs more readable
-      console.clear();
-      
       const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] 🚀 [useYouTubeDataFetcher] Starting fetch with URL:`, youtubeUrl);
+      console.log(`[${timestamp}] 🚀 Starting YouTube data fetch for: ${youtubeUrl}`);
       
       if (!youtubeUrl) {
-        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] YouTube URL is empty`);
         toast.error("Please enter a YouTube URL");
         return;
       }
       
-      console.log(`[${timestamp}] 🔍 [useYouTubeDataFetcher] URL validation passed, proceeding with fetch`);
       setLoading(true);
       
-      // Create properly formatted payload
+      // Prepare the payload
       const payload = { url: youtubeUrl.trim() };
-      console.log(`[${timestamp}] 📦 [useYouTubeDataFetcher] Payload:`, JSON.stringify(payload));
+      console.log(`[${timestamp}] 📦 Request payload:`, payload);
       
-      // Log function invocation start
-      console.log(`[${timestamp}] 🔄 [useYouTubeDataFetcher] Invoking edge function now...`);
-
-      // Use supabase.functions.invoke() instead of direct URL access
+      console.log(`[${timestamp}] 🔄 Calling edge function: fetch-youtube-data`);
+      
+      // Call the edge function
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: payload
       });
       
-      console.log(`[${timestamp}] 📦 [useYouTubeDataFetcher] Response:`, { data, error });
+      console.log(`[${timestamp}] 📡 Response received:`, { data, error });
       
       if (error) {
-        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] Error:`, error);
-        throw new Error(error.message);
+        console.error(`[${timestamp}] ❌ Edge function error:`, error);
+        throw new Error(`Edge function error: ${error.message || JSON.stringify(error)}`);
       }
       
       if (!data) {
-        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] No data returned`);
+        console.error(`[${timestamp}] ❌ No data returned from edge function`);
         throw new Error('No data returned from the server');
       }
       
       const { channelData } = data;
       
       if (!channelData) {
-        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] No channel data:`, data);
-        throw new Error('No channel data was found');
+        console.error(`[${timestamp}] ❌ No channel data in response:`, data);
+        throw new Error('No channel data was found in the response');
       }
       
-      console.log(`[${timestamp}] ✅ [useYouTubeDataFetcher] Channel data fetched:`, channelData);
+      console.log(`[${timestamp}] ✅ Channel data fetched successfully:`, channelData);
       
-      // Map API data to form data
+      // Map the data to our form structure
       const formattedData: ChannelFormData = {
         video_id: channelData.channelId || "",
         channel_title: channelData.title || "",
@@ -78,18 +72,19 @@ export const useYouTubeDataFetcher = (
         keywords: channelData.keywords || []
       };
       
-      console.log(`[${timestamp}] 📋 [useYouTubeDataFetcher] Formatted data:`, formattedData);
+      console.log(`[${timestamp}] 📋 Mapped form data:`, formattedData);
+      
+      // Update the form
       setFormData(formattedData);
       toast.success("YouTube data loaded successfully");
       
     } catch (error) {
-      console.error(`[${new Date().toISOString()}] ❌ [useYouTubeDataFetcher] Error:`, error);
+      console.error(`[${new Date().toISOString()}] ❌ Error in fetchYoutubeData:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[${new Date().toISOString()}] ❌ [useYouTubeDataFetcher] Error details:`, errorMessage);
-      toast.error(`Failed to fetch YouTube data: ${errorMessage}`);
+      toast.error(`Failed to load YouTube data: ${errorMessage}`);
     } finally {
       setLoading(false);
-      console.log(`[${new Date().toISOString()}] ⏱️ [useYouTubeDataFetcher] Loading state reset`);
+      console.log(`[${new Date().toISOString()}] ⏱️ Loading state reset to false`);
     }
   };
   

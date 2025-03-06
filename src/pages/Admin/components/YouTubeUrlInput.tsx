@@ -20,7 +20,7 @@ const YouTubeUrlInput = ({
 }: YouTubeUrlInputProps) => {
   const [isValid, setIsValid] = useState(true);
   const [validationMessage, setValidationMessage] = useState("");
-  const [showDebugInfo, setShowDebugInfo] = useState(true); // Show debug info by default
+  const [showDebugInfo, setShowDebugInfo] = useState(true);
 
   const validateUrl = (url: string) => {
     const timestamp = new Date().toISOString();
@@ -33,7 +33,7 @@ const YouTubeUrlInput = ({
       return false;
     }
     
-    // Check if it's a valid YouTube URL format
+    // Check if it's any YouTube-related URL or handle
     const youtubePatterns = [
       /youtube\.com\/channel\/([^\/\?]+)/,     // Channel URL
       /youtube\.com\/c\/([^\/\?]+)/,           // Custom URL
@@ -138,13 +138,15 @@ const YouTubeUrlInput = ({
                 <p>• Current status: {loading ? "Loading..." : "Ready"}</p>
                 <p>• Entered URL: {youtubeUrl || "None"}</p>
                 <p>• URL valid: {isValid ? "Yes" : "No"}</p>
-                <p>• Testing URL: Try these examples:</p>
+                <p>• Test URLs - Try these examples:</p>
                 <ul className="list-disc ml-5 mt-1">
                   <li>Channel: https://youtube.com/channel/UCnz-ZXXER4jOvDUe3fx2JXg</li>
                   <li>Handle: @techwithtim</li>
                   <li>Video: https://www.youtube.com/watch?v=dQw4w9WgXcQ</li>
+                  <li>Custom: https://www.youtube.com/c/TechWithTim</li>
                 </ul>
-                <p className="mt-1">• Check browser console for detailed error messages.</p>
+                <p className="mt-1">• Check browser console (F12) for detailed logs.</p>
+                <p className="mt-1">• Edge function logs are also available in Supabase dashboard.</p>
               </div>
             )}
           </div>
