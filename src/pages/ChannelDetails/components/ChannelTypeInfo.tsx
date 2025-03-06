@@ -44,7 +44,7 @@ const ChannelTypeInfo = ({ channelType }: ChannelTypeInfoProps) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden w-full">
         <div className="p-6">
           <h2 className="text-xl font-semibold mb-4">Loading channel type information...</h2>
         </div>
@@ -55,7 +55,7 @@ const ChannelTypeInfo = ({ channelType }: ChannelTypeInfoProps) => {
   if (!typeInfo) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden w-full">
       <div className="p-6">
         <h2 className="text-xl font-semibold mb-4">
           Channel Type: {' '}
