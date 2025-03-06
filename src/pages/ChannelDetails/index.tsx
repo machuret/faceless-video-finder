@@ -69,33 +69,34 @@ const ChannelDetails = () => {
       <main className="container mx-auto px-4 py-8">
         <ChannelHeader channel={channel} />
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2">
+        {/* Top Performing Videos Section - Moved above the grid */}
+        <div className="mt-8">
+          <TopPerformingVideos 
+            mostViewed={null} 
+            mostEngaging={null} 
+            loading={topVideosLoading}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 gap-8 mt-8">
+          {/* Left Column - Now full width */}
+          <div>
             {/* Revenue Statistics */}
             <ChannelStats showOnlyRevenue={true} channel={channel} />
-            
-            {/* Top Performing Videos Section */}
-            {(mostViewedVideo || mostEngagingVideo || topVideosLoading) && (
-              <TopPerformingVideos 
-                mostViewed={mostViewedVideo} 
-                mostEngaging={mostEngagingVideo} 
-                loading={topVideosLoading}
-              />
-            )}
             
             {/* Channel Videos */}
             <ChannelVideos videos={videoStats} />
           </div>
-          
-          {/* Right Column */}
-          <div className="space-y-8">
-            {/* Channel Type Info - Full width in right column */}
-            <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
-            
-            {/* Add Related Channels section */}
-            {channelId && <RelatedChannels currentChannelId={channelId} />}
-          </div>
+        </div>
+        
+        {/* Channel Type Info - Full width outside the grid */}
+        <div className="mt-8">
+          <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
+        </div>
+        
+        {/* Related Channels - Full width at the bottom */}
+        <div className="mt-8">
+          {channelId && <RelatedChannels currentChannelId={channelId} />}
         </div>
       </main>
 
