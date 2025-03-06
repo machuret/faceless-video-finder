@@ -1,6 +1,5 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
 import NavItem from "./NavItem";
 import { navigationItems, isIdeasActive } from "./navConfig";
 
@@ -27,13 +26,6 @@ const MobileMenu = ({ isOpen, isActive, onItemClick }: MobileMenuProps) => {
             isMobile={true}
           />
         ))}
-        <Link 
-          to="/admin" 
-          className="block py-2 px-3 mt-2 rounded-md bg-blue-600 text-white"
-          onClick={onItemClick}
-        >
-          Admin
-        </Link>
       </div>
     </div>
   );

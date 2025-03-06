@@ -24,13 +24,6 @@ const MainNavbar = () => {
           <DesktopNav isActive={isActive} />
           
           <div className="flex items-center gap-4">
-            <Link 
-              to="/admin" 
-              className="hidden md:block font-montserrat text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-            >
-              Admin
-            </Link>
-            
             <button className="md:hidden text-gray-700" onClick={toggleMobileMenu}>
               {mobileMenuOpen ? (
                 <X className="h-6 w-6" />

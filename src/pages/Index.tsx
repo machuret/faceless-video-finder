@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import MainNavbar from "@/components/MainNavbar";
 import HeroSection from "@/components/home/HeroSection";
 import ToolsSection from "@/components/home/ToolsSection";
-import StatsSection from "@/components/home/StatsSection";
 import PageFooter from "@/components/home/PageFooter";
 import ChannelSection from "@/components/home/ChannelSection";
 import { useChannels } from "@/hooks/channels/useChannels";
@@ -58,7 +57,6 @@ const Index = () => {
         <div className="my-20"></div>
         
         <ToolsSection />
-        <StatsSection />
       </main>
 
       <PageFooter />
