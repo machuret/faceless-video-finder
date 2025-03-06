@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
@@ -9,6 +10,7 @@ import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
 import TopPerformingVideos from "./components/TopPerformingVideos";
 import RelatedChannels from "./components/RelatedChannels";
+import DidYouKnowFactComponent from "./components/DidYouKnowFact";
 import { useEffect } from "react";
 
 const ChannelDetails = () => {
@@ -72,6 +74,9 @@ const ChannelDetails = () => {
         <div className="mt-8">
           <ChannelStats showOnlyRevenue={true} channel={channel} />
         </div>
+        
+        {/* Did You Know Fact Section */}
+        <DidYouKnowFactComponent />
         
         {/* Top Performing Videos Section */}
         {(mostViewedVideo || mostEngagingVideo || topVideosLoading) && (

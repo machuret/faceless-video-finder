@@ -14,7 +14,9 @@ const DidYouKnowFactComponent = () => {
       try {
         setLoading(true);
         setError(null);
+        console.log("Loading random fact for Did You Know component");
         const randomFact = await fetchRandomFact();
+        console.log("Random fact loaded:", randomFact ? "success" : "no fact found");
         setFact(randomFact);
       } catch (err) {
         console.error("Error loading random fact:", err);
