@@ -9,6 +9,7 @@ import ChannelStats from "./components/ChannelStats";
 import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
 import TopPerformingVideos from "./components/TopPerformingVideos";
+import ChannelUploadStats from "./components/ChannelUploadStats";
 import { useEffect } from "react";
 
 const ChannelDetails = () => {
@@ -87,6 +88,9 @@ const ChannelDetails = () => {
           <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
           <ChannelVideos videos={videoStats} />
         </div>
+        
+        {/* Upload Statistics */}
+        <ChannelUploadStats channel={channel} />
       </main>
 
       <PageFooter />
