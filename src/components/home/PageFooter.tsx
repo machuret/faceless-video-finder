@@ -1,5 +1,4 @@
 
-import { Github, Twitter, Mail, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const PageFooter = () => {
@@ -12,20 +11,6 @@ const PageFooter = () => {
             <p className="text-gray-400 mb-4">
               Discover and analyze faceless YouTube channel ideas to help you grow your online presence.
             </p>
-            <div className="flex space-x-4">
-              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
-                <Youtube className="h-5 w-5" />
-              </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a href="mailto:contact@example.com" className="text-gray-400 hover:text-white">
-                <Mail className="h-5 w-5" />
-              </a>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
-                <Github className="h-5 w-5" />
-              </a>
-            </div>
           </div>
           
           <div>

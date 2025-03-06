@@ -1,8 +1,7 @@
-
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Channel, ChannelMetadata } from "@/types/youtube";
+import { Channel } from "@/types/youtube";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
@@ -11,6 +10,7 @@ import ChannelTypeNotFound from "./ChannelTypeNotFound";
 import ChannelTypeHeader from "./ChannelTypeHeader";
 import ChannelsOfType from "./ChannelsOfType";
 import OtherChannelTypes from "./OtherChannelTypes";
+import PageFooter from "@/components/home/PageFooter";
 
 interface SupabaseChannelData {
   id: string;
@@ -117,6 +117,8 @@ const ChannelTypeDetailsPage = () => {
         <ChannelsOfType loading={loading} channels={channels} />
         <OtherChannelTypes otherChannelTypes={otherChannelTypes} />
       </div>
+      
+      <PageFooter />
     </div>
   );
 };
