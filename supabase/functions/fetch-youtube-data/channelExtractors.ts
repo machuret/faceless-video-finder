@@ -3,4 +3,3 @@
 export { fetchChannelDirectly } from './directExtractor.ts';
 export { fetchChannelViaVideo } from './videoExtractor.ts';
 export { fetchChannelViaSearch } from './searchExtractor.ts';
-export { corsHeaders } from './apiUtils.ts';
