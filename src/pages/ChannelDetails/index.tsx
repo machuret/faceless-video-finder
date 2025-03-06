@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
@@ -10,7 +9,6 @@ import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
 import TopPerformingVideos from "./components/TopPerformingVideos";
 import RelatedChannels from "./components/RelatedChannels";
-import DidYouKnowFactComponent from "./components/DidYouKnowFact";
 import { useEffect } from "react";
 
 const ChannelDetails = () => {
@@ -91,11 +89,8 @@ const ChannelDetails = () => {
           
           {/* Right Column */}
           <div className="space-y-8">
-            {/* Channel Type Info */}
+            {/* Channel Type Info - Full width in right column */}
             <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
-            
-            {/* Did You Know Fact Section - included only once */}
-            <DidYouKnowFactComponent />
             
             {/* Add Related Channels section */}
             {channelId && <RelatedChannels currentChannelId={channelId} />}
