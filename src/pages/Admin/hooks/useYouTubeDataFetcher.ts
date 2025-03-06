@@ -30,7 +30,7 @@ export const useYouTubeDataFetcher = (
       
       if (!data?.channelData) {
         console.error('No channel data in response:', data);
-        throw new Error('No channel data was found');
+        throw new Error(data?.error || 'No channel data was found');
       }
       
       console.log("YouTube data fetched:", data);
@@ -49,7 +49,7 @@ export const useYouTubeDataFetcher = (
         start_date: channelData.publishedAt || "",
         video_count: channelData.videoCount ? String(channelData.videoCount) : "",
         cpm: "4", // Default CPM
-        channel_type: channelData.channelType || "other",
+        channel_type: channelData.channelType || "creator",
         country: channelData.country || "",
         channel_category: "other", // Default category
         notes: "",
