@@ -18,6 +18,10 @@ export const useFactsManagement = () => {
     content: "",
     is_active: true
   });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
 
   useEffect(() => {
     loadFacts();
@@ -82,12 +86,30 @@ export const useFactsManagement = () => {
     }
   };
 
+  // Calculate pagination values
+  const indexOfLastFact = currentPage * itemsPerPage;
+  const indexOfFirstFact = indexOfLastFact - itemsPerPage;
+  const currentFacts = facts.slice(indexOfFirstFact, indexOfLastFact);
+  const totalPages = Math.ceil(facts.length / itemsPerPage);
+
+  // Page change handler
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
   return {
-    facts,
+    facts: currentFacts,
+    allFacts: facts,
     loading,
     dialogOpen,
     isEditing,
     currentFact,
+    pagination: {
+      currentPage,
+      totalPages,
+      handlePageChange,
+      itemsPerPage
+    },
     setDialogOpen,
     handleOpenDialog,
     handleSubmit,

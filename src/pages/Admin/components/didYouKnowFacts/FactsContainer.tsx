@@ -12,6 +12,12 @@ interface FactsContainerProps {
   onAddNew: () => void;
   onEdit: (fact: DidYouKnowFact) => void;
   onRefresh: () => void;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    handlePageChange: (page: number) => void;
+    itemsPerPage: number;
+  };
 }
 
 const FactsContainer = ({ 
@@ -19,7 +25,8 @@ const FactsContainer = ({
   loading, 
   onAddNew, 
   onEdit,
-  onRefresh 
+  onRefresh,
+  pagination
 }: FactsContainerProps) => {
   return (
     <Card className="mb-6">
@@ -36,7 +43,8 @@ const FactsContainer = ({
           facts={facts} 
           loading={loading} 
           onEdit={onEdit} 
-          onRefresh={onRefresh} 
+          onRefresh={onRefresh}
+          pagination={pagination}
         />
       </CardContent>
     </Card>

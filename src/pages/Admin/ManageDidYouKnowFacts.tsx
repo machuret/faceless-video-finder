@@ -11,6 +11,7 @@ const ManageDidYouKnowFacts = () => {
     dialogOpen,
     isEditing,
     currentFact,
+    pagination,
     setDialogOpen,
     handleOpenDialog,
     handleSubmit,
@@ -31,6 +32,7 @@ const ManageDidYouKnowFacts = () => {
           onAddNew={() => handleOpenDialog()}
           onEdit={handleOpenDialog}
           onRefresh={loadFacts}
+          pagination={pagination}
         />
       </div>
 
