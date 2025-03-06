@@ -82,6 +82,8 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
       <ChannelStatsSection
         formData={formData}
         handleChange={handleChange}
+        handleFieldChange={handleFieldChange}
+        isEditMode={isEditMode}
       />
       
       <RevenueDetailsSection
