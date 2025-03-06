@@ -28,17 +28,13 @@ export const useYouTubeDataFetcher = (
       setAttempts(prev => prev + 1);
       console.log(`[${timestamp}] 📡 Calling edge function with URL:`, youtubeUrl.trim(), `(Attempt: ${attempts + 1})`);
       
-      // Set up timeout for the request
-      let timeoutId: number | null = null;
-      
-      const timeoutPromise = new Promise<{data: null, error: Error}>((_, reject) => {
-        timeoutId = window.setTimeout(() => {
-          reject(new Error('Request timed out after 20 seconds'));
-        }, 20000); // Reduced from 30s to 20s
+      // Use a more reliable approach with a simpler timeout mechanism
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out after 15 seconds')), 15000);
       });
       
       // Call the edge function with request body
-      const functionPromise = supabase.functions.invoke('fetch-youtube-data', {
+      const fetchPromise = supabase.functions.invoke('fetch-youtube-data', {
         body: { 
           url: youtubeUrl.trim(),
           allowMockData: useMockData,
@@ -48,23 +44,17 @@ export const useYouTubeDataFetcher = (
       });
       
       // Race between the timeout and the actual request
-      const result = await Promise.race([functionPromise, timeoutPromise])
-        .finally(() => {
-          // Clear timeout when either the request completes or times out
-          if (timeoutId !== null) {
-            clearTimeout(timeoutId);
-          }
-        });
+      const result = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
       // Store response for debugging
-      setLastResponse(result.data);
+      setLastResponse(result?.data);
       console.log(`[${timestamp}] 📡 Edge function response:`, result);
       
-      if (result.error) {
+      if (result?.error) {
         console.error(`[${timestamp}] ❌ Edge function error:`, result.error);
         setLastError(result.error.message);
         
-        if (result.error.message.includes('timeout') || result.error.message.includes('timed out')) {
+        if (result.error.message?.includes('timeout') || result.error.message?.includes('timed out')) {
           toast.error("Request timed out. The YouTube API may be experiencing issues.");
         } else {
           toast.error(`Edge function error: ${result.error.message}`);
@@ -72,7 +62,7 @@ export const useYouTubeDataFetcher = (
         return;
       }
       
-      const { data } = result;
+      const { data } = result || {};
       
       if (!data) {
         console.error(`[${timestamp}] ❌ No data received from edge function`);

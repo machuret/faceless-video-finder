@@ -14,35 +14,26 @@ const corsHeaders = {
 };
 
 // Global timeout controller to prevent hanging requests
-const TIMEOUT_MS = 20000; // 20 second timeout - reduced from 25s
+const TIMEOUT_MS = 15000; // 15 second timeout - reduced from 20s
 
 serve(async (req) => {
-  // Create an AbortController for the entire request
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    controller.abort();
-    console.error(`Request timed out after ${TIMEOUT_MS}ms`);
-  }, TIMEOUT_MS);
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    console.log('[CORS] Handling OPTIONS request');
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const now = new Date().toISOString();
+  console.log(`[${now}] 🚀 Edge function called`);
 
   try {
-    // Handle CORS preflight
-    if (req.method === 'OPTIONS') {
-      console.log('[CORS] Handling OPTIONS request');
-      clearTimeout(timeoutId);
-      return new Response(null, { headers: corsHeaders });
-    }
-
-    const now = new Date().toISOString();
-    console.log(`[${now}] 🚀 Edge function called`);
-
+    // Parse request body with error handling
     let requestBody;
     try {
-      // Parse request body with error handling
       requestBody = await req.json();
       console.log(`[${now}] 📝 Request body:`, JSON.stringify(requestBody));
     } catch (parseError) {
       console.error(`[${now}] ❌ Failed to parse request body:`, parseError);
-      clearTimeout(timeoutId);
       return new Response(
         JSON.stringify({ 
           error: "Invalid JSON in request body", 
@@ -59,7 +50,6 @@ serve(async (req) => {
     // Handle test ping
     if (requestBody?.test === true) {
       console.log(`[${now}] 🧪 Test request received with timestamp: ${requestBody.timestamp}`);
-      clearTimeout(timeoutId);
       return new Response(
         JSON.stringify({ 
           message: "Edge function is working correctly", 
@@ -75,7 +65,6 @@ serve(async (req) => {
     if (requestBody?.allowMockData === true && requestBody?.url) {
       console.log(`[${now}] 🧪 Returning mock data for URL: ${requestBody.url}`);
       const mockData = createMockChannelData(requestBody.url);
-      clearTimeout(timeoutId);
       return new Response(
         JSON.stringify({ 
           channelData: mockData,
@@ -91,7 +80,6 @@ serve(async (req) => {
     const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
     if (!YOUTUBE_API_KEY) {
       console.error(`[${now}] ❌ YouTube API key not configured`);
-      clearTimeout(timeoutId);
       return new Response(
         JSON.stringify({ 
           error: 'YouTube API key not configured on the server. Please check edge function configuration.',
@@ -110,7 +98,6 @@ serve(async (req) => {
     const url = requestBody?.url;
     if (!url) {
       console.error(`[${now}] ❌ URL is required but was not provided`);
-      clearTimeout(timeoutId);
       return new Response(
         JSON.stringify({ 
           error: 'URL is required',
@@ -125,133 +112,136 @@ serve(async (req) => {
     }
     console.log(`[${now}] 📝 Processing URL:`, url);
 
-    // Try different extraction methods with more robust error handling
-    let channel = null;
-    let channelId = null;
-    let error = null;
-    let extractionMethod = "none";
-
+    // Simple approach: try one extraction method at a time with proper timeout
     try {
-      // Method 1: Try direct channel extraction with timeout
-      console.log(`[${now}] 🔍 Attempting direct channel extraction`);
-      const directPromise = fetchChannelDirectly(url, YOUTUBE_API_KEY);
-      const directResult = await Promise.race([
-        directPromise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Direct extraction timed out")), 6000))
-      ]);
+      console.log(`[${now}] 🔍 Attempting channel extraction with simplified approach`);
       
-      channel = directResult.channel;
-      channelId = directResult.channelId;
-      extractionMethod = "direct";
-      console.log(`[${now}] ✅ Direct extraction successful`);
-    } catch (e) {
-      console.log(`[${now}] ⚠️ Direct extraction failed:`, e.message);
-      error = e;
-
-      // Method 2: Try extraction via video with timeout
-      if (url.includes('watch?v=') || url.includes('youtu.be')) {
-        try {
-          console.log(`[${now}] 🔍 Attempting extraction via video`);
-          const videoPromise = fetchChannelViaVideo(url, YOUTUBE_API_KEY);
-          const videoResult = await Promise.race([
-            videoPromise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error("Video extraction timed out")), 6000))
-          ]);
-          
-          channel = videoResult.channel;
-          channelId = videoResult.channelId;
-          extractionMethod = "video";
-          console.log(`[${now}] ✅ Video extraction successful`);
-          error = null;
-        } catch (e) {
-          console.log(`[${now}] ⚠️ Video extraction failed:`, e.message);
-          error = e;
-        }
-      }
-
-      // Method 3: Last resort, try search with timeout
-      if (!channel) {
-        try {
-          console.log(`[${now}] 🔍 Attempting extraction via search`);
-          const searchPromise = fetchChannelViaSearch(url, YOUTUBE_API_KEY);
-          const searchResult = await Promise.race([
-            searchPromise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error("Search extraction timed out")), 6000))
-          ]);
-          
-          channel = searchResult.channel;
-          channelId = searchResult.channelId;
-          extractionMethod = "search";
-          console.log(`[${now}] ✅ Search extraction successful`);
-          error = null;
-        } catch (e) {
-          console.log(`[${now}] ⚠️ Search extraction failed:`, e.message);
-          error = e;
-        }
-      }
-    }
-
-    if (!channel || !channelId) {
-      const errorMessage = error ? error.message : 'Failed to extract channel data using all methods';
-      console.error(`[${now}] ❌ ${errorMessage}`);
+      // Try direct extraction first
+      let channel = null;
+      let channelId = null;
+      let extractionMethod = "direct";
       
-      // For development purposes, return mock data if real extraction fails
-      if (requestBody?.allowMockData === true) {
-        console.log(`[${now}] 🧪 Returning mock data as fallback`);
-        const mockData = createMockChannelData(url);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const result = await fetchChannelDirectly(url, YOUTUBE_API_KEY);
         clearTimeout(timeoutId);
+        
+        channel = result.channel;
+        channelId = result.channelId;
+      } catch (directError) {
+        console.log(`[${now}] ⚠️ Direct extraction failed:`, directError.message);
+        
+        // If URL looks like a video, try video extraction
+        if (url.includes('watch?v=') || url.includes('youtu.be')) {
+          try {
+            extractionMethod = "video";
+            console.log(`[${now}] 🔍 Attempting extraction via video`);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const result = await fetchChannelViaVideo(url, YOUTUBE_API_KEY);
+            clearTimeout(timeoutId);
+            
+            channel = result.channel;
+            channelId = result.channelId;
+          } catch (videoError) {
+            console.log(`[${now}] ⚠️ Video extraction failed:`, videoError.message);
+          }
+        }
+        
+        // If still no result, try search as last resort
+        if (!channel) {
+          try {
+            extractionMethod = "search";
+            console.log(`[${now}] 🔍 Attempting extraction via search`);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const result = await fetchChannelViaSearch(url, YOUTUBE_API_KEY);
+            clearTimeout(timeoutId);
+            
+            channel = result.channel;
+            channelId = result.channelId;
+          } catch (searchError) {
+            console.log(`[${now}] ⚠️ Search extraction failed:`, searchError.message);
+          }
+        }
+      }
+      
+      // If no channel data found, return error or mock data
+      if (!channel || !channelId) {
+        console.error(`[${now}] ❌ Failed to extract channel data using all methods`);
+        
+        // For development purposes, return mock data if real extraction fails
+        if (requestBody?.allowMockData === true) {
+          console.log(`[${now}] 🧪 Returning mock data as fallback`);
+          const mockData = createMockChannelData(url);
+          return new Response(
+            JSON.stringify({ 
+              channelData: mockData,
+              isMockData: true,
+              error: "Failed to extract channel data",
+              timestamp: now,
+              success: true
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         return new Response(
           JSON.stringify({ 
-            channelData: mockData,
-            isMockData: true,
-            error: errorMessage,
+            error: "Failed to extract channel data using all methods",
             timestamp: now,
-            success: true
+            success: false 
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
         );
       }
+
+      // Format channel data
+      const channelData = formatChannelData(channel, channelId);
       
-      clearTimeout(timeoutId);
+      console.log(`[${now}] ✅ Returning channel data for: ${channelData.title} (extraction method: ${extractionMethod})`);
+      
       return new Response(
         JSON.stringify({ 
-          error: errorMessage,
+          channelData,
+          extractionMethod,
           timestamp: now,
-          success: false 
+          success: true 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+      
+    } catch (error) {
+      console.error(`[${now}] ❌ Error during channel extraction:`, error.message);
+      
+      return new Response(
+        JSON.stringify({ 
+          error: error.message || 'Error extracting channel data',
+          timestamp: now,
+          success: false
         }),
         { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
-
-    // Format channel data
-    const channelData = formatChannelData(channel, channelId);
-    
-    console.log(`[${now}] ✅ Returning channel data for: ${channelData.title} (extraction method: ${extractionMethod})`);
-    
-    clearTimeout(timeoutId);
-    return new Response(
-      JSON.stringify({ 
-        channelData,
-        extractionMethod,
-        timestamp: now,
-        success: true 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
   } catch (error) {
     const timestamp = new Date().toISOString();
     console.error(`[${timestamp}] ❌ Unhandled error:`, error.message);
-    console.error(`[${timestamp}] Stack trace:`, error.stack);
     
-    clearTimeout(timeoutId);
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Unknown server error',
-        stack: error.stack, // Include stack trace for better debugging
         timestamp,
         success: false
       }),
@@ -260,8 +250,5 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
-  } finally {
-    // Clear the timeout to prevent memory leaks
-    clearTimeout(timeoutId);
   }
 });
