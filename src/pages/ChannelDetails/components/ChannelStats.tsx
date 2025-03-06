@@ -1,7 +1,6 @@
 
 import { Channel } from "@/types/youtube";
 import ChannelStatsGrid from "./ChannelStatsGrid";
-import ChannelScreenshot from "./ChannelScreenshot";
 import MonthlyRevenueCard from "./MonthlyRevenueCard";
 
 interface ChannelStatsProps {
@@ -36,14 +35,6 @@ const ChannelStats = ({ channel, showOnlyRevenue = false, showOnlyScreenshot = f
       {/* Revenue Card - Shown when showOnlyRevenue is true */}
       {channel.revenue_per_month && showOnlyRevenue && (
         <MonthlyRevenueCard revenuePerMonth={channel.revenue_per_month} />
-      )}
-
-      {/* Channel Screenshot Section - Shown in full mode or when showOnlyScreenshot is true */}
-      {((!showOnlyRevenue && !showOnlyScreenshot) || showOnlyScreenshot) && channel.screenshot_url && (
-        <ChannelScreenshot 
-          screenshotUrl={channel.screenshot_url} 
-          channelTitle={channel.channel_title} 
-        />
       )}
     </div>
   );

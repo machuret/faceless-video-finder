@@ -139,7 +139,18 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
             </div>
           </div>
           
-          <ChannelStats channel={channel} />
+          <div>
+            {/* Channel Screenshot - Now shown at the top of the second column */}
+            {channel.screenshot_url && (
+              <ChannelScreenshot 
+                screenshotUrl={channel.screenshot_url} 
+                channelTitle={channel.channel_title} 
+              />
+            )}
+            
+            {/* Full Channel Stats below the screenshot */}
+            <ChannelStats channel={channel} />
+          </div>
         </div>
       </div>
     </div>
@@ -149,5 +160,6 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
 // Need to import here due to cyclic dependency if we try to import at the top
 import { Youtube } from "lucide-react";
 import ChannelStats from "./ChannelStats";
+import ChannelScreenshot from "./ChannelScreenshot";
 
 export default ChannelHeader;

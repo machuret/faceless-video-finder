@@ -16,7 +16,7 @@ const StatCard = ({ icon: Icon, label, value, iconColor = "text-blue-600", value
       <CardContent className="p-4 flex flex-col items-center text-center">
         <Icon className={`h-8 w-8 ${iconColor} mb-2`} />
         <div>
-          <p className="text-md font-medium text-gray-700">{label}</p>
+          <p className="text-sm font-semibold text-gray-700">{label}</p>
           <p className={`text-lg font-bold ${valueColor}`}>
             {value}
           </p>

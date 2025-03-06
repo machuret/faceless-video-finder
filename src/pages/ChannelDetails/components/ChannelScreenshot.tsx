@@ -11,15 +11,17 @@ const ChannelScreenshot = ({ screenshotUrl, channelTitle }: ChannelScreenshotPro
   if (!screenshotUrl) return null;
   
   return (
-    <div className="mt-6">
+    <div className="mb-6">
       <h3 className="text-lg font-medium mb-3">Channel Screenshot</h3>
       <Card>
         <CardContent className="p-4">
-          <LazyImage 
-            src={screenshotUrl} 
-            alt={`${channelTitle} screenshot`}
-            className="w-full h-auto rounded-md"
-          />
+          <div className="max-w-[60%] mx-auto">
+            <LazyImage 
+              src={screenshotUrl} 
+              alt={`${channelTitle} screenshot`}
+              className="w-full h-auto rounded-md"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
