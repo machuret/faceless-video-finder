@@ -13,8 +13,8 @@ interface StatCardProps {
 const StatCard = ({ icon: Icon, label, value, iconColor = "text-blue-600", valueColor = "" }: StatCardProps) => {
   return (
     <Card>
-      <CardContent className="p-4 flex items-center">
-        <Icon className={`h-8 w-8 ${iconColor} mr-3`} />
+      <CardContent className="p-4 flex flex-col items-center text-center">
+        <Icon className={`h-8 w-8 ${iconColor} mb-2`} />
         <div>
           <p className="text-md font-medium text-gray-700">{label}</p>
           <p className={`text-lg font-bold ${valueColor}`}>
