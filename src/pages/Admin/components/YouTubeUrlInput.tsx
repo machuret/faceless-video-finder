@@ -20,7 +20,7 @@ const YouTubeUrlInput = ({
 }: YouTubeUrlInputProps) => {
   const [isValid, setIsValid] = useState(true);
   const [validationMessage, setValidationMessage] = useState("");
-  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(true); // Show debug info by default
 
   const validateUrl = (url: string) => {
     const timestamp = new Date().toISOString();
@@ -101,10 +101,6 @@ const YouTubeUrlInput = ({
             <Button 
               type="submit" 
               disabled={loading || !youtubeUrl || !isValid}
-              onClick={() => {
-                const timestamp = new Date().toISOString();
-                console.log(`[${timestamp}] 🔘 Fetch button clicked`);
-              }}
             >
               {loading ? "Fetching..." : "Fetch"}
             </Button>
@@ -142,11 +138,11 @@ const YouTubeUrlInput = ({
                 <p>• Current status: {loading ? "Loading..." : "Ready"}</p>
                 <p>• Entered URL: {youtubeUrl || "None"}</p>
                 <p>• URL valid: {isValid ? "Yes" : "No"}</p>
-                <p>• If you're experiencing issues, try these tips:</p>
+                <p>• Testing URL: Try these examples:</p>
                 <ul className="list-disc ml-5 mt-1">
-                  <li>For channels, use the direct URL: youtube.com/channel/UC...</li>
-                  <li>For handles, try both formats: @username and youtube.com/@username</li>
-                  <li>For custom URLs, try a video URL from that channel instead</li>
+                  <li>Channel: https://youtube.com/channel/UCnz-ZXXER4jOvDUe3fx2JXg</li>
+                  <li>Handle: @techwithtim</li>
+                  <li>Video: https://www.youtube.com/watch?v=dQw4w9WgXcQ</li>
                 </ul>
                 <p className="mt-1">• Check browser console for detailed error messages.</p>
               </div>

@@ -12,6 +12,8 @@ serve(async (req) => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] 🚀 Edge Function: fetch-youtube-data invoked`);
   console.log(`[${timestamp}] 📝 Request method: ${req.method}`);
+  console.log(`[${timestamp}] 🔑 YouTube API key present: ${!!YOUTUBE_API_KEY}`);
+  console.log(`[${timestamp}] 📄 Request headers:`, Object.fromEntries(req.headers.entries()));
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -36,15 +38,21 @@ serve(async (req) => {
         throw new Error('Empty request body');
       }
       
-      requestData = JSON.parse(requestBody);
-      console.log(`[${timestamp}] 📨 Parsed request data:`, JSON.stringify(requestData));
+      try {
+        requestData = JSON.parse(requestBody);
+        console.log(`[${timestamp}] 📨 Parsed request data:`, JSON.stringify(requestData));
+      } catch (parseError) {
+        console.error(`[${timestamp}] ❌ JSON parse error:`, parseError.message);
+        throw new Error(`Invalid JSON: ${parseError.message}`);
+      }
     } catch (error) {
       console.error(`[${timestamp}] ❌ Failed to parse request body: ${error.message}`);
       console.error(`[${timestamp}] ❌ Raw body was: ${requestBody}`);
       throw new Error(`Invalid request body: ${error.message}`);
     }
 
-    const { url } = requestData;
+    // Validate URL
+    const { url } = requestData || {};
 
     if (!url) {
       console.error(`[${timestamp}] ❌ URL is required but was empty`);
