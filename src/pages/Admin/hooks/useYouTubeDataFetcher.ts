@@ -150,7 +150,7 @@ export const useYouTubeDataFetcher = (
   const testEdgeFunction = async () => {
     try {
       setLoading(true);
-      const timestamp = new Date().toISOString();
+      const timestamp = new Date().toISOString(); // Adding the missing timestamp variable
       console.log(`[${timestamp}] 🧪 Testing edge function with ping...`);
       
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
