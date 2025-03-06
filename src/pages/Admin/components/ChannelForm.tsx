@@ -23,6 +23,10 @@ interface ChannelFormProps {
   handleScreenshotChange: (url: string) => void;
   handleFieldChange: (field: string, value: string) => void;
   handleKeywordsChange: (keywords: string[]) => void;
+  debugInfo?: {
+    lastError: string | null;
+    lastResponse: any;
+  };
 }
 
 const ChannelForm: React.FC<ChannelFormProps> = ({
@@ -36,7 +40,8 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   handleChange,
   handleScreenshotChange,
   handleFieldChange,
-  handleKeywordsChange
+  handleKeywordsChange,
+  debugInfo
 }) => {
   const [keywords, setKeywords] = useState<string[]>(formData.keywords || []);
 
@@ -52,6 +57,7 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
           setYoutubeUrl={setYoutubeUrl}
           onFetch={fetchYoutubeData}
           loading={loading}
+          debugInfo={debugInfo}
         />
       )}
 

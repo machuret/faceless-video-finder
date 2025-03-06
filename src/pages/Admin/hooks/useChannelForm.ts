@@ -23,7 +23,7 @@ export const useChannelForm = () => {
   const { handleChange, handleFieldChange, handleScreenshotChange, handleKeywordsChange } = 
     useChannelFormHandlers(formData, setFormData);
   
-  const { fetchYoutubeData } = 
+  const { fetchYoutubeData, debugInfo } = 
     useYouTubeDataFetcher(youtubeUrl, setLoading, setFormData);
   
   const { fetchChannelData } = 
@@ -76,6 +76,7 @@ export const useChannelForm = () => {
     youtubeUrl,
     isEditMode,
     formData,
+    debugInfo,
     setYoutubeUrl,
     fetchYoutubeData,
     handleSubmit,

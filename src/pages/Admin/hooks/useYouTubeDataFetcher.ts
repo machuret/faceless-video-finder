@@ -1,5 +1,5 @@
 
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChannelFormData } from "@/types/forms";
@@ -9,6 +9,9 @@ export const useYouTubeDataFetcher = (
   setLoading: Dispatch<SetStateAction<boolean>>,
   setFormData: Dispatch<SetStateAction<ChannelFormData>>
 ) => {
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [lastResponse, setLastResponse] = useState<any>(null);
+
   const fetchYoutubeData = async () => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] 🚀 Starting YouTube data fetch for:`, youtubeUrl);
@@ -20,6 +23,7 @@ export const useYouTubeDataFetcher = (
     
     try {
       setLoading(true);
+      setLastError(null);
       console.log(`[${timestamp}] 📡 Calling edge function with URL:`, youtubeUrl.trim());
       
       // Call the edge function
@@ -27,25 +31,31 @@ export const useYouTubeDataFetcher = (
         body: { url: youtubeUrl.trim() }
       });
       
+      // Store response for debugging
+      setLastResponse(data);
       console.log(`[${timestamp}] 📡 Edge function response:`, { data, error });
       
       if (error) {
         console.error(`[${timestamp}] ❌ Edge function error:`, error);
+        setLastError(error.message);
         throw new Error(`Edge function error: ${error.message}`);
       }
       
       if (!data) {
         console.error(`[${timestamp}] ❌ No data received from edge function`);
+        setLastError('No data received from edge function');
         throw new Error('No data received from edge function');
       }
       
       if (data.error) {
         console.error(`[${timestamp}] ❌ Error from edge function:`, data.error);
+        setLastError(data.error);
         throw new Error(`Error from edge function: ${data.error}`);
       }
       
       if (!data.channelData) {
         console.error(`[${timestamp}] ❌ No channel data in response:`, data);
+        setLastError('No channel data received');
         throw new Error('No channel data received');
       }
       
@@ -77,11 +87,18 @@ export const useYouTubeDataFetcher = (
       
     } catch (error) {
       console.error(`[${timestamp}] ❌ Error:`, error);
+      setLastError(error instanceof Error ? error.message : 'Unknown error');
       toast.error(`Failed to load YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
   };
   
-  return { fetchYoutubeData };
+  // Expose debug information
+  const debugInfo = {
+    lastError,
+    lastResponse
+  };
+  
+  return { fetchYoutubeData, debugInfo };
 };

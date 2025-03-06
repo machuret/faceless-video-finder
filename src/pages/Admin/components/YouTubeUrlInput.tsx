@@ -3,13 +3,17 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FormSectionWrapper from "./form-sections/FormSectionWrapper";
-import { AlertCircle, Info, Youtube } from "lucide-react";
+import { AlertCircle, Bug, Info, Youtube } from "lucide-react";
 
 interface YouTubeUrlInputProps {
   youtubeUrl: string;
   loading: boolean;
   setYoutubeUrl: (url: string) => void;
   onFetch: () => void;
+  debugInfo?: {
+    lastError: string | null;
+    lastResponse: any;
+  };
 }
 
 const YouTubeUrlInput = ({
@@ -17,10 +21,12 @@ const YouTubeUrlInput = ({
   loading,
   setYoutubeUrl,
   onFetch,
+  debugInfo
 }: YouTubeUrlInputProps) => {
   const [isValid, setIsValid] = useState(true);
   const [validationMessage, setValidationMessage] = useState("");
   const [showDebugInfo, setShowDebugInfo] = useState(true);
+  const [showAdvancedDebug, setShowAdvancedDebug] = useState(false);
 
   const validateUrl = (url: string) => {
     const timestamp = new Date().toISOString();
@@ -117,6 +123,13 @@ const YouTubeUrlInput = ({
             </div>
           )}
           
+          {debugInfo?.lastError && (
+            <div className="text-amber-600 text-sm flex items-center gap-1 mt-1 p-2 bg-amber-50 rounded">
+              <AlertCircle className="h-4 w-4" />
+              <span>Last error: {debugInfo.lastError}</span>
+            </div>
+          )}
+          
           <div className="text-gray-500 text-xs mt-1">
             <p>Accepted formats:</p>
             <ul className="list-disc ml-5">
@@ -149,6 +162,25 @@ const YouTubeUrlInput = ({
                   <li>Video: https://www.youtube.com/watch?v=dQw4w9WgXcQ</li>
                   <li>Custom: https://www.youtube.com/c/TechWithTim</li>
                 </ul>
+                
+                <button 
+                  type="button" 
+                  className="text-xs text-purple-500 flex items-center gap-1 mt-2"
+                  onClick={() => setShowAdvancedDebug(!showAdvancedDebug)}
+                >
+                  <Bug className="h-3 w-3" />
+                  {showAdvancedDebug ? "Hide advanced debug" : "Show advanced debug"}
+                </button>
+                
+                {showAdvancedDebug && debugInfo?.lastResponse && (
+                  <div className="mt-2 p-2 bg-gray-200 rounded">
+                    <p>Last Response:</p>
+                    <pre className="text-[10px] overflow-auto max-h-32">
+                      {JSON.stringify(debugInfo.lastResponse, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                
                 <p className="mt-1">• Check browser console (F12) for detailed logs.</p>
                 <p className="mt-1">• Edge function logs are also available in Supabase dashboard.</p>
               </div>

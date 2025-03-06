@@ -1,4 +1,10 @@
-import { corsHeaders } from '../_shared/cors.ts';
+
+// Define corsHeaders to be used in HTTP requests
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+};
 
 /**
  * Extracts channel data directly from a channel ID, custom URL, or handle

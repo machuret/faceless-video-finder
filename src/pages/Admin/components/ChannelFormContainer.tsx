@@ -8,6 +8,7 @@ const ChannelFormContainer = () => {
     youtubeUrl,
     isEditMode,
     formData,
+    debugInfo,
     setYoutubeUrl,
     fetchYoutubeData,
     handleSubmit,
@@ -31,6 +32,7 @@ const ChannelFormContainer = () => {
         handleScreenshotChange={handleScreenshotChange}
         handleFieldChange={handleFieldChange}
         handleKeywordsChange={handleKeywordsChange}
+        debugInfo={debugInfo}
       />
     </div>
   );
