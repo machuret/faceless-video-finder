@@ -10,24 +10,28 @@ export const useYouTubeDataFetcher = (
   setFormData: Dispatch<SetStateAction<ChannelFormData>>
 ) => {
   const fetchYoutubeData = async () => {
-    console.log("🚀 [useYouTubeDataFetcher] Starting fetch with URL:", youtubeUrl);
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] 🚀 [useYouTubeDataFetcher] Starting fetch with URL:`, youtubeUrl);
     
     if (!youtubeUrl) {
-      console.error("❌ [useYouTubeDataFetcher] YouTube URL is empty");
+      console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] YouTube URL is empty`);
       toast.error("Please enter a YouTube URL");
       return;
     }
     
-    console.log("🔍 [useYouTubeDataFetcher] URL validation passed, proceeding with fetch");
+    console.log(`[${timestamp}] 🔍 [useYouTubeDataFetcher] URL validation passed, proceeding with fetch`);
     setLoading(true);
     
     try {
-      console.log("📡 [useYouTubeDataFetcher] Calling Supabase function with URL:", youtubeUrl);
+      // Add more detailed logging
+      console.log(`[${timestamp}] 📡 [useYouTubeDataFetcher] Preparing to call Supabase function with URL:`, youtubeUrl);
       
-      // Add additional debug log to confirm payload
-      const payload = { url: youtubeUrl };
-      console.log("📦 [useYouTubeDataFetcher] Payload:", JSON.stringify(payload));
+      // Create payload with the correct format
+      const payload = { url: youtubeUrl.trim() };
+      console.log(`[${timestamp}] 📦 [useYouTubeDataFetcher] Payload:`, JSON.stringify(payload));
       
+      // Call the Supabase edge function with explicit content type
+      console.log(`[${timestamp}] 🔄 [useYouTubeDataFetcher] Invoking edge function now...`);
       const { data: functionData, error: functionError } = await supabase.functions.invoke(
         'fetch-youtube-data',
         {
@@ -38,31 +42,32 @@ export const useYouTubeDataFetcher = (
         }
       );
       
-      console.log("📦 [useYouTubeDataFetcher] Response from function:", { functionData, functionError });
+      console.log(`[${timestamp}] 📦 [useYouTubeDataFetcher] Response received:`, 
+        { functionData: JSON.stringify(functionData), functionError });
       
       if (functionError) {
-        console.error("❌ [useYouTubeDataFetcher] Function error:", functionError);
-        throw functionError;
+        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] Function error:`, functionError);
+        throw new Error(`Edge function error: ${functionError.message || 'Unknown error'}`);
       }
       
       if (!functionData) {
-        console.error("❌ [useYouTubeDataFetcher] No data returned");
+        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] No data returned`);
         throw new Error('No data returned from the server');
       }
       
       const { channelData, error } = functionData;
       
       if (error) {
-        console.error("❌ [useYouTubeDataFetcher] Channel data error:", error);
+        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] Channel data error:`, error);
         throw new Error(error);
       }
       
       if (!channelData) {
-        console.error("❌ [useYouTubeDataFetcher] No channel data:", functionData);
+        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] No channel data:`, functionData);
         throw new Error('No channel data was found');
       }
       
-      console.log("✅ [useYouTubeDataFetcher] Channel data fetched:", channelData);
+      console.log(`[${timestamp}] ✅ [useYouTubeDataFetcher] Channel data fetched:`, channelData);
       
       // Map API data to form data
       const formattedData: ChannelFormData = {
@@ -83,18 +88,18 @@ export const useYouTubeDataFetcher = (
         keywords: channelData.keywords || []
       };
       
-      console.log("📋 [useYouTubeDataFetcher] Formatted data:", formattedData);
+      console.log(`[${timestamp}] 📋 [useYouTubeDataFetcher] Formatted data:`, formattedData);
       setFormData(formattedData);
       toast.success("YouTube data loaded successfully");
       
     } catch (error) {
-      console.error("❌ [useYouTubeDataFetcher] Error:", error);
+      console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] Error:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error("❌ [useYouTubeDataFetcher] Error details:", errorMessage);
+      console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] Error details:`, errorMessage);
       toast.error(`Failed to fetch YouTube data: ${errorMessage}`);
     } finally {
       setLoading(false);
-      console.log("⏱️ [useYouTubeDataFetcher] Loading state reset");
+      console.log(`[${timestamp}] ⏱️ [useYouTubeDataFetcher] Loading state reset`);
     }
   };
   

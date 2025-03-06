@@ -23,12 +23,13 @@ const YouTubeUrlInput = ({
   const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   const validateUrl = (url: string) => {
-    console.log("🔍 Validating URL:", url);
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] 🔍 Validating URL: "${url}"`);
     
-    if (!url) {
+    if (!url || url.trim() === "") {
       setIsValid(false);
       setValidationMessage("URL is required");
-      console.log("❌ URL is empty");
+      console.log(`[${timestamp}] ❌ URL is empty`);
       return false;
     }
     
@@ -47,13 +48,13 @@ const YouTubeUrlInput = ({
     if (!isYoutubeUrl) {
       setIsValid(false);
       setValidationMessage("Enter a valid YouTube URL or handle");
-      console.log("❌ Not a valid YouTube URL format");
+      console.log(`[${timestamp}] ❌ Not a valid YouTube URL format: "${url}"`);
       return false;
     }
     
     setIsValid(true);
     setValidationMessage("");
-    console.log("✅ URL validation passed");
+    console.log(`[${timestamp}] ✅ URL validation passed for: "${url}"`);
     return true;
   };
 
@@ -71,13 +72,14 @@ const YouTubeUrlInput = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("🔘 Submit button clicked for URL:", youtubeUrl);
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] 🔘 Submit button clicked for URL: "${youtubeUrl}"`);
     
     if (validateUrl(youtubeUrl)) {
-      console.log("✅ URL valid, initiating fetch");
+      console.log(`[${timestamp}] ✅ URL valid, initiating fetch`);
       onFetch();
     } else {
-      console.log("❌ URL validation failed, not fetching");
+      console.log(`[${timestamp}] ❌ URL validation failed, not fetching`);
     }
   };
 
@@ -99,7 +101,10 @@ const YouTubeUrlInput = ({
             <Button 
               type="submit" 
               disabled={loading || !youtubeUrl || !isValid}
-              onClick={() => console.log("🔘 Fetch button clicked")}
+              onClick={() => {
+                const timestamp = new Date().toISOString();
+                console.log(`[${timestamp}] 🔘 Fetch button clicked`);
+              }}
             >
               {loading ? "Fetching..." : "Fetch"}
             </Button>
@@ -134,6 +139,9 @@ const YouTubeUrlInput = ({
             
             {showDebugInfo && (
               <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700">
+                <p>• Current status: {loading ? "Loading..." : "Ready"}</p>
+                <p>• Entered URL: {youtubeUrl || "None"}</p>
+                <p>• URL valid: {isValid ? "Yes" : "No"}</p>
                 <p>• If you're experiencing issues, try these tips:</p>
                 <ul className="list-disc ml-5 mt-1">
                   <li>For channels, use the direct URL: youtube.com/channel/UC...</li>
