@@ -22,6 +22,7 @@ interface ChannelDetailsState {
   topVideosLoading: boolean;
   mostViewedVideo: TopVideo | null;
   mostEngagingVideo: TopVideo | null;
+  topVideosError: boolean;
 }
 
 export const useChannelDetails = (channelId?: string, slug?: string) => {
@@ -32,7 +33,8 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
     error: null,
     topVideosLoading: true,
     mostViewedVideo: null,
-    mostEngagingVideo: null
+    mostEngagingVideo: null,
+    topVideosError: false
   });
 
   useEffect(() => {
@@ -151,7 +153,7 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
   };
 
   const fetchTopPerformingVideosWithYouTubeId = async (youtubeChannelId: string) => {
-    setState(prev => ({ ...prev, topVideosLoading: true }));
+    setState(prev => ({ ...prev, topVideosLoading: true, topVideosError: false }));
     try {
       console.log(`Fetching top videos with YouTube channel ID: ${youtubeChannelId}`);
       
@@ -161,25 +163,37 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
 
       if (error) {
         console.error("Error fetching top videos:", error);
-        throw error;
+        setState(prev => ({
+          ...prev,
+          topVideosLoading: false,
+          topVideosError: true
+        }));
+        return;
       }
 
       if (data.error) {
         console.error("API error fetching top videos:", data.error);
-        throw new Error(data.error);
+        setState(prev => ({
+          ...prev,
+          topVideosLoading: false,
+          topVideosError: true
+        }));
+        return;
       }
 
       setState(prev => ({
         ...prev,
         mostViewedVideo: data.mostViewed || null,
         mostEngagingVideo: data.mostEngaging || null,
-        topVideosLoading: false
+        topVideosLoading: false,
+        topVideosError: false
       }));
     } catch (err) {
       console.error("Error fetching top performing videos:", err);
       setState(prev => ({
         ...prev,
-        topVideosLoading: false
+        topVideosLoading: false,
+        topVideosError: true
       }));
     }
   };
@@ -191,6 +205,7 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
     error: state.error,
     topVideosLoading: state.topVideosLoading,
     mostViewedVideo: state.mostViewedVideo,
-    mostEngagingVideo: state.mostEngagingVideo
+    mostEngagingVideo: state.mostEngagingVideo,
+    topVideosError: state.topVideosError
   };
 };

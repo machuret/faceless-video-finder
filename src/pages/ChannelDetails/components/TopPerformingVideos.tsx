@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Eye, ThumbsUp, MessageSquare, Trophy } from "lucide-react";
+import { Eye, ThumbsUp, MessageSquare, Trophy, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import LazyImage from "@/components/ui/lazy-image";
 
@@ -19,9 +19,10 @@ interface TopPerformingVideosProps {
   mostViewed: TopVideo | null;
   mostEngaging: TopVideo | null;
   loading: boolean;
+  error?: boolean;
 }
 
-const TopPerformingVideos = ({ mostViewed, mostEngaging, loading }: TopPerformingVideosProps) => {
+const TopPerformingVideos = ({ mostViewed, mostEngaging, loading, error = false }: TopPerformingVideosProps) => {
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -48,7 +49,31 @@ const TopPerformingVideos = ({ mostViewed, mostEngaging, loading }: TopPerformin
     );
   }
 
-  if (!mostViewed && !mostEngaging) return null;
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Top Performing Videos</h2>
+        <div className="p-4 border border-amber-200 bg-amber-50 rounded-md">
+          <div className="flex items-start">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 mt-0.5" />
+            <p className="text-amber-700">
+              We couldn't load the top performing videos for this channel at the moment. 
+              This could be due to API limitations or the channel's privacy settings.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!mostViewed && !mostEngaging) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Top Performing Videos</h2>
+        <p className="text-gray-600">No top performing videos data is available for this channel.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">

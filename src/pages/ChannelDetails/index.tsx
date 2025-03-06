@@ -22,7 +22,8 @@ const ChannelDetails = () => {
     error, 
     topVideosLoading, 
     mostViewedVideo, 
-    mostEngagingVideo 
+    mostEngagingVideo,
+    topVideosError 
   } = useChannelDetails(channelId, slug);
 
   useEffect(() => {
@@ -75,6 +76,7 @@ const ChannelDetails = () => {
             mostViewed={mostViewedVideo} 
             mostEngaging={mostEngagingVideo} 
             loading={topVideosLoading}
+            error={topVideosError}
           />
         </div>
         
