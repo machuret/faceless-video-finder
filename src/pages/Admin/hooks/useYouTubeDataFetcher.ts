@@ -12,7 +12,7 @@ export const useYouTubeDataFetcher = (
   const [lastError, setLastError] = useState<string | null>(null);
   const [lastResponse, setLastResponse] = useState<any>(null);
 
-  const fetchYoutubeData = async () => {
+  const fetchYoutubeData = async (useMockData = false) => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] 🚀 Starting YouTube data fetch for:`, youtubeUrl);
     
@@ -28,7 +28,11 @@ export const useYouTubeDataFetcher = (
       
       // Call the edge function
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
-        body: { url: youtubeUrl.trim() }
+        body: { 
+          url: youtubeUrl.trim(),
+          allowMockData: useMockData,
+          timestamp
+        }
       });
       
       // Store response for debugging
@@ -60,6 +64,11 @@ export const useYouTubeDataFetcher = (
       }
       
       const { channelData } = data;
+      
+      if (data.isMockData) {
+        console.log(`[${timestamp}] ⚠️ Using mock data as fallback`);
+        toast.warning("Using mock data as fallback. YouTube API extraction failed.");
+      }
       
       // Map the data to our form structure
       const formattedData: ChannelFormData = {

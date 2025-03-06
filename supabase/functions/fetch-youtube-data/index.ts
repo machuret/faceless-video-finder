@@ -5,6 +5,7 @@ import { fetchChannelDirectly } from './channelExtractors.ts';
 import { fetchChannelViaVideo } from './channelExtractors.ts';
 import { fetchChannelViaSearch } from './channelExtractors.ts';
 import { formatChannelData } from './dataFormatters.ts';
+import { createMockChannelData } from './mockData.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,6 +47,7 @@ serve(async (req) => {
     console.log(`[${now}] 🔑 API Key exists:`, !!YOUTUBE_API_KEY);
 
     if (!YOUTUBE_API_KEY) {
+      console.error(`[${now}] ❌ YouTube API key not configured`);
       throw new Error('YouTube API key not configured');
     }
 
@@ -54,6 +56,7 @@ serve(async (req) => {
     console.log(`[${now}] 📝 Received URL:`, url);
 
     if (!url) {
+      console.error(`[${now}] ❌ URL is required but was not provided`);
       throw new Error('URL is required');
     }
 
@@ -105,6 +108,23 @@ serve(async (req) => {
     }
 
     if (!channel || !channelId) {
+      const errorMessage = error ? error.message : 'Failed to extract channel data using all methods';
+      console.error(`[${now}] ❌ ${errorMessage}`);
+      
+      // For development purposes, return mock data if real extraction fails
+      if (body?.allowMockData === true) {
+        console.log(`[${now}] 🧪 Returning mock data as fallback`);
+        const mockData = createMockChannelData(url);
+        return new Response(
+          JSON.stringify({ 
+            channelData: mockData,
+            isMockData: true,
+            error: errorMessage
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       throw error || new Error('Failed to extract channel data using all methods');
     }
 
@@ -119,10 +139,15 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] ❌ Error:`, error);
+    const timestamp = new Date().toISOString();
+    console.error(`[${timestamp}] ❌ Error:`, error);
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        timestamp,
+        success: false
+      }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

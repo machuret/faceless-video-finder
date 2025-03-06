@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -123,6 +124,50 @@ const YouTubeUrlInput = ({
     }
   };
 
+  const testWithMockData = async () => {
+    try {
+      setTestLoading(true);
+      const timestamp = new Date().toISOString();
+      
+      if (!youtubeUrl.trim()) {
+        toast.error("Please enter a YouTube URL first");
+        return;
+      }
+      
+      console.log(`[${timestamp}] 🧪 Testing with mock data for URL: ${youtubeUrl}`);
+      
+      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+        body: { 
+          url: youtubeUrl.trim(), 
+          allowMockData: true,
+          timestamp 
+        }
+      });
+      
+      console.log(`[${timestamp}] 🧪 Mock data test response:`, { data, error });
+      
+      if (error) {
+        console.error(`[${timestamp}] ❌ Mock data test error:`, error);
+        toast.error(`Error: ${error.message}`);
+        setTestResult({ success: false, error });
+      } else if (data?.channelData) {
+        console.log(`[${timestamp}] ✅ Mock data test successful:`, data);
+        toast.success(data.isMockData ? "Retrieved mock data successfully" : "Retrieved channel data successfully");
+        setTestResult({ success: true, data });
+      } else {
+        console.error(`[${timestamp}] ⚠️ Mock data test returned unexpected format:`, data);
+        toast.error("Unexpected response format");
+        setTestResult({ success: false, data, error: "Unexpected response format" });
+      }
+    } catch (err) {
+      console.error(`[${new Date().toISOString()}] ❌ Unexpected error testing with mock data:`, err);
+      toast.error(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTestResult({ success: false, error: err });
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   return (
     <FormSectionWrapper 
       title="YouTube URL" 
@@ -174,22 +219,36 @@ const YouTubeUrlInput = ({
               {showDebugInfo ? "Hide debug info" : "Show debug info"}
             </button>
             
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={testEdgeFunction}
-              disabled={testLoading}
-              className="text-xs flex items-center gap-1"
-            >
-              <Zap className="h-3 w-3" />
-              {testLoading ? "Testing..." : "Test Edge Function"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={testEdgeFunction}
+                disabled={testLoading}
+                className="text-xs flex items-center gap-1"
+              >
+                <Zap className="h-3 w-3" />
+                {testLoading ? "Testing..." : "Test Edge Function"}
+              </Button>
+              
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={testWithMockData}
+                disabled={testLoading || !youtubeUrl}
+                className="text-xs flex items-center gap-1"
+              >
+                <Bug className="h-3 w-3" />
+                Test with Mock Data
+              </Button>
+            </div>
           </div>
           
           {testResult && (
             <div className={`mt-2 p-2 rounded text-xs ${testResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-              <p className="font-semibold">{testResult.success ? '✅ Edge Function Test Success' : '❌ Edge Function Test Failed'}</p>
+              <p className="font-semibold">{testResult.success ? '✅ Test Success' : '❌ Test Failed'}</p>
               <pre className="text-[10px] overflow-auto max-h-32 mt-1">
                 {JSON.stringify(testResult, null, 2)}
               </pre>
