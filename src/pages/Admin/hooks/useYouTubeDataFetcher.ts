@@ -10,22 +10,23 @@ export const useYouTubeDataFetcher = (
   setFormData: Dispatch<SetStateAction<ChannelFormData>>
 ) => {
   const fetchYoutubeData = async () => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] 🚀 Starting YouTube data fetch for: ${youtubeUrl}`);
+    
+    if (!youtubeUrl) {
+      toast.error("Please enter a YouTube URL");
+      return;
+    }
+    
     try {
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] 🚀 Starting YouTube data fetch for: ${youtubeUrl}`);
-      
-      if (!youtubeUrl) {
-        toast.error("Please enter a YouTube URL");
-        return;
-      }
-      
       setLoading(true);
+      console.log(`[${timestamp}] 🔄 Setting loading state to true`);
       
       // Prepare the payload
       const payload = { url: youtubeUrl.trim() };
       console.log(`[${timestamp}] 📦 Request payload:`, payload);
       
-      console.log(`[${timestamp}] 🔄 Calling edge function: fetch-youtube-data`);
+      console.log(`[${timestamp}] 🔄 Invoking edge function: fetch-youtube-data`);
       
       // Call the edge function
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
@@ -42,6 +43,11 @@ export const useYouTubeDataFetcher = (
       if (!data) {
         console.error(`[${timestamp}] ❌ No data returned from edge function`);
         throw new Error('No data returned from the server');
+      }
+      
+      if (data.error) {
+        console.error(`[${timestamp}] ❌ Error in response:`, data.error);
+        throw new Error(`API error: ${data.error}`);
       }
       
       const { channelData } = data;
