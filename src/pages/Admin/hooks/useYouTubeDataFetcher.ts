@@ -30,14 +30,14 @@ export const useYouTubeDataFetcher = (
       
       // Use a shorter client-side timeout for better UX
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out after 12 seconds')), 12000);
+        setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000);
       });
       
       // Call the edge function with request body
       const fetchPromise = supabase.functions.invoke('fetch-youtube-data', {
         body: { 
           url: youtubeUrl.trim(),
-          allowMockData: useMockData,
+          allowMockData: useMockData || attempts > 0, // Use mock data on retry attempts
           timestamp,
           attempt: attempts + 1
         }
@@ -55,7 +55,15 @@ export const useYouTubeDataFetcher = (
         setLastError(result.error.message);
         
         if (result.error.message?.includes('timeout') || result.error.message?.includes('timed out')) {
-          toast.error("Request timed out. Try again with a simpler URL or use mock data.");
+          toast.error("Request timed out. Retrying with mock data...");
+          
+          // Auto-retry with mock data after a timeout
+          if (attempts < 1) {
+            setTimeout(() => fetchYoutubeData(true), 500);
+            return;
+          } else {
+            toast.error("Multiple timeouts occurred. Please try again later.");
+          }
         } else {
           toast.error(`Edge function error: ${result.error.message}`);
         }
@@ -77,11 +85,17 @@ export const useYouTubeDataFetcher = (
         
         // Check for common YouTube API errors
         if (data.error.includes('quota')) {
-          toast.error("YouTube API quota exceeded. Please try again tomorrow.");
+          toast.error("YouTube API quota exceeded. Using mock data instead.");
+          setTimeout(() => fetchYoutubeData(true), 500);
+          return;
         } else if (data.error.includes('API key')) {
-          toast.error("YouTube API key error. Please check your API key configuration.");
+          toast.error("YouTube API key error. Using mock data instead.");
+          setTimeout(() => fetchYoutubeData(true), 500);
+          return;
         } else if (data.error.includes('timed out') || data.error.includes('timeout')) {
-          toast.error("Request timed out. Try a simpler URL or use mock data.");
+          toast.error("Request timed out. Using mock data instead.");
+          setTimeout(() => fetchYoutubeData(true), 500);
+          return;
         } else {
           toast.error(`Error: ${data.error}`);
         }
@@ -134,7 +148,9 @@ export const useYouTubeDataFetcher = (
       setLastError(error instanceof Error ? error.message : 'Unknown error');
       
       if (error instanceof Error && error.message.includes('timed out')) {
-        toast.error("Request timed out. Please try again with a simpler URL or use mock data.");
+        toast.error("Request timed out. Falling back to mock data.");
+        // Auto-fallback to mock data on timeout
+        setTimeout(() => fetchYoutubeData(true), 500);
       } else {
         toast.error(`Failed to load YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }

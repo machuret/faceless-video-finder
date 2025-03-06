@@ -8,7 +8,7 @@ export async function fetchFromYouTubeAPI(url: string, timestamp: string) {
   try {
     // Set a specific timeout for each API request - reduced to improve response times
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s timeout (reduced from 3s)
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout (reduced from 2.5s)
     
     try {
       const response = await fetch(url, { 
@@ -43,7 +43,7 @@ export async function fetchFromYouTubeAPI(url: string, timestamp: string) {
         throw new Error(`YouTube API error: ${apiErrorMessage}`);
       }
       
-      // Use streaming response to start processing data as soon as it arrives
+      // Parse the response immediately to avoid delays
       const data = await response.json();
       console.log(`✅ [${timestamp}] YouTube API response successful`);
       return data;

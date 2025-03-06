@@ -27,7 +27,7 @@ serve(async (req) => {
     const timeoutId = setTimeout(() => {
       console.log(`[${new Date().toISOString()}] ⚠️ Safety timeout triggered, aborting request`);
       controller.abort();
-    }, 11000); // 11 seconds, just below Supabase's ~12s limit
+    }, 8000); // 8 seconds, significantly below Supabase's ~12s limit
     
     try {
       // Process the actual request with our improved handler
