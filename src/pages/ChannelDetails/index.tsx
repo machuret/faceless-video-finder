@@ -70,7 +70,7 @@ const ChannelDetails = () => {
       <main className="container mx-auto px-4 py-8">
         <ChannelHeader channel={channel} />
         
-        {/* Top Performing Videos Section with actual videos */}
+        {/* Top Performing Videos Section */}
         <div className="mt-8">
           <TopPerformingVideos 
             mostViewed={mostViewedVideo} 
@@ -81,7 +81,7 @@ const ChannelDetails = () => {
         </div>
         
         <div className="grid grid-cols-1 gap-8 mt-8">
-          {/* Left Column - Now full width */}
+          {/* Channel Statistics */}
           <div>
             {/* Revenue Statistics */}
             <ChannelStats showOnlyRevenue={true} channel={channel} />
