@@ -1,28 +1,49 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
-import { fetchFacelessIdeaById } from "@/services/facelessIdeas";
+import { fetchFacelessIdeaById, fetchFacelessIdeas } from "@/services/facelessIdeas";
 import { FacelessIdeaInfo } from "@/services/facelessIdeas/types";
 import { toast } from "sonner";
 
 const FacelessIdeaDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  const { ideaId } = useParams<{ ideaId: string }>();
   const [idea, setIdea] = useState<FacelessIdeaInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!id) return;
+    if (!ideaId) return;
 
     const loadIdea = async () => {
       try {
         setLoading(true);
-        const data = await fetchFacelessIdeaById(id);
-        setIdea(data);
+        console.log(`Loading faceless idea with ID: ${ideaId}`);
+        
+        // First try to load by direct ID
+        let data = await fetchFacelessIdeaById(ideaId);
+        
+        // If not found by direct ID, try to find it in all ideas
+        if (!data) {
+          console.log("Direct ID lookup failed, trying to find by string ID in all ideas");
+          const allIdeas = await fetchFacelessIdeas();
+          data = allIdeas.find(item => 
+            item.id.toLowerCase() === ideaId.toLowerCase() || 
+            item.id.replace(/-/g, '_').toLowerCase() === ideaId.toLowerCase() ||
+            item.id.replace(/_/g, '-').toLowerCase() === ideaId.toLowerCase()
+          ) || null;
+        }
+        
+        if (data) {
+          setIdea(data);
+        } else {
+          console.error(`Faceless idea with ID ${ideaId} not found`);
+          toast.error("Idea not found");
+        }
       } catch (error) {
         console.error("Error loading faceless idea:", error);
         toast.error("Failed to load faceless idea details");
@@ -32,7 +53,7 @@ const FacelessIdeaDetails = () => {
     };
 
     loadIdea();
-  }, [id]);
+  }, [ideaId]);
 
   if (loading) {
     return (
@@ -43,6 +64,7 @@ const FacelessIdeaDetails = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         </div>
+        <PageFooter />
       </div>
     );
   }
@@ -53,12 +75,13 @@ const FacelessIdeaDetails = () => {
         <MainNavbar />
         <div className="container mx-auto px-4 py-12">
           <Card className="p-6 text-center">
-            <p className="text-gray-500">Faceless idea not found.</p>
+            <p className="text-gray-500 mb-4">Faceless idea not found.</p>
             <Link to="/faceless-ideas" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
               Back to all ideas
             </Link>
           </Card>
         </div>
+        <PageFooter />
       </div>
     );
   }
