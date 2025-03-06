@@ -16,38 +16,44 @@ export const useYouTubeDataFetcher = (
       return;
     }
     
-    console.log("🔍 Attempting to fetch YouTube data for URL:", youtubeUrl);
+    console.log("🔍 [useYouTubeDataFetcher] Attempting to fetch YouTube data for URL:", youtubeUrl);
     setLoading(true);
     
     try {
-      console.log("📡 Sending request to edge function with URL:", youtubeUrl);
+      console.log("📡 [useYouTubeDataFetcher] Sending request to edge function with URL:", youtubeUrl);
       
-      const response = await supabase.functions.invoke('fetch-youtube-data', {
-        body: { url: youtubeUrl }
-      });
+      const { data: functionData, error: functionError } = await supabase.functions.invoke(
+        'fetch-youtube-data',
+        {
+          body: { url: youtubeUrl }
+        }
+      );
       
-      console.log("📦 Raw response from edge function:", response);
+      console.log("📦 [useYouTubeDataFetcher] Raw response from edge function:", functionData);
       
-      const { data, error } = response;
-      
-      if (error) {
-        console.error('❌ Edge Function error:', error);
-        throw error;
+      if (functionError) {
+        console.error('❌ [useYouTubeDataFetcher] Edge Function error:', functionError);
+        throw functionError;
       }
       
-      if (!data) {
-        console.error('❌ Edge Function returned no data');
+      if (!functionData) {
+        console.error('❌ [useYouTubeDataFetcher] Edge Function returned no data');
         throw new Error('No data returned from the server');
       }
       
-      if (!data.channelData) {
-        console.error('❌ No channel data in response:', data);
-        throw new Error(data.error || 'No channel data was found');
+      const { channelData, error } = functionData;
+      
+      if (error) {
+        console.error('❌ [useYouTubeDataFetcher] Edge Function returned error:', error);
+        throw new Error(error);
       }
       
-      console.log("✅ YouTube data fetched successfully:", data.channelData);
+      if (!channelData) {
+        console.error('❌ [useYouTubeDataFetcher] No channel data in response:', functionData);
+        throw new Error('No channel data was found');
+      }
       
-      const channelData = data.channelData;
+      console.log("✅ [useYouTubeDataFetcher] YouTube data fetched successfully:", channelData);
       
       // Map API data to form data
       const formattedData: ChannelFormData = {
@@ -68,18 +74,18 @@ export const useYouTubeDataFetcher = (
         keywords: channelData.keywords || []
       };
       
-      console.log("📋 Form data prepared:", formattedData);
+      console.log("📋 [useYouTubeDataFetcher] Form data prepared:", formattedData);
       setFormData(formattedData);
       toast.success("YouTube data loaded successfully");
       
     } catch (error) {
-      console.error("❌ Error fetching YouTube data:", error);
+      console.error("❌ [useYouTubeDataFetcher] Error fetching YouTube data:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error("❌ Error details:", errorMessage);
+      console.error("❌ [useYouTubeDataFetcher] Error details:", errorMessage);
       toast.error(`Failed to fetch YouTube data: ${errorMessage}`);
     } finally {
       setLoading(false);
-      console.log("⏱️ Loading state set to false");
+      console.log("⏱️ [useYouTubeDataFetcher] Loading state set to false");
     }
   };
   
