@@ -11,7 +11,7 @@ export const useYouTubeDataFetcher = (
 ) => {
   const fetchYoutubeData = async () => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] 🚀 Starting YouTube data fetch for: ${youtubeUrl}`);
+    console.log(`[${timestamp}] 🚀 Starting YouTube data fetch for:`, youtubeUrl);
     
     if (!youtubeUrl) {
       toast.error("Please enter a YouTube URL");
@@ -20,44 +20,18 @@ export const useYouTubeDataFetcher = (
     
     try {
       setLoading(true);
-      console.log(`[${timestamp}] 🔄 Setting loading state to true`);
-      
-      // Prepare the payload
-      const payload = { url: youtubeUrl.trim() };
-      console.log(`[${timestamp}] 📦 Request payload:`, payload);
-      
-      console.log(`[${timestamp}] 🔄 Invoking edge function: fetch-youtube-data`);
       
       // Call the edge function
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
-        body: payload
+        body: { url: youtubeUrl.trim() }
       });
       
-      console.log(`[${timestamp}] 📡 Response received:`, { data, error });
+      console.log(`[${timestamp}] 📡 Edge function response:`, { data, error });
       
-      if (error) {
-        console.error(`[${timestamp}] ❌ Edge function error:`, error);
-        throw new Error(`Edge function error: ${error.message || JSON.stringify(error)}`);
-      }
-      
-      if (!data) {
-        console.error(`[${timestamp}] ❌ No data returned from edge function`);
-        throw new Error('No data returned from the server');
-      }
-      
-      if (data.error) {
-        console.error(`[${timestamp}] ❌ Error in response:`, data.error);
-        throw new Error(`API error: ${data.error}`);
-      }
+      if (error) throw error;
+      if (!data?.channelData) throw new Error('No channel data received');
       
       const { channelData } = data;
-      
-      if (!channelData) {
-        console.error(`[${timestamp}] ❌ No channel data in response:`, data);
-        throw new Error('No channel data was found in the response');
-      }
-      
-      console.log(`[${timestamp}] ✅ Channel data fetched successfully:`, channelData);
       
       // Map the data to our form structure
       const formattedData: ChannelFormData = {
@@ -66,31 +40,28 @@ export const useYouTubeDataFetcher = (
         channel_url: channelData.url || "",
         description: channelData.description || "",
         screenshot_url: channelData.thumbnailUrl || "",
-        total_subscribers: channelData.subscriberCount ? String(channelData.subscriberCount) : "",
-        total_views: channelData.viewCount ? String(channelData.viewCount) : "",
+        total_subscribers: String(channelData.subscriberCount || ""),
+        total_views: String(channelData.viewCount || ""),
         start_date: channelData.publishedAt || "",
-        video_count: channelData.videoCount ? String(channelData.videoCount) : "",
-        cpm: "4", // Default CPM
-        channel_type: channelData.channelType || "creator",
+        video_count: String(channelData.videoCount || ""),
+        cpm: "4",
+        channel_type: "creator",
         country: channelData.country || "",
-        channel_category: "other", // Default category
+        channel_category: "other",
         notes: "",
-        keywords: channelData.keywords || []
+        keywords: []
       };
       
-      console.log(`[${timestamp}] 📋 Mapped form data:`, formattedData);
+      console.log(`[${timestamp}] ✅ Formatted data:`, formattedData);
       
-      // Update the form
       setFormData(formattedData);
       toast.success("YouTube data loaded successfully");
       
     } catch (error) {
-      console.error(`[${new Date().toISOString()}] ❌ Error in fetchYoutubeData:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Failed to load YouTube data: ${errorMessage}`);
+      console.error(`[${timestamp}] ❌ Error:`, error);
+      toast.error(`Failed to load YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
-      console.log(`[${new Date().toISOString()}] ⏱️ Loading state reset to false`);
     }
   };
   
