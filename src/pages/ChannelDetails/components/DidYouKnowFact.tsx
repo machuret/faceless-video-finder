@@ -2,20 +2,23 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { fetchRandomFact, DidYouKnowFact } from "@/services/didYouKnowService";
-import { Loader2 } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
 
 const DidYouKnowFactComponent = () => {
   const [fact, setFact] = useState<DidYouKnowFact | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadRandomFact = async () => {
       try {
         setLoading(true);
+        setError(null);
         const randomFact = await fetchRandomFact();
         setFact(randomFact);
-      } catch (error) {
-        console.error("Error loading random fact:", error);
+      } catch (err) {
+        console.error("Error loading random fact:", err);
+        setError("Failed to load fact");
       } finally {
         setLoading(false);
       }
@@ -34,8 +37,15 @@ const DidYouKnowFactComponent = () => {
     );
   }
 
-  if (!fact) {
-    return null;
+  if (error || !fact) {
+    return (
+      <Card className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <div className="flex items-center justify-center h-32 text-gray-500">
+          <Info className="h-5 w-5 mr-2" />
+          <span>No facts available at the moment</span>
+        </div>
+      </Card>
+    );
   }
 
   return (
