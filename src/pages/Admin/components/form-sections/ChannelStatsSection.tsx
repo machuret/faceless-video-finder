@@ -35,6 +35,12 @@ const ChannelStatsSection = ({
       handleFieldChange('description', stats.description);
     }
   };
+  
+  const handleDescriptionReceived = (description: string) => {
+    if (description && description.trim() !== "") {
+      handleFieldChange('description', description);
+    }
+  };
 
   // Determine what to use for fetching - channel URL, channel title, or a combination
   const determineChannelReference = () => {
@@ -56,16 +62,27 @@ const ChannelStatsSection = ({
     return formData.channel_url;
   };
 
+  // Show the fetch buttons only if we have either a channel URL or title
+  const canFetchData = isEditMode && (formData.channel_url || formData.channel_title);
+
   return (
     <FormSectionWrapper 
       title="Channel Stats" 
       description="Statistics and metrics for the YouTube channel"
       actionComponent={
-        isEditMode && (formData.channel_url || formData.channel_title) ? (
-          <ChannelStatsFetcher 
-            channelUrl={determineChannelReference()} 
-            onStatsReceived={handleStatsReceived} 
-          />
+        canFetchData ? (
+          <div className="flex gap-2">
+            <ChannelStatsFetcher 
+              channelUrl={determineChannelReference()} 
+              onStatsReceived={handleStatsReceived} 
+            />
+            <ChannelStatsFetcher 
+              channelUrl={determineChannelReference()} 
+              onStatsReceived={handleStatsReceived}
+              onDescriptionReceived={handleDescriptionReceived}
+              fetchDescriptionOnly={true}
+            />
+          </div>
         ) : null
       }
     >

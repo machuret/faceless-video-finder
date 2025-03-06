@@ -166,7 +166,7 @@ serve(async (req) => {
     const requestData = await req.json();
     console.log("Request data:", requestData);
     
-    const { channelId, url, timestamp, includeDescription = false } = requestData;
+    const { channelId, url, timestamp, includeDescription = false, fetchDescriptionOnly = false } = requestData;
     
     if (!channelId && !url) {
       return createResponse({ error: "Either channelId or url is required" }, 400);
@@ -188,7 +188,18 @@ serve(async (req) => {
     
     // Fetch statistics using the resolved channel ID
     try {
-      const stats = await fetchChannelStats(resolvedChannelId, YOUTUBE_API_KEY, includeDescription);
+      // Always include description if fetchDescriptionOnly is true
+      const includingDescription = includeDescription || fetchDescriptionOnly;
+      const stats = await fetchChannelStats(resolvedChannelId, YOUTUBE_API_KEY, includingDescription);
+      
+      // If fetchDescriptionOnly is true, only return the description
+      if (fetchDescriptionOnly) {
+        console.log("Description-only mode, returning only channel info");
+        return createResponse({
+          channelInfo: stats.channelInfo
+        });
+      }
+      
       return createResponse(stats);
     } catch (error) {
       console.error("Error fetching channel stats:", error);

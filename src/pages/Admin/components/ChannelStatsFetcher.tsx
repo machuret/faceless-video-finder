@@ -2,16 +2,23 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChannelFormData } from "@/types/forms";
 
 interface ChannelStatsFetcherProps {
   channelUrl: string;
   onStatsReceived: (stats: Partial<ChannelFormData>) => void;
+  onDescriptionReceived?: (description: string) => void;
+  fetchDescriptionOnly?: boolean;
 }
 
-const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetcherProps) => {
+const ChannelStatsFetcher = ({ 
+  channelUrl, 
+  onStatsReceived, 
+  onDescriptionReceived,
+  fetchDescriptionOnly = false 
+}: ChannelStatsFetcherProps) => {
   const [loading, setLoading] = useState(false);
 
   const fetchLatestStats = async () => {
@@ -22,10 +29,13 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
     try {
       setLoading(true);
-      toast.info("Fetching latest channel information...");
+      toast.info(fetchDescriptionOnly 
+        ? "Fetching channel description..." 
+        : "Fetching latest channel information..."
+      );
       
       const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] 🔄 Requesting channel data for: ${channelUrl}`);
+      console.log(`[${timestamp}] 🔄 Requesting ${fetchDescriptionOnly ? 'description' : 'data'} for: ${channelUrl}`);
       
       // Extract channel ID if it's in a URL format
       let channelId = channelUrl;
@@ -48,6 +58,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
           channelId: isChannelId ? channelUrl : undefined,
           url: channelUrl.trim(),
           includeDescription: true,
+          fetchDescriptionOnly: fetchDescriptionOnly,
           timestamp
         }
       });
@@ -71,6 +82,20 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       }
       
       console.log(`[${timestamp}] ✅ Channel information received:`, data);
+      
+      // If this is a description-only fetch
+      if (fetchDescriptionOnly) {
+        if (data.channelInfo && data.channelInfo.description) {
+          console.log(`[${timestamp}] ✅ Channel description fetched:`, data.channelInfo.description.substring(0, 100) + '...');
+          if (onDescriptionReceived) {
+            onDescriptionReceived(data.channelInfo.description);
+          }
+          toast.success("Channel description fetched successfully!");
+        } else {
+          toast.error("No description found for this channel");
+        }
+        return;
+      }
       
       // Format the received stats to match our form data structure
       const formattedStats: Partial<ChannelFormData> = {
@@ -112,8 +137,17 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       disabled={loading || !channelUrl}
       className="flex items-center gap-1"
     >
-      <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-      {loading ? "Fetching..." : "Refresh Channel Info"}
+      {fetchDescriptionOnly ? (
+        <FileText className="h-4 w-4" />
+      ) : (
+        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+      )}
+      {loading 
+        ? "Fetching..." 
+        : fetchDescriptionOnly 
+          ? "Fetch Description Only" 
+          : "Refresh Channel Info"
+      }
     </Button>
   );
 };
