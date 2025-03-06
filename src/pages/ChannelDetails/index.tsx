@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
@@ -9,7 +8,6 @@ import ChannelStats from "./components/ChannelStats";
 import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
 import TopPerformingVideos from "./components/TopPerformingVideos";
-import ChannelUploadStats from "./components/ChannelUploadStats";
 import RelatedChannels from "./components/RelatedChannels";
 import { useEffect } from "react";
 
@@ -75,7 +73,7 @@ const ChannelDetails = () => {
           <ChannelStats showOnlyRevenue={true} channel={channel} />
         </div>
         
-        {/* Top Performing Videos Section - Moved before Upload Activity */}
+        {/* Top Performing Videos Section */}
         {(mostViewedVideo || mostEngagingVideo || topVideosLoading) && (
           <TopPerformingVideos 
             mostViewed={mostViewedVideo} 
@@ -83,9 +81,6 @@ const ChannelDetails = () => {
             loading={topVideosLoading}
           />
         )}
-        
-        {/* Upload Statistics - Moved to the 3rd row after videos and Est CPM */}
-        <ChannelUploadStats channel={channel} />
         
         <div className="mt-8">
           {/* Only show the channel type info and videos, not the full stats again */}

@@ -1,5 +1,5 @@
 
-import { Users, Play, Calendar, CircleDollarSign, TrendingUp, Clock, Globe } from "lucide-react";
+import { Users, Play, Calendar, CircleDollarSign, TrendingUp, Clock, Globe, Upload } from "lucide-react";
 import { Channel } from "@/types/youtube";
 import StatCard from "./StatCard";
 import { 
@@ -9,6 +9,7 @@ import {
   calculatePotentialRevenue,
   formatStartDate
 } from "../utils/revenueCalculations";
+import { calculateMonthlyUploadRate, getUploadRateCategory } from "../utils/uploadCalculations";
 
 interface ChannelStatsGridProps {
   channel: Channel;
@@ -20,6 +21,10 @@ const ChannelStatsGrid = ({ channel }: ChannelStatsGridProps) => {
   const revenuePerVideo = calculateRevenuePerVideo(totalRevenue, channel.video_count);
   const revenuePerSubscriber = calculateRevenuePerSubscriber(totalRevenue, channel.total_subscribers);
   const potentialRevenue = calculatePotentialRevenue(totalRevenue);
+  
+  // Calculate upload rate statistics
+  const monthlyUploadRate = calculateMonthlyUploadRate(channel.start_date, channel.video_count);
+  const uploadRateCategory = getUploadRateCategory(monthlyUploadRate);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -53,7 +58,21 @@ const ChannelStatsGrid = ({ channel }: ChannelStatsGridProps) => {
         value={channel.cpm ? `$${channel.cpm.toFixed(2)}` : 'N/A'}
       />
       
-      {/* Row 3 */}
+      {/* Upload Rate Stats - Added here after Videos and CPM */}
+      <StatCard 
+        icon={Upload} 
+        label="Videos per Month" 
+        value={monthlyUploadRate ? monthlyUploadRate.toFixed(1) : 'N/A'}
+      />
+      
+      <StatCard 
+        icon={Upload} 
+        label="Upload Rate" 
+        value={uploadRateCategory.label}
+        valueColor={uploadRateCategory.color}
+      />
+      
+      {/* Row 3 - Revenue Statistics */}
       <StatCard 
         icon={CircleDollarSign} 
         label="Total Revenue" 
