@@ -10,6 +10,7 @@ import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
 import TopPerformingVideos from "./components/TopPerformingVideos";
 import ChannelUploadStats from "./components/ChannelUploadStats";
+import RelatedChannels from "./components/RelatedChannels";
 import { useEffect } from "react";
 
 const ChannelDetails = () => {
@@ -89,6 +90,10 @@ const ChannelDetails = () => {
         <div className="mt-8">
           {/* Only show the channel type info and videos, not the full stats again */}
           <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
+          
+          {/* Add Related Channels section after Channel Type Info */}
+          {channelId && <RelatedChannels currentChannelId={channelId} />}
+          
           <ChannelVideos videos={videoStats} />
         </div>
       </main>
