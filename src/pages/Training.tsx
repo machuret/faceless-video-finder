@@ -16,7 +16,7 @@ const TrainingPage = () => {
       
       <main>
         {/* Hero Section */}
-        <TrainingHero startLink="/how-it-works" />
+        <TrainingHero startLink="/calculators" />
         
         {/* Main Content */}
         <div className="container mx-auto px-4 py-12">
@@ -26,7 +26,7 @@ const TrainingPage = () => {
           {/* Training Modules */}
           <TrainingModules />
           
-          {/* Learning Path Section */}
+          {/* Learning Path */}
           <LearningPath />
           
           {/* Testimonials Section */}
