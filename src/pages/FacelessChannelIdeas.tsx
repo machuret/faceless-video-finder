@@ -54,8 +54,8 @@ const FacelessChannelIdeas = () => {
         style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${backgroundImage})` }}
       >
         <div className="text-center text-white max-w-3xl mx-auto px-4">
-          <h1 className="font-crimson text-4xl font-bold mb-4">Faceless Channel Ideas</h1>
-          <p className="font-lato text-lg">
+          <h1 className="font-crimson text-4xl font-bold mb-4 text-center">Faceless Channel Ideas</h1>
+          <p className="font-lato text-lg text-center">
             Discover profitable faceless YouTube channel ideas that require minimal on-camera presence. 
             These ideas can be produced with basic equipment and are perfect for content creators who 
             prefer to stay behind the scenes.

@@ -15,6 +15,10 @@ const MainNavbar = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
     <div className="sticky top-0 z-50 w-full bg-white border-b shadow-sm">
       <div className="container mx-auto px-4">
@@ -24,7 +28,7 @@ const MainNavbar = () => {
           <DesktopNav isActive={isActive} />
           
           <div className="flex items-center gap-4">
-            <button className="md:hidden text-gray-700" onClick={toggleMobileMenu}>
+            <button className="md:hidden text-gray-700" onClick={toggleMobileMenu} aria-label="Toggle menu">
               {mobileMenuOpen ? (
                 <X className="h-6 w-6" />
               ) : (
@@ -38,7 +42,7 @@ const MainNavbar = () => {
       <MobileMenu 
         isOpen={mobileMenuOpen} 
         isActive={isActive} 
-        onItemClick={toggleMobileMenu} 
+        onItemClick={closeMobileMenu} 
       />
     </div>
   );

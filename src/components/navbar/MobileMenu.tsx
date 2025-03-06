@@ -2,6 +2,7 @@
 import React from "react";
 import NavItem from "./NavItem";
 import { navigationItems, isIdeasActive } from "./navConfig";
+import { useLocation } from "react-router-dom";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -10,6 +11,8 @@ interface MobileMenuProps {
 }
 
 const MobileMenu = ({ isOpen, isActive, onItemClick }: MobileMenuProps) => {
+  const location = useLocation();
+  
   if (!isOpen) return null;
 
   return (
