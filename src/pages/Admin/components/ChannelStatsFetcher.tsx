@@ -38,11 +38,15 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         }
       }
       
-      // Call the stats-only endpoint
+      // For non-URL non-ID inputs, treat as channel name/title
+      const isUrl = channelUrl.includes('youtube.com') || channelUrl.includes('youtu.be');
+      const isChannelId = /^UC[\w-]{21,24}$/.test(channelUrl);
+      
+      // Call the stats endpoint
       const { data, error } = await supabase.functions.invoke('fetch-channel-stats', {
         body: {
-          channelId,
-          url: channelUrl,
+          channelId: isChannelId ? channelUrl : undefined,
+          url: isUrl || isChannelId ? channelUrl : channelUrl.trim(),
           timestamp
         }
       });
@@ -53,14 +57,32 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         return;
       }
       
-      if (!data || data.error) {
-        console.error(`[${timestamp}] ❌ API error:`, data?.error || "No data received");
-        toast.error(`Error: ${data?.error || "Failed to retrieve statistics"}`);
+      if (!data) {
+        console.error(`[${timestamp}] ❌ No data received`);
+        toast.error("No data received from the API");
+        return;
+      }
+      
+      if (data.error) {
+        console.error(`[${timestamp}] ❌ API error:`, data.error);
+        
+        // If we have channel info despite the error, show a more helpful message
+        if (data.channelInfo) {
+          toast.warning(`Found channel "${data.channelInfo.title}" but couldn't fetch statistics. Try using the channel ID directly: ${data.channelInfo.id}`);
+        } else {
+          toast.error(`Error: ${data.error}`);
+        }
         return;
       }
       
       console.log(`[${timestamp}] ✅ Statistics received:`, data);
-      toast.success("Channel statistics fetched successfully!");
+      
+      // If we received channel info, show it
+      if (data.channelInfo) {
+        toast.success(`Found channel: ${data.channelInfo.title}`);
+      } else {
+        toast.success("Channel statistics fetched successfully!");
+      }
       
       // Format the received stats to match our form data structure
       const formattedStats: Partial<ChannelFormData> = {
@@ -68,6 +90,11 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         total_views: data.viewCount ? String(data.viewCount) : undefined,
         video_count: data.videoCount ? String(data.videoCount) : undefined
       };
+      
+      // If we have channel info and no channel title in the form, set it
+      if (data.channelInfo && data.channelInfo.title) {
+        formattedStats.channel_title = data.channelInfo.title;
+      }
       
       // Pass the stats up to the parent component
       onStatsReceived(formattedStats);

@@ -81,8 +81,15 @@ async function resolveChannelId(url: string, apiKey: string) {
       ? url.match(/@([^\/\?]+)/)?.[1] || url 
       : url;
     
-    console.log(`Searching for channel using term: ${searchTerm}`);
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=channel&key=${apiKey}`;
+    // Check if the URL contains a channel name without @ (like "One Percent Better")
+    const channelName = url.includes('youtube.com') 
+      ? url.split('/').filter(Boolean).pop() 
+      : url;
+    
+    const finalSearchTerm = searchTerm !== url ? searchTerm : channelName;
+    
+    console.log(`Searching for channel using term: ${finalSearchTerm}`);
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(finalSearchTerm)}&type=channel&key=${apiKey}`;
     
     const response = await fetch(searchUrl);
     
@@ -102,6 +109,45 @@ async function resolveChannelId(url: string, apiKey: string) {
   } catch (error) {
     console.error("Error resolving channel ID:", error);
     throw error;
+  }
+}
+
+// Check if channel exists via search API
+async function checkChannelExists(channelName: string, apiKey: string) {
+  console.log(`Checking if channel exists: ${channelName}`);
+  
+  try {
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(channelName)}&type=channel&key=${apiKey}`;
+    
+    const response = await fetch(searchUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Search API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.items || data.items.length === 0) {
+      console.log(`No channel found with name: ${channelName}`);
+      return null;
+    }
+    
+    // Find the most relevant channel by matching name
+    const relevantChannel = data.items.find((item: any) => {
+      const title = item.snippet.title.toLowerCase();
+      const searchTermLower = channelName.toLowerCase();
+      return title === searchTermLower || title.includes(searchTermLower);
+    }) || data.items[0]; // Fall back to first result if no direct match
+    
+    console.log(`Found channel: ${relevantChannel.snippet.title} (${relevantChannel.id.channelId})`);
+    return {
+      id: relevantChannel.id.channelId,
+      title: relevantChannel.snippet.title,
+      thumbnail: relevantChannel.snippet.thumbnails?.default?.url || null
+    };
+  } catch (error) {
+    console.error(`Error checking if channel exists: ${error}`);
+    return null;
   }
 }
 
@@ -126,6 +172,33 @@ serve(async (req) => {
     
     if (!channelId && !url) {
       return createResponse({ error: "Either channelId or url is required" }, 400);
+    }
+    
+    // For plain text channel names (like "One Percent Better"), try to find the channel first
+    if (!channelId && !url.includes('youtube.com') && !url.includes('@') && !url.startsWith('UC')) {
+      const channelInfo = await checkChannelExists(url, YOUTUBE_API_KEY);
+      
+      if (channelInfo) {
+        try {
+          const stats = await fetchChannelStats(channelInfo.id, YOUTUBE_API_KEY);
+          return createResponse({
+            ...stats,
+            channelInfo: {
+              title: channelInfo.title,
+              id: channelInfo.id,
+              thumbnailUrl: channelInfo.thumbnail
+            }
+          });
+        } catch (error) {
+          console.error("Error fetching channel stats:", error);
+          return createResponse({ 
+            error: `Found channel "${channelInfo.title}" but failed to fetch stats: ${error.message}`,
+            channelInfo
+          }, 200);
+        }
+      } else {
+        return createResponse({ error: `Could not find channel with name: ${url}` }, 200);
+      }
     }
     
     // Resolve channel ID if a URL was provided
