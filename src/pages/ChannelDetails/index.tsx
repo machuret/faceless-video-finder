@@ -66,8 +66,8 @@ const ChannelDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <MainNavbar />
-
       <main className="container mx-auto px-4 py-8">
+        {/* Channel Header */}
         <ChannelHeader channel={channel} />
         
         {/* Top Performing Videos Section */}
@@ -80,28 +80,24 @@ const ChannelDetails = () => {
           />
         </div>
         
+        {/* Channel Statistics and Videos */}
         <div className="grid grid-cols-1 gap-8 mt-8">
-          {/* Channel Statistics */}
           <div>
-            {/* Revenue Statistics */}
             <ChannelStats showOnlyRevenue={true} channel={channel} />
-            
-            {/* Channel Videos */}
             <ChannelVideos videos={videoStats} />
           </div>
         </div>
         
-        {/* Channel Type Info - Full width outside the grid */}
+        {/* Channel Type Info */}
         <div className="mt-8">
           <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
         </div>
         
-        {/* Related Channels - Full width at the bottom */}
+        {/* Related Channels */}
         <div className="mt-8">
           {channelId && <RelatedChannels currentChannelId={channelId} />}
         </div>
       </main>
-
       <PageFooter />
     </div>
   );
