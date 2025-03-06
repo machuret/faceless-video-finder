@@ -1,6 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
+import { formatChannelData, guessChannelType, extractKeywords } from './dataFormatters.ts';
 
 const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
 
@@ -44,18 +45,13 @@ serve(async (req) => {
     
     try {
       // Extract channel ID or username from URL
-      let channelId;
-      let videoId;
-      let username;
-      
-      // Try different URL formats
       const channelMatch = url.match(/youtube\.com\/channel\/(UC[\w-]{21,24})/i);
       const videoMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s?\/#]+)/i);
       const usernameMatch = url.match(/youtube\.com\/@([^\/\?]+)/i) || url.match(/@([^\/\?\s]+)/i);
       
       if (channelMatch && channelMatch[1]) {
         // Direct channel URL
-        channelId = channelMatch[1];
+        const channelId = channelMatch[1];
         console.log('📌 Found channel ID in URL:', channelId);
         
         // Fetch channel data directly
@@ -76,11 +72,11 @@ serve(async (req) => {
         }
         
         const channel = data.items[0];
-        channelData = formatChannelData(channel);
+        channelData = formatChannelData(channel, channelId);
       } 
       else if (videoMatch && videoMatch[1]) {
         // Video URL - get channel from video
-        videoId = videoMatch[1];
+        const videoId = videoMatch[1];
         console.log('📌 Found video ID in URL:', videoId);
         
         // Get video details to find channel
@@ -100,12 +96,12 @@ serve(async (req) => {
           throw new Error('Video not found');
         }
         
-        channelId = videoData.items[0].snippet.channelId;
-        console.log('📌 Found channel ID from video:', channelId);
+        const videoChannelId = videoData.items[0].snippet.channelId;
+        console.log('📌 Found channel ID from video:', videoChannelId);
         
         // Fetch channel data with the ID
         const channelResponse = await fetch(
-          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YOUTUBE_API_KEY}`,
+          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${videoChannelId}&key=${YOUTUBE_API_KEY}`,
           { headers: { 'Content-Type': 'application/json' } }
         );
         
@@ -121,11 +117,11 @@ serve(async (req) => {
         }
         
         const channel = channelData.items[0];
-        channelData = formatChannelData(channel);
+        channelData = formatChannelData(channel, videoChannelId);
       }
       else if (usernameMatch && usernameMatch[1]) {
         // Handle @username format
-        username = usernameMatch[1];
+        const username = usernameMatch[1];
         console.log('📌 Found username in URL:', username);
         
         // Search for the channel
@@ -145,12 +141,12 @@ serve(async (req) => {
           throw new Error('Channel not found via username search');
         }
         
-        channelId = searchData.items[0].id.channelId;
-        console.log('📌 Found channel ID from username search:', channelId);
+        const searchChannelId = searchData.items[0].id.channelId;
+        console.log('📌 Found channel ID from username search:', searchChannelId);
         
         // Fetch full channel data
         const channelResponse = await fetch(
-          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YOUTUBE_API_KEY}`,
+          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${searchChannelId}&key=${YOUTUBE_API_KEY}`,
           { headers: { 'Content-Type': 'application/json' } }
         );
         
@@ -166,7 +162,7 @@ serve(async (req) => {
         }
         
         const channel = channelData.items[0];
-        channelData = formatChannelData(channel);
+        channelData = formatChannelData(channel, searchChannelId);
       }
       else {
         // General search if no specific format matches
@@ -189,12 +185,12 @@ serve(async (req) => {
           throw new Error('No channels found matching the URL');
         }
         
-        channelId = searchData.items[0].id.channelId;
-        console.log('📌 Found channel ID from general search:', channelId);
+        const searchChannelId = searchData.items[0].id.channelId;
+        console.log('📌 Found channel ID from general search:', searchChannelId);
         
         // Fetch full channel data
         const channelResponse = await fetch(
-          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YOUTUBE_API_KEY}`,
+          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${searchChannelId}&key=${YOUTUBE_API_KEY}`,
           { headers: { 'Content-Type': 'application/json' } }
         );
         
@@ -210,7 +206,7 @@ serve(async (req) => {
         }
         
         const channel = channelData.items[0];
-        channelData = formatChannelData(channel);
+        channelData = formatChannelData(channel, searchChannelId);
       }
     } catch (error) {
       console.error('❌ Error fetching channel data:', error);
@@ -256,64 +252,3 @@ serve(async (req) => {
     });
   }
 });
-
-// Helper function to format channel data
-function formatChannelData(channel: any) {
-  return {
-    title: channel.snippet.title,
-    description: channel.snippet.description,
-    thumbnailUrl: channel.snippet.thumbnails?.high?.url || channel.snippet.thumbnails?.default?.url,
-    subscriberCount: parseInt(channel.statistics.subscriberCount || '0', 10),
-    viewCount: parseInt(channel.statistics.viewCount || '0', 10),
-    videoCount: parseInt(channel.statistics.videoCount || '0', 10),
-    publishedAt: channel.snippet.publishedAt,
-    country: channel.snippet.country || null,
-    channelId: channel.id,
-    url: `https://www.youtube.com/channel/${channel.id}`,
-    channelType: guessChannelType(channel.snippet.title, channel.snippet.description),
-    keywords: extractKeywords(channel.snippet.description || '')
-  };
-}
-
-// Helper function to guess channel type
-function guessChannelType(title: string, description: string) {
-  const combined = (title + ' ' + description).toLowerCase();
-  
-  if (combined.includes('brand') || combined.includes('company') || combined.includes('business') || combined.includes('official')) {
-    return 'brand';
-  } else if (combined.includes('news') || combined.includes('report') || combined.includes('media')) {
-    return 'media';
-  } else {
-    return 'creator'; // Default to creator
-  }
-}
-
-// Helper function to extract keywords
-function extractKeywords(description: string) {
-  if (!description) return [];
-  
-  // Look for hashtags
-  const hashtags = description.match(/#[\w\u00C0-\u017F]+/g) || [];
-  const cleanHashtags = hashtags.map(tag => tag.substring(1));
-  
-  // Extract other potential keywords (words that repeat or are capitalized)
-  const words = description
-    .replace(/[^\w\s\u00C0-\u017F]/g, ' ')
-    .split(/\s+/)
-    .filter(word => word.length > 3)
-    .map(word => word.trim());
-  
-  const wordCount: Record<string, number> = {};
-  words.forEach(word => {
-    wordCount[word.toLowerCase()] = (wordCount[word.toLowerCase()] || 0) + 1;
-  });
-  
-  const frequentWords = Object.keys(wordCount)
-    .filter(word => wordCount[word] > 1 || (word.charAt(0) === word.charAt(0).toUpperCase() && word.length > 4))
-    .slice(0, 10);
-  
-  // Combine hashtags and frequent words, remove duplicates
-  const allKeywords = [...new Set([...cleanHashtags, ...frequentWords])];
-  
-  return allKeywords.slice(0, 15); // Limit to 15 keywords
-}

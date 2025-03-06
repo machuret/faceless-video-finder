@@ -24,10 +24,14 @@ export const useYouTubeDataFetcher = (
     try {
       console.log("📡 [useYouTubeDataFetcher] Calling Supabase function with URL:", youtubeUrl);
       
+      // Add additional debug log to confirm payload
+      const payload = { url: youtubeUrl };
+      console.log("📦 [useYouTubeDataFetcher] Payload:", JSON.stringify(payload));
+      
       const { data: functionData, error: functionError } = await supabase.functions.invoke(
         'fetch-youtube-data',
         {
-          body: JSON.stringify({ url: youtubeUrl }),
+          body: JSON.stringify(payload),
           headers: {
             'Content-Type': 'application/json',
           }
