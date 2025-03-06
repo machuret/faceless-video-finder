@@ -1,7 +1,8 @@
+
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Channel } from "@/types/youtube";
+import { Channel, ChannelMetadata } from "@/types/youtube";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
