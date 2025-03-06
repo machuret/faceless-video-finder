@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChannelFormData } from "@/types/forms";
 
+/**
+ * Hook for fetching YouTube channel data from various URL formats
+ */
 export const useYouTubeDataFetcher = (
   youtubeUrl: string,
   setLoading: Dispatch<SetStateAction<boolean>>,
@@ -12,7 +15,11 @@ export const useYouTubeDataFetcher = (
   const [lastError, setLastError] = useState<string | null>(null);
   const [lastResponse, setLastResponse] = useState<any>(null);
   const [attempts, setAttempts] = useState(0);
+  const [testResults, setTestResults] = useState<Array<{url: string, success: boolean, data: any}>>([]);
 
+  /**
+   * Main function to fetch YouTube data from a URL
+   */
   const fetchYoutubeData = async (useMockData = false) => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] 🚀 Starting YouTube data fetch for:`, youtubeUrl);
@@ -31,7 +38,7 @@ export const useYouTubeDataFetcher = (
       // Add a little delay to make sure logs appear in the correct order
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Simplified request
+      // Make the request to the edge function
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: { 
           url: youtubeUrl.trim(),
@@ -68,18 +75,20 @@ export const useYouTubeDataFetcher = (
         return;
       }
       
-      // Handle ultra-simplified response with just basic info
+      // Handle response with just basic info
       if (data.basicInfo) {
         console.log(`[${timestamp}] ✅ Successfully received basic info:`, data.basicInfo);
         
-        // Create minimal channel data from the basic info
+        // Extract data
         const { videoTitle, channelTitle, channelId, videoId } = data.basicInfo;
         
         // Map to our form structure
         const formattedData: ChannelFormData = {
           video_id: videoId || "",
           channel_title: channelTitle || "",
-          channel_url: channelId ? `https://www.youtube.com/channel/${channelId}` : "",
+          channel_url: channelId && channelId !== "Unknown" && channelId !== "Error" 
+            ? `https://www.youtube.com/channel/${channelId}` 
+            : "",
           description: `Video title: ${videoTitle || "Unknown"}` || "",
           screenshot_url: "",
           total_subscribers: "0",
@@ -90,7 +99,7 @@ export const useYouTubeDataFetcher = (
           channel_type: "creator",
           country: "",
           channel_category: "other",
-          notes: `This is minimal data extracted from video: ${videoTitle || "Unknown"}`,
+          notes: `This is minimal data extracted via ${data.extractionMethod || "unknown method"}. Original URL: ${youtubeUrl}`,
           keywords: []
         };
         
@@ -146,7 +155,9 @@ export const useYouTubeDataFetcher = (
     }
   };
   
-  // Simple test function to verify edge function is working
+  /**
+   * Test function to ping the edge function
+   */
   const testEdgeFunction = async () => {
     try {
       setLoading(true);
@@ -169,7 +180,7 @@ export const useYouTubeDataFetcher = (
         toast.success("Edge function is working!");
       }
     } catch (error) {
-      const timestamp = new Date().toISOString(); // Fix the missing timestamp variable
+      const timestamp = new Date().toISOString();
       console.error(`[${timestamp}] ❌ Unexpected error testing edge function:`, error);
       setLastError(error instanceof Error ? error.message : 'Unknown error');
       toast.error(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -178,12 +189,115 @@ export const useYouTubeDataFetcher = (
     }
   };
   
-  // Expose debug information and test function
+  /**
+   * Run a comprehensive test suite on multiple URL formats
+   */
+  const runTestSuite = async () => {
+    setLoading(true);
+    setTestResults([]);
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] 🧪 Running comprehensive test suite...`);
+    
+    // Define test URLs
+    const testUrls = [
+      // Channel ID format
+      "https://www.youtube.com/channel/UCttFk8-Nysnyw59aNlWOWzw", // 7-Second Riddles
+      "https://youtube.com/channel/UC-lHJZR3Gqxm24_Vd_AJ5Yw", // PewDiePie
+      
+      // Handle format
+      "https://www.youtube.com/@7SecondRiddles",
+      "@MrBeast",
+      
+      // Custom channel format
+      "https://www.youtube.com/c/MarkRober",
+      "https://youtube.com/c/veritasium",
+      
+      // User channel format
+      "https://www.youtube.com/user/nigahiga",
+      
+      // Video format
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // Rick Astley
+      "https://youtu.be/jNQXAC9IVRw", // First YouTube video
+      
+      // Short URLs
+      "youtu.be/dQw4w9WgXcQ",
+      
+      // Invalid/unusual formats
+      "https://www.youtube.com",
+      "rickastley"
+    ];
+    
+    // Test results
+    const results = [];
+    
+    // Test each URL
+    for (const url of testUrls) {
+      try {
+        console.log(`[${timestamp}] 🧪 Testing URL: ${url}`);
+        
+        const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+          body: { 
+            url: url.trim(),
+            timestamp,
+            test: true
+          }
+        });
+        
+        if (error) {
+          console.error(`[${timestamp}] ❌ Test failed for URL ${url}:`, error);
+          results.push({
+            url,
+            success: false,
+            data: { error: error.message }
+          });
+        } else if (data && data.basicInfo) {
+          console.log(`[${timestamp}] ✅ Test passed for URL ${url}:`, data.basicInfo);
+          results.push({
+            url,
+            success: true,
+            data
+          });
+        } else {
+          console.error(`[${timestamp}] ❌ Unexpected response format for URL ${url}:`, data);
+          results.push({
+            url,
+            success: false,
+            data: { error: "Unexpected response format", response: data }
+          });
+        }
+        
+        // Add a delay between requests to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+      } catch (error) {
+        console.error(`[${timestamp}] ❌ Error testing URL ${url}:`, error);
+        results.push({
+          url,
+          success: false,
+          data: { error: error instanceof Error ? error.message : "Unknown error" }
+        });
+      }
+    }
+    
+    console.log(`[${timestamp}] 🧪 Test suite complete. Results:`, results);
+    setTestResults(results);
+    setLoading(false);
+    
+    // Count successful tests
+    const successCount = results.filter(r => r.success).length;
+    toast.info(`Test suite complete: ${successCount}/${testUrls.length} tests passed`);
+    
+    return results;
+  };
+  
+  // Expose debug information and test functions
   const debugInfo = {
     lastError,
     lastResponse,
     attempts,
-    testEdgeFunction
+    testEdgeFunction,
+    runTestSuite,
+    testResults
   };
   
   return { fetchYoutubeData, debugInfo };

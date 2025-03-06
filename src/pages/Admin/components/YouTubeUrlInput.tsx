@@ -1,8 +1,9 @@
+
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FormSectionWrapper from "./form-sections/FormSectionWrapper";
-import { AlertCircle, Bug, Info, Youtube, Zap } from "lucide-react";
+import { AlertCircle, Bug, Info, Youtube, Zap, TestTube, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -15,6 +16,8 @@ interface YouTubeUrlInputProps {
     lastError: string | null;
     lastResponse: any;
     testEdgeFunction?: () => Promise<void>;
+    runTestSuite?: () => Promise<any>;
+    testResults?: Array<{url: string, success: boolean, data: any}>;
   };
 }
 
@@ -31,6 +34,7 @@ const YouTubeUrlInput = ({
   const [showAdvancedDebug, setShowAdvancedDebug] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
   const [testLoading, setTestLoading] = useState(false);
+  const [showTestResults, setShowTestResults] = useState(false);
 
   const validateUrl = (url: string) => {
     const timestamp = new Date().toISOString();
@@ -43,9 +47,11 @@ const YouTubeUrlInput = ({
       return false;
     }
     
+    // We're now supporting a wider range of URL formats, so our validation is more permissive
     const youtubePatterns = [
       /youtube\.com\/channel\/([^\/\?]+)/,     // Channel URL
       /youtube\.com\/c\/([^\/\?]+)/,           // Custom URL
+      /youtube\.com\/user\/([^\/\?]+)/,        // User URL
       /youtube\.com\/@([^\/\?]+)/,             // Handle URL
       /@([^\/\?\s]+)/,                         // Just the handle
       /youtube\.com\/watch\?v=([^&]+)/,        // Video URL
@@ -55,10 +61,12 @@ const YouTubeUrlInput = ({
     const isYoutubeUrl = youtubePatterns.some(pattern => pattern.test(url));
     
     if (!isYoutubeUrl) {
-      setIsValid(false);
-      setValidationMessage("Enter a valid YouTube URL or handle");
-      console.log(`[${timestamp}] ❌ Not a valid YouTube URL format: "${url}"`);
-      return false;
+      // We're allowing any URL, but showing a warning for non-YouTube URLs
+      console.log(`[${timestamp}] ⚠️ URL doesn't match any YouTube pattern: "${url}"`);
+      // But we'll still accept it since our backend can try to make sense of it
+      setIsValid(true);
+      setValidationMessage("Not a standard YouTube URL format, but we'll try to extract info.");
+      return true;
     }
     
     setIsValid(true);
@@ -211,6 +219,26 @@ const YouTubeUrlInput = ({
     }
   };
 
+  const runTestSuite = async () => {
+    if (!debugInfo?.runTestSuite) {
+      toast.error("Test suite function not available");
+      return;
+    }
+    
+    setTestLoading(true);
+    toast.info("Running comprehensive test suite...");
+    
+    try {
+      await debugInfo.runTestSuite();
+      setShowTestResults(true);
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] ❌ Error running test suite:`, error);
+      toast.error(`Test suite error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   return (
     <FormSectionWrapper 
       title="YouTube URL" 
@@ -238,9 +266,9 @@ const YouTubeUrlInput = ({
             </Button>
           </div>
           
-          {!isValid && (
-            <div className="text-red-500 text-sm flex items-center gap-1">
-              <AlertCircle className="h-4 w-4" />
+          {validationMessage && (
+            <div className={`text-sm flex items-center gap-1 ${!isValid ? 'text-red-500' : 'text-amber-500'}`}>
+              {!isValid ? <AlertCircle className="h-4 w-4" /> : <Info className="h-4 w-4" />}
               <span>{validationMessage}</span>
             </div>
           )}
@@ -284,19 +312,19 @@ const YouTubeUrlInput = ({
                 className="text-xs flex items-center gap-1"
               >
                 <Zap className="h-3 w-3" />
-                Ping Function
+                Ping
               </Button>
               
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={testWithMockData}
-                disabled={testLoading || !youtubeUrl}
+                onClick={runTestSuite}
+                disabled={testLoading || !debugInfo?.runTestSuite}
                 className="text-xs flex items-center gap-1"
               >
-                <Bug className="h-3 w-3" />
-                Test with Mock Data
+                <TestTube className="h-3 w-3" />
+                Run Test Suite
               </Button>
             </div>
           </div>
@@ -310,6 +338,58 @@ const YouTubeUrlInput = ({
             </div>
           )}
           
+          {/* Test Suite Results */}
+          {showTestResults && debugInfo?.testResults && debugInfo.testResults.length > 0 && (
+            <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium">Test Suite Results</h3>
+                <span className="text-xs bg-blue-100 text-blue-800 py-1 px-2 rounded-full">
+                  {debugInfo.testResults.filter(r => r.success).length}/{debugInfo.testResults.length} Passed
+                </span>
+              </div>
+              
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {debugInfo.testResults.map((result, index) => (
+                  <div 
+                    key={index} 
+                    className={`text-xs p-2 rounded-md ${result.success ? 'bg-green-50' : 'bg-red-50'}`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="font-medium flex items-center gap-1">
+                        {result.success ? (
+                          <Check size={12} className="text-green-600" />
+                        ) : (
+                          <X size={12} className="text-red-600" />
+                        )}
+                        <span className="truncate max-w-[200px]">{result.url}</span>
+                      </div>
+                      <button 
+                        onClick={() => setYoutubeUrl(result.url)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        Use
+                      </button>
+                    </div>
+                    
+                    {result.success && result.data?.basicInfo && (
+                      <div className="mt-1 pl-4 text-[10px] text-gray-600">
+                        <div>Title: {result.data.basicInfo.channelTitle || 'N/A'}</div>
+                        <div>ID: {result.data.basicInfo.channelId || 'N/A'}</div>
+                        <div>Method: {result.data.extractionMethod || 'N/A'}</div>
+                      </div>
+                    )}
+                    
+                    {!result.success && (
+                      <div className="mt-1 pl-4 text-[10px] text-red-600">
+                        Error: {result.data?.error || 'Unknown error'}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
           {showDebugInfo && (
             <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700 overflow-auto max-h-48">
               <p>• Current status: {loading ? "Loading..." : "Ready"}</p>
@@ -317,10 +397,11 @@ const YouTubeUrlInput = ({
               <p>• URL valid: {isValid ? "Yes" : "No"}</p>
               <p>• Test URLs - Try these examples:</p>
               <ul className="list-disc ml-5 mt-1">
-                <li>Channel: https://youtube.com/channel/UCnz-ZXXER4jOvDUe3fx2JXg</li>
-                <li>Handle: @techwithtim</li>
+                <li>Channel: https://youtube.com/channel/UCttFk8-Nysnyw59aNlWOWzw</li>
+                <li>Handle: @7SecondRiddles</li>
                 <li>Video: https://www.youtube.com/watch?v=dQw4w9WgXcQ</li>
-                <li>Custom: https://www.youtube.com/c/TechWithTim</li>
+                <li>Custom: https://www.youtube.com/c/MarkRober</li>
+                <li>User: https://www.youtube.com/user/nigahiga</li>
               </ul>
               
               <button 
