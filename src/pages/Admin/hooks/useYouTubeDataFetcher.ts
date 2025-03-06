@@ -20,15 +20,13 @@ export const useYouTubeDataFetcher = (
     setLoading(true);
     
     try {
-      // Log the request being sent to the edge function
       console.log("📡 Sending request to edge function with URL:", youtubeUrl);
       
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: { url: youtubeUrl }
       });
       
-      // Log raw response from edge function
-      console.log("📦 Raw response from edge function:", data, error);
+      console.log("📦 Raw response from edge function:", { data, error });
       
       if (error) {
         console.error('❌ Edge Function error:', error);
@@ -73,7 +71,6 @@ export const useYouTubeDataFetcher = (
       toast.success("YouTube data loaded successfully");
       
     } catch (error) {
-      // Enhanced error logging
       console.error("❌ Error fetching YouTube data:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error("❌ Error details:", errorMessage);

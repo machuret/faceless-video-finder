@@ -20,41 +20,48 @@ const supabase = createClient(
 );
 
 serve(async (req) => {
-  console.log('🚀 Edge Function: fetch-youtube-data invoked');
+  // Initial request logging
+  console.log('🔍 Edge Function: fetch-youtube-data invoked at:', new Date().toISOString());
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling CORS preflight request');
+    console.log('👉 Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Parse request body
-    const requestData = await req.json();
-    const { url } = requestData;
+    // Parse request body with error handling
+    let requestData;
+    try {
+      requestData = await req.json();
+      console.log('📨 Received request data:', JSON.stringify(requestData));
+    } catch (error) {
+      console.error('❌ Failed to parse request body:', error);
+      throw new Error('Invalid request body');
+    }
 
-    console.log(`📌 Received request with URL: ${url}`);
+    const { url } = requestData;
 
     if (!url) {
       console.error('❌ URL is required but was empty');
       throw new Error('URL is required');
     }
 
+    console.log(`🔍 Processing URL: ${url}`);
+
     if (!YOUTUBE_API_KEY) {
       console.error('❌ YouTube API key is not configured in environment variables');
       throw new Error('YouTube API key is not configured');
     }
 
-    console.log(`🔍 Processing URL: ${url}`);
-    
     // Try all methods in sequence until we get data
     let channelData = null;
-    let extractionMethod = "";
+    let extractionMethod = '';
     
     const methods = [
-      { name: "Direct Channel Method", fn: (u: string) => fetchChannelDirectly(u, YOUTUBE_API_KEY) },
-      { name: "Video Method", fn: (u: string) => fetchChannelViaVideo(u, YOUTUBE_API_KEY) },
-      { name: "Search Method", fn: (u: string) => fetchChannelViaSearch(u, YOUTUBE_API_KEY) }
+      { name: 'Direct Channel Method', fn: (u: string) => fetchChannelDirectly(u, YOUTUBE_API_KEY) },
+      { name: 'Video Method', fn: (u: string) => fetchChannelViaVideo(u, YOUTUBE_API_KEY) },
+      { name: 'Search Method', fn: (u: string) => fetchChannelViaSearch(u, YOUTUBE_API_KEY) }
     ];
     
     // Try each method until one succeeds
@@ -72,25 +79,34 @@ serve(async (req) => {
           break;
         }
       } catch (error) {
-        console.log(`❌ ${method.name} failed: ${error.message}, trying next method`);
+        console.log(`❌ ${method.name} failed: ${error.message}`);
+        console.error('Detailed error:', error);
       }
     }
-    
+
     if (!channelData) {
-      console.error('❌ All extraction methods failed. Could not extract channel information.');
+      console.error('❌ All extraction methods failed');
       throw new Error('Could not extract channel information from URL using any method');
     }
-    
-    console.log(`✅ Successfully fetched channel data for "${channelData.title}" using ${extractionMethod}`);
-    console.log(`📊 Channel stats: ${channelData.subscriberCount} subscribers, ${channelData.videoCount} videos`);
+
+    console.log(`✅ Returning channel data for "${channelData.title}" using ${extractionMethod}`);
     
     return new Response(JSON.stringify({ channelData, extractionMethod }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
+
   } catch (error) {
-    console.error('❌ Error in fetch-youtube-data:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('❌ Error in fetch-youtube-data:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+    });
+    
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });
