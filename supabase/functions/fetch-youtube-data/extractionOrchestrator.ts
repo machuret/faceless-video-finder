@@ -1,4 +1,3 @@
-
 import { createSuccessResponse, createErrorResponse } from './httpHelpers.ts';
 import { fetchFromYouTubeAPI } from './apiUtils.ts';
 
@@ -9,6 +8,66 @@ export async function extractChannelData(url: string, YOUTUBE_API_KEY: string, t
   try {
     console.log(`[${timestamp}] 🔍 DEBUG: Starting most basic extraction for URL: ${url}`);
 
+    // Handle URL is a special case
+    if (url.includes('@')) {
+      console.log(`[${timestamp}] 🔍 DEBUG: Detected handle URL: ${url}`);
+      // Extract handle from URL
+      let handle = '';
+      if (url.includes('youtube.com/@')) {
+        // Format: https://www.youtube.com/@username
+        const match = url.match(/youtube\.com\/@([^\/\?]+)/);
+        if (match && match[1]) handle = match[1];
+      } else if (url.startsWith('@')) {
+        // Format: @username
+        handle = url.substring(1);
+      }
+      
+      console.log(`[${timestamp}] 🔍 DEBUG: Extracted handle: ${handle}`);
+      
+      if (handle) {
+        try {
+          // Try to get channel info via search API
+          const searchApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('@' + handle)}&type=channel&maxResults=1&key=${YOUTUBE_API_KEY}`;
+          console.log(`[${timestamp}] 🔍 DEBUG: Searching for channel with handle: @${handle}`);
+          
+          const searchData = await fetchFromYouTubeAPI(searchApiUrl, timestamp);
+          
+          if (searchData.items && searchData.items.length > 0) {
+            const channelId = searchData.items[0].id.channelId;
+            const channelTitle = searchData.items[0].snippet.title;
+            
+            console.log(`[${timestamp}] ✅ DEBUG: Found channel via handle: ${channelId}, ${channelTitle}`);
+            
+            return createSuccessResponse({
+              basicInfo: {
+                videoTitle: "Found via handle search",
+                channelTitle: channelTitle,
+                channelId: channelId,
+                videoId: "N/A"
+              },
+              extractionMethod: "handle_search",
+              url
+            }, timestamp);
+          }
+        } catch (searchError) {
+          console.error(`[${timestamp}] ⚠️ DEBUG: Error searching channel by handle:`, searchError.message);
+          // Continue with basic info if search fails
+        }
+      }
+      
+      // Fallback if we couldn't get channel data via search
+      return createSuccessResponse({
+        basicInfo: {
+          videoTitle: "Handle URL detected",
+          channelTitle: handle || url,
+          channelId: "Unknown",
+          videoId: "Unknown"
+        },
+        extractionMethod: "handle_basic",
+        url
+      }, timestamp);
+    }
+
     // Extract video ID from URL - handle both regular and short URLs
     let videoId = null;
     if (url.includes('watch?v=')) {
@@ -17,26 +76,13 @@ export async function extractChannelData(url: string, YOUTUBE_API_KEY: string, t
     } else if (url.includes('youtu.be/')) {
       const match = url.match(/youtu\.be\/([^?&/]+)/);
       if (match) videoId = match[1];
-    } else if (url.includes('/c/')) {
+    } else if (url.includes('/c/') || url.includes('/channel/')) {
       // This is a channel URL, not a video URL
       console.log(`[${timestamp}] ⚠️ DEBUG: URL is a channel URL, not a video URL: ${url}`);
       return createSuccessResponse({
         basicInfo: {
           videoTitle: "Channel URL detected",
           channelTitle: "Unknown channel",
-          channelId: "Unknown",
-          videoId: "Unknown"
-        },
-        extractionMethod: "simplified",
-        url
-      }, timestamp);
-    } else if (url.includes('@')) {
-      // This is a handle URL, not a video URL
-      console.log(`[${timestamp}] ⚠️ DEBUG: URL is a handle URL, not a video URL: ${url}`);
-      return createSuccessResponse({
-        basicInfo: {
-          videoTitle: "Handle URL detected",
-          channelTitle: url.includes('@') ? url : "Unknown handle",
           channelId: "Unknown",
           videoId: "Unknown"
         },

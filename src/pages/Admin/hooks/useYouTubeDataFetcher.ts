@@ -150,7 +150,7 @@ export const useYouTubeDataFetcher = (
   const testEdgeFunction = async () => {
     try {
       setLoading(true);
-      const timestamp = new Date().toISOString(); // Adding the missing timestamp variable
+      const timestamp = new Date().toISOString();
       console.log(`[${timestamp}] 🧪 Testing edge function with ping...`);
       
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
@@ -169,6 +169,7 @@ export const useYouTubeDataFetcher = (
         toast.success("Edge function is working!");
       }
     } catch (error) {
+      const timestamp = new Date().toISOString(); // Fix the missing timestamp variable
       console.error(`[${timestamp}] ❌ Unexpected error testing edge function:`, error);
       setLastError(error instanceof Error ? error.message : 'Unknown error');
       toast.error(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
