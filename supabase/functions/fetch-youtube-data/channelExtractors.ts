@@ -1,11 +1,11 @@
-
 import { corsHeaders } from '../_shared/cors.ts';
 
 /**
  * Extracts channel data directly from a channel ID, custom URL, or handle
  */
 export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string) {
-  console.log(`🔍 Attempting direct channel fetch for: ${url}`);
+  const timestamp = new Date().toISOString();
+  console.log(`🔍 [${timestamp}] Attempting direct channel fetch for: ${url}`);
   
   // Extract channel ID
   let channelId = null;
@@ -13,7 +13,7 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
   // Method 1: Try /channel/ID format
   const channelMatch = url.match(/youtube\.com\/channel\/(UC[\w-]{21,24})/i);
   if (channelMatch && channelMatch[1]) {
-    console.log(`🔹 Found channel ID in URL: ${channelMatch[1]}`);
+    console.log(`🔹 [${timestamp}] Found channel ID in URL: ${channelMatch[1]}`);
     channelId = channelMatch[1];
   }
   
@@ -22,7 +22,7 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
     const customUrlMatch = url.match(/youtube\.com\/c\/([^\/\?]+)/i);
     if (customUrlMatch && customUrlMatch[1]) {
       const customUrl = customUrlMatch[1];
-      console.log(`🔹 Found custom URL: ${customUrl}, searching for channel ID`);
+      console.log(`🔹 [${timestamp}] Found custom URL: ${customUrl}, searching for channel ID`);
       
       const searchResponse = await fetch(
         `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(customUrl)}&type=channel&key=${YOUTUBE_API_KEY}`,
@@ -31,16 +31,16 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
       
       if (!searchResponse.ok) {
         const errorData = await searchResponse.json();
-        console.error('❌ YouTube API error for custom URL search:', errorData);
+        console.error(`❌ [${timestamp}] YouTube API error for custom URL search:`, errorData);
         throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
       }
       
       const searchData = await searchResponse.json();
-      console.log(`🔍 Search results for custom URL:`, searchData);
+      console.log(`🔍 [${timestamp}] Search results for custom URL:`, searchData);
       
       if (searchData.items && searchData.items.length > 0) {
         channelId = searchData.items[0].id.channelId;
-        console.log(`✅ Resolved custom URL to channel ID: ${channelId}`);
+        console.log(`✅ [${timestamp}] Resolved custom URL to channel ID: ${channelId}`);
       }
     }
   }
@@ -53,7 +53,7 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
       
     if (handleMatch && handleMatch[1]) {
       const handle = handleMatch[1];
-      console.log(`🔹 Found handle: @${handle}, searching for channel ID`);
+      console.log(`🔹 [${timestamp}] Found handle: @${handle}, searching for channel ID`);
       
       // First try direct search with @ prefix
       const searchResponse = await fetch(
@@ -63,27 +63,27 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
       
       if (!searchResponse.ok) {
         const errorData = await searchResponse.json();
-        console.error('❌ YouTube API error for handle search:', errorData);
+        console.error(`❌ [${timestamp}] YouTube API error for handle search:`, errorData);
         throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
       }
       
       const searchData = await searchResponse.json();
-      console.log(`🔍 Search results for handle:`, searchData);
+      console.log(`🔍 [${timestamp}] Search results for handle:`, searchData);
       
       if (searchData.items && searchData.items.length > 0) {
         channelId = searchData.items[0].id.channelId;
-        console.log(`✅ Resolved handle to channel ID: ${channelId}`);
+        console.log(`✅ [${timestamp}] Resolved handle to channel ID: ${channelId}`);
       }
     }
   }
   
   if (!channelId) {
-    console.error('❌ Could not extract channel ID from URL using the direct method');
+    console.error(`❌ [${timestamp}] Could not extract channel ID from URL using the direct method`);
     throw new Error('Could not extract channel ID from URL');
   }
   
   // Fetch channel data
-  console.log(`🔍 Fetching channel data for ID: ${channelId}`);
+  console.log(`🔍 [${timestamp}] Fetching channel data for ID: ${channelId}`);
   const channelResponse = await fetch(
     `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${YOUTUBE_API_KEY}`,
     { headers: { 'Content-Type': 'application/json' } }
@@ -91,15 +91,15 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
   
   if (!channelResponse.ok) {
     const errorData = await channelResponse.json();
-    console.error('❌ YouTube API error for channel data:', errorData);
+    console.error(`❌ [${timestamp}] YouTube API error for channel data:`, errorData);
     throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
   }
   
   const channelData = await channelResponse.json();
-  console.log(`📊 Raw channel data:`, channelData);
+  console.log(`📊 [${timestamp}] Raw channel data:`, channelData);
   
   if (!channelData.items || channelData.items.length === 0) {
-    console.error('❌ Channel not found or invalid channel ID');
+    console.error(`❌ [${timestamp}] Channel not found or invalid channel ID`);
     throw new Error('Channel not found or invalid channel ID');
   }
   
@@ -112,17 +112,18 @@ export async function fetchChannelDirectly(url: string, YOUTUBE_API_KEY: string)
  * Extract channel data via a video URL
  */
 export async function fetchChannelViaVideo(url: string, YOUTUBE_API_KEY: string) {
-  console.log(`🔍 Attempting to fetch channel via video URL: ${url}`);
+  const timestamp = new Date().toISOString();
+  console.log(`🔍 [${timestamp}] Attempting to fetch channel via video URL: ${url}`);
   
   // Extract video ID
   const videoMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s?\/#]+)/i);
   if (!videoMatch || !videoMatch[1]) {
-    console.error('❌ Could not extract video ID');
+    console.error(`❌ [${timestamp}] Could not extract video ID`);
     throw new Error('Could not extract video ID');
   }
   
   const videoId = videoMatch[1];
-  console.log(`🔹 Extracted video ID: ${videoId}`);
+  console.log(`🔹 [${timestamp}] Extracted video ID: ${videoId}`);
   
   // Get channel ID from video
   const videoResponse = await fetch(
@@ -132,20 +133,20 @@ export async function fetchChannelViaVideo(url: string, YOUTUBE_API_KEY: string)
   
   if (!videoResponse.ok) {
     const errorData = await videoResponse.json();
-    console.error('❌ YouTube API error for video data:', errorData);
+    console.error(`❌ [${timestamp}] YouTube API error for video data:`, errorData);
     throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
   }
   
   const videoData = await videoResponse.json();
-  console.log(`📊 Video data:`, videoData);
+  console.log(`📊 [${timestamp}] Video data:`, videoData);
   
   if (!videoData.items || videoData.items.length === 0) {
-    console.error('❌ Video not found or invalid video ID');
+    console.error(`❌ [${timestamp}] Video not found or invalid video ID`);
     throw new Error('Video not found or invalid video ID');
   }
   
   const channelId = videoData.items[0].snippet.channelId;
-  console.log(`🔹 Found channel ID from video: ${channelId}`);
+  console.log(`🔹 [${timestamp}] Found channel ID from video: ${channelId}`);
   
   // Get channel details
   const channelResponse = await fetch(
@@ -155,15 +156,15 @@ export async function fetchChannelViaVideo(url: string, YOUTUBE_API_KEY: string)
   
   if (!channelResponse.ok) {
     const errorData = await channelResponse.json();
-    console.error('❌ YouTube API error for channel data via video:', errorData);
+    console.error(`❌ [${timestamp}] YouTube API error for channel data via video:`, errorData);
     throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
   }
   
   const channelData = await channelResponse.json();
-  console.log(`📊 Channel data via video:`, channelData);
+  console.log(`📊 [${timestamp}] Channel data via video:`, channelData);
   
   if (!channelData.items || channelData.items.length === 0) {
-    console.error('❌ Channel not found using video method');
+    console.error(`❌ [${timestamp}] Channel not found using video method`);
     throw new Error('Channel not found using video method');
   }
   
@@ -176,7 +177,8 @@ export async function fetchChannelViaVideo(url: string, YOUTUBE_API_KEY: string)
  * Search for channel as last resort
  */
 export async function fetchChannelViaSearch(url: string, YOUTUBE_API_KEY: string) {
-  console.log(`🔍 Attempting to find channel via search: ${url}`);
+  const timestamp = new Date().toISOString();
+  console.log(`🔍 [${timestamp}] Attempting to find channel via search: ${url}`);
   
   // Clean the URL for search
   let searchTerm = url;
@@ -190,7 +192,7 @@ export async function fetchChannelViaSearch(url: string, YOUTUBE_API_KEY: string
     searchTerm = url.substring(1); // Remove the @ symbol
   }
   
-  console.log(`🔍 Searching for channel with term: "${searchTerm}"`);
+  console.log(`🔍 [${timestamp}] Searching for channel with term: "${searchTerm}"`);
   
   // Search YouTube API
   const searchResponse = await fetch(
@@ -200,21 +202,21 @@ export async function fetchChannelViaSearch(url: string, YOUTUBE_API_KEY: string
   
   if (!searchResponse.ok) {
     const errorData = await searchResponse.json();
-    console.error('❌ YouTube API error for search:', errorData);
+    console.error(`❌ [${timestamp}] YouTube API error for search:`, errorData);
     throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
   }
   
   const searchData = await searchResponse.json();
-  console.log(`📊 Search results:`, searchData);
+  console.log(`📊 [${timestamp}] Search results:`, searchData);
   
   if (!searchData.items || searchData.items.length === 0) {
-    console.error('❌ No channels found matching the search term');
+    console.error(`❌ [${timestamp}] No channels found matching the search term`);
     throw new Error('No channels found matching the search term');
   }
   
   // Take the first result (most relevant)
   const channelId = searchData.items[0].id.channelId;
-  console.log(`🔹 Found channel ID via search: ${channelId}`);
+  console.log(`🔹 [${timestamp}] Found channel ID via search: ${channelId}`);
   
   // Get full channel details
   const channelResponse = await fetch(
@@ -224,15 +226,15 @@ export async function fetchChannelViaSearch(url: string, YOUTUBE_API_KEY: string
   
   if (!channelResponse.ok) {
     const errorData = await channelResponse.json();
-    console.error('❌ YouTube API error for channel data from search:', errorData);
+    console.error(`❌ [${timestamp}] YouTube API error for channel data from search:`, errorData);
     throw new Error(`YouTube API error: ${errorData?.error?.message || 'Unknown API error'}`);
   }
   
   const channelData = await channelResponse.json();
-  console.log(`📊 Channel data from search:`, channelData);
+  console.log(`📊 [${timestamp}] Channel data from search:`, channelData);
   
   if (!channelData.items || channelData.items.length === 0) {
-    console.error('❌ Could not fetch channel details after finding via search');
+    console.error(`❌ [${timestamp}] Could not fetch channel details after finding via search`);
     throw new Error('Could not fetch channel details after finding via search');
   }
   

@@ -22,11 +22,13 @@ export const useYouTubeDataFetcher = (
     try {
       console.log("📡 Sending request to edge function with URL:", youtubeUrl);
       
-      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+      const response = await supabase.functions.invoke('fetch-youtube-data', {
         body: { url: youtubeUrl }
       });
       
-      console.log("📦 Raw response from edge function:", { data, error });
+      console.log("📦 Raw response from edge function:", response);
+      
+      const { data, error } = response;
       
       if (error) {
         console.error('❌ Edge Function error:', error);

@@ -3,26 +3,32 @@
  * Format channel data consistently
  */
 export function formatChannelData(channel: any, channelId: string) {
-  console.log(`📋 Formatting channel data for: ${channel.snippet.title}`);
+  const timestamp = new Date().toISOString();
+  console.log(`📋 [${timestamp}] Formatting channel data for: ${channel.snippet.title}`);
   
-  // Build a structured object with channel data
-  const formattedData = {
-    title: channel.snippet.title,
-    description: channel.snippet.description,
-    thumbnailUrl: channel.snippet.thumbnails?.high?.url || channel.snippet.thumbnails?.default?.url,
-    subscriberCount: parseInt(channel.statistics.subscriberCount || '0', 10),
-    viewCount: parseInt(channel.statistics.viewCount || '0', 10),
-    videoCount: parseInt(channel.statistics.videoCount || '0', 10),
-    publishedAt: channel.snippet.publishedAt,
-    country: channel.snippet.country || null,
-    channelId: channelId,
-    url: `https://www.youtube.com/channel/${channelId}`,
-    channelType: guessChannelType(channel.snippet.title, channel.snippet.description),
-    keywords: extractKeywords(channel.snippet.description || '')
-  };
-  
-  console.log(`✅ Formatted channel data:`, formattedData);
-  return formattedData;
+  try {
+    // Build a structured object with channel data
+    const formattedData = {
+      title: channel.snippet.title,
+      description: channel.snippet.description,
+      thumbnailUrl: channel.snippet.thumbnails?.high?.url || channel.snippet.thumbnails?.default?.url,
+      subscriberCount: parseInt(channel.statistics.subscriberCount || '0', 10),
+      viewCount: parseInt(channel.statistics.viewCount || '0', 10),
+      videoCount: parseInt(channel.statistics.videoCount || '0', 10),
+      publishedAt: channel.snippet.publishedAt,
+      country: channel.snippet.country || null,
+      channelId: channelId,
+      url: `https://www.youtube.com/channel/${channelId}`,
+      channelType: guessChannelType(channel.snippet.title, channel.snippet.description),
+      keywords: extractKeywords(channel.snippet.description || '')
+    };
+    
+    console.log(`✅ [${timestamp}] Formatted channel data:`, JSON.stringify(formattedData, null, 2));
+    return formattedData;
+  } catch (error) {
+    console.error(`❌ [${timestamp}] Error formatting channel data:`, error);
+    throw new Error(`Error formatting channel data: ${error.message}`);
+  }
 }
 
 /**
