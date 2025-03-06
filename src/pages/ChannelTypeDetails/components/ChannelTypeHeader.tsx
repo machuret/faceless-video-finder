@@ -21,7 +21,7 @@ const ChannelTypeHeader = ({ typeInfo }: ChannelTypeHeaderProps) => {
       <Button 
         variant="outline" 
         className="mb-4 font-montserrat"
-        onClick={() => navigate(-1)}
+        onClick={() => navigate("/channel-types")}
       >
         <ArrowLeft className="mr-2 h-4 w-4" /> Back
       </Button>

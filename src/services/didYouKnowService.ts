@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DidYouKnowFact {
@@ -40,24 +39,27 @@ export const fetchActiveFacts = async (): Promise<DidYouKnowFact[]> => {
 };
 
 export const fetchRandomFact = async (): Promise<DidYouKnowFact | null> => {
-  const { data, error } = await supabase
-    .from("did_you_know_facts")
-    .select("*")
-    .eq("is_active", true)
-    .order("RANDOM()")
-    .limit(1)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("did_you_know_facts")
+      .select("*")
+      .eq("is_active", true);
 
-  if (error) {
-    if (error.code === "PGRST116") {
-      // No facts found
+    if (error) {
+      console.error("Error fetching facts:", error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
       return null;
     }
-    console.error("Error fetching random fact:", error);
+
+    const randomIndex = Math.floor(Math.random() * data.length);
+    return data[randomIndex];
+  } catch (error) {
+    console.error("Error in fetchRandomFact:", error);
     throw error;
   }
-
-  return data;
 };
 
 export const createFact = async (fact: Omit<DidYouKnowFact, "id" | "created_at" | "updated_at">): Promise<DidYouKnowFact> => {
