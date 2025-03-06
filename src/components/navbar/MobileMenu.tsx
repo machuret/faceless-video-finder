@@ -1,7 +1,7 @@
 
 import React from "react";
 import NavItem from "./NavItem";
-import { navigationItems, isIdeasActive } from "./navConfig";
+import { navigationItems, isIdeasActive, isAdminActive } from "./navConfig";
 import { useLocation } from "react-router-dom";
 
 interface MobileMenuProps {
@@ -22,7 +22,11 @@ const MobileMenu = ({ isOpen, isActive, onItemClick }: MobileMenuProps) => {
           <NavItem 
             key={item.label}
             to={item.path} 
-            isActive={item.label === "Ideas" ? isIdeasActive(location.pathname) : isActive(item.path)} 
+            isActive={
+              item.label === "Ideas" ? isIdeasActive(location.pathname) : 
+              item.label === "Admin" ? isAdminActive(location.pathname) :
+              isActive(item.path)
+            } 
             icon={React.cloneElement(item.icon as React.ReactElement, { className: "h-5 w-5 mr-2" })}
             label={item.label} 
             onClick={onItemClick}

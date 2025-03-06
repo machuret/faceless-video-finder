@@ -1,6 +1,6 @@
 
 import NavItem from "./NavItem";
-import { navigationItems, isIdeasActive } from "./navConfig";
+import { navigationItems, isIdeasActive, isAdminActive } from "./navConfig";
 
 interface DesktopNavProps {
   isActive: (path: string) => boolean;
@@ -13,7 +13,11 @@ const DesktopNav = ({ isActive }: DesktopNavProps) => {
         <NavItem 
           key={item.label}
           to={item.path} 
-          isActive={item.label === "Ideas" ? isIdeasActive(location.pathname) : isActive(item.path)} 
+          isActive={
+            item.label === "Ideas" ? isIdeasActive(location.pathname) : 
+            item.label === "Admin" ? isAdminActive(location.pathname) :
+            isActive(item.path)
+          } 
           icon={item.icon} 
           label={item.label} 
         />
