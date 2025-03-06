@@ -22,4 +22,4 @@ export interface ChannelDetailsState {
 
 // Re-export type from main types
 import { Channel } from "@/types/youtube";
-export { Channel };
+export type { Channel };
