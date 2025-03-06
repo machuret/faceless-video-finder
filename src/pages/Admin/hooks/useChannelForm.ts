@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useChannelFormState } from "./useChannelFormState";
 import { useChannelFormHandlers } from "./useChannelFormHandlers";
-import { useYouTubeDataFetcher } from "./useYouTubeDataFetcher";
+import { useYouTubeDataFetcher } from "./youtube-data-fetcher";
 import { useChannelDataFetcher } from "./useChannelDataFetcher";
 import { useChannelFormSubmission } from "./useChannelFormSubmission";
 
