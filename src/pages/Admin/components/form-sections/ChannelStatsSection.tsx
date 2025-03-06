@@ -24,9 +24,15 @@ const ChannelStatsSection = ({
     if (stats.total_subscribers) handleFieldChange('total_subscribers', stats.total_subscribers);
     if (stats.total_views) handleFieldChange('total_views', stats.total_views);
     if (stats.video_count) handleFieldChange('video_count', stats.video_count);
+    
     // If we received a channel title and the current one is empty or generic, update it
     if (stats.channel_title && (!formData.channel_title || formData.channel_title === "Channel")) {
       handleFieldChange('channel_title', stats.channel_title);
+    }
+    
+    // If we received a description and it's not empty, update it
+    if (stats.description && stats.description.trim() !== "") {
+      handleFieldChange('description', stats.description);
     }
   };
 

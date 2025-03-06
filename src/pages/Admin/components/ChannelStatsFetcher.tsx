@@ -22,10 +22,10 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
     try {
       setLoading(true);
-      toast.info("Fetching latest channel statistics...");
+      toast.info("Fetching latest channel information...");
       
       const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] 🔄 Requesting channel stats for: ${channelUrl}`);
+      console.log(`[${timestamp}] 🔄 Requesting channel data for: ${channelUrl}`);
       
       // Extract channel ID if it's in a URL format
       let channelId = channelUrl;
@@ -47,13 +47,14 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         body: {
           channelId: isChannelId ? channelUrl : undefined,
           url: channelUrl.trim(),
+          includeDescription: true,
           timestamp
         }
       });
       
       if (error) {
         console.error(`[${timestamp}] ❌ Error fetching stats:`, error);
-        toast.error(`Failed to fetch statistics: ${error.message}`);
+        toast.error(`Failed to fetch information: ${error.message}`);
         return;
       }
       
@@ -69,7 +70,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         return;
       }
       
-      console.log(`[${timestamp}] ✅ Statistics received:`, data);
+      console.log(`[${timestamp}] ✅ Channel information received:`, data);
       
       // Format the received stats to match our form data structure
       const formattedStats: Partial<ChannelFormData> = {
@@ -81,10 +82,15 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       // If we have channel info and no channel title in the form, set it
       if (data.channelInfo && data.channelInfo.title) {
         formattedStats.channel_title = data.channelInfo.title;
-        toast.success(`Found channel: ${data.channelInfo.title}`);
-      } else {
-        toast.success("Channel statistics fetched successfully!");
       }
+
+      // If we have a description, set it
+      if (data.channelInfo && data.channelInfo.description) {
+        formattedStats.description = data.channelInfo.description;
+        toast.success("Channel description fetched successfully!");
+      }
+      
+      toast.success("Channel information fetched successfully!");
       
       // Pass the stats up to the parent component
       onStatsReceived(formattedStats);
@@ -107,7 +113,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       className="flex items-center gap-1"
     >
       <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-      {loading ? "Fetching..." : "Refresh Channel Stats"}
+      {loading ? "Fetching..." : "Refresh Channel Info"}
     </Button>
   );
 };

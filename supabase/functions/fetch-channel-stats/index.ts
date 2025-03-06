@@ -21,11 +21,13 @@ const createResponse = (body: any, status = 200) => {
 }
 
 // Improved function to fetch channel stats with better error handling
-async function fetchChannelStats(channelId: string, apiKey: string) {
+async function fetchChannelStats(channelId: string, apiKey: string, includeDescription = false) {
   console.log(`Fetching stats for channel ID: ${channelId}`);
   
   try {
-    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}&key=${apiKey}`;
+    // When includeDescription is true, we want to get the channel's "about" information
+    const parts = includeDescription ? 'statistics,snippet,brandingSettings' : 'statistics,snippet';
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=${parts}&id=${channelId}&key=${apiKey}`;
     console.log(`Making API request to: ${url.replace(apiKey, "API_KEY_REDACTED")}`);
     
     const response = await fetch(url);
@@ -45,8 +47,18 @@ async function fetchChannelStats(channelId: string, apiKey: string) {
     const channelStats = channel.statistics;
     const channelInfo = channel.snippet;
     
+    // Get the channel description from brandingSettings if available (more detailed than snippet)
+    let description = channelInfo.description;
+    if (includeDescription && channel.brandingSettings && channel.brandingSettings.channel) {
+      description = channel.brandingSettings.channel.description || description;
+    }
+    
     console.log("Stats received:", channelStats);
     console.log("Channel info:", channelInfo.title);
+    
+    if (includeDescription) {
+      console.log("Description length:", description ? description.length : 0);
+    }
     
     return {
       subscriberCount: parseInt(channelStats.subscriberCount || '0'),
@@ -54,7 +66,7 @@ async function fetchChannelStats(channelId: string, apiKey: string) {
       videoCount: parseInt(channelStats.videoCount || '0'),
       channelInfo: {
         title: channelInfo.title,
-        description: channelInfo.description,
+        description: description,
         thumbnailUrl: channelInfo.thumbnails?.default?.url
       }
     };
@@ -154,7 +166,7 @@ serve(async (req) => {
     const requestData = await req.json();
     console.log("Request data:", requestData);
     
-    const { channelId, url, timestamp } = requestData;
+    const { channelId, url, timestamp, includeDescription = false } = requestData;
     
     if (!channelId && !url) {
       return createResponse({ error: "Either channelId or url is required" }, 400);
@@ -176,7 +188,7 @@ serve(async (req) => {
     
     // Fetch statistics using the resolved channel ID
     try {
-      const stats = await fetchChannelStats(resolvedChannelId, YOUTUBE_API_KEY);
+      const stats = await fetchChannelStats(resolvedChannelId, YOUTUBE_API_KEY, includeDescription);
       return createResponse(stats);
     } catch (error) {
       console.error("Error fetching channel stats:", error);
