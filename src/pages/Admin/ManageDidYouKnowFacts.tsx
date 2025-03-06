@@ -12,9 +12,13 @@ const ManageDidYouKnowFacts = () => {
     isEditing,
     currentFact,
     pagination,
+    searchQuery,
+    filteredCount,
+    totalCount,
     setDialogOpen,
     handleOpenDialog,
     handleSubmit,
+    handleSearch,
     loadFacts
   } = useFactsManagement();
 
@@ -32,6 +36,10 @@ const ManageDidYouKnowFacts = () => {
           onAddNew={() => handleOpenDialog()}
           onEdit={handleOpenDialog}
           onRefresh={loadFacts}
+          onSearch={handleSearch}
+          searchQuery={searchQuery}
+          filteredCount={filteredCount}
+          totalCount={totalCount}
           pagination={pagination}
         />
       </div>

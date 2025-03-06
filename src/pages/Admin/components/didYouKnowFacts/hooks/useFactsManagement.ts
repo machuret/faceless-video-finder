@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { 
   fetchAllFacts, 
@@ -19,6 +19,9 @@ export const useFactsManagement = () => {
     is_active: true
   });
   
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
@@ -26,6 +29,11 @@ export const useFactsManagement = () => {
   useEffect(() => {
     loadFacts();
   }, []);
+
+  // Reset to first page when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const loadFacts = async () => {
     try {
@@ -86,24 +94,43 @@ export const useFactsManagement = () => {
     }
   };
 
+  // Filter facts based on search query
+  const filteredFacts = useMemo(() => {
+    if (!searchQuery.trim()) return facts;
+    
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    return facts.filter(fact => 
+      fact.title.toLowerCase().includes(lowerCaseQuery) || 
+      fact.content.toLowerCase().includes(lowerCaseQuery)
+    );
+  }, [facts, searchQuery]);
+
   // Calculate pagination values
   const indexOfLastFact = currentPage * itemsPerPage;
   const indexOfFirstFact = indexOfLastFact - itemsPerPage;
-  const currentFacts = facts.slice(indexOfFirstFact, indexOfLastFact);
-  const totalPages = Math.ceil(facts.length / itemsPerPage);
+  const currentFacts = filteredFacts.slice(indexOfFirstFact, indexOfLastFact);
+  const totalPages = Math.ceil(filteredFacts.length / itemsPerPage);
 
   // Page change handler
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
   };
 
+  // Search handler
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
   return {
     facts: currentFacts,
     allFacts: facts,
+    filteredCount: filteredFacts.length,
+    totalCount: facts.length,
     loading,
     dialogOpen,
     isEditing,
     currentFact,
+    searchQuery,
     pagination: {
       currentPage,
       totalPages,
@@ -113,6 +140,7 @@ export const useFactsManagement = () => {
     setDialogOpen,
     handleOpenDialog,
     handleSubmit,
+    handleSearch,
     loadFacts
   };
 };

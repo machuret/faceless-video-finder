@@ -1,10 +1,10 @@
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { DidYouKnowFact } from "@/services/didYouKnowService";
 import FactsTable from "./FactsTable";
+import SearchBar from "./SearchBar";
 
 interface FactsContainerProps {
   facts: DidYouKnowFact[];
@@ -12,6 +12,10 @@ interface FactsContainerProps {
   onAddNew: () => void;
   onEdit: (fact: DidYouKnowFact) => void;
   onRefresh: () => void;
+  onSearch: (query: string) => void;
+  searchQuery: string;
+  filteredCount: number;
+  totalCount: number;
   pagination: {
     currentPage: number;
     totalPages: number;
@@ -26,6 +30,10 @@ const FactsContainer = ({
   onAddNew, 
   onEdit,
   onRefresh,
+  onSearch,
+  searchQuery,
+  filteredCount,
+  totalCount,
   pagination
 }: FactsContainerProps) => {
   return (
@@ -37,6 +45,21 @@ const FactsContainer = ({
             <Plus size={16} />
             Add New Fact
           </Button>
+        </div>
+        
+        <div className="mb-6">
+          <SearchBar 
+            onSearch={onSearch}
+            initialQuery={searchQuery}
+            placeholder="Search by title or content..."
+          />
+          <div className="mt-2 text-sm text-gray-500">
+            {searchQuery ? (
+              <span>Found {filteredCount} fact{filteredCount !== 1 ? 's' : ''} out of {totalCount}</span>
+            ) : (
+              <span>Total: {totalCount} fact{totalCount !== 1 ? 's' : ''}</span>
+            )}
+          </div>
         </div>
         
         <FactsTable 
