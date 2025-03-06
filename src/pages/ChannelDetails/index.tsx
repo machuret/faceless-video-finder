@@ -69,11 +69,11 @@ const ChannelDetails = () => {
       <main className="container mx-auto px-4 py-8">
         <ChannelHeader channel={channel} />
         
-        {/* Top Performing Videos Section - Moved above the grid */}
+        {/* Top Performing Videos Section with actual videos */}
         <div className="mt-8">
           <TopPerformingVideos 
-            mostViewed={null} 
-            mostEngaging={null} 
+            mostViewed={mostViewedVideo} 
+            mostEngaging={mostEngagingVideo} 
             loading={topVideosLoading}
           />
         </div>
