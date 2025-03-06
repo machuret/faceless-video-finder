@@ -91,11 +91,11 @@ const ChannelDetails = () => {
           
           {/* Right Column */}
           <div className="space-y-8">
-            {/* Did You Know Fact Section - only included once */}
-            <DidYouKnowFactComponent />
-            
             {/* Channel Type Info */}
             <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
+            
+            {/* Did You Know Fact Section - moved to under Channel Type Info */}
+            <DidYouKnowFactComponent />
             
             {/* Add Related Channels section */}
             {channelId && <RelatedChannels currentChannelId={channelId} />}
