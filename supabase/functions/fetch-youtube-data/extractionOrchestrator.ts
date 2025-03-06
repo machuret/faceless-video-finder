@@ -1,3 +1,4 @@
+
 import { createSuccessResponse, createErrorResponse } from './httpHelpers.ts';
 import { fetchFromYouTubeAPI } from './apiUtils.ts';
 
@@ -68,6 +69,102 @@ export async function extractChannelData(url: string, YOUTUBE_API_KEY: string, t
       }, timestamp);
     }
 
+    // Extract channel ID from URL - improved handling for channel URLs
+    if (url.includes('/channel/')) {
+      console.log(`[${timestamp}] 🔍 DEBUG: Detected channel URL with ID: ${url}`);
+      const match = url.match(/channel\/([^\/\?]+)/);
+      let channelId = match && match[1] ? match[1] : "Unknown";
+      
+      try {
+        // Get channel info directly using the channel ID
+        if (channelId && channelId !== "Unknown") {
+          const channelApiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channelId}&key=${YOUTUBE_API_KEY}`;
+          console.log(`[${timestamp}] 🔍 DEBUG: Fetching channel with ID: ${channelId}`);
+          
+          const channelData = await fetchFromYouTubeAPI(channelApiUrl, timestamp);
+          
+          if (channelData.items && channelData.items.length > 0) {
+            const channelTitle = channelData.items[0].snippet.title;
+            console.log(`[${timestamp}] ✅ DEBUG: Found channel: ${channelId}, ${channelTitle}`);
+            
+            return createSuccessResponse({
+              basicInfo: {
+                videoTitle: "Channel Page",
+                channelTitle: channelTitle,
+                channelId: channelId,
+                videoId: "N/A"
+              },
+              extractionMethod: "channel_id_direct",
+              url
+            }, timestamp);
+          }
+        }
+      } catch (channelError) {
+        console.error(`[${timestamp}] ⚠️ DEBUG: Error fetching channel info:`, channelError.message);
+        // Fall through to basic info if channel fetch fails
+      }
+      
+      // Fallback for channel URLs if API request failed
+      return createSuccessResponse({
+        basicInfo: {
+          videoTitle: "Channel URL detected",
+          channelTitle: `Channel ${channelId}`,
+          channelId: channelId,
+          videoId: "N/A"
+        },
+        extractionMethod: "channel_basic",
+        url
+      }, timestamp);
+    }
+    
+    // Handle custom channel URL format
+    if (url.includes('/c/')) {
+      console.log(`[${timestamp}] 🔍 DEBUG: Detected custom channel URL: ${url}`);
+      const match = url.match(/\/c\/([^\/\?]+)/);
+      const customName = match && match[1] ? match[1] : "Unknown";
+      
+      try {
+        // Try to find the channel ID via search
+        const searchApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(customName)}&type=channel&maxResults=1&key=${YOUTUBE_API_KEY}`;
+        console.log(`[${timestamp}] 🔍 DEBUG: Searching for custom channel: ${customName}`);
+        
+        const searchData = await fetchFromYouTubeAPI(searchApiUrl, timestamp);
+        
+        if (searchData.items && searchData.items.length > 0) {
+          const channelId = searchData.items[0].id.channelId;
+          const channelTitle = searchData.items[0].snippet.title;
+          
+          console.log(`[${timestamp}] ✅ DEBUG: Found channel via custom URL search: ${channelId}, ${channelTitle}`);
+          
+          return createSuccessResponse({
+            basicInfo: {
+              videoTitle: "Channel Page",
+              channelTitle: channelTitle,
+              channelId: channelId,
+              videoId: "N/A"
+            },
+            extractionMethod: "custom_channel_search",
+            url
+          }, timestamp);
+        }
+      } catch (searchError) {
+        console.error(`[${timestamp}] ⚠️ DEBUG: Error searching custom channel:`, searchError.message);
+        // Continue with basic info if search fails
+      }
+      
+      // Fallback for custom channel URLs
+      return createSuccessResponse({
+        basicInfo: {
+          videoTitle: "Custom Channel URL detected",
+          channelTitle: customName,
+          channelId: "Unknown",
+          videoId: "Unknown"
+        },
+        extractionMethod: "custom_channel_basic",
+        url
+      }, timestamp);
+    }
+
     // Extract video ID from URL - handle both regular and short URLs
     let videoId = null;
     if (url.includes('watch?v=')) {
@@ -76,17 +173,50 @@ export async function extractChannelData(url: string, YOUTUBE_API_KEY: string, t
     } else if (url.includes('youtu.be/')) {
       const match = url.match(/youtu\.be\/([^?&/]+)/);
       if (match) videoId = match[1];
-    } else if (url.includes('/c/') || url.includes('/channel/')) {
-      // This is a channel URL, not a video URL
-      console.log(`[${timestamp}] ⚠️ DEBUG: URL is a channel URL, not a video URL: ${url}`);
+    } else {
+      // This is an unknown URL format
+      console.log(`[${timestamp}] ⚠️ DEBUG: Unknown URL format: ${url}`);
+      
+      // Try to search for the URL as a last resort
+      try {
+        // Extract search term from URL
+        const searchTerm = url.replace(/https?:\/\/(www\.)?youtube\.com\/?/, '').replace(/\//g, ' ');
+        if (searchTerm) {
+          const searchApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchTerm)}&type=channel&maxResults=1&key=${YOUTUBE_API_KEY}`;
+          console.log(`[${timestamp}] 🔍 DEBUG: Attempting search with term: ${searchTerm}`);
+          
+          const searchData = await fetchFromYouTubeAPI(searchApiUrl, timestamp);
+          
+          if (searchData.items && searchData.items.length > 0) {
+            const channelId = searchData.items[0].id.channelId;
+            const channelTitle = searchData.items[0].snippet.title;
+            
+            console.log(`[${timestamp}] ✅ DEBUG: Found channel via desperate search: ${channelId}, ${channelTitle}`);
+            
+            return createSuccessResponse({
+              basicInfo: {
+                videoTitle: "Found via general search",
+                channelTitle: channelTitle,
+                channelId: channelId,
+                videoId: "N/A"
+              },
+              extractionMethod: "last_resort_search",
+              url
+            }, timestamp);
+          }
+        }
+      } catch (searchError) {
+        console.error(`[${timestamp}] ⚠️ DEBUG: Error in last resort search:`, searchError.message);
+      }
+      
       return createSuccessResponse({
         basicInfo: {
-          videoTitle: "Channel URL detected",
-          channelTitle: "Unknown channel",
+          videoTitle: "Unknown URL format",
+          channelTitle: "Unknown",
           channelId: "Unknown",
           videoId: "Unknown"
         },
-        extractionMethod: "simplified",
+        extractionMethod: "unknown_format",
         url
       }, timestamp);
     }
