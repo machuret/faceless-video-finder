@@ -12,28 +12,40 @@ export const useYouTubeDataFetcher = (
   const fetchYoutubeData = async () => {
     if (!youtubeUrl) {
       toast.error("Please enter a YouTube URL");
+      console.error("YouTube URL is empty");
       return;
     }
     
-    console.log("Fetching YouTube data for URL:", youtubeUrl);
+    console.log("🔍 Attempting to fetch YouTube data for URL:", youtubeUrl);
     setLoading(true);
     
     try {
+      // Log the request being sent to the edge function
+      console.log("📡 Sending request to edge function with URL:", youtubeUrl);
+      
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: { url: youtubeUrl }
       });
       
+      // Log raw response from edge function
+      console.log("📦 Raw response from edge function:", data, error);
+      
       if (error) {
-        console.error('Edge Function error:', error);
+        console.error('❌ Edge Function error:', error);
         throw error;
       }
       
-      if (!data?.channelData) {
-        console.error('No channel data in response:', data);
-        throw new Error(data?.error || 'No channel data was found');
+      if (!data) {
+        console.error('❌ Edge Function returned no data');
+        throw new Error('No data returned from the server');
       }
       
-      console.log("YouTube data fetched:", data);
+      if (!data.channelData) {
+        console.error('❌ No channel data in response:', data);
+        throw new Error(data.error || 'No channel data was found');
+      }
+      
+      console.log("✅ YouTube data fetched successfully:", data.channelData);
       
       const channelData = data.channelData;
       
@@ -56,15 +68,19 @@ export const useYouTubeDataFetcher = (
         keywords: channelData.keywords || []
       };
       
+      console.log("📋 Form data prepared:", formattedData);
       setFormData(formattedData);
-      console.log("Form data updated:", formattedData);
       toast.success("YouTube data loaded successfully");
       
     } catch (error) {
-      console.error("Error fetching YouTube data:", error);
-      toast.error(`Failed to fetch YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Enhanced error logging
+      console.error("❌ Error fetching YouTube data:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error("❌ Error details:", errorMessage);
+      toast.error(`Failed to fetch YouTube data: ${errorMessage}`);
     } finally {
       setLoading(false);
+      console.log("⏱️ Loading state set to false");
     }
   };
   

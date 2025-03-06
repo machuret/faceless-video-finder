@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FormSectionWrapper from "./form-sections/FormSectionWrapper";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 
 interface YouTubeUrlInputProps {
   youtubeUrl: string;
@@ -20,23 +20,40 @@ const YouTubeUrlInput = ({
 }: YouTubeUrlInputProps) => {
   const [isValid, setIsValid] = useState(true);
   const [validationMessage, setValidationMessage] = useState("");
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   const validateUrl = (url: string) => {
+    console.log("🔍 Validating URL:", url);
+    
     if (!url) {
       setIsValid(false);
       setValidationMessage("URL is required");
+      console.log("❌ URL is empty");
       return false;
     }
     
-    // Basic check if it contains youtube.com or youtu.be
-    if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+    // Check if it's a valid YouTube URL format
+    const youtubePatterns = [
+      /youtube\.com\/channel\/([^\/\?]+)/,     // Channel URL
+      /youtube\.com\/c\/([^\/\?]+)/,           // Custom URL
+      /youtube\.com\/@([^\/\?]+)/,             // Handle URL
+      /@([^\/\?\s]+)/,                         // Just the handle
+      /youtube\.com\/watch\?v=([^&]+)/,        // Video URL
+      /youtu\.be\/([^\/\?]+)/                  // Short video URL
+    ];
+    
+    const isYoutubeUrl = youtubePatterns.some(pattern => pattern.test(url));
+    
+    if (!isYoutubeUrl) {
       setIsValid(false);
-      setValidationMessage("Enter a valid YouTube URL");
+      setValidationMessage("Enter a valid YouTube URL or handle");
+      console.log("❌ Not a valid YouTube URL format");
       return false;
     }
     
     setIsValid(true);
     setValidationMessage("");
+    console.log("✅ URL validation passed");
     return true;
   };
 
@@ -54,9 +71,13 @@ const YouTubeUrlInput = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("🔘 Submit button clicked for URL:", youtubeUrl);
     
     if (validateUrl(youtubeUrl)) {
+      console.log("✅ URL valid, initiating fetch");
       onFetch();
+    } else {
+      console.log("❌ URL validation failed, not fetching");
     }
   };
 
@@ -71,11 +92,15 @@ const YouTubeUrlInput = ({
             <Input
               value={youtubeUrl}
               onChange={handleInputChange}
-              placeholder="https://youtube.com/..."
+              placeholder="https://youtube.com/... or @username"
               className={`flex-1 ${!isValid ? 'border-red-500' : ''}`}
               required
             />
-            <Button type="submit" disabled={loading || !youtubeUrl || !isValid}>
+            <Button 
+              type="submit" 
+              disabled={loading || !youtubeUrl || !isValid}
+              onClick={() => console.log("🔘 Fetch button clicked")}
+            >
               {loading ? "Fetching..." : "Fetch"}
             </Button>
           </div>
@@ -95,6 +120,29 @@ const YouTubeUrlInput = ({
               <li>Handles: youtube.com/@username or @username</li>
               <li>Video URLs: youtube.com/watch?v=... or youtu.be/...</li>
             </ul>
+          </div>
+          
+          <div className="mt-2">
+            <button 
+              type="button" 
+              className="text-xs text-blue-500 flex items-center gap-1"
+              onClick={() => setShowDebugInfo(!showDebugInfo)}
+            >
+              <Info className="h-3 w-3" />
+              {showDebugInfo ? "Hide debug info" : "Show debug info"}
+            </button>
+            
+            {showDebugInfo && (
+              <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700">
+                <p>• If you're experiencing issues, try these tips:</p>
+                <ul className="list-disc ml-5 mt-1">
+                  <li>For channels, use the direct URL: youtube.com/channel/UC...</li>
+                  <li>For handles, try both formats: @username and youtube.com/@username</li>
+                  <li>For custom URLs, try a video URL from that channel instead</li>
+                </ul>
+                <p className="mt-1">• Check browser console for detailed error messages.</p>
+              </div>
+            )}
           </div>
         </div>
       </form>
