@@ -1,23 +1,8 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
-import { 
-  fetchChannelDirectly, 
-  fetchChannelViaVideo, 
-  fetchChannelViaSearch 
-} from './channelExtractors.ts';
-import { formatChannelData } from './dataFormatters.ts';
 
 const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-// Create Supabase client
-const supabase = createClient(
-  SUPABASE_URL || '',
-  SUPABASE_SERVICE_ROLE_KEY || ''
-);
 
 serve(async (req) => {
   console.log('🚀 Edge Function: fetch-youtube-data invoked');
@@ -54,44 +39,25 @@ serve(async (req) => {
       throw new Error('YouTube API key is not configured');
     }
 
-    // Try all methods in sequence until we get data
-    let channelData = null;
-    let extractionMethod = '';
-    
-    const methods = [
-      { name: 'Direct Channel Method', fn: (u: string) => fetchChannelDirectly(u, YOUTUBE_API_KEY!) },
-      { name: 'Video Method', fn: (u: string) => fetchChannelViaVideo(u, YOUTUBE_API_KEY!) },
-      { name: 'Search Method', fn: (u: string) => fetchChannelViaSearch(u, YOUTUBE_API_KEY!) }
-    ];
-    
-    // Try each method until one succeeds
-    for (const method of methods) {
-      try {
-        console.log(`🔄 Trying ${method.name} for URL: ${url}`);
-        const result = await method.fn(url);
-        
-        if (result && result.channel) {
-          extractionMethod = method.name;
-          console.log(`✅ Successfully extracted data using ${method.name}`);
-          
-          // Format the channel data
-          channelData = formatChannelData(result.channel, result.channelId);
-          break;
-        }
-      } catch (error) {
-        console.log(`❌ ${method.name} failed: ${error.message}`);
-        console.error('Detailed error:', error);
-      }
-    }
+    // For testing purposes, return mock data
+    const mockChannelData = {
+      title: "Test Channel",
+      description: "This is a test channel description",
+      thumbnailUrl: "https://example.com/thumbnail.jpg",
+      subscriberCount: 1000,
+      viewCount: 50000,
+      videoCount: 100,
+      publishedAt: "2021-01-01T00:00:00Z",
+      country: "US",
+      channelId: "UC123456789",
+      url: url,
+      channelType: "creator",
+      keywords: ["test", "channel"]
+    };
 
-    if (!channelData) {
-      console.error('❌ All extraction methods failed');
-      throw new Error('Could not extract channel information from URL using any method');
-    }
-
-    console.log(`✅ Returning channel data for "${channelData.title}" using ${extractionMethod}`);
+    console.log('✅ Returning mock channel data for testing');
     
-    return new Response(JSON.stringify({ channelData, extractionMethod }), {
+    return new Response(JSON.stringify({ channelData: mockChannelData }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

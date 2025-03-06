@@ -25,6 +25,7 @@ enabled = true
 [storage]
 enabled = true
 
+[functions]
 [functions.fetch-youtube-data]
 verify_jwt = false
 
@@ -48,4 +49,3 @@ verify_jwt = false
 
 [functions.take-channel-screenshot]
 verify_jwt = false
-
