@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FormSectionWrapper from "./form-sections/FormSectionWrapper";
-import { AlertCircle, Info } from "lucide-react";
+import { AlertCircle, Info, Youtube } from "lucide-react";
 
 interface YouTubeUrlInputProps {
   youtubeUrl: string;
@@ -91,16 +91,20 @@ const YouTubeUrlInput = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
-            <Input
-              value={youtubeUrl}
-              onChange={handleInputChange}
-              placeholder="https://youtube.com/... or @username"
-              className={`flex-1 ${!isValid ? 'border-red-500' : ''}`}
-              required
-            />
+            <div className="relative flex-1">
+              <Input
+                value={youtubeUrl}
+                onChange={handleInputChange}
+                placeholder="https://youtube.com/... or @username"
+                className={`pl-10 ${!isValid ? 'border-red-500' : ''}`}
+                required
+              />
+              <Youtube className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
             <Button 
               type="submit" 
               disabled={loading || !youtubeUrl || !isValid}
+              className="min-w-24"
             >
               {loading ? "Fetching..." : "Fetch"}
             </Button>
@@ -134,7 +138,7 @@ const YouTubeUrlInput = ({
             </button>
             
             {showDebugInfo && (
-              <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700">
+              <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700 overflow-auto max-h-48">
                 <p>• Current status: {loading ? "Loading..." : "Ready"}</p>
                 <p>• Entered URL: {youtubeUrl || "None"}</p>
                 <p>• URL valid: {isValid ? "Yes" : "No"}</p>

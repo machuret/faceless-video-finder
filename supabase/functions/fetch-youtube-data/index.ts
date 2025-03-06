@@ -1,6 +1,10 @@
 
 // Follow Edge Function format exactly
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { fetchChannelDirectly } from './channelExtractors.ts';
+import { fetchChannelViaVideo } from './channelExtractors.ts';
+import { fetchChannelViaSearch } from './channelExtractors.ts';
+import { formatChannelData } from './dataFormatters.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,57 +39,61 @@ serve(async (req) => {
       throw new Error('URL is required');
     }
 
-    // Extract channel info from URL
+    // Try different extraction methods
+    let channel = null;
     let channelId = null;
+    let error = null;
 
-    // Handle different URL formats
-    if (url.includes('/channel/')) {
-      channelId = url.match(/\/channel\/(UC[\w-]{21,24})/)?.[1];
-    } else if (url.includes('@')) {
-      const username = url.match(/\/@([^\/\?]+)/)?.[1] || url.match(/@([^\/\?\s]+)/)?.[1];
-      if (username) {
-        // Search for channel by username
-        const searchResponse = await fetch(
-          `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${username}&type=channel&key=${YOUTUBE_API_KEY}`
-        );
-        const searchData = await searchResponse.json();
-        channelId = searchData?.items?.[0]?.id?.channelId;
+    // Method 1: Try direct channel extraction
+    try {
+      console.log(`[${now}] 🔍 Attempting direct channel extraction`);
+      const result = await fetchChannelDirectly(url, YOUTUBE_API_KEY);
+      channel = result.channel;
+      channelId = result.channelId;
+      console.log(`[${now}] ✅ Direct extraction successful`);
+    } catch (e) {
+      console.log(`[${now}] ⚠️ Direct extraction failed:`, e.message);
+      error = e;
+
+      // Method 2: Try extraction via video
+      if (url.includes('watch?v=') || url.includes('youtu.be')) {
+        try {
+          console.log(`[${now}] 🔍 Attempting extraction via video`);
+          const result = await fetchChannelViaVideo(url, YOUTUBE_API_KEY);
+          channel = result.channel;
+          channelId = result.channelId;
+          console.log(`[${now}] ✅ Video extraction successful`);
+          error = null;
+        } catch (e) {
+          console.log(`[${now}] ⚠️ Video extraction failed:`, e.message);
+          error = e;
+        }
+      }
+
+      // Method 3: Last resort, try search
+      if (!channel) {
+        try {
+          console.log(`[${now}] 🔍 Attempting extraction via search`);
+          const result = await fetchChannelViaSearch(url, YOUTUBE_API_KEY);
+          channel = result.channel;
+          channelId = result.channelId;
+          console.log(`[${now}] ✅ Search extraction successful`);
+          error = null;
+        } catch (e) {
+          console.log(`[${now}] ⚠️ Search extraction failed:`, e.message);
+          error = e;
+        }
       }
     }
 
-    console.log(`[${now}] 🎯 Found channel ID:`, channelId);
-
-    if (!channelId) {
-      throw new Error('Could not find channel ID from URL');
+    if (!channel || !channelId) {
+      throw error || new Error('Failed to extract channel data using all methods');
     }
 
-    // Fetch channel data
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YOUTUBE_API_KEY}`
-    );
-
-    const data = await response.json();
-    console.log(`[${now}] 📊 API Response:`, JSON.stringify(data));
-
-    if (!data.items?.length) {
-      throw new Error('Channel not found');
-    }
-
-    const channel = data.items[0];
-    const channelData = {
-      channelId: channel.id,
-      title: channel.snippet.title,
-      description: channel.snippet.description,
-      thumbnailUrl: channel.snippet.thumbnails?.high?.url || channel.snippet.thumbnails?.default?.url,
-      subscriberCount: parseInt(channel.statistics.subscriberCount || '0'),
-      viewCount: parseInt(channel.statistics.viewCount || '0'),
-      videoCount: parseInt(channel.statistics.videoCount || '0'),
-      publishedAt: channel.snippet.publishedAt,
-      url: `https://youtube.com/channel/${channel.id}`,
-      country: channel.snippet.country || '',
-    };
-
-    console.log(`[${now}] ✅ Returning channel data`);
+    // Format channel data
+    const channelData = formatChannelData(channel, channelId);
+    
+    console.log(`[${now}] ✅ Returning channel data for: ${channelData.title}`);
     
     return new Response(
       JSON.stringify({ channelData }),

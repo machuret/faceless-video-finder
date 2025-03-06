@@ -20,6 +20,7 @@ export const useYouTubeDataFetcher = (
     
     try {
       setLoading(true);
+      console.log(`[${timestamp}] 📡 Calling edge function with URL:`, youtubeUrl.trim());
       
       // Call the edge function
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
@@ -28,8 +29,25 @@ export const useYouTubeDataFetcher = (
       
       console.log(`[${timestamp}] 📡 Edge function response:`, { data, error });
       
-      if (error) throw error;
-      if (!data?.channelData) throw new Error('No channel data received');
+      if (error) {
+        console.error(`[${timestamp}] ❌ Edge function error:`, error);
+        throw new Error(`Edge function error: ${error.message}`);
+      }
+      
+      if (!data) {
+        console.error(`[${timestamp}] ❌ No data received from edge function`);
+        throw new Error('No data received from edge function');
+      }
+      
+      if (data.error) {
+        console.error(`[${timestamp}] ❌ Error from edge function:`, data.error);
+        throw new Error(`Error from edge function: ${data.error}`);
+      }
+      
+      if (!data.channelData) {
+        console.error(`[${timestamp}] ❌ No channel data in response:`, data);
+        throw new Error('No channel data received');
+      }
       
       const { channelData } = data;
       
@@ -45,11 +63,11 @@ export const useYouTubeDataFetcher = (
         start_date: channelData.publishedAt || "",
         video_count: String(channelData.videoCount || ""),
         cpm: "4",
-        channel_type: "creator",
+        channel_type: channelData.channelType || "creator",
         country: channelData.country || "",
         channel_category: "other",
         notes: "",
-        keywords: []
+        keywords: channelData.keywords || []
       };
       
       console.log(`[${timestamp}] ✅ Formatted data:`, formattedData);
