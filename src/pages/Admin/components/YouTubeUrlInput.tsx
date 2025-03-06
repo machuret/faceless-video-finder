@@ -1,9 +1,10 @@
-
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FormSectionWrapper from "./form-sections/FormSectionWrapper";
-import { AlertCircle, Bug, Info, Youtube } from "lucide-react";
+import { AlertCircle, Bug, Info, Youtube, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface YouTubeUrlInputProps {
   youtubeUrl: string;
@@ -27,6 +28,8 @@ const YouTubeUrlInput = ({
   const [validationMessage, setValidationMessage] = useState("");
   const [showDebugInfo, setShowDebugInfo] = useState(true);
   const [showAdvancedDebug, setShowAdvancedDebug] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+  const [testLoading, setTestLoading] = useState(false);
 
   const validateUrl = (url: string) => {
     const timestamp = new Date().toISOString();
@@ -39,7 +42,6 @@ const YouTubeUrlInput = ({
       return false;
     }
     
-    // Check if it's any YouTube-related URL or handle
     const youtubePatterns = [
       /youtube\.com\/channel\/([^\/\?]+)/,     // Channel URL
       /youtube\.com\/c\/([^\/\?]+)/,           // Custom URL
@@ -89,6 +91,38 @@ const YouTubeUrlInput = ({
     }
   };
 
+  const testEdgeFunction = async () => {
+    try {
+      setTestLoading(true);
+      setTestResult(null);
+      
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] 🧪 Testing edge function with simple ping...`);
+      
+      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+        body: { test: true, timestamp }
+      });
+      
+      console.log(`[${timestamp}] 🧪 Edge function test response:`, { data, error });
+      
+      if (error) {
+        console.error(`[${timestamp}] ❌ Edge function test error:`, error);
+        toast.error(`Edge function error: ${error.message}`);
+        setTestResult({ success: false, error });
+      } else {
+        console.log(`[${timestamp}] ✅ Edge function test successful:`, data);
+        toast.success("Edge function is working!");
+        setTestResult({ success: true, data });
+      }
+    } catch (err) {
+      console.error(`[${new Date().toISOString()}] ❌ Unexpected error testing edge function:`, err);
+      toast.error(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTestResult({ success: false, error: err });
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   return (
     <FormSectionWrapper 
       title="YouTube URL" 
@@ -130,17 +164,7 @@ const YouTubeUrlInput = ({
             </div>
           )}
           
-          <div className="text-gray-500 text-xs mt-1">
-            <p>Accepted formats:</p>
-            <ul className="list-disc ml-5">
-              <li>Channel URLs: youtube.com/channel/UC...</li>
-              <li>Custom URLs: youtube.com/c/ChannelName</li>
-              <li>Handles: youtube.com/@username or @username</li>
-              <li>Video URLs: youtube.com/watch?v=... or youtu.be/...</li>
-            </ul>
-          </div>
-          
-          <div className="mt-2">
+          <div className="flex justify-between items-center mt-2">
             <button 
               type="button" 
               className="text-xs text-blue-500 flex items-center gap-1"
@@ -150,42 +174,63 @@ const YouTubeUrlInput = ({
               {showDebugInfo ? "Hide debug info" : "Show debug info"}
             </button>
             
-            {showDebugInfo && (
-              <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700 overflow-auto max-h-48">
-                <p>• Current status: {loading ? "Loading..." : "Ready"}</p>
-                <p>• Entered URL: {youtubeUrl || "None"}</p>
-                <p>• URL valid: {isValid ? "Yes" : "No"}</p>
-                <p>• Test URLs - Try these examples:</p>
-                <ul className="list-disc ml-5 mt-1">
-                  <li>Channel: https://youtube.com/channel/UCnz-ZXXER4jOvDUe3fx2JXg</li>
-                  <li>Handle: @techwithtim</li>
-                  <li>Video: https://www.youtube.com/watch?v=dQw4w9WgXcQ</li>
-                  <li>Custom: https://www.youtube.com/c/TechWithTim</li>
-                </ul>
-                
-                <button 
-                  type="button" 
-                  className="text-xs text-purple-500 flex items-center gap-1 mt-2"
-                  onClick={() => setShowAdvancedDebug(!showAdvancedDebug)}
-                >
-                  <Bug className="h-3 w-3" />
-                  {showAdvancedDebug ? "Hide advanced debug" : "Show advanced debug"}
-                </button>
-                
-                {showAdvancedDebug && debugInfo?.lastResponse && (
-                  <div className="mt-2 p-2 bg-gray-200 rounded">
-                    <p>Last Response:</p>
-                    <pre className="text-[10px] overflow-auto max-h-32">
-                      {JSON.stringify(debugInfo.lastResponse, null, 2)}
-                    </pre>
-                  </div>
-                )}
-                
-                <p className="mt-1">• Check browser console (F12) for detailed logs.</p>
-                <p className="mt-1">• Edge function logs are also available in Supabase dashboard.</p>
-              </div>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={testEdgeFunction}
+              disabled={testLoading}
+              className="text-xs flex items-center gap-1"
+            >
+              <Zap className="h-3 w-3" />
+              {testLoading ? "Testing..." : "Test Edge Function"}
+            </Button>
           </div>
+          
+          {testResult && (
+            <div className={`mt-2 p-2 rounded text-xs ${testResult.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+              <p className="font-semibold">{testResult.success ? '✅ Edge Function Test Success' : '❌ Edge Function Test Failed'}</p>
+              <pre className="text-[10px] overflow-auto max-h-32 mt-1">
+                {JSON.stringify(testResult, null, 2)}
+              </pre>
+            </div>
+          )}
+          
+          {showDebugInfo && (
+            <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700 overflow-auto max-h-48">
+              <p>• Current status: {loading ? "Loading..." : "Ready"}</p>
+              <p>• Entered URL: {youtubeUrl || "None"}</p>
+              <p>• URL valid: {isValid ? "Yes" : "No"}</p>
+              <p>• Test URLs - Try these examples:</p>
+              <ul className="list-disc ml-5 mt-1">
+                <li>Channel: https://youtube.com/channel/UCnz-ZXXER4jOvDUe3fx2JXg</li>
+                <li>Handle: @techwithtim</li>
+                <li>Video: https://www.youtube.com/watch?v=dQw4w9WgXcQ</li>
+                <li>Custom: https://www.youtube.com/c/TechWithTim</li>
+              </ul>
+              
+              <button 
+                type="button" 
+                className="text-xs text-purple-500 flex items-center gap-1 mt-2"
+                onClick={() => setShowAdvancedDebug(!showAdvancedDebug)}
+              >
+                <Bug className="h-3 w-3" />
+                {showAdvancedDebug ? "Hide advanced debug" : "Show advanced debug"}
+              </button>
+              
+              {showAdvancedDebug && debugInfo?.lastResponse && (
+                <div className="mt-2 p-2 bg-gray-200 rounded">
+                  <p>Last Response:</p>
+                  <pre className="text-[10px] overflow-auto max-h-32">
+                    {JSON.stringify(debugInfo.lastResponse, null, 2)}
+                  </pre>
+                </div>
+              )}
+              
+              <p className="mt-1">• Check browser console (F12) for detailed logs.</p>
+              <p className="mt-1">• Edge function logs are also available in Supabase dashboard.</p>
+            </div>
+          )}
         </div>
       </form>
     </FormSectionWrapper>

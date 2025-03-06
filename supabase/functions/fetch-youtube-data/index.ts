@@ -15,12 +15,31 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('[CORS] Handling OPTIONS request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const now = new Date().toISOString();
     console.log(`[${now}] 🚀 Edge function called`);
+
+    // Parse request body
+    const body = await req.json();
+    console.log(`[${now}] 📝 Request body:`, JSON.stringify(body));
+
+    // Handle test ping
+    if (body?.test === true) {
+      console.log(`[${now}] 🧪 Test request received with timestamp: ${body.timestamp}`);
+      return new Response(
+        JSON.stringify({ 
+          message: "Edge function is working correctly", 
+          receivedAt: now,
+          requestTimestamp: body.timestamp,
+          success: true 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get YouTube API key
     const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
@@ -30,8 +49,7 @@ serve(async (req) => {
       throw new Error('YouTube API key not configured');
     }
 
-    // Parse request body
-    const body = await req.json();
+    // Regular URL processing
     const url = body?.url;
     console.log(`[${now}] 📝 Received URL:`, url);
 
