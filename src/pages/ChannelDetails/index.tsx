@@ -94,7 +94,7 @@ const ChannelDetails = () => {
             {/* Channel Type Info */}
             <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
             
-            {/* Did You Know Fact Section - moved to under Channel Type Info */}
+            {/* Did You Know Fact Section - included only once */}
             <DidYouKnowFactComponent />
             
             {/* Add Related Channels section */}
