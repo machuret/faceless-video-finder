@@ -70,31 +70,36 @@ const ChannelDetails = () => {
       <main className="container mx-auto px-4 py-8">
         <ChannelHeader channel={channel} />
         
-        {/* Revenue Statistics */}
-        <div className="mt-8">
-          <ChannelStats showOnlyRevenue={true} channel={channel} />
-        </div>
-        
-        {/* Did You Know Fact Section */}
-        <DidYouKnowFactComponent />
-        
-        {/* Top Performing Videos Section */}
-        {(mostViewedVideo || mostEngagingVideo || topVideosLoading) && (
-          <TopPerformingVideos 
-            mostViewed={mostViewedVideo} 
-            mostEngaging={mostEngagingVideo} 
-            loading={topVideosLoading}
-          />
-        )}
-        
-        <div className="mt-8">
-          {/* Only show the channel type info and videos, not the full stats again */}
-          <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+          {/* Left Column */}
+          <div className="lg:col-span-2">
+            {/* Revenue Statistics */}
+            <ChannelStats showOnlyRevenue={true} channel={channel} />
+            
+            {/* Top Performing Videos Section */}
+            {(mostViewedVideo || mostEngagingVideo || topVideosLoading) && (
+              <TopPerformingVideos 
+                mostViewed={mostViewedVideo} 
+                mostEngaging={mostEngagingVideo} 
+                loading={topVideosLoading}
+              />
+            )}
+            
+            {/* Channel Videos */}
+            <ChannelVideos videos={videoStats} />
+          </div>
           
-          {/* Add Related Channels section after Channel Type Info */}
-          {channelId && <RelatedChannels currentChannelId={channelId} />}
-          
-          <ChannelVideos videos={videoStats} />
+          {/* Right Column */}
+          <div className="space-y-8">
+            {/* Did You Know Fact Section - only included once */}
+            <DidYouKnowFactComponent />
+            
+            {/* Channel Type Info */}
+            <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
+            
+            {/* Add Related Channels section */}
+            {channelId && <RelatedChannels currentChannelId={channelId} />}
+          </div>
         </div>
       </main>
 

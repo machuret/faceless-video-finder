@@ -15,8 +15,8 @@ const TrainingPage = () => {
       <MainNavbar />
       
       <main>
-        {/* Hero Section */}
-        <TrainingHero startLink="/calculators" />
+        {/* Hero Section - Using external link to facelesstraining.com */}
+        <TrainingHero startLink="https://facelesstraining.com/" />
         
         {/* Main Content */}
         <div className="container mx-auto px-4 py-12">

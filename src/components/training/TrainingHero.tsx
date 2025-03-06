@@ -1,13 +1,16 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 
 interface TrainingHeroProps {
   startLink: string;
 }
 
 const TrainingHero: React.FC<TrainingHeroProps> = ({ startLink }) => {
+  const handleTrainingClick = () => {
+    window.location.href = "https://facelesstraining.com/";
+  };
+
   return (
     <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
       <div className="container mx-auto px-4 text-center">
@@ -16,10 +19,12 @@ const TrainingHero: React.FC<TrainingHeroProps> = ({ startLink }) => {
           Comprehensive training materials to help you create, grow, and monetize your faceless YouTube channel
         </p>
         <div className="mt-8">
-          <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-semibold">
-            <Link to={startLink}>
-              Start Free Training
-            </Link>
+          <Button 
+            size="lg" 
+            className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-semibold"
+            onClick={handleTrainingClick}
+          >
+            Start Free Training
           </Button>
         </div>
       </div>
