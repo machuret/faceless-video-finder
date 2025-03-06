@@ -74,6 +74,9 @@ const ChannelDetails = () => {
           <ChannelStats showOnlyRevenue={true} channel={channel} />
         </div>
         
+        {/* Upload Statistics - Moved up before the videos section */}
+        <ChannelUploadStats channel={channel} />
+        
         {/* Top Performing Videos Section */}
         {(mostViewedVideo || mostEngagingVideo || topVideosLoading) && (
           <TopPerformingVideos 
@@ -88,9 +91,6 @@ const ChannelDetails = () => {
           <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
           <ChannelVideos videos={videoStats} />
         </div>
-        
-        {/* Upload Statistics */}
-        <ChannelUploadStats channel={channel} />
       </main>
 
       <PageFooter />
