@@ -8,44 +8,30 @@ export async function fetchFromYouTubeAPI(url: string, timestamp: string) {
   try {
     // Set a specific timeout for each API request
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout to be safe
     
     try {
+      console.log(`🔍 [${timestamp}] Starting fetch for:`, url);
       const response = await fetch(url, { 
         headers: { 
           'Content-Type': 'application/json',
-          // Add stronger cache control to prevent caching issues
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Cache-Control': 'no-cache'
         },
         signal: controller.signal
       });
       
       // Clear timeout as soon as response is received
       clearTimeout(timeoutId);
+      console.log(`🔍 [${timestamp}] Received response with status:`, response.status);
       
       if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (e) {
-          errorData = { status: response.status, statusText: response.statusText };
-        }
-        
-        console.error(`❌ [${timestamp}] YouTube API error (${response.status}):`, errorData);
-        
-        // Format error message based on YouTube API error format
-        const apiErrorMessage = errorData?.error?.message || 
-                               errorData?.error?.errors?.[0]?.message ||
-                               `API request failed with status ${response.status}`;
-        
-        throw new Error(`YouTube API error: ${apiErrorMessage}`);
+        console.error(`❌ [${timestamp}] YouTube API error (${response.status}):`, response.statusText);
+        throw new Error(`YouTube API request failed with status ${response.status}: ${response.statusText}`);
       }
       
-      // Parse the response immediately to avoid delays
+      // Parse the response
       const data = await response.json();
-      console.log(`✅ [${timestamp}] YouTube API response successful`);
+      console.log(`✅ [${timestamp}] YouTube API response successful with data keys:`, Object.keys(data));
       return data;
     } catch (error) {
       // Always clear the timeout to prevent memory leaks
@@ -54,7 +40,7 @@ export async function fetchFromYouTubeAPI(url: string, timestamp: string) {
       // Re-throw the error to be handled by the caller
       if (error.name === 'AbortError') {
         console.error(`❌ [${timestamp}] YouTube API request timed out`);
-        throw new Error('YouTube API request timed out. Please try again.');
+        throw new Error('YouTube API request timed out');
       }
       
       throw error;

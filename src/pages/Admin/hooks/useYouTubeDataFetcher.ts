@@ -26,48 +26,28 @@ export const useYouTubeDataFetcher = (
       setLoading(true);
       setLastError(null);
       setAttempts(prev => prev + 1);
-      console.log(`[${timestamp}] 📡 Calling edge function with URL:`, youtubeUrl.trim(), `(Attempt: ${attempts + 1})`);
+      console.log(`[${timestamp}] 📡 Calling edge function with URL:`, youtubeUrl.trim());
       
-      // Create timeout promise for client-side timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out after 12 seconds')), 12000);
-      });
-      
-      // Make the actual request
-      const fetchPromise = supabase.functions.invoke('fetch-youtube-data', {
+      // Simplified request
+      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: { 
           url: youtubeUrl.trim(),
-          allowMockData: useMockData || attempts > 0, // Allow mock data after first attempt
+          allowMockData: useMockData,
           timestamp,
           attempt: attempts + 1
         }
       });
       
-      // Race between the fetch and timeout
-      const result = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      setLastResponse(data);
+      console.log(`[${timestamp}] 📡 Edge function response:`, { data, error });
       
-      setLastResponse(result?.data);
-      console.log(`[${timestamp}] 📡 Edge function response:`, result);
-      
-      if (result?.error) {
-        console.error(`[${timestamp}] ❌ Edge function error:`, result.error);
-        setLastError(result.error.message);
-        
-        // Auto-retry with mock data on timeout
-        if (result.error.message?.includes('timeout') || result.error.message?.includes('timed out')) {
-          toast.error("Request timed out. Using mock data instead.");
-          if (attempts < 2) {
-            setTimeout(() => fetchYoutubeData(true), 500);
-            return;
-          }
-        } else {
-          toast.error(`Error: ${result.error.message}`);
-        }
+      if (error) {
+        console.error(`[${timestamp}] ❌ Edge function error:`, error);
+        setLastError(error.message);
+        toast.error(`Error: ${error.message}`);
         setLoading(false);
         return;
       }
-      
-      const { data } = result || {};
       
       if (!data) {
         console.error(`[${timestamp}] ❌ No data received`);
@@ -80,72 +60,84 @@ export const useYouTubeDataFetcher = (
       if (data.error) {
         console.error(`[${timestamp}] ❌ API error:`, data.error);
         setLastError(data.error);
+        toast.error(`Error: ${data.error}`);
+        setLoading(false);
+        return;
+      }
+      
+      // Handle simplified response with basic info
+      if (data.basicInfo) {
+        console.log(`[${timestamp}] ✅ Successfully received basic info:`, data.basicInfo);
         
-        // Auto-fallback to mock data on errors
-        if (data.useMockData || attempts < 2) {
-          toast.warning("API error. Using mock data instead.");
-          setTimeout(() => fetchYoutubeData(true), 500);
-          return;
+        // Create minimal channel data from the basic info
+        const { videoTitle, channelTitle, channelId, videoId } = data.basicInfo;
+        
+        // Map to our form structure
+        const formattedData: ChannelFormData = {
+          video_id: videoId || "",
+          channel_title: channelTitle || "",
+          channel_url: `https://www.youtube.com/channel/${channelId}` || "",
+          description: `Video title: ${videoTitle}` || "",
+          screenshot_url: "",
+          total_subscribers: "0",
+          total_views: "0",
+          start_date: new Date().toISOString().split('T')[0],
+          video_count: "0",
+          cpm: "4",
+          channel_type: "creator",
+          country: "",
+          channel_category: "other",
+          notes: `This is minimal data extracted from video: ${videoTitle}`,
+          keywords: []
+        };
+        
+        console.log(`[${timestamp}] ✅ Formatted minimal data:`, formattedData);
+        toast.success("Successfully fetched basic YouTube data");
+        setFormData(formattedData);
+      } 
+      // Handle full channel data response (mock or real)
+      else if (data.channelData) {
+        const { channelData, isMockData } = data;
+        
+        console.log(`[${timestamp}] ✅ Successfully received channel data:`, channelData);
+        
+        if (isMockData) {
+          toast.warning("Using mock data (YouTube API extraction failed)");
         } else {
-          toast.error(`Error: ${data.error}`);
+          toast.success("Successfully fetched YouTube channel data");
         }
         
-        setLoading(false);
-        return;
-      }
-      
-      const { channelData, isMockData } = data;
-      
-      if (!channelData) {
-        console.error(`[${timestamp}] ❌ No channel data:`, data);
-        setLastError('No channel data');
-        toast.error("No channel data received");
-        setLoading(false);
-        return;
-      }
-      
-      if (isMockData) {
-        console.log(`[${timestamp}] ⚠️ Using mock data`);
-        toast.warning("Using mock data (YouTube API extraction failed)");
+        // Map the data to our form structure
+        const formattedData: ChannelFormData = {
+          video_id: channelData.channelId || "",
+          channel_title: channelData.title || "",
+          channel_url: channelData.url || "",
+          description: channelData.description || "",
+          screenshot_url: channelData.thumbnailUrl || "",
+          total_subscribers: String(channelData.subscriberCount || "0"),
+          total_views: String(channelData.viewCount || "0"),
+          start_date: channelData.publishedAt || new Date().toISOString().split('T')[0],
+          video_count: String(channelData.videoCount || "0"),
+          cpm: "4",
+          channel_type: channelData.channelType || "creator",
+          country: channelData.country || "",
+          channel_category: "other",
+          notes: "",
+          keywords: channelData.keywords || []
+        };
+        
+        console.log(`[${timestamp}] ✅ Formatted data:`, formattedData);
+        setFormData(formattedData);
       } else {
-        console.log(`[${timestamp}] ✅ Successfully received channel data`);
-        toast.success("Successfully fetched YouTube channel data");
+        console.error(`[${timestamp}] ❌ Unexpected data format:`, data);
+        setLastError('Unexpected data format');
+        toast.error("Received unexpected data format");
       }
-      
-      // Map the data to our form structure
-      const formattedData: ChannelFormData = {
-        video_id: channelData.channelId || "",
-        channel_title: channelData.title || "",
-        channel_url: channelData.url || "",
-        description: channelData.description || "",
-        screenshot_url: channelData.thumbnailUrl || "",
-        total_subscribers: String(channelData.subscriberCount || ""),
-        total_views: String(channelData.viewCount || ""),
-        start_date: channelData.publishedAt || "",
-        video_count: String(channelData.videoCount || ""),
-        cpm: "4",
-        channel_type: channelData.channelType || "creator",
-        country: channelData.country || "",
-        channel_category: "other",
-        notes: "",
-        keywords: channelData.keywords || []
-      };
-      
-      console.log(`[${timestamp}] ✅ Formatted data:`, formattedData);
-      
-      setFormData(formattedData);
       
     } catch (error) {
       console.error(`[${timestamp}] ❌ Unexpected error:`, error);
       setLastError(error instanceof Error ? error.message : 'Unknown error');
-      
-      // Auto-fallback to mock data on any error
-      if (attempts < 2) {
-        toast.error("Error occurred. Using mock data instead.");
-        setTimeout(() => fetchYoutubeData(true), 500);
-      } else {
-        toast.error(`Failed to load YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
+      toast.error(`Failed to load YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

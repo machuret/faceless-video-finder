@@ -19,41 +19,45 @@ serve(async (req) => {
   }
 
   try {
-    // Set a safety timeout to ensure we always get a response
+    // Simple guard against timeouts
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
-        console.error(`⏱️ [${timestamp}] Safety timeout reached`);
-        reject(new Error('Request timed out'));
-      }, 10000); // 10 second timeout
+        console.error(`⏱️ [${timestamp}] Edge function timeout reached`);
+        reject(new Error('Edge function timeout'));
+      }, 9000); // 9 second timeout
     });
     
-    // Race between actual processing and timeout
-    return await Promise.race([
-      handleRequest(req),
-      timeoutPromise.then(() => {
-        return new Response(
-          JSON.stringify({ 
-            error: "Function timed out. Using mock data instead.",
-            success: false,
-            useMockData: true,
-            timestamp
-          }),
-          { 
-            status: 408,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      })
-    ]);
+    // Process the request with timeout protection
+    try {
+      const response = await Promise.race([
+        handleRequest(req),
+        timeoutPromise
+      ]);
+      return response;
+    } catch (error) {
+      console.error(`⚠️ [${timestamp}] Error or timeout:`, error.message);
+      
+      // Return a clean error response
+      return new Response(
+        JSON.stringify({ 
+          error: error.message || "Unknown error occurred",
+          success: false,
+          timestamp
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
   } catch (error) {
-    // Global error handler to always return a response
-    console.error(`🚨 [${timestamp}] Unhandled error:`, error);
+    // Global error handler as a safety net
+    console.error(`🚨 [${timestamp}] Critical error:`, error.message);
     return new Response(
       JSON.stringify({ 
-        error: "Internal server error. Using mock data instead.",
+        error: "Critical server error",
         message: error.message || "Unknown error",
         success: false,
-        useMockData: true,
         timestamp
       }),
       { 

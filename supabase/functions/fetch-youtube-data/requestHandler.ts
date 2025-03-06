@@ -5,61 +5,51 @@ import { handleTestRequest, handleMockDataRequest } from './mockDataHandler.ts';
 import { extractChannelData } from './extractionOrchestrator.ts';
 
 // Reduced timeout to ensure we respond before edge function timeout
-export const TIMEOUT_MS = 9000; // 9 second timeout
+export const TIMEOUT_MS = 8000; // 8 second timeout
 
 /**
- * Validates and processes the incoming request
+ * Simpler version of the request handler
  */
 export async function handleRequest(req: Request) {
   const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] 🚀 Processing request`);
+  console.log(`[${timestamp}] 🚀 Processing simplified request`);
   
   try {
-    // Parse and validate request body
-    let requestBody;
-    try {
-      requestBody = await validateRequestBody(req, timestamp);
-      console.log(`[${timestamp}] 📝 Request body:`, JSON.stringify(requestBody));
-    } catch (error) {
-      return createErrorResponse(error.message, 400, timestamp);
-    }
+    // Basic request body validation
+    const requestBody = await req.json();
+    console.log(`[${timestamp}] 📝 Request body:`, JSON.stringify(requestBody));
 
     // Handle test ping
     if (requestBody?.test === true) {
-      return handleTestRequest(requestBody.timestamp, timestamp);
+      return handleTestRequest(requestBody.timestamp || timestamp, timestamp);
     }
 
-    // Use mock data if requested or if this is a repeated attempt
-    if (requestBody?.url) {
-      const attemptNumber = requestBody?.attempt || 1;
-      const shouldUseMockData = requestBody?.allowMockData === true || attemptNumber > 1;
-      
-      if (shouldUseMockData) {
-        return handleMockDataRequest(requestBody.url, attemptNumber, timestamp);
-      }
+    // Use mock data if requested
+    if (requestBody?.allowMockData === true) {
+      return handleMockDataRequest(requestBody.url || "", requestBody.attempt || 1, timestamp);
     }
 
-    // Validate YouTube API key
-    let YOUTUBE_API_KEY;
-    try {
-      YOUTUBE_API_KEY = validateApiKey(timestamp);
-    } catch (error) {
-      return createErrorResponse(error.message, 500, timestamp);
+    // Get API key
+    const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
+    if (!YOUTUBE_API_KEY) {
+      console.error(`[${timestamp}] ❌ YouTube API key not configured`);
+      return createErrorResponse('YouTube API key not configured', 500, timestamp);
     }
+    console.log(`[${timestamp}] 🔑 API Key available`);
 
     // Validate URL
-    let url;
-    try {
-      url = validateUrl(requestBody?.url, timestamp);
-    } catch (error) {
-      return createErrorResponse(error.message, 400, timestamp);
+    const url = requestBody?.url;
+    if (!url) {
+      console.error(`[${timestamp}] ❌ URL is missing in request`);
+      return createErrorResponse('URL is required', 400, timestamp);
     }
+    console.log(`[${timestamp}] 📝 Processing URL:`, url);
 
-    // Extract channel data
+    // Extract data with our simplified method
     return await extractChannelData(url, YOUTUBE_API_KEY, timestamp);
     
   } catch (error) {
-    console.error(`[${timestamp}] ❌ Unhandled error:`, error.message);
-    return createErrorResponse(error.message || 'Unknown server error', 500, timestamp);
+    console.error(`[${timestamp}] ❌ Unhandled error:`, error.message, error.stack);
+    return createErrorResponse(error.message || 'Unknown error', 500, timestamp);
   }
 }
