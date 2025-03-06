@@ -12,7 +12,6 @@ const ChannelScreenshot = ({ screenshotUrl, channelTitle }: ChannelScreenshotPro
   
   return (
     <div className="mb-6">
-      <h3 className="text-lg font-medium mb-3">Channel Screenshot</h3>
       <Card>
         <CardContent className="p-4">
           <div className="max-w-[60%] mx-auto">

@@ -21,12 +21,7 @@ const ChannelStats = ({ channel, showOnlyRevenue = false, showOnlyScreenshot = f
   }
 
   return (
-    <div>
-      {/* Only show the heading if showing full stats */}
-      {!showOnlyRevenue && !showOnlyScreenshot && (
-        <h2 className="text-xl font-semibold mb-4">Channel Statistics</h2>
-      )}
-      
+    <div>      
       {/* Full Stats Grid - Only shown in full mode */}
       {!showOnlyRevenue && !showOnlyScreenshot && (
         <ChannelStatsGrid channel={channel} />

@@ -1,4 +1,3 @@
-
 import { Globe, BarChart, Bookmark, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Channel } from "@/types/youtube";
@@ -47,7 +46,7 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
               {channel.description && (
                 <div>
                   <h3 className="text-lg font-medium mb-2">Description</h3>
-                  <p className="text-gray-700">{channel.description}</p>
+                  <p className="text-gray-700 text-lg">{channel.description}</p>
                 </div>
               )}
               
@@ -129,7 +128,7 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
               {/* Did You Know Section */}
               <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <h3 className="text-lg font-bold text-blue-800 mb-3">Did You Know?</h3>
-                <div className="text-gray-700 space-y-2">
+                <div className="text-gray-700 space-y-2 text-lg">
                   <p className="font-semibold text-blue-700">You Don't Need Millions of Views to Make Thousands of Dollars</p>
                   <p>Hey! Here's an insight you probably didn't know…</p>
                   <p>Did you know that just 50,000 views per month—which is barely a drop in the YouTube ocean—can make you $2,000+ monthly in passive income? With the right niche, some faceless YouTube channels are making $20 per 1,000 views, meaning one viral video could pay your rent for months.</p>
