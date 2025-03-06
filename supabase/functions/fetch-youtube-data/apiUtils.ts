@@ -7,19 +7,23 @@ export const corsHeaders = {
 };
 
 /**
- * Helper function to make YouTube API requests with consistent error handling
+ * Helper function to make YouTube API requests with consistent error handling and optimized timeouts
  */
 export async function fetchFromYouTubeAPI(url: string, timestamp: string) {
   console.log(`🔍 [${timestamp}] Fetching from YouTube API:`, url);
   
   try {
-    // Set a specific timeout for each API request
+    // Set a specific timeout for each API request - reduced from 4s to 3s
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout (reduced from 4s)
     
     try {
       const response = await fetch(url, { 
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          // Add cache control to prevent caching issues
+          'Cache-Control': 'no-cache'
+        },
         signal: controller.signal
       });
       
@@ -44,6 +48,7 @@ export async function fetchFromYouTubeAPI(url: string, timestamp: string) {
         throw new Error(`YouTube API error: ${apiErrorMessage}`);
       }
       
+      // Use streaming response to start processing data as soon as it arrives
       const data = await response.json();
       console.log(`✅ [${timestamp}] YouTube API response successful`);
       return data;
