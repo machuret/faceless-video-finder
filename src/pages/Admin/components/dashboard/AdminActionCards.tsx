@@ -8,7 +8,7 @@ const AdminActionCards = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">Channels</h2>
         <p className="text-gray-600 mb-4">Manage YouTube channels in the database.</p>
@@ -30,6 +30,14 @@ const AdminActionCards = () => {
         <p className="text-gray-600 mb-4">Manage faceless content ideas for YouTube creators.</p>
         <Button onClick={() => navigate("/admin/faceless-ideas")} className="w-full">
           Manage Faceless Ideas
+        </Button>
+      </Card>
+      
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-4">Did You Know Facts</h2>
+        <p className="text-gray-600 mb-4">Manage facts that appear on channel pages.</p>
+        <Button onClick={() => navigate("/admin/did-you-know-facts")} className="w-full">
+          Manage Facts
         </Button>
       </Card>
     </div>

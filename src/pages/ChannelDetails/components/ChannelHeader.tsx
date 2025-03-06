@@ -2,6 +2,10 @@ import { Globe, BarChart, Bookmark, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Channel } from "@/types/youtube";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
+import { Youtube } from "lucide-react";
+import ChannelStats from "./ChannelStats";
+import ChannelScreenshot from "./ChannelScreenshot";
+import DidYouKnowFact from "./DidYouKnowFact";
 
 interface ChannelHeaderProps {
   channel: Channel;
@@ -125,21 +129,11 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
                 </div>
               )}
               
-              {/* Did You Know Section */}
-              <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h3 className="text-lg font-bold text-blue-800 mb-3">Did You Know?</h3>
-                <div className="text-gray-700 space-y-2 text-lg">
-                  <p className="font-semibold text-blue-700">You Don't Need Millions of Views to Make Thousands of Dollars</p>
-                  <p>Hey! Here's an insight you probably didn't know…</p>
-                  <p>Did you know that just 50,000 views per month—which is barely a drop in the YouTube ocean—can make you $2,000+ monthly in passive income? With the right niche, some faceless YouTube channels are making $20 per 1,000 views, meaning one viral video could pay your rent for months.</p>
-                  <p className="mt-3">The best part? You don't even need to show your face, record your voice, or have video editing skills. Want to know how to turn small views into big money? I break it all down at <a href="https://FacelessTraining.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline">FacelessTraining.com</a> 🚀</p>
-                </div>
-              </div>
+              <DidYouKnowFact />
             </div>
           </div>
           
           <div>
-            {/* Channel Screenshot - Now shown at the top of the second column */}
             {channel.screenshot_url && (
               <ChannelScreenshot 
                 screenshotUrl={channel.screenshot_url} 
@@ -147,7 +141,6 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
               />
             )}
             
-            {/* Full Channel Stats below the screenshot */}
             <ChannelStats channel={channel} />
           </div>
         </div>
@@ -155,10 +148,5 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
     </div>
   );
 };
-
-// Need to import here due to cyclic dependency if we try to import at the top
-import { Youtube } from "lucide-react";
-import ChannelStats from "./ChannelStats";
-import ChannelScreenshot from "./ChannelScreenshot";
 
 export default ChannelHeader;

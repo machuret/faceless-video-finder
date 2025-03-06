@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -27,6 +28,7 @@ import Dashboard from "@/pages/Admin/Dashboard";
 import AddChannel from "@/pages/Admin/AddChannel";
 import ManageChannelTypes from "@/pages/Admin/ManageChannelTypes";
 import ManageFacelessIdeas from "@/pages/Admin/ManageFacelessIdeas";
+import ManageDidYouKnowFacts from "@/pages/Admin/ManageDidYouKnowFacts";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 import "./App.css";
@@ -98,6 +100,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ManageFacelessIdeas />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/did-you-know-facts" 
+          element={
+            <ProtectedRoute>
+              <ManageDidYouKnowFacts />
             </ProtectedRoute>
           } 
         />
