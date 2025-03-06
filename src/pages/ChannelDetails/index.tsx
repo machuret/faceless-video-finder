@@ -75,10 +75,7 @@ const ChannelDetails = () => {
           <ChannelStats showOnlyRevenue={true} channel={channel} />
         </div>
         
-        {/* Upload Statistics - Moved up before the videos section */}
-        <ChannelUploadStats channel={channel} />
-        
-        {/* Top Performing Videos Section */}
+        {/* Top Performing Videos Section - Moved before Upload Activity */}
         {(mostViewedVideo || mostEngagingVideo || topVideosLoading) && (
           <TopPerformingVideos 
             mostViewed={mostViewedVideo} 
@@ -86,6 +83,9 @@ const ChannelDetails = () => {
             loading={topVideosLoading}
           />
         )}
+        
+        {/* Upload Statistics - Moved to the 3rd row after videos and Est CPM */}
+        <ChannelUploadStats channel={channel} />
         
         <div className="mt-8">
           {/* Only show the channel type info and videos, not the full stats again */}

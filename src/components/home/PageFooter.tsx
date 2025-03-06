@@ -8,7 +8,7 @@ const PageFooter = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div>
-            <h3 className="font-crimson text-xl font-bold mb-4">YT Channel Explorer</h3>
+            <h3 className="font-crimson text-xl font-bold mb-4">Faceless Finder</h3>
             <p className="text-gray-400 mb-4">
               Discover and analyze faceless YouTube channel ideas to help you grow your online presence.
             </p>
@@ -109,7 +109,7 @@ const PageFooter = () => {
         
         <div className="border-t border-gray-800 pt-6 text-center">
           <p className="text-gray-500 text-sm">
-            &copy; {new Date().getFullYear()} YT Channel Explorer. All rights reserved.
+            &copy; {new Date().getFullYear()} Faceless Finder. All rights reserved.
           </p>
         </div>
       </div>

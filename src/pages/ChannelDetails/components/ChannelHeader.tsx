@@ -69,7 +69,7 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 {channel.channel_type && (
                   <div className="border rounded-md p-3">
-                    <h4 className="text-sm text-gray-500 mb-1">Channel Type</h4>
+                    <h4 className="text-sm text-gray-500 mb-1"><strong>Channel Type</strong></h4>
                     <div className="flex items-center">
                       <BarChart className="h-4 w-4 text-blue-600 mr-2" />
                       <Link 
@@ -84,7 +84,7 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
                 
                 {channel.channel_category && (
                   <div className="border rounded-md p-3">
-                    <h4 className="text-sm text-gray-500 mb-1">Category</h4>
+                    <h4 className="text-sm text-gray-500 mb-1"><strong>Category</strong></h4>
                     <div className="flex items-center">
                       <Bookmark className="h-4 w-4 text-blue-600 mr-2" />
                       <span className="capitalize">{channel.channel_category}</span>
