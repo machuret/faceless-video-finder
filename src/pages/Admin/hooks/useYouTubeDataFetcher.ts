@@ -32,45 +32,25 @@ export const useYouTubeDataFetcher = (
       
       // Log function invocation start
       console.log(`[${timestamp}] 🔄 [useYouTubeDataFetcher] Invoking edge function now...`);
+
+      // Use supabase.functions.invoke() instead of direct URL access
+      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+        body: payload
+      });
       
-      // Use a standard fetch approach to see raw response
-      const response = await fetch(
-        `${supabase.functions.url('fetch-youtube-data')}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token)}`,
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+      console.log(`[${timestamp}] 📦 [useYouTubeDataFetcher] Response:`, { data, error });
       
-      // Log raw response
-      console.log(`[${timestamp}] 📦 [useYouTubeDataFetcher] Raw response status:`, response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] Error response:`, errorText);
-        throw new Error(`Failed to fetch YouTube data: ${response.status} ${errorText}`);
+      if (error) {
+        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] Error:`, error);
+        throw new Error(error.message);
       }
-      
-      // Parse JSON response
-      const data = await response.json();
-      console.log(`[${timestamp}] 📦 [useYouTubeDataFetcher] Response data:`, data);
       
       if (!data) {
         console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] No data returned`);
         throw new Error('No data returned from the server');
       }
       
-      const { channelData, error } = data;
-      
-      if (error) {
-        console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] Channel data error:`, error);
-        throw new Error(error);
-      }
+      const { channelData } = data;
       
       if (!channelData) {
         console.error(`[${timestamp}] ❌ [useYouTubeDataFetcher] No channel data:`, data);
