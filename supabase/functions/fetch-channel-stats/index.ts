@@ -20,12 +20,12 @@ const createResponse = (body: any, status = 200) => {
   })
 }
 
-// Main function to fetch channel stats
+// Improved function to fetch channel stats with better error handling
 async function fetchChannelStats(channelId: string, apiKey: string) {
   console.log(`Fetching stats for channel ID: ${channelId}`);
   
   try {
-    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${apiKey}`;
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}&key=${apiKey}`;
     console.log(`Making API request to: ${url.replace(apiKey, "API_KEY_REDACTED")}`);
     
     const response = await fetch(url);
@@ -41,13 +41,22 @@ async function fetchChannelStats(channelId: string, apiKey: string) {
       throw new Error("Channel not found");
     }
     
-    const channelStats = data.items[0].statistics;
+    const channel = data.items[0];
+    const channelStats = channel.statistics;
+    const channelInfo = channel.snippet;
+    
     console.log("Stats received:", channelStats);
+    console.log("Channel info:", channelInfo.title);
     
     return {
       subscriberCount: parseInt(channelStats.subscriberCount || '0'),
       viewCount: parseInt(channelStats.viewCount || '0'),
-      videoCount: parseInt(channelStats.videoCount || '0')
+      videoCount: parseInt(channelStats.videoCount || '0'),
+      channelInfo: {
+        title: channelInfo.title,
+        description: channelInfo.description,
+        thumbnailUrl: channelInfo.thumbnails?.default?.url
+      }
     };
   } catch (error) {
     console.error("Error fetching channel stats:", error);
@@ -55,41 +64,54 @@ async function fetchChannelStats(channelId: string, apiKey: string) {
   }
 }
 
-// For handling channel URLs that aren't direct IDs
-async function resolveChannelId(url: string, apiKey: string) {
-  console.log(`Attempting to resolve channel ID from URL: ${url}`);
+// Enhanced function to resolve channel ID from different input formats
+async function resolveChannelId(input: string, apiKey: string) {
+  console.log(`Attempting to resolve channel ID from input: ${input}`);
   
   // Check if the input is already a channel ID (UC...)
-  if (/^UC[\w-]{21,24}$/.test(url)) {
-    console.log(`Input is already a channel ID: ${url}`);
-    return url;
+  if (/^UC[\w-]{21,24}$/.test(input)) {
+    console.log(`Input is already a channel ID: ${input}`);
+    return input;
   }
   
   // Extract channel ID from URL if possible
   let match;
   
   // Handle /channel/ format
-  match = url.match(/youtube\.com\/channel\/(UC[\w-]{21,24})/i);
+  match = input.match(/youtube\.com\/channel\/(UC[\w-]{21,24})/i);
   if (match && match[1]) {
     console.log(`Extracted channel ID from URL: ${match[1]}`);
     return match[1];
   }
   
-  // Handle other formats by searching
+  // Handle handle format (@username)
+  if (input.includes('@')) {
+    const handleMatch = input.match(/@([^\/\?]+)/);
+    if (handleMatch && handleMatch[1]) {
+      const handle = handleMatch[1];
+      console.log(`Extracted handle: @${handle}, searching for channel ID`);
+      
+      try {
+        const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent('@' + handle)}&type=channel&maxResults=1&key=${apiKey}`;
+        const response = await fetch(searchUrl);
+        const data = await response.json();
+        
+        if (data.items && data.items.length > 0) {
+          const channelId = data.items[0].id.channelId;
+          console.log(`Resolved handle to channel ID: ${channelId}`);
+          return channelId;
+        }
+      } catch (error) {
+        console.error(`Error resolving handle: ${error}`);
+      }
+    }
+  }
+  
+  // For plain text channel names (like "One Percent Better")
+  // Use search API to find the channel
   try {
-    const searchTerm = url.includes('@') 
-      ? url.match(/@([^\/\?]+)/)?.[1] || url 
-      : url;
-    
-    // Check if the URL contains a channel name without @ (like "One Percent Better")
-    const channelName = url.includes('youtube.com') 
-      ? url.split('/').filter(Boolean).pop() 
-      : url;
-    
-    const finalSearchTerm = searchTerm !== url ? searchTerm : channelName;
-    
-    console.log(`Searching for channel using term: ${finalSearchTerm}`);
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(finalSearchTerm)}&type=channel&key=${apiKey}`;
+    console.log(`Searching for channel with name: "${input}"`);
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(input)}&type=channel&maxResults=1&key=${apiKey}`;
     
     const response = await fetch(searchUrl);
     
@@ -100,54 +122,18 @@ async function resolveChannelId(url: string, apiKey: string) {
     const data = await response.json();
     
     if (!data.items || data.items.length === 0) {
-      throw new Error("No channels found for the given URL");
+      throw new Error(`No channels found matching "${input}"`);
     }
     
+    // Get the first result (most relevant)
     const channelId = data.items[0].id.channelId;
-    console.log(`Resolved channel ID via search: ${channelId}`);
+    const channelTitle = data.items[0].snippet.title;
+    
+    console.log(`Found channel via search: ${channelTitle} (${channelId})`);
     return channelId;
   } catch (error) {
-    console.error("Error resolving channel ID:", error);
-    throw error;
-  }
-}
-
-// Check if channel exists via search API
-async function checkChannelExists(channelName: string, apiKey: string) {
-  console.log(`Checking if channel exists: ${channelName}`);
-  
-  try {
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(channelName)}&type=channel&key=${apiKey}`;
-    
-    const response = await fetch(searchUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Search API error: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!data.items || data.items.length === 0) {
-      console.log(`No channel found with name: ${channelName}`);
-      return null;
-    }
-    
-    // Find the most relevant channel by matching name
-    const relevantChannel = data.items.find((item: any) => {
-      const title = item.snippet.title.toLowerCase();
-      const searchTermLower = channelName.toLowerCase();
-      return title === searchTermLower || title.includes(searchTermLower);
-    }) || data.items[0]; // Fall back to first result if no direct match
-    
-    console.log(`Found channel: ${relevantChannel.snippet.title} (${relevantChannel.id.channelId})`);
-    return {
-      id: relevantChannel.id.channelId,
-      title: relevantChannel.snippet.title,
-      thumbnail: relevantChannel.snippet.thumbnails?.default?.url || null
-    };
-  } catch (error) {
-    console.error(`Error checking if channel exists: ${error}`);
-    return null;
+    console.error(`Error resolving channel name: ${error}`);
+    throw new Error(`Could not find channel with name: ${input}`);
   }
 }
 
@@ -168,40 +154,18 @@ serve(async (req) => {
     const requestData = await req.json();
     console.log("Request data:", requestData);
     
-    const { channelId, url } = requestData;
+    const { channelId, url, timestamp } = requestData;
     
     if (!channelId && !url) {
       return createResponse({ error: "Either channelId or url is required" }, 400);
     }
     
-    // For plain text channel names (like "One Percent Better"), try to find the channel first
-    if (!channelId && !url.includes('youtube.com') && !url.includes('@') && !url.startsWith('UC')) {
-      const channelInfo = await checkChannelExists(url, YOUTUBE_API_KEY);
-      
-      if (channelInfo) {
-        try {
-          const stats = await fetchChannelStats(channelInfo.id, YOUTUBE_API_KEY);
-          return createResponse({
-            ...stats,
-            channelInfo: {
-              title: channelInfo.title,
-              id: channelInfo.id,
-              thumbnailUrl: channelInfo.thumbnail
-            }
-          });
-        } catch (error) {
-          console.error("Error fetching channel stats:", error);
-          return createResponse({ 
-            error: `Found channel "${channelInfo.title}" but failed to fetch stats: ${error.message}`,
-            channelInfo
-          }, 200);
-        }
-      } else {
-        return createResponse({ error: `Could not find channel with name: ${url}` }, 200);
-      }
+    // Log timestamp if provided
+    if (timestamp) {
+      console.log(`Request timestamp: ${timestamp}`);
     }
     
-    // Resolve channel ID if a URL was provided
+    // Resolve channel ID if a URL or name was provided
     let resolvedChannelId;
     try {
       resolvedChannelId = channelId || await resolveChannelId(url, YOUTUBE_API_KEY);

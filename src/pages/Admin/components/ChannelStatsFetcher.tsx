@@ -16,7 +16,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
   const fetchLatestStats = async () => {
     if (!channelUrl) {
-      toast.error("Channel URL is required to fetch stats");
+      toast.error("Channel URL or name is required to fetch stats");
       return;
     }
 
@@ -46,7 +46,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       const { data, error } = await supabase.functions.invoke('fetch-channel-stats', {
         body: {
           channelId: isChannelId ? channelUrl : undefined,
-          url: isUrl || isChannelId ? channelUrl : channelUrl.trim(),
+          url: channelUrl.trim(),
           timestamp
         }
       });
@@ -65,24 +65,11 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       
       if (data.error) {
         console.error(`[${timestamp}] ❌ API error:`, data.error);
-        
-        // If we have channel info despite the error, show a more helpful message
-        if (data.channelInfo) {
-          toast.warning(`Found channel "${data.channelInfo.title}" but couldn't fetch statistics. Try using the channel ID directly: ${data.channelInfo.id}`);
-        } else {
-          toast.error(`Error: ${data.error}`);
-        }
+        toast.error(`Error: ${data.error}`);
         return;
       }
       
       console.log(`[${timestamp}] ✅ Statistics received:`, data);
-      
-      // If we received channel info, show it
-      if (data.channelInfo) {
-        toast.success(`Found channel: ${data.channelInfo.title}`);
-      } else {
-        toast.success("Channel statistics fetched successfully!");
-      }
       
       // Format the received stats to match our form data structure
       const formattedStats: Partial<ChannelFormData> = {
@@ -94,6 +81,9 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       // If we have channel info and no channel title in the form, set it
       if (data.channelInfo && data.channelInfo.title) {
         formattedStats.channel_title = data.channelInfo.title;
+        toast.success(`Found channel: ${data.channelInfo.title}`);
+      } else {
+        toast.success("Channel statistics fetched successfully!");
       }
       
       // Pass the stats up to the parent component

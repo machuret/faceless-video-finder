@@ -41,7 +41,7 @@ const ChannelStatsSection = ({
       return formData.channel_url;
     }
     
-    // If we have a channel title but no proper URL, use the title
+    // If we have a channel title and no proper URL, use the title
     if (formData.channel_title && formData.channel_title.trim() !== "") {
       return formData.channel_title;
     }
