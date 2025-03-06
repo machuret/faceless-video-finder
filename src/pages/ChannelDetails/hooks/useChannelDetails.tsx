@@ -1,29 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Channel } from "@/types/youtube";
 import { toast } from "sonner";
-
-interface TopVideo {
-  id: string;
-  title: string;
-  thumbnailUrl: string;
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-  publishedAt: string;
-}
-
-interface ChannelDetailsState {
-  channel: Channel | null;
-  videoStats: any[];
-  loading: boolean;
-  error: string | null;
-  topVideosLoading: boolean;
-  mostViewedVideo: TopVideo | null;
-  mostEngagingVideo: TopVideo | null;
-  topVideosError: boolean;
-}
+import { ChannelDetailsState } from "./types";
+import { extractIdFromSlug, extractYouTubeChannelId } from "./utils";
+import { fetchChannelDetails, fetchTopPerformingVideos } from "./api";
 
 export const useChannelDetails = (channelId?: string, slug?: string) => {
   const [state, setState] = useState<ChannelDetailsState>({
@@ -40,12 +20,12 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
   useEffect(() => {
     if (channelId) {
       // Direct ID lookup
-      fetchChannelDetails(channelId);
+      loadChannelDetails(channelId);
     } else if (slug) {
       // Extract ID from slug (format: title-id)
       const idFromSlug = extractIdFromSlug(slug);
       if (idFromSlug) {
-        fetchChannelDetails(idFromSlug);
+        loadChannelDetails(idFromSlug);
       } else {
         setState(prev => ({
           ...prev,
@@ -56,62 +36,23 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
     }
   }, [channelId, slug]);
 
-  const extractIdFromSlug = (slug: string): string | null => {
-    // UUID pattern: 8-4-4-4-12 hex digits with hyphens
-    // Example: ac004f01-4aad-439d-b1ab-59988473f7fc
-    const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-    const match = slug.match(uuidPattern);
-    
-    if (match && match[0]) {
-      console.log("Extracted UUID from slug:", match[0]);
-      return match[0];
-    }
-    
-    return null;
-  };
-
-  const fetchChannelDetails = async (id: string) => {
+  const loadChannelDetails = async (id: string) => {
     setState(prev => ({ ...prev, loading: true }));
     try {
-      console.log(`Fetching channel details for ID: ${id}`);
+      // Fetch basic channel data and video stats
+      const { channel, videoStats } = await fetchChannelDetails(id);
       
-      // Fetch channel details
-      const { data: channelData, error: channelError } = await supabase
-        .from("youtube_channels")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (channelError) {
-        console.error("Error fetching channel details:", channelError);
-        throw channelError;
-      }
-      
-      if (!channelData) {
-        console.error("No channel found with ID:", id);
-        throw new Error("Channel not found");
-      }
-      
-      // Fetch video stats for this channel
-      const { data: videoData, error: videoError } = await supabase
-        .from("youtube_video_stats")
-        .select("*")
-        .eq("channel_id", id);
-        
-      if (videoError) throw videoError;
-
       setState(prev => ({
         ...prev,
-        channel: channelData as unknown as Channel,
-        videoStats: videoData || [],
+        channel,
+        videoStats,
         loading: false
       }));
 
-      // After basic channel data is loaded, fetch top performing videos
-      // Extract YouTube channel ID from URL if available
-      const youtubeChannelId = extractYouTubeChannelId(channelData.channel_url);
+      // After basic channel data is loaded, fetch top performing videos if possible
+      const youtubeChannelId = extractYouTubeChannelId(channel.channel_url);
       if (youtubeChannelId) {
-        fetchTopPerformingVideosWithYouTubeId(youtubeChannelId);
+        loadTopPerformingVideos(youtubeChannelId);
       } else {
         // Set top videos loading to false since we can't fetch them
         setState(prev => ({
@@ -132,59 +73,15 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
     }
   };
 
-  // Function to extract YouTube channel ID from channel URL
-  const extractYouTubeChannelId = (url: string): string | null => {
-    if (!url) return null;
-    
-    // Pattern for channel URLs like: https://www.youtube.com/channel/UC...
-    const channelPattern = /youtube\.com\/channel\/(UC[\w-]{21}[AQgw])/i;
-    const channelMatch = url.match(channelPattern);
-    
-    if (channelMatch && channelMatch[1]) {
-      console.log("Extracted YouTube channel ID from URL:", channelMatch[1]);
-      return channelMatch[1];
-    }
-    
-    // Pattern for user URLs like: https://www.youtube.com/user/username
-    // or handle URLs like: https://www.youtube.com/@username
-    // These require an additional API call to get the channel ID, which we'll skip for now
-    
-    return null;
-  };
-
-  const fetchTopPerformingVideosWithYouTubeId = async (youtubeChannelId: string) => {
+  const loadTopPerformingVideos = async (youtubeChannelId: string) => {
     setState(prev => ({ ...prev, topVideosLoading: true, topVideosError: false }));
     try {
-      console.log(`Fetching top videos with YouTube channel ID: ${youtubeChannelId}`);
+      const { mostViewedVideo, mostEngagingVideo } = await fetchTopPerformingVideos(youtubeChannelId);
       
-      const { data, error } = await supabase.functions.invoke('fetch-top-videos', {
-        body: { channelId: youtubeChannelId }
-      });
-
-      if (error) {
-        console.error("Error fetching top videos:", error);
-        setState(prev => ({
-          ...prev,
-          topVideosLoading: false,
-          topVideosError: true
-        }));
-        return;
-      }
-
-      if (data.error) {
-        console.error("API error fetching top videos:", data.error);
-        setState(prev => ({
-          ...prev,
-          topVideosLoading: false,
-          topVideosError: true
-        }));
-        return;
-      }
-
       setState(prev => ({
         ...prev,
-        mostViewedVideo: data.mostViewed || null,
-        mostEngagingVideo: data.mostEngaging || null,
+        mostViewedVideo,
+        mostEngagingVideo,
         topVideosLoading: false,
         topVideosError: false
       }));
