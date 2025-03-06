@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ interface YouTubeUrlInputProps {
   debugInfo?: {
     lastError: string | null;
     lastResponse: any;
+    testEdgeFunction?: () => Promise<void>;
   };
 }
 
@@ -97,26 +97,69 @@ const YouTubeUrlInput = ({
       setTestLoading(true);
       setTestResult(null);
       
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] 🧪 Testing edge function with simple ping...`);
-      
-      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
-        body: { test: true, timestamp }
-      });
-      
-      console.log(`[${timestamp}] 🧪 Edge function test response:`, { data, error });
-      
-      if (error) {
-        console.error(`[${timestamp}] ❌ Edge function test error:`, error);
-        toast.error(`Edge function error: ${error.message}`);
-        setTestResult({ success: false, error });
+      if (debugInfo?.testEdgeFunction) {
+        const timestamp = new Date().toISOString();
+        console.log(`[${timestamp}] 🧪 Using builtin test function...`);
+        await debugInfo.testEdgeFunction();
+        
+        setTestResult({ 
+          success: true, 
+          data: debugInfo.lastResponse || { message: "Function called, check console for details" } 
+        });
       } else {
-        console.log(`[${timestamp}] ✅ Edge function test successful:`, data);
-        toast.success("Edge function is working!");
-        setTestResult({ success: true, data });
+        const timestamp = new Date().toISOString();
+        console.log(`[${timestamp}] 🧪 Testing edge function with simple ping...`);
+        
+        const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+          body: { test: true, timestamp }
+        });
+        
+        console.log(`[${timestamp}] 🧪 Edge function test response:`, { data, error });
+        
+        if (error) {
+          console.error(`[${timestamp}] ❌ Edge function test error:`, error);
+          toast.error(`Edge function error: ${error.message}`);
+          setTestResult({ success: false, error });
+        } else {
+          console.log(`[${timestamp}] ✅ Edge function test successful:`, data);
+          toast.success("Edge function is working!");
+          setTestResult({ success: true, data });
+        }
       }
     } catch (err) {
       console.error(`[${new Date().toISOString()}] ❌ Unexpected error testing edge function:`, err);
+      toast.error(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTestResult({ success: false, error: err });
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
+  const pingEdgeFunction = async () => {
+    try {
+      setTestLoading(true);
+      setTestResult(null);
+      
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] 🧪 Pinging edge function...`);
+      
+      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+        body: { ping: true, timestamp }
+      });
+      
+      console.log(`[${timestamp}] 🧪 Edge function ping response:`, { data, error });
+      
+      if (error) {
+        console.error(`[${timestamp}] ❌ Edge function ping error:`, error);
+        toast.error(`Edge function error: ${error.message}`);
+        setTestResult({ success: false, error });
+      } else {
+        console.log(`[${timestamp}] ✅ Edge function ping successful:`, data);
+        toast.success("Edge function ping successful!");
+        setTestResult({ success: true, data });
+      }
+    } catch (err) {
+      console.error(`[${new Date().toISOString()}] ❌ Unexpected error pinging edge function:`, err);
       toast.error(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setTestResult({ success: false, error: err });
     } finally {
@@ -230,6 +273,18 @@ const YouTubeUrlInput = ({
               >
                 <Zap className="h-3 w-3" />
                 {testLoading ? "Testing..." : "Test Edge Function"}
+              </Button>
+              
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={pingEdgeFunction}
+                disabled={testLoading}
+                className="text-xs flex items-center gap-1"
+              >
+                <Zap className="h-3 w-3" />
+                Ping Function
               </Button>
               
               <Button

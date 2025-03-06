@@ -28,6 +28,9 @@ export const useYouTubeDataFetcher = (
       setAttempts(prev => prev + 1);
       console.log(`[${timestamp}] 📡 Calling edge function with URL:`, youtubeUrl.trim());
       
+      // Add a little delay to make sure logs appear in the correct order
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Simplified request
       const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
         body: { 
@@ -65,7 +68,7 @@ export const useYouTubeDataFetcher = (
         return;
       }
       
-      // Handle simplified response with basic info
+      // Handle ultra-simplified response with just basic info
       if (data.basicInfo) {
         console.log(`[${timestamp}] ✅ Successfully received basic info:`, data.basicInfo);
         
@@ -76,8 +79,8 @@ export const useYouTubeDataFetcher = (
         const formattedData: ChannelFormData = {
           video_id: videoId || "",
           channel_title: channelTitle || "",
-          channel_url: `https://www.youtube.com/channel/${channelId}` || "",
-          description: `Video title: ${videoTitle}` || "",
+          channel_url: channelId ? `https://www.youtube.com/channel/${channelId}` : "",
+          description: `Video title: ${videoTitle || "Unknown"}` || "",
           screenshot_url: "",
           total_subscribers: "0",
           total_views: "0",
@@ -87,7 +90,7 @@ export const useYouTubeDataFetcher = (
           channel_type: "creator",
           country: "",
           channel_category: "other",
-          notes: `This is minimal data extracted from video: ${videoTitle}`,
+          notes: `This is minimal data extracted from video: ${videoTitle || "Unknown"}`,
           keywords: []
         };
         
@@ -143,11 +146,43 @@ export const useYouTubeDataFetcher = (
     }
   };
   
-  // Expose debug information
+  // Simple test function to verify edge function is working
+  const testEdgeFunction = async () => {
+    try {
+      setLoading(true);
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] 🧪 Testing edge function with ping...`);
+      
+      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+        body: { ping: true, timestamp }
+      });
+      
+      console.log(`[${timestamp}] 🧪 Edge function ping response:`, { data, error });
+      
+      if (error) {
+        console.error(`[${timestamp}] ❌ Edge function ping error:`, error);
+        setLastError(error.message);
+        toast.error(`Edge function error: ${error.message}`);
+      } else {
+        console.log(`[${timestamp}] ✅ Edge function ping successful:`, data);
+        setLastResponse(data);
+        toast.success("Edge function is working!");
+      }
+    } catch (error) {
+      console.error(`[${timestamp}] ❌ Unexpected error testing edge function:`, error);
+      setLastError(error instanceof Error ? error.message : 'Unknown error');
+      toast.error(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Expose debug information and test function
   const debugInfo = {
     lastError,
     lastResponse,
-    attempts
+    attempts,
+    testEdgeFunction
   };
   
   return { fetchYoutubeData, debugInfo };

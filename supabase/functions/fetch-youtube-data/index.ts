@@ -10,58 +10,51 @@ console.log(`🚀 fetch-youtube-data edge function starting up - ${new Date().to
 serve(async (req) => {
   // Add detailed logging timestamp
   const timestamp = new Date().toISOString();
-  console.log(`📥 [${timestamp}] Request received: ${req.method} ${req.url}`);
+  console.log(`📥 [${timestamp}] DEBUG: Request received: ${req.method} ${req.url}`);
   
   // Handle CORS preflight quickly
   if (req.method === 'OPTIONS') {
-    console.log('[CORS] Handling OPTIONS request');
+    console.log(`[${timestamp}] [CORS] DEBUG: Handling OPTIONS request`);
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Simple guard against timeouts
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        console.error(`⏱️ [${timestamp}] Edge function timeout reached`);
-        reject(new Error('Edge function timeout'));
-      }, 9000); // 9 second timeout
-    });
-    
-    // Process the request with timeout protection
+    console.log(`[${timestamp}] DEBUG: Processing ${req.method} request`);
+    // Process the request with no timeout protection for debugging
     try {
-      const response = await Promise.race([
-        handleRequest(req),
-        timeoutPromise
-      ]);
+      const response = await handleRequest(req);
+      console.log(`[${timestamp}] DEBUG: Request successfully processed`);
       return response;
     } catch (error) {
-      console.error(`⚠️ [${timestamp}] Error or timeout:`, error.message);
+      console.error(`[${timestamp}] ⚠️ DEBUG: Error in request handling:`, error.message, error.stack);
       
       // Return a clean error response
       return new Response(
         JSON.stringify({ 
           error: error.message || "Unknown error occurred",
           success: false,
-          timestamp
+          timestamp,
+          debug: "Edge function caught error"
         }),
         { 
-          status: 500,
+          status: 200, // Use 200 to ensure we see the response
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
   } catch (error) {
     // Global error handler as a safety net
-    console.error(`🚨 [${timestamp}] Critical error:`, error.message);
+    console.error(`[${timestamp}] 🚨 DEBUG: Critical error:`, error.message, error.stack);
     return new Response(
       JSON.stringify({ 
         error: "Critical server error",
         message: error.message || "Unknown error",
         success: false,
-        timestamp
+        timestamp,
+        debug: "Edge function global catch"
       }),
       { 
-        status: 500,
+        status: 200, // Use 200 to ensure we see the response
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
