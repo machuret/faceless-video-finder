@@ -14,7 +14,7 @@ const corsHeaders = {
 };
 
 // Global timeout controller to prevent hanging requests
-const TIMEOUT_MS = 25000; // 25 second timeout
+const TIMEOUT_MS = 20000; // 20 second timeout - reduced from 25s
 
 serve(async (req) => {
   // Create an AbortController for the entire request
@@ -125,31 +125,41 @@ serve(async (req) => {
     }
     console.log(`[${now}] 📝 Processing URL:`, url);
 
-    // Try different extraction methods
+    // Try different extraction methods with more robust error handling
     let channel = null;
     let channelId = null;
     let error = null;
     let extractionMethod = "none";
 
     try {
-      // Method 1: Try direct channel extraction
+      // Method 1: Try direct channel extraction with timeout
       console.log(`[${now}] 🔍 Attempting direct channel extraction`);
-      const result = await fetchChannelDirectly(url, YOUTUBE_API_KEY);
-      channel = result.channel;
-      channelId = result.channelId;
+      const directPromise = fetchChannelDirectly(url, YOUTUBE_API_KEY);
+      const directResult = await Promise.race([
+        directPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Direct extraction timed out")), 6000))
+      ]);
+      
+      channel = directResult.channel;
+      channelId = directResult.channelId;
       extractionMethod = "direct";
       console.log(`[${now}] ✅ Direct extraction successful`);
     } catch (e) {
       console.log(`[${now}] ⚠️ Direct extraction failed:`, e.message);
       error = e;
 
-      // Method 2: Try extraction via video
+      // Method 2: Try extraction via video with timeout
       if (url.includes('watch?v=') || url.includes('youtu.be')) {
         try {
           console.log(`[${now}] 🔍 Attempting extraction via video`);
-          const result = await fetchChannelViaVideo(url, YOUTUBE_API_KEY);
-          channel = result.channel;
-          channelId = result.channelId;
+          const videoPromise = fetchChannelViaVideo(url, YOUTUBE_API_KEY);
+          const videoResult = await Promise.race([
+            videoPromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Video extraction timed out")), 6000))
+          ]);
+          
+          channel = videoResult.channel;
+          channelId = videoResult.channelId;
           extractionMethod = "video";
           console.log(`[${now}] ✅ Video extraction successful`);
           error = null;
@@ -159,13 +169,18 @@ serve(async (req) => {
         }
       }
 
-      // Method 3: Last resort, try search
+      // Method 3: Last resort, try search with timeout
       if (!channel) {
         try {
           console.log(`[${now}] 🔍 Attempting extraction via search`);
-          const result = await fetchChannelViaSearch(url, YOUTUBE_API_KEY);
-          channel = result.channel;
-          channelId = result.channelId;
+          const searchPromise = fetchChannelViaSearch(url, YOUTUBE_API_KEY);
+          const searchResult = await Promise.race([
+            searchPromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Search extraction timed out")), 6000))
+          ]);
+          
+          channel = searchResult.channel;
+          channelId = searchResult.channelId;
           extractionMethod = "search";
           console.log(`[${now}] ✅ Search extraction successful`);
           error = null;

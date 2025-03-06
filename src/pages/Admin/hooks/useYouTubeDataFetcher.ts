@@ -33,8 +33,8 @@ export const useYouTubeDataFetcher = (
       
       const timeoutPromise = new Promise<{data: null, error: Error}>((_, reject) => {
         timeoutId = window.setTimeout(() => {
-          reject(new Error('Request timed out after 30 seconds'));
-        }, 30000); // 30-second timeout
+          reject(new Error('Request timed out after 20 seconds'));
+        }, 20000); // Reduced from 30s to 20s
       });
       
       // Call the edge function with request body
