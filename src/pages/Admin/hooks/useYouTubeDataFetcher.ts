@@ -28,9 +28,9 @@ export const useYouTubeDataFetcher = (
       setAttempts(prev => prev + 1);
       console.log(`[${timestamp}] 📡 Calling edge function with URL:`, youtubeUrl.trim(), `(Attempt: ${attempts + 1})`);
       
-      // Use a more reliable approach with a simpler timeout mechanism
+      // Use a shorter client-side timeout for better UX
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out after 15 seconds')), 15000);
+        setTimeout(() => reject(new Error('Request timed out after 12 seconds')), 12000);
       });
       
       // Call the edge function with request body
@@ -55,7 +55,7 @@ export const useYouTubeDataFetcher = (
         setLastError(result.error.message);
         
         if (result.error.message?.includes('timeout') || result.error.message?.includes('timed out')) {
-          toast.error("Request timed out. The YouTube API may be experiencing issues.");
+          toast.error("Request timed out. Try again with a simpler URL or use mock data.");
         } else {
           toast.error(`Edge function error: ${result.error.message}`);
         }
@@ -80,6 +80,8 @@ export const useYouTubeDataFetcher = (
           toast.error("YouTube API quota exceeded. Please try again tomorrow.");
         } else if (data.error.includes('API key')) {
           toast.error("YouTube API key error. Please check your API key configuration.");
+        } else if (data.error.includes('timed out') || data.error.includes('timeout')) {
+          toast.error("Request timed out. Try a simpler URL or use mock data.");
         } else {
           toast.error(`Error: ${data.error}`);
         }
@@ -132,7 +134,7 @@ export const useYouTubeDataFetcher = (
       setLastError(error instanceof Error ? error.message : 'Unknown error');
       
       if (error instanceof Error && error.message.includes('timed out')) {
-        toast.error("Request timed out. Please try again or use mock data.");
+        toast.error("Request timed out. Please try again with a simpler URL or use mock data.");
       } else {
         toast.error(`Failed to load YouTube data: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }

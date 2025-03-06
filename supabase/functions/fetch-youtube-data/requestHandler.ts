@@ -5,12 +5,12 @@ import { formatChannelData } from './dataFormatters.ts';
 import { createMockChannelData } from './mockData.ts';
 
 // Reduce global timeout to ensure we respond before edge function timeout
-export const TIMEOUT_MS = 12000; // 12 second timeout (reduced from 15s)
+export const TIMEOUT_MS = 9000; // 9 second timeout (reduced from 12s)
 
 // Set individual method timeouts
-const DIRECT_FETCH_TIMEOUT = 4000;   // 4 seconds
-const VIDEO_FETCH_TIMEOUT = 3500;    // 3.5 seconds  
-const SEARCH_FETCH_TIMEOUT = 3000;   // 3 seconds
+const DIRECT_FETCH_TIMEOUT = 3000;   // 3 seconds (reduced from 4s)
+const VIDEO_FETCH_TIMEOUT = 2500;    // 2.5 seconds (reduced from 3.5s)  
+const SEARCH_FETCH_TIMEOUT = 2000;   // 2 seconds (reduced from 3s)
 
 /**
  * Validates and processes the incoming request
@@ -52,7 +52,7 @@ export async function handleRequest(req: Request) {
         }, timestamp);
       }
 
-      // Check for mock data request
+      // Check for mock data request - process it fast
       if (requestBody?.allowMockData === true && requestBody?.url) {
         console.log(`[${timestamp}] 🧪 Returning mock data for URL: ${requestBody.url}`);
         const mockData = createMockChannelData(requestBody.url);
@@ -62,7 +62,7 @@ export async function handleRequest(req: Request) {
         }, timestamp);
       }
 
-      // Validate YouTube API key
+      // Validate YouTube API key - fail fast if missing
       const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY');
       if (!YOUTUBE_API_KEY) {
         console.error(`[${timestamp}] ❌ YouTube API key not configured`);
@@ -70,7 +70,7 @@ export async function handleRequest(req: Request) {
       }
       console.log(`[${timestamp}] 🔑 API Key exists and is properly configured`);
 
-      // Validate URL
+      // Validate URL - fail fast if missing
       const url = requestBody?.url;
       if (!url) {
         console.error(`[${timestamp}] ❌ URL is required but was not provided`);
@@ -78,7 +78,7 @@ export async function handleRequest(req: Request) {
       }
       console.log(`[${timestamp}] 📝 Processing URL:`, url);
 
-      // Attempt channel extraction
+      // Attempt channel extraction with stricter timeouts
       return await extractChannelData(url, YOUTUBE_API_KEY, requestBody?.allowMockData, timestamp);
       
     } catch (error) {
@@ -87,8 +87,19 @@ export async function handleRequest(req: Request) {
     }
   })();
   
-  // Race between actual processing and timeout
-  return Promise.race([processPromise, timeoutPromise]);
+  // Race between actual processing and timeout, with a slight advantage to processing
+  // This helps ensure we get a result if processing finishes right around the timeout
+  return Promise.race([
+    processPromise,
+    new Promise<Response>(resolve => {
+      setTimeout(() => {
+        // Don't resolve immediately, give processPromise a chance to complete first
+        Promise.race([processPromise, new Promise(r => setTimeout(r, 100))])
+          .then(resolve) 
+          .catch(() => resolve(createErrorResponse("Request timed out", 408, timestamp)));
+      }, TIMEOUT_MS - 200); // Give process a 200ms buffer
+    })
+  ]);
 }
 
 /**
@@ -97,7 +108,7 @@ export async function handleRequest(req: Request) {
 async function extractChannelData(url: string, YOUTUBE_API_KEY: string, allowMockData: boolean, timestamp: string) {
   console.log(`[${timestamp}] 🔍 Attempting channel extraction with optimized approach`);
   
-  // Try direct extraction first
+  // Try direct extraction first with shorter timeout
   let channel = null;
   let channelId = null;
   let extractionMethod = "direct";
@@ -126,7 +137,7 @@ async function extractChannelData(url: string, YOUTUBE_API_KEY: string, allowMoc
     console.log(`[${timestamp}] ⚠️ Direct extraction failed:`, directError.message);
   }
   
-  // If URL looks like a video, try video extraction
+  // If URL looks like a video, try video extraction with shorter timeout
   if (!channel && (url.includes('watch?v=') || url.includes('youtu.be'))) {
     try {
       extractionMethod = "video";
@@ -154,7 +165,7 @@ async function extractChannelData(url: string, YOUTUBE_API_KEY: string, allowMoc
     }
   }
   
-  // If still no result, try search as last resort
+  // If still no result, try search as last resort with shortest timeout
   if (!channel) {
     try {
       extractionMethod = "search";

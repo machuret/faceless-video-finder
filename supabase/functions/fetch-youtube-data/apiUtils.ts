@@ -1,11 +1,4 @@
 
-// Define corsHeaders to be used in HTTP requests
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
-
 /**
  * Helper function to make YouTube API requests with consistent error handling and optimized timeouts
  */
@@ -13,16 +6,18 @@ export async function fetchFromYouTubeAPI(url: string, timestamp: string) {
   console.log(`🔍 [${timestamp}] Fetching from YouTube API:`, url);
   
   try {
-    // Set a specific timeout for each API request - reduced from 4s to 3s
+    // Set a specific timeout for each API request - reduced to improve response times
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout (reduced from 4s)
+    const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s timeout (reduced from 3s)
     
     try {
       const response = await fetch(url, { 
         headers: { 
           'Content-Type': 'application/json',
-          // Add cache control to prevent caching issues
-          'Cache-Control': 'no-cache'
+          // Add stronger cache control to prevent caching issues
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
         signal: controller.signal
       });
