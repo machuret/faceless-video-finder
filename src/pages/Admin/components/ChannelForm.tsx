@@ -33,44 +33,45 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   handleKeywordsChange
 }) => {
   return (
-    <Form onSubmit={handleSubmit}>
-      <div className="space-y-8 mb-8">
-        <ChannelIdentitySection 
-          formData={formData}
-          handleChange={handleChange}
-          handleScreenshotChange={handleScreenshotChange}
-        />
-        
-        <ChannelStatsSection 
-          formData={formData}
-          handleChange={handleChange}
-        />
-        
-        <ChannelTypeCategories 
-          formData={formData}
-          handleFieldChange={handleFieldChange}
-          handleKeywordsChange={handleKeywordsChange}
-        />
-        
-        <ChannelContentSection 
-          title={formData.channel_title || ''}
-          description={formData.ai_description || ''}
-          onDescriptionChange={(value) => handleFieldChange('ai_description', value)}
-        />
-        
-        <RevenueDetailsSection 
-          formData={formData}
-          handleChange={handleChange}
-        />
-        
-        <NotesSection 
-          notes={formData.notes || ''}
-          onChange={(value) => handleFieldChange('notes', value)}
-        />
-      </div>
+    <div className="space-y-8 mb-8" onSubmit={handleSubmit}>
+      <ChannelIdentitySection 
+        formData={formData}
+        handleChange={handleChange}
+        handleScreenshotChange={handleScreenshotChange}
+        isEditMode={isEditMode}
+      />
       
+      <ChannelStatsSection 
+        formData={formData}
+        handleChange={handleChange}
+        handleFieldChange={handleFieldChange}
+        isEditMode={isEditMode}
+      />
+      
+      <ChannelTypeCategories 
+        formData={formData}
+        handleFieldChange={handleFieldChange}
+      />
+      
+      <ChannelContentSection 
+        title={formData.channel_title || ''}
+        description={formData.ai_description || ''}
+        onDescriptionChange={(value) => handleFieldChange('ai_description', value)}
+      />
+      
+      <RevenueDetailsSection 
+        formData={formData}
+        handleChange={handleChange}
+      />
+      
+      <NotesSection 
+        notes={formData.notes || ''}
+        channelType={formData.channel_type}
+        onFieldChange={handleFieldChange}
+      />
+
       <div className="flex justify-end">
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} onClick={handleSubmit}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -81,7 +82,7 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
           )}
         </Button>
       </div>
-    </Form>
+    </div>
   );
 };
 
