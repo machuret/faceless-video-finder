@@ -24,7 +24,7 @@ const AboutSectionFetcher = ({ channelUrl, onAboutReceived, disabled = false }: 
     toast.info("Fetching channel's about section...");
 
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-channel-stats', {
+      const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
         body: { 
           channelUrl,
           fetchDescriptionOnly: true
