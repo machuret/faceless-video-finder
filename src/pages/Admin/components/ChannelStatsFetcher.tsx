@@ -17,6 +17,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
   const [apiError, setApiError] = useState<string | null>(null);
   const [isMockData, setIsMockData] = useState(false);
   const [dataSource, setDataSource] = useState<"apify" | "youtube" | "mock">("apify");
+  const [mockReason, setMockReason] = useState<string | null>(null);
 
   const fetchStats = async () => {
     if (!channelUrl) {
@@ -28,6 +29,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     setLoading(true);
     setApiError(null);
     setIsMockData(false);
+    setMockReason(null);
     setDataSource("apify");
     toast.info("Fetching channel stats via Apify...");
 
@@ -77,6 +79,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       
       if (data.is_mock) {
         setIsMockData(true);
+        setMockReason(data.error_reason || null);
         const reason = data.error_reason ? ` (${data.error_reason})` : '';
         toast.warning(`Using mock data - couldn't fetch actual channel stats${reason}`);
       } else {
@@ -131,7 +134,8 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         <Alert className="mt-2 border-yellow-500">
           <AlertTitle className="text-yellow-600">Using Mock Data</AlertTitle>
           <AlertDescription className="text-sm">
-            The provided stats are simulated approximations. The data scraping request failed.
+            The provided stats are simulated approximations. The data scraping request failed
+            {mockReason ? `: ${mockReason}` : ""}.
           </AlertDescription>
         </Alert>
       )}
