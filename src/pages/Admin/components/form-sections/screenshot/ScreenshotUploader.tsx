@@ -67,7 +67,7 @@ const ScreenshotUploader = ({
 
     try {
       setCapturingScreenshot(true);
-      toast.info("Capturing screenshot...");
+      toast.info("Capturing screenshot... (this may take up to 20 seconds)");
 
       const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: {

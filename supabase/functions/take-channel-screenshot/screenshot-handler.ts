@@ -26,6 +26,14 @@ export async function handleScreenshot(
   try {
     console.log(`Taking screenshot of channel: ${channelUrl} with ID: ${channelId}`);
     
+    // Sanitize channel URL to ensure it's valid
+    let sanitizedUrl = channelUrl;
+    if (!sanitizedUrl.startsWith('http')) {
+      sanitizedUrl = `https://${sanitizedUrl}`;
+    }
+    
+    console.log(`Using sanitized URL: ${sanitizedUrl}`);
+    
     const bucketName = "channel_screenshots";
     
     // Ensure the bucket exists
@@ -34,8 +42,8 @@ export async function handleScreenshot(
       return { success: false, error: bucketResult.error };
     }
     
-    // Get actual screenshot from screenshotapi.net
-    const screenshotBuffer = await takeScreenshotViaAPI(channelUrl);
+    // Get screenshot from Apify
+    const screenshotBuffer = await takeScreenshotViaAPI(sanitizedUrl);
     if (!screenshotBuffer) {
       return { success: false, error: "Failed to generate screenshot" };
     }

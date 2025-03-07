@@ -56,8 +56,32 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
       throw new Error(`Apify Screenshot URL actor returned ${response.status}: ${errorText || response.statusText}`);
     }
     
-    // The response should be a JSON with a "data" field containing items
-    const responseData = await response.json();
+    // Check if the response has content before trying to parse it
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error("Unexpected content type from Apify:", contentType);
+      const rawResponse = await response.text();
+      console.log("Raw response from Apify:", rawResponse.substring(0, 1000)); // Log first 1000 chars only
+      throw new Error(`Apify returned non-JSON response with content type: ${contentType}`);
+    }
+    
+    let responseData;
+    try {
+      const rawText = await response.text();
+      console.log("Response text length:", rawText.length);
+      
+      // If response is empty or not valid JSON, throw an error
+      if (!rawText || rawText.trim() === '') {
+        throw new Error("Empty response from Apify");
+      }
+      
+      // Try to parse the JSON
+      responseData = JSON.parse(rawText);
+    } catch (parseError) {
+      console.error("Error parsing JSON response:", parseError);
+      throw new Error(`Failed to parse Apify response: ${parseError.message}`);
+    }
+    
     console.log(`Apify response status: ${response.status}`);
     console.log(`Received Apify response data - item count: ${responseData.items?.length || 0}`);
     
