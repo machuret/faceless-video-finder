@@ -204,7 +204,7 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
       const failedFields: string[] = [];
       
       // Map from API field names to form field names
-      const fieldMappings = {
+      const fieldMappings: Record<string, keyof ChannelFormData> = {
         description: 'description',
         country: 'country',
         subscriberCount: 'total_subscribers',
@@ -217,7 +217,7 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
       // Check each field in the response and add to our stats object if present
       Object.entries(fieldMappings).forEach(([apiField, formField]) => {
         if (data[apiField] && data[apiField].toString().trim() !== "") {
-          partialStats[formField as keyof ChannelFormData] = data[apiField].toString();
+          partialStats[formField] = data[apiField].toString();
           successfulFields.push(apiField);
         } else if (missingFields.some(field => field.toLowerCase().includes(apiField.toLowerCase()))) {
           failedFields.push(apiField);

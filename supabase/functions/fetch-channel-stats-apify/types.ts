@@ -21,3 +21,21 @@ export interface ChannelStatsRequest {
   channelUrl: string;
   fetchMissingOnly?: boolean;  // More generic flag to fetch any missing fields
 }
+
+/**
+ * Response structure from the edge function
+ */
+export interface ChannelStatsResponse {
+  success: boolean;
+  title?: string;
+  subscriberCount?: number;
+  viewCount?: number;
+  videoCount?: string;
+  startDate?: string;
+  description?: string;
+  country?: string;
+  url?: string;
+  source?: string;
+  error?: string;
+  details?: any;
+}
