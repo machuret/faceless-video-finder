@@ -40,6 +40,14 @@ export function formatChannelStatsResponse(channelData: ApifyChannelData, isMock
   }
   videoCount = isNaN(videoCount) ? 0 : videoCount;
   
+  // Format start date properly
+  const startDate = formatDate(channelData.channelJoinedDate || "");
+  console.log(`Start date after formatting: ${startDate} (from ${channelData.channelJoinedDate})`);
+  
+  // Extract country if available
+  const country = channelData.channelLocation || "";
+  console.log(`Country: ${country}`);
+  
   // Create formatted response object
   const response: ChannelStatsResponse = {
     success: true,
@@ -48,10 +56,20 @@ export function formatChannelStatsResponse(channelData: ApifyChannelData, isMock
     videoCount: videoCount,
     title: channelData.channelName || "",
     description: channelData.channelDescription || "",
-    startDate: formatDate(channelData.channelJoinedDate || "") || "",
-    country: channelData.channelLocation || "",
+    startDate: startDate || "",
+    country: country,
     source: "apify",
-    ...(isMock && { is_mock: true, error_reason: errorReason })
+    ...(isMock && { is_mock: true, error_reason: errorReason }),
+    details: {}
+  };
+  
+  // Add raw data to the details for debugging
+  response.details = {
+    rawSubscribers: channelData.numberOfSubscribers,
+    rawViews: channelData.channelTotalViews,
+    rawVideos: channelData.channelTotalVideos,
+    rawDate: channelData.channelJoinedDate,
+    rawCountry: channelData.channelLocation
   };
   
   // Log the formatted response for debugging

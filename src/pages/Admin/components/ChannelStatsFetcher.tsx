@@ -24,7 +24,8 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       { key: 'viewCount', label: 'Total Views' },
       { key: 'videoCount', label: 'Video Count' },
       { key: 'startDate', label: 'Start Date' },
-      { key: 'description', label: 'Description' }
+      { key: 'description', label: 'Description' },
+      { key: 'country', label: 'Country' }
     ];
     
     const missingFields = requiredFields.filter(field => {
@@ -148,7 +149,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       )}
 
       {!apiError && partialData && (
-        <Alert variant="warning" className="mt-2 border-yellow-500">
+        <Alert className="mt-2 border-yellow-500 bg-yellow-50">
           <AlertTitle className="text-yellow-600">Incomplete Data</AlertTitle>
           <AlertDescription className="text-sm">
             Some channel data is missing or incomplete. You may need to fill in the missing fields manually.

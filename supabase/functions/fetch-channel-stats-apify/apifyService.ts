@@ -27,9 +27,12 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     "startUrls": [{ "url": url }],
     "maxVideos": 1,
     "proxy": {
-      "useApifyProxy": true
+      "useApifyProxy": true,
+      "apifyProxyGroups": ["RESIDENTIAL"]
     },
     "maxResults": 1,
+    "scrapeChannelInfo": true,
+    "includeChannelAboutInfo": true,
     "extendOutputFunction": `async ({ data, customData, Apify }) => {
       // Ensure full channel details are captured, especially the About tab
       if (data && data.type === 'channel') {
@@ -41,29 +44,32 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
           console.log('Channel description missing, attempting to fetch from About page');
           const aboutPageUrl = data.url + '/about';
           try {
-            const request = await Apify.utils.requestAsBrowser({ url: aboutPageUrl });
+            const request = await Apify.utils.requestAsBrowser({ 
+              url: aboutPageUrl,
+              proxyUrl: Apify.getApifyProxyUrl({ groups: ['RESIDENTIAL'] }),
+              timeoutSecs: 60
+            });
             const html = request.body;
             
             // Extract description from About page using appropriate selectors
-            // This is a simplified approach - actual implementation may need to be adjusted
-            const descriptionMatch = html.match(/<meta property="og:description" content="([^"]+)"/);
+            const descriptionMatch = html.match(/<meta\\s+property="og:description"\\s+content="([^"]+)"/);
             if (descriptionMatch && descriptionMatch[1]) {
               data.channelDescription = descriptionMatch[1];
               console.log('Successfully extracted description from About page');
             }
             
             // Extract join date
-            const joinDateMatch = html.match(/Channel created on (.+?)<\\/span>/);
+            const joinDateMatch = html.match(/(?:Channel created on|Joined) (.+?)<\\/span>/);
             if (joinDateMatch && joinDateMatch[1]) {
               data.channelJoinedDate = joinDateMatch[1];
-              console.log('Successfully extracted join date');
+              console.log('Successfully extracted join date: ' + joinDateMatch[1]);
             }
             
             // Extract country
-            const countryMatch = html.match(/Location:<\\/span>.*?>([^<]+)</);
+            const countryMatch = html.match(/(?:Location|Country):<\\/span>.*?>([^<]+)</);
             if (countryMatch && countryMatch[1]) {
               data.channelLocation = countryMatch[1].trim();
-              console.log('Successfully extracted country');
+              console.log('Successfully extracted country: ' + countryMatch[1].trim());
             }
           } catch (e) {
             console.log('Error fetching about page:', e);
@@ -107,12 +113,12 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     // Poll for actor run status until it's finished
     let isFinished = false;
     let retries = 0;
-    const maxRetries = 30; // Increased to allow more time for processing
+    const maxRetries = 40; // Increased to allow more time for processing
     let lastStatus = '';
     
     while (!isFinished && retries < maxRetries) {
-      // Wait between status checks
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Wait between status checks - longer wait times for better results
+      await new Promise(resolve => setTimeout(resolve, 6000));
       
       const statusResponse = await fetch(
         `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`

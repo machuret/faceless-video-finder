@@ -19,13 +19,14 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
         }
       ],
       "format": "png",
-      "waitUntil": "domcontentloaded",
-      "delay": 5000, // 5 seconds delay to ensure page is fully loaded
+      "waitUntil": "networkidle2",
+      "delay": 8000, // 8 seconds delay to ensure page is fully loaded
       "viewportWidth": 1366,
       "viewportHeight": 768,
       "scrollToBottom": false,
       "proxy": {
-        "useApifyProxy": true
+        "useApifyProxy": true,
+        "apifyProxyGroups": ["RESIDENTIAL"]
       }
     };
     
