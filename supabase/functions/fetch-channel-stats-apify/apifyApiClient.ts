@@ -1,7 +1,6 @@
 
 import { ApifyError } from "./errors.ts";
 import { ApifyChannelData } from "./types.ts";
-import { createApifyInput } from "./apifyConfig.ts";
 
 /**
  * Fetches channel data using Apify's Fast YouTube Channel Scraper
@@ -122,12 +121,16 @@ async function pollForActorStatus(runId: string, apiToken: string) {
  */
 async function fetchActorResults(runId: string, apiToken: string): Promise<ApifyChannelData> {
   // Fetch the dataset items
+  console.log(`Fetching dataset items for run ID: ${runId}`);
+  
   const datasetResponse = await fetch(
     `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apiToken}`
   );
   
   if (!datasetResponse.ok) {
-    throw new ApifyError(`Failed to fetch dataset: ${datasetResponse.status}`, datasetResponse.status);
+    const errorText = await datasetResponse.text();
+    console.error("Error response:", errorText);
+    throw new ApifyError(`Failed to fetch dataset: ${datasetResponse.status} ${datasetResponse.statusText}`, datasetResponse.status);
   }
   
   let items;
@@ -155,12 +158,18 @@ function processChannelData(items: any[]): ApifyChannelData {
   // We need to extract the channel information which is present in each video item
   const firstItem = items[0]; // Get the first item which contains channel data
   
+  if (!firstItem) {
+    throw new ApifyError('Invalid data format returned from Apify - no items found');
+  }
+  
+  console.log("Processing first item from dataset:", JSON.stringify(firstItem, null, 2).substring(0, 500) + "...");
+  
   // The format is different from the old scraper, so we need to map fields
   const channelData: ApifyChannelData = {
     channelName: firstItem.channelName,
     channelDescription: firstItem.channelDescription,
-    numberOfSubscribers: parseInt(firstItem.numberOfSubscribers) || 0,
-    channelTotalViews: firstItem.channelTotalViews?.replace(/,/g, '') || "0",
+    numberOfSubscribers: firstItem.numberOfSubscribers?.toString() || "0",
+    channelTotalViews: firstItem.channelTotalViews || "0",
     channelTotalVideos: firstItem.channelTotalVideos || "0",
     channelJoinedDate: firstItem.channelJoinedDate,
     channelLocation: firstItem.channelLocation,
