@@ -45,6 +45,7 @@ const AboutSectionFetcher = ({ channelUrl, onAboutReceived, disabled = false }: 
       // Extract the description from the response
       const description = data.description || "";
       
+      // Call the callback function with the description
       onAboutReceived(description);
       toast.success("Channel about section updated successfully");
     } catch (err) {

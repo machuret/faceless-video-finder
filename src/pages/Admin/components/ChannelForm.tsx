@@ -32,11 +32,7 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   handleKeywordsChange
 }) => {
   // Function to handle fetching about section
-  const handleFetchAbout = async () => {
-    if (!formData.channel_url) {
-      return;
-    }
-    
+  const handleFetchAbout = () => {
     // This function passes the updated description to the form data
     const handleAboutReceived = (about: string) => {
       handleFieldChange('description', about);

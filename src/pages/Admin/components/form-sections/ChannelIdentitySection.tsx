@@ -23,8 +23,10 @@ const ChannelIdentitySection = ({
 }: ChannelIdentitySectionProps) => {
   // Process for fetching about section
   const handleFetchAboutClick = () => {
-    const handleAboutReceived = onFetchAbout ? onFetchAbout() : null;
-    return handleAboutReceived;
+    if (onFetchAbout) {
+      return onFetchAbout();
+    }
+    return () => {}; // Return a no-op function if onFetchAbout is not provided
   };
 
   return (
@@ -35,7 +37,7 @@ const ChannelIdentitySection = ({
         isEditMode ? (
           <AboutSectionFetcher
             channelUrl={formData.channel_url}
-            onAboutReceived={handleFetchAboutClick() || (() => {})}
+            onAboutReceived={handleFetchAboutClick()}
             disabled={!formData.channel_url}
           />
         ) : null
