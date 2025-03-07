@@ -29,7 +29,7 @@ const ChannelContentSection = ({
       toast.info("Generating AI description...");
       
       const { data, error } = await supabase.functions.invoke('generate-channel-content', {
-        body: { channelName: title }
+        body: { channelTitle: title }
       });
       
       if (error) {
@@ -38,12 +38,12 @@ const ChannelContentSection = ({
         return;
       }
       
-      if (!data || !data.content) {
+      if (!data || !data.description) {
         toast.error("No content was generated");
         return;
       }
       
-      onDescriptionChange(data.content);
+      onDescriptionChange(data.description);
       toast.success("AI content generated successfully!");
       
     } catch (err) {

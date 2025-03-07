@@ -14,16 +14,17 @@ serve(async (req) => {
   }
 
   try {
-    // Test 1: Log request
+    // Log request
     console.log('Request received:', {
       method: req.method,
       headers: Object.fromEntries(req.headers.entries()),
     });
 
-    const { channelTitle } = await req.json();
+    const requestData = await req.json();
+    const { channelTitle } = requestData;
     console.log('Channel title:', channelTitle);
 
-    // Test 2: Check OpenAI API key
+    // Check OpenAI API key
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       console.error('OpenAI API key is not set');
@@ -37,7 +38,7 @@ serve(async (req) => {
     }
     console.log('API key found (length):', openAIApiKey.length);
 
-    // Test 3: Validate input
+    // Validate input
     if (!channelTitle) {
       console.error('No channel title provided in request');
       return new Response(JSON.stringify({
@@ -49,7 +50,7 @@ serve(async (req) => {
       });
     }
 
-    // Test 4: Test OpenAI API connection
+    // Test OpenAI API connection
     console.log('Making OpenAI API request...');
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -94,7 +95,7 @@ serve(async (req) => {
         throw new Error('Invalid response structure from OpenAI');
       }
 
-      // Test 5: Parse response
+      // Parse response
       const content = data.choices[0].message.content.trim();
       console.log('Raw content:', content);
 
