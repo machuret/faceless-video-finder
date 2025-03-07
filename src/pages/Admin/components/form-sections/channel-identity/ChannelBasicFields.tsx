@@ -3,19 +3,25 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
 
 interface ChannelBasicFieldsProps {
   channelTitle: string;
   channelUrl: string;
   description: string;
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onFetchAbout?: () => void;
+  isLoading?: boolean;
 }
 
 const ChannelBasicFields = ({
   channelTitle,
   channelUrl,
   description,
-  handleChange
+  handleChange,
+  onFetchAbout,
+  isLoading = false
 }: ChannelBasicFieldsProps) => {
   return (
     <>
@@ -46,7 +52,22 @@ const ChannelBasicFields = ({
         </div>
       </div>
       <div className="mt-4">
-        <Label htmlFor="description">About</Label>
+        <div className="flex justify-between items-center mb-1">
+          <Label htmlFor="description">About</Label>
+          {onFetchAbout && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              onClick={onFetchAbout}
+              disabled={isLoading || !channelUrl}
+              className="flex items-center gap-1"
+            >
+              <FileText className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? "Fetching..." : "Fetch About Section"}
+            </Button>
+          )}
+        </div>
         <Textarea
           id="description"
           name="description"

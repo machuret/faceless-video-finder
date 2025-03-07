@@ -10,6 +10,7 @@ import ChannelContentSection from "./form-sections/ChannelContentSection";
 import ChannelStatsSection from "./form-sections/ChannelStatsSection";
 import RevenueDetailsSection from "./form-sections/RevenueDetailsSection";
 import NotesFormSection from "./form-sections/NotesFormSection";
+import { fetchAboutSection } from "./AboutSectionFetcher";
 
 interface ChannelFormProps {
   formData: ChannelFormData;
@@ -44,10 +45,19 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   debugInfo
 }) => {
   const [keywords, setKeywords] = useState<string[]>(formData.keywords || []);
+  const [aboutLoading, setAboutLoading] = useState(false);
 
   useEffect(() => {
     setKeywords(formData.keywords || []);
   }, [formData.keywords]);
+
+  const handleFetchAbout = async () => {
+    setAboutLoading(true);
+    await fetchAboutSection(formData.channel_url, (aboutText) => {
+      handleFieldChange('description', aboutText);
+    });
+    setAboutLoading(false);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -66,6 +76,8 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
         handleChange={handleChange}
         handleScreenshotChange={handleScreenshotChange}
         isEditMode={isEditMode}
+        onFetchAbout={handleFetchAbout}
+        isLoadingAbout={aboutLoading}
       />
       
       <ChannelTypeCategories 

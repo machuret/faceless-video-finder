@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { RefreshCw, FileText } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChannelFormData } from "@/types/forms";
 
@@ -13,7 +13,6 @@ interface ChannelStatsFetcherProps {
 
 const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetcherProps) => {
   const [loading, setLoading] = useState(false);
-  const [aboutLoading, setAboutLoading] = useState(false);
 
   const fetchLatestStats = async () => {
     if (!channelUrl) {
@@ -97,99 +96,18 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     }
   };
 
-  const fetchAboutSection = async () => {
-    if (!channelUrl) {
-      toast.error("Channel URL or name is required to fetch about section");
-      return;
-    }
-
-    try {
-      setAboutLoading(true);
-      toast.info("Fetching channel's about section...");
-      
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] 📄 Requesting about section for: ${channelUrl}`);
-      
-      // Call the stats endpoint with fetchDescriptionOnly flag
-      const { data, error } = await supabase.functions.invoke('fetch-channel-stats', {
-        body: {
-          url: channelUrl.trim(),
-          timestamp,
-          includeDescription: true,
-          fetchDescriptionOnly: true
-        }
-      });
-      
-      if (error) {
-        console.error(`[${timestamp}] ❌ Error fetching about section:`, error);
-        toast.error(`Failed to fetch about section: ${error.message}`);
-        return;
-      }
-      
-      if (!data) {
-        console.error(`[${timestamp}] ❌ No data received`);
-        toast.error("No about section data received");
-        return;
-      }
-      
-      if (data.error) {
-        console.error(`[${timestamp}] ❌ API error:`, data.error);
-        toast.error(`Error: ${data.error}`);
-        return;
-      }
-      
-      if (!data.channelInfo || !data.channelInfo.description) {
-        console.error(`[${timestamp}] ❌ No about section found`);
-        toast.error("Could not retrieve about section");
-        return;
-      }
-      
-      console.log(`[${timestamp}] ✅ About section received:`, data.channelInfo.description);
-      
-      // Format the received about section to match our form data structure
-      const formattedData: Partial<ChannelFormData> = {
-        description: data.channelInfo.description
-      };
-      
-      toast.success("Channel about section fetched successfully!");
-      
-      // Pass the about section up to the parent component
-      onStatsReceived(formattedData);
-      
-    } catch (err) {
-      console.error("Unexpected error fetching about section:", err);
-      toast.error(`Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`);
-    } finally {
-      setAboutLoading(false);
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-2 sm:flex-row">
-      <Button 
-        type="button" 
-        variant="outline" 
-        size="sm" 
-        onClick={fetchLatestStats} 
-        disabled={loading || aboutLoading || !channelUrl}
-        className="flex items-center gap-1"
-      >
-        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        {loading ? "Fetching..." : "Refresh Channel Info"}
-      </Button>
-      
-      <Button 
-        type="button" 
-        variant="outline" 
-        size="sm" 
-        onClick={fetchAboutSection} 
-        disabled={loading || aboutLoading || !channelUrl}
-        className="flex items-center gap-1"
-      >
-        <FileText className={`h-4 w-4 ${aboutLoading ? 'animate-spin' : ''}`} />
-        {aboutLoading ? "Fetching..." : "Fetch About Section"}
-      </Button>
-    </div>
+    <Button 
+      type="button" 
+      variant="outline" 
+      size="sm" 
+      onClick={fetchLatestStats} 
+      disabled={loading || !channelUrl}
+      className="flex items-center gap-1"
+    >
+      <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+      {loading ? "Fetching..." : "Refresh Channel Stats"}
+    </Button>
   );
 };
 

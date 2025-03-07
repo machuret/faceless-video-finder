@@ -10,13 +10,17 @@ interface ChannelIdentitySectionProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleScreenshotChange: (url: string) => void;
   isEditMode: boolean;
+  onFetchAbout?: () => void;
+  isLoadingAbout?: boolean;
 }
 
 const ChannelIdentitySection = ({ 
   formData, 
   handleChange, 
   handleScreenshotChange, 
-  isEditMode 
+  isEditMode,
+  onFetchAbout,
+  isLoadingAbout
 }: ChannelIdentitySectionProps) => {
   return (
     <FormSectionWrapper title="Channel Identity" description="Basic information about the YouTube channel">
@@ -25,6 +29,8 @@ const ChannelIdentitySection = ({
         channelUrl={formData.channel_url}
         description={formData.description || ""}
         handleChange={handleChange}
+        onFetchAbout={isEditMode ? onFetchAbout : undefined}
+        isLoading={isLoadingAbout}
       />
       
       <ScreenshotUploader 

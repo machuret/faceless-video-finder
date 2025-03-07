@@ -16,7 +16,7 @@ const ChannelContentSection = ({
   description, 
   onDescriptionChange 
 }: ChannelContentSectionProps) => (
-  <FormSectionWrapper title="Channel Content" description="Details about the type of content the channel produces">
+  <FormSectionWrapper title="AI Content Generation" description="AI-generated description of the channel's content">
     <div className="mb-4">
       <Label htmlFor="ai-description">AI Generated Description</Label>
       <div className="flex items-center">
