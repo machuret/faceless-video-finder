@@ -1,75 +1,103 @@
 
 import { ApifyChannelData } from "./types.ts";
-import { formatDate } from "./dateUtils.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
-export function formatChannelStatsResponse(data: ApifyChannelData) {
-  console.log("Formatting channel data response");
-  
-  // Extract basic channel info
-  const title = data.channelName || data.title || '';
-  const subscriberCount = data.numberOfSubscribers || data.subscriberCount || 0;
-  const viewCount = data.channelTotalViews || data.viewCount || 0;
-  const videoCount = data.channelTotalVideos || data.videoCount || 0;
-  
-  // Handle dates: Try both channelJoinedDate and joinedDate fields
-  const rawDate = data.channelJoinedDate || data.joinedDate || '';
-  console.log(`Raw date before formatting: "${rawDate}"`);
-  const startDate = formatDate(rawDate);
-  console.log(`Formatted date: ${startDate}`);
-  
-  // Get description
-  const description = data.channelDescription || data.description || '';
-  
-  // Get country/location
-  const country = data.channelLocation || data.country || '';
-  
-  // Validate required fields
-  const missingFields = [];
-  if (!viewCount) missingFields.push('viewCount');
-  if (!videoCount) missingFields.push('videoCount');
-  if (!startDate) missingFields.push('startDate');
-  if (!description) missingFields.push('description');
-  if (!country) missingFields.push('country');
-  
-  if (missingFields.length > 0) {
-    console.error(`Warning: Missing channel data fields: ${missingFields.join(', ')}`);
+/**
+ * Formats the full channel stats response from Apify data
+ */
+export function formatChannelStatsResponse(channelData: ApifyChannelData) {
+  // Convert subscriber count from string to number if needed
+  let subscriberCount = channelData.numberOfSubscribers;
+  if (typeof subscriberCount === 'string') {
+    // Remove commas and convert to number
+    subscriberCount = parseInt(subscriberCount.replace(/,/g, ''));
   }
-  
-  return {
+
+  // Convert view count from string to number if needed
+  let viewCount = 0;
+  if (typeof channelData.channelTotalViews === 'string') {
+    // Remove commas and convert to number
+    viewCount = parseInt(channelData.channelTotalViews.replace(/,/g, '')) || 0;
+  }
+
+  // Convert video count from string to number if needed
+  let videoCount = 0;
+  if (typeof channelData.channelTotalVideos === 'string') {
+    // Remove commas and convert to number
+    videoCount = parseInt(channelData.channelTotalVideos.replace(/,/g, '')) || 0;
+  }
+
+  // Parse join date
+  let formattedStartDate = '';
+  if (channelData.channelJoinedDate) {
+    try {
+      // Try to format different date formats 
+      const joinDate = channelData.channelJoinedDate; // "Jan 4, 2017"
+      const months = {
+        'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+        'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+        'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+      };
+      
+      // Parse dates like "Jan 4, 2017" or "January 4, 2017"
+      const dateRegex = /([A-Za-z]+)\s+(\d+),?\s+(\d{4})/;
+      const match = joinDate.match(dateRegex);
+      
+      if (match) {
+        const monthName = match[1].substring(0, 3); // Get first 3 letters of month
+        const month = months[monthName];
+        const day = match[2].padStart(2, '0');
+        const year = match[3];
+        
+        if (month && day && year) {
+          formattedStartDate = `${year}-${month}-${day}`;
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing start date:", e);
+    }
+  }
+
+  // Put together the response
+  const response = {
     success: true,
-    title,
     subscriberCount,
     viewCount,
     videoCount,
-    startDate,
-    description,
-    country,
-    source: "apify",
-    missingFields: missingFields.length > 0 ? missingFields : undefined
+    title: channelData.channelName || "",
+    description: channelData.channelDescription || "",
+    startDate: formattedStartDate,
+    country: channelData.channelLocation || "",
+    source: "apify"
   };
+
+  return response;
 }
 
-export function formatDescriptionResponse(data: ApifyChannelData) {
+/**
+ * Formats just the description response
+ */
+export function formatDescriptionResponse(channelData: ApifyChannelData) {
   return {
     success: true,
-    description: data.channelDescription || data.description || '',
+    description: channelData.channelDescription || "",
     source: "apify"
   };
 }
 
-export function formatErrorResponse(errorMessage: string, statusCode: number = 500) {
-  console.error(`Error response: ${errorMessage} (${statusCode})`);
-  
+/**
+ * Creates a standardized error response
+ */
+export function formatErrorResponse(errorMessage: string, status = 500) {
   const response = new Response(
-    JSON.stringify({
-      success: false,
+    JSON.stringify({ 
+      success: false, 
       error: errorMessage,
-      source: "apify"
+      source: "apify" 
     }),
-    {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: statusCode
+    { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+      status: status 
     }
   );
   

@@ -48,6 +48,25 @@ export async function handleScreenshot(
       return { success: false, error: `Invalid URL: ${sanitizedUrl}` };
     }
     
+    // Check if it's a YouTube URL or handle, and format it correctly
+    if (sanitizedUrl.includes('youtube.com/@') || sanitizedUrl.startsWith('https://@')) {
+      // It's a YouTube handle
+      const handleMatch = sanitizedUrl.match(/@([a-zA-Z0-9_-]+)/);
+      if (handleMatch && handleMatch[1]) {
+        sanitizedUrl = `https://www.youtube.com/@${handleMatch[1]}`;
+      }
+    } else if (!sanitizedUrl.includes('youtube.com') && sanitizedUrl.startsWith('https://@')) {
+      // Convert @handle to proper YouTube URL
+      const handle = sanitizedUrl.replace('https://@', '');
+      sanitizedUrl = `https://www.youtube.com/@${handle}`;
+    } else if (sanitizedUrl.includes('youtube.com/channel/')) {
+      // It's a channel ID URL, make sure it's properly formatted
+      const channelIdMatch = sanitizedUrl.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+      if (channelIdMatch && channelIdMatch[1]) {
+        sanitizedUrl = `https://www.youtube.com/channel/${channelIdMatch[1]}`;
+      }
+    }
+    
     console.log(`Using sanitized URL: ${sanitizedUrl}`);
     
     const bucketName = "channel_screenshots";

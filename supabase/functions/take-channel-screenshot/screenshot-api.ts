@@ -24,7 +24,7 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
       ],
       "format": "png",
       "waitUntil": "networkidle2",
-      "delay": 10000, // 10 seconds delay
+      "delay": 5000, // 5 seconds delay
       "viewportWidth": 1366,
       "viewportHeight": 768,
       "scrollToBottom": false,
@@ -40,23 +40,41 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     const apiUrl = `https://api.apify.com/v2/acts/apify~screenshot-url/runs?token=${apiKey}`;
     
     // Start the actor run
-    const startResponse = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input)
-    });
+    let startResponse;
+    try {
+      startResponse = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input)
+      });
+    } catch (error) {
+      console.error("Network error when calling Apify API:", error);
+      throw new Error(`Network error when calling Apify API: ${error.message}`);
+    }
     
     if (!startResponse.ok) {
-      const errorText = await startResponse.text();
+      let errorText;
+      try {
+        errorText = await startResponse.text();
+      } catch (e) {
+        errorText = "Could not read error response";
+      }
       console.error("Apify API error when starting actor:", startResponse.status, startResponse.statusText);
       console.error("Error response:", errorText);
       throw new Error(`Apify API error: ${startResponse.status} ${errorText || startResponse.statusText}`);
     }
     
     // Parse the response to get the run ID
-    const runData = await startResponse.json();
+    let runData;
+    try {
+      runData = await startResponse.json();
+    } catch (error) {
+      console.error("Error parsing Apify API response:", error);
+      throw new Error(`Error parsing Apify API response: ${error.message}`);
+    }
+    
     const runId = runData.data?.id;
     
     if (!runId) {
@@ -78,16 +96,29 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
       
       console.log(`Checking run status (attempt ${attempts}/${maxAttempts})...`);
       
-      const statusResponse = await fetch(
-        `https://api.apify.com/v2/acts/apify~screenshot-url/runs/${runId}?token=${apiKey}`
-      );
+      let statusResponse;
+      try {
+        statusResponse = await fetch(
+          `https://api.apify.com/v2/acts/apify~screenshot-url/runs/${runId}?token=${apiKey}`
+        );
+      } catch (error) {
+        console.error(`Network error checking run status (attempt ${attempts}):`, error);
+        continue; // Try again
+      }
       
       if (!statusResponse.ok) {
         console.error(`Error checking run status: ${statusResponse.status}`);
         continue; // Try again
       }
       
-      const statusData = await statusResponse.json();
+      let statusData;
+      try {
+        statusData = await statusResponse.json();
+      } catch (error) {
+        console.error(`Error parsing status response (attempt ${attempts}):`, error);
+        continue; // Try again
+      }
+      
       const status = statusData.data?.status;
       
       console.log(`Run status: ${status}`);
@@ -104,18 +135,35 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     }
     
     // Get the dataset items from the successful run
-    const datasetResponse = await fetch(
-      `https://api.apify.com/v2/acts/apify~screenshot-url/runs/${runId}/dataset/items?token=${apiKey}`
-    );
+    let datasetResponse;
+    try {
+      datasetResponse = await fetch(
+        `https://api.apify.com/v2/acts/apify~screenshot-url/runs/${runId}/dataset/items?token=${apiKey}`
+      );
+    } catch (error) {
+      console.error("Network error fetching dataset:", error);
+      throw new Error(`Network error fetching dataset: ${error.message}`);
+    }
     
     if (!datasetResponse.ok) {
-      const errorText = await datasetResponse.text();
+      let errorText;
+      try {
+        errorText = await datasetResponse.text();
+      } catch (e) {
+        errorText = "Could not read error response";
+      }
       console.error("Error fetching dataset:", datasetResponse.status, datasetResponse.statusText);
       console.error("Error response:", errorText);
       throw new Error(`Error fetching dataset: ${datasetResponse.status}`);
     }
     
-    const items = await datasetResponse.json();
+    let items;
+    try {
+      items = await datasetResponse.json();
+    } catch (error) {
+      console.error("Error parsing dataset JSON:", error);
+      throw new Error(`Error parsing dataset JSON: ${error.message}`);
+    }
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       console.error("No items found in dataset");
@@ -135,14 +183,26 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     console.log("Screenshot URL from Apify:", screenshotUrl);
     
     // Fetch the actual screenshot image from the URL
-    const imageResponse = await fetch(screenshotUrl);
+    let imageResponse;
+    try {
+      imageResponse = await fetch(screenshotUrl);
+    } catch (error) {
+      console.error("Network error fetching screenshot image:", error);
+      throw new Error(`Network error fetching screenshot image: ${error.message}`);
+    }
+    
     if (!imageResponse.ok) {
       console.error("Error fetching screenshot image:", imageResponse.status, imageResponse.statusText);
       throw new Error(`Error fetching screenshot image: ${imageResponse.status}`);
     }
     
-    console.log("Screenshot image fetched successfully");
-    return await imageResponse.arrayBuffer();
+    try {
+      console.log("Screenshot image fetched successfully");
+      return await imageResponse.arrayBuffer();
+    } catch (error) {
+      console.error("Error reading image data:", error);
+      throw new Error(`Error reading image data: ${error.message}`);
+    }
   } catch (err) {
     console.error("Error taking screenshot via Apify API:", err);
     return null;

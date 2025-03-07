@@ -67,7 +67,12 @@ const ScreenshotUploader = ({
 
     try {
       setCapturingScreenshot(true);
-      toast.info("Capturing screenshot... (this may take up to 60 seconds)");
+      toast.info("Capturing screenshot... (this may take up to 90 seconds)");
+
+      // Start a timeout to show a progress message after 30 seconds
+      const timeoutId = setTimeout(() => {
+        toast.info("Still working on your screenshot... this can take a bit longer for some channels");
+      }, 30000);
 
       const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: {
@@ -75,6 +80,9 @@ const ScreenshotUploader = ({
           channelId: channelId
         }
       });
+
+      // Clear the timeout when we get a response
+      clearTimeout(timeoutId);
 
       if (error) {
         console.error("Error capturing screenshot:", error);
