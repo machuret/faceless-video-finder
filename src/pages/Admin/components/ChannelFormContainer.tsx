@@ -5,12 +5,8 @@ import ChannelForm from "./ChannelForm";
 const ChannelFormContainer = () => {
   const {
     loading,
-    youtubeUrl,
     isEditMode,
     formData,
-    debugInfo,
-    setYoutubeUrl,
-    fetchYoutubeData,
     handleSubmit,
     handleChange,
     handleScreenshotChange,
@@ -23,16 +19,12 @@ const ChannelFormContainer = () => {
       <ChannelForm 
         formData={formData}
         loading={loading}
-        youtubeUrl={youtubeUrl}
         isEditMode={isEditMode}
-        setYoutubeUrl={setYoutubeUrl}
-        fetchYoutubeData={fetchYoutubeData}
         handleSubmit={handleSubmit}
         handleChange={handleChange}
         handleScreenshotChange={handleScreenshotChange}
         handleFieldChange={handleFieldChange}
         handleKeywordsChange={handleKeywordsChange}
-        debugInfo={debugInfo}
       />
     </div>
   );

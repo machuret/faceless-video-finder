@@ -68,7 +68,7 @@ const NotesSection = ({ notes, channelType, onFieldChange }: NotesSectionProps) 
           name="notes"
           label=""
           value={notes || ""}
-          onChange={onFieldChange}
+          onChange={(name, value) => onFieldChange(name, value)}
           placeholder="Enter notes about this channel here..."
           className="w-full"
         />

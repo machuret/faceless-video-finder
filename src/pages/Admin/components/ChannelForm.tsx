@@ -36,8 +36,8 @@ const ChannelForm = ({
       <ChannelIdentitySection
         formData={formData}
         handleChange={handleChange}
-        handleFieldChange={handleFieldChange}
         handleScreenshotChange={handleScreenshotChange}
+        isEditMode={isEditMode}
       />
 
       {/* Channel Stats Section */}
@@ -51,9 +51,7 @@ const ChannelForm = ({
       {/* Channel Type & Categories */}
       <ChannelTypeCategories
         formData={formData}
-        handleChange={handleChange}
         handleFieldChange={handleFieldChange}
-        handleKeywordsChange={handleKeywordsChange}
       />
 
       {/* Revenue Details */}
@@ -72,7 +70,8 @@ const ChannelForm = ({
       {/* Notes */}
       <NotesSection
         notes={formData.notes || ""}
-        onNotesChange={(value) => handleFieldChange("notes", value)}
+        channelType={formData.channel_type}
+        onFieldChange={(name, value) => handleFieldChange(name, value)}
       />
 
       {/* Submit Button */}
