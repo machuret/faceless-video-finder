@@ -6,7 +6,6 @@ import ChannelSection from '@/components/home/ChannelSection';
 import StatsSection from '@/components/home/StatsSection';
 import ToolsSection from '@/components/home/ToolsSection';
 import PageFooter from '@/components/home/PageFooter';
-import ApiTester from '@/components/ApiTester';
 import { supabase } from '@/integrations/supabase/client';
 import { Channel } from '@/types/youtube';
 
@@ -88,14 +87,6 @@ const Index = () => {
       />
       <StatsSection />
       <ToolsSection />
-      
-      {/* Add the API tester */}
-      <div className="container mx-auto py-8">
-        <h2 className="text-2xl font-bold mb-4">API Connection Testing</h2>
-        <p className="text-gray-500 mb-6">Use this tool to test the Apify API connection.</p>
-        <ApiTester />
-      </div>
-      
       <PageFooter />
     </div>
   );
