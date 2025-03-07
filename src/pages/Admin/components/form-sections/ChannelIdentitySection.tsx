@@ -4,7 +4,6 @@ import { ChannelFormData } from "@/types/forms";
 import FormSectionWrapper from "./FormSectionWrapper";
 import ChannelBasicFields from "./channel-identity/ChannelBasicFields";
 import ScreenshotUploader from "./screenshot/ScreenshotUploader";
-import AboutSectionFetcher from "../AboutSectionFetcher";
 
 interface ChannelIdentitySectionProps {
   formData: ChannelFormData;
@@ -21,27 +20,10 @@ const ChannelIdentitySection = ({
   isEditMode,
   onFetchAbout
 }: ChannelIdentitySectionProps) => {
-  // Process for fetching about section
-  const handleFetchAboutClick = () => {
-    if (onFetchAbout) {
-      return onFetchAbout();
-    }
-    return () => {}; // Return a no-op function if onFetchAbout is not provided
-  };
-
   return (
     <FormSectionWrapper 
       title="Channel Identity" 
       description="Basic information about the YouTube channel"
-      actionComponent={
-        isEditMode ? (
-          <AboutSectionFetcher
-            channelUrl={formData.channel_url}
-            onAboutReceived={handleFetchAboutClick()}
-            disabled={!formData.channel_url}
-          />
-        ) : null
-      }
     >
       <ChannelBasicFields 
         channelTitle={formData.channel_title}

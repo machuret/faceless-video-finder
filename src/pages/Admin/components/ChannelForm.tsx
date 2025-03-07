@@ -31,16 +31,6 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   handleFieldChange,
   handleKeywordsChange
 }) => {
-  // Function to handle fetching about section
-  const handleFetchAbout = () => {
-    // This function passes the updated description to the form data
-    const handleAboutReceived = (about: string) => {
-      handleFieldChange('description', about);
-    };
-    
-    return handleAboutReceived;
-  };
-
   return (
     <div className="space-y-8 mb-8">
       <ChannelIdentitySection 
@@ -48,7 +38,6 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
         handleChange={handleChange}
         handleScreenshotChange={handleScreenshotChange}
         isEditMode={isEditMode}
-        onFetchAbout={isEditMode ? handleFetchAbout : undefined}
       />
       
       <ChannelStatsSection 
