@@ -41,11 +41,18 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are an expert in YouTube content creation strategies, particularly faceless content. Your task is to enhance descriptions of faceless YouTube content ideas to be more comprehensive, educational, and valuable for content creators. Include key points about the concept, potential audience, and why this format is effective. Format the response as plain text with paragraphs. DO NOT use markdown, HTML tags, or code blocks in your response.'
+            content: 'You are an expert in YouTube content creation strategies, particularly faceless content. Your analysis should be detailed, professional, and focused on how this type of channel works from a faceless content creation perspective.'
           },
           { 
             role: 'user', 
-            content: `Please enhance the description for this faceless YouTube content idea: "${label}". ${description ? `Current description: ${description}` : "There is no existing description."}`
+            content: `Based on this faceless YouTube content idea: "${label}", provide a comprehensive analysis from a FACELESS content creation perspective. Include:
+            
+            1. A brief overview of what this type of channel entails
+            2. The production process for creating faceless content in this niche
+            3. The pros and cons of running this type of faceless channel
+            4. Key success factors for this type of content
+            
+            ${description ? `Current description to expand upon: ${description}` : "There is no existing description, create one from scratch."}`
           }
         ],
         temperature: 0.7,

@@ -64,17 +64,22 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: 'You are a YouTube channel analyzer. Provide analysis in JSON format only.'
+              content: 'You are an expert in YouTube content creation strategies, particularly faceless content. Your analysis should be detailed, professional, and focused on how this type of channel works from a faceless content creation perspective.'
             },
             {
               role: 'user',
-              content: `Analyze this YouTube channel: "${channelTitle}". Respond ONLY with a JSON object in this exact format:
-              {
-                "description": "2-3 sentences about the channel",
-                "niche": "1-2 words describing the category"
-              }`
+              content: `Based on the title and information available for this YouTube channel: "${channelTitle}", analyze the channel and explain how this type of YouTube channel is built from a FACELESS point of view. Include:
+              
+              1. A brief overview of what this type of channel entails
+              2. The production process for creating faceless content in this niche
+              3. The pros and cons of running this type of faceless channel
+              4. Key success factors for this type of content
+              
+              Write as an expert, illustrating the analysis of this niche/channel specifically from a faceless content creation perspective. Provide practical insights that would be valuable to someone considering starting a similar channel.`
             }
-          ]
+          ],
+          temperature: 0.7,
+          max_tokens: 1000,
         }),
       });
 
@@ -95,26 +100,18 @@ serve(async (req) => {
         throw new Error('Invalid response structure from OpenAI');
       }
 
-      // Parse response
-      const content = data.choices[0].message.content.trim();
-      console.log('Raw content:', content);
+      // Get the description from the response
+      const description = data.choices[0].message.content.trim();
+      console.log('Generated description:', description);
 
-      try {
-        const parsed = JSON.parse(content);
-        console.log('Parsed content:', parsed);
-
-        if (!parsed.description || !parsed.niche) {
-          throw new Error('Missing required fields in parsed response');
-        }
-
-        return new Response(JSON.stringify(parsed), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      } catch (parseError) {
-        console.error('JSON Parse Error:', parseError);
-        console.error('Failed to parse content:', content);
-        throw new Error(`Failed to parse OpenAI response: ${parseError.message}`);
-      }
+      // Return the AI-generated description
+      return new Response(JSON.stringify({
+        description: description,
+        niche: channelTitle.split(' ')[0] // Simple niche extraction for demo purposes
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+      
     } catch (openAiError) {
       console.error('OpenAI API Error:', openAiError);
       throw new Error(`OpenAI API error: ${openAiError.message}`);
