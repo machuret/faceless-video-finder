@@ -49,3 +49,6 @@ verify_jwt = false
 
 [functions.take-channel-screenshot]
 verify_jwt = false
+
+[functions.fetch-channel-stats-apify]
+verify_jwt = false

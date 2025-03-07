@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
@@ -11,6 +12,7 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request for CORS preflight');
     return new Response('ok', { headers: corsHeaders })
   }
 
@@ -34,7 +36,7 @@ serve(async (req) => {
     console.log(`Fetching ${fetchDescriptionOnly ? 'about section' : 'stats'} for channel: ${channelUrl}`);
 
     // Get Apify API token from environment variable
-    const APIFY_API_TOKEN = Deno.env.get("APIFY_API_TOKEN");
+    const APIFY_API_TOKEN = Deno.env.get("APIFY_API_KEY") || Deno.env.get("APIFY_API_TOKEN");
     
     if (!APIFY_API_TOKEN) {
       console.error('Apify API token not configured');

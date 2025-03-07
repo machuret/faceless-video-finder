@@ -29,7 +29,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     setApiError(null);
     setIsMockData(false);
     setDataSource("apify");
-    toast.info("Fetching channel stats...");
+    toast.info("Fetching channel stats via Apify...");
 
     try {
       // Normalize URL if it's a handle without full URL
@@ -50,7 +50,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       
       console.log("Fetching stats for URL:", formattedUrl);
       
-      // Use our new Apify-powered function
+      // Call our Apify-powered function with improved error handling
       const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
         body: { channelUrl: formattedUrl }
       });
@@ -70,7 +70,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         return;
       }
 
-      console.log("Stats received:", data);
+      console.log("Stats received from Apify:", data);
 
       // Set data source and display appropriate notification
       setDataSource(data.source || "apify");
