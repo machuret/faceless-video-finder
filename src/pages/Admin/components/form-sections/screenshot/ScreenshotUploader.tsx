@@ -67,7 +67,7 @@ const ScreenshotUploader = ({
 
     try {
       setCapturingScreenshot(true);
-      toast.info("Capturing screenshot... (this may take up to 20 seconds)");
+      toast.info("Capturing screenshot... (this may take up to 60 seconds)");
 
       const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: {
@@ -85,6 +85,9 @@ const ScreenshotUploader = ({
       if (data?.success && data?.screenshotUrl) {
         onScreenshotChange(data.screenshotUrl);
         toast.success("Screenshot captured successfully");
+      } else if (data?.warning) {
+        onScreenshotChange(data.screenshotUrl || "");
+        toast.warning(`Screenshot captured but: ${data.warning}`);
       } else {
         toast.error(data?.error || "Failed to capture screenshot");
       }

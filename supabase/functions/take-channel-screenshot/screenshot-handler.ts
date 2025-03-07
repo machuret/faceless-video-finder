@@ -26,10 +26,26 @@ export async function handleScreenshot(
   try {
     console.log(`Taking screenshot of channel: ${channelUrl} with ID: ${channelId}`);
     
+    // Validate inputs
+    if (!channelId) {
+      return { success: false, error: "Channel ID is required" };
+    }
+    
+    if (!channelUrl) {
+      return { success: false, error: "Channel URL is required" };
+    }
+    
     // Sanitize channel URL to ensure it's valid
-    let sanitizedUrl = channelUrl;
-    if (!sanitizedUrl.startsWith('http')) {
+    let sanitizedUrl = channelUrl.trim();
+    if (!sanitizedUrl.startsWith('http://') && !sanitizedUrl.startsWith('https://')) {
       sanitizedUrl = `https://${sanitizedUrl}`;
+    }
+    
+    // Ensure the URL has a valid domain
+    try {
+      new URL(sanitizedUrl);
+    } catch (e) {
+      return { success: false, error: `Invalid URL: ${sanitizedUrl}` };
     }
     
     console.log(`Using sanitized URL: ${sanitizedUrl}`);
@@ -43,6 +59,7 @@ export async function handleScreenshot(
     }
     
     // Get screenshot from Apify
+    console.log("Requesting screenshot from Apify...");
     const screenshotBuffer = await takeScreenshotViaAPI(sanitizedUrl);
     if (!screenshotBuffer) {
       return { success: false, error: "Failed to generate screenshot" };
@@ -52,6 +69,7 @@ export async function handleScreenshot(
     const filename = generateScreenshotFilename(channelId);
     
     // Upload the screenshot to Supabase Storage
+    console.log(`Uploading screenshot to bucket ${bucketName} with filename ${filename}...`);
     const uploadResult = await uploadScreenshot(
       supabase, 
       bucketName, 
@@ -70,6 +88,7 @@ export async function handleScreenshot(
     }
     
     const screenshotUrl = urlResult.url;
+    console.log(`Screenshot uploaded with URL: ${screenshotUrl}`);
     
     // Update the channel record with the screenshot URL
     const updateResult = await updateChannelWithScreenshotUrl(

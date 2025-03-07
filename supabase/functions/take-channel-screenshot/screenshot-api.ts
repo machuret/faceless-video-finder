@@ -24,80 +24,112 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
       ],
       "format": "png",
       "waitUntil": "networkidle2",
-      "delay": 15000, // Increased delay to 15 seconds
+      "delay": 10000, // 10 seconds delay
       "viewportWidth": 1366,
       "viewportHeight": 768,
       "scrollToBottom": false,
       "proxy": {
         "useApifyProxy": true,
         "apifyProxyGroups": ["RESIDENTIAL"]
-      },
-      "debugLog": true
+      }
     };
     
     console.log("Calling Apify Screenshot URL actor with input:", JSON.stringify(input, null, 2));
     
-    // Use the Apify API to run Screenshot URL actor synchronously
-    const response = await fetch(
-      `https://api.apify.com/v2/acts/apify~screenshot-url/run-sync?token=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(input)
+    // Use fetch API to call Apify API directly
+    const apiUrl = `https://api.apify.com/v2/acts/apify~screenshot-url/runs?token=${apiKey}`;
+    
+    // Start the actor run
+    const startResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input)
+    });
+    
+    if (!startResponse.ok) {
+      const errorText = await startResponse.text();
+      console.error("Apify API error when starting actor:", startResponse.status, startResponse.statusText);
+      console.error("Error response:", errorText);
+      throw new Error(`Apify API error: ${startResponse.status} ${errorText || startResponse.statusText}`);
+    }
+    
+    // Parse the response to get the run ID
+    const runData = await startResponse.json();
+    const runId = runData.data?.id;
+    
+    if (!runId) {
+      console.error("No run ID returned from Apify");
+      console.error("Response:", JSON.stringify(runData));
+      throw new Error("No run ID returned from Apify");
+    }
+    
+    console.log(`Apify actor run started with ID: ${runId}`);
+    
+    // Poll for the run status until it's completed
+    let isFinished = false;
+    let maxAttempts = 30; // 30 attempts with 2 second delay = max 1 minute wait
+    let attempts = 0;
+    
+    while (!isFinished && attempts < maxAttempts) {
+      attempts++;
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between checks
+      
+      console.log(`Checking run status (attempt ${attempts}/${maxAttempts})...`);
+      
+      const statusResponse = await fetch(
+        `https://api.apify.com/v2/acts/apify~screenshot-url/runs/${runId}?token=${apiKey}`
+      );
+      
+      if (!statusResponse.ok) {
+        console.error(`Error checking run status: ${statusResponse.status}`);
+        continue; // Try again
       }
+      
+      const statusData = await statusResponse.json();
+      const status = statusData.data?.status;
+      
+      console.log(`Run status: ${status}`);
+      
+      if (status === 'SUCCEEDED') {
+        isFinished = true;
+      } else if (status === 'FAILED' || status === 'ABORTED' || status === 'TIMED-OUT') {
+        throw new Error(`Apify run failed with status: ${status}`);
+      }
+    }
+    
+    if (!isFinished) {
+      throw new Error("Apify run timed out or did not complete");
+    }
+    
+    // Get the dataset items from the successful run
+    const datasetResponse = await fetch(
+      `https://api.apify.com/v2/acts/apify~screenshot-url/runs/${runId}/dataset/items?token=${apiKey}`
     );
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Apify Screenshot URL actor error:", response.status, response.statusText);
-      console.error("Error response body:", errorText);
-      throw new Error(`Apify Screenshot URL actor returned ${response.status}: ${errorText || response.statusText}`);
+    if (!datasetResponse.ok) {
+      const errorText = await datasetResponse.text();
+      console.error("Error fetching dataset:", datasetResponse.status, datasetResponse.statusText);
+      console.error("Error response:", errorText);
+      throw new Error(`Error fetching dataset: ${datasetResponse.status}`);
     }
     
-    // Check if the response has content before trying to parse it
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      console.error("Unexpected content type from Apify:", contentType);
-      const rawResponse = await response.text();
-      console.log("Raw response from Apify:", rawResponse.substring(0, 1000)); // Log first 1000 chars only
-      throw new Error(`Apify returned non-JSON response with content type: ${contentType}`);
+    const items = await datasetResponse.json();
+    
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.error("No items found in dataset");
+      throw new Error("No screenshots found in the dataset");
     }
     
-    let responseData;
-    try {
-      const rawText = await response.text();
-      console.log("Response text length:", rawText.length);
-      
-      // If response is empty or not valid JSON, throw an error
-      if (!rawText || rawText.trim() === '') {
-        throw new Error("Empty response from Apify");
-      }
-      
-      // Try to parse the JSON
-      responseData = JSON.parse(rawText);
-    } catch (parseError) {
-      console.error("Error parsing JSON response:", parseError);
-      throw new Error(`Failed to parse Apify response: ${parseError.message}`);
-    }
-    
-    console.log(`Apify response status: ${response.status}`);
-    console.log(`Received Apify response data - item count: ${responseData.items?.length || 0}`);
-    
-    // If no items were returned, throw an error
-    if (!responseData || !responseData.items || responseData.items.length === 0) {
-      console.error("No screenshot data returned from Apify");
-      throw new Error("No screenshot data returned from Apify");
-    }
+    console.log(`Found ${items.length} items in dataset`);
     
     // Get the screenshot URL from the first item
-    const screenshotUrl = responseData.items[0]?.screenshotUrl;
+    const screenshotUrl = items[0].screenshotUrl;
     if (!screenshotUrl) {
-      console.error("No screenshot URL found in Apify response");
-      const responseDataString = JSON.stringify(responseData).substring(0, 500);
-      console.error(`Response data preview: ${responseDataString}...`);
-      throw new Error("No screenshot URL found in Apify response");
+      console.error("No screenshot URL found in items");
+      console.error("Items:", JSON.stringify(items));
+      throw new Error("No screenshot URL found in the dataset items");
     }
     
     console.log("Screenshot URL from Apify:", screenshotUrl);
