@@ -48,8 +48,8 @@ serve(async (req) => {
       const url = normalizeYouTubeUrl(channelUrl);
       console.log(`Normalized URL: ${url}`);
       
-      // Call Apify API to run the YouTube Scraper actor
-      const actorRunResponse = await fetchFromApify(url, APIFY_API_TOKEN);
+      // Call Apify API to run the YouTube Scraper actor directly (not using task)
+      const actorRunResponse = await fetchFromApifyActor(url, APIFY_API_TOKEN);
       console.log("Apify response received");
       
       if (!actorRunResponse || actorRunResponse.error) {
@@ -148,13 +148,13 @@ function normalizeYouTubeUrl(input: string): string {
 }
 
 /**
- * Fetches channel data from Apify YouTube Scraper
+ * Fetches channel data directly from Apify's YouTube Scraper actor
  */
-async function fetchFromApify(url: string, apiToken: string) {
-  console.log(`Calling Apify YouTube Scraper for URL: ${url}`);
+async function fetchFromApifyActor(url: string, apiToken: string) {
+  console.log(`Calling Apify YouTube Scraper actor directly for URL: ${url}`);
   
   // Start a run of the YouTube Scraper actor
-  const startResponse = await fetch('https://api.apify.com/v2/actor-tasks/apify~youtube-scraper/runs?token=' + apiToken, {
+  const startResponse = await fetch('https://api.apify.com/v2/acts/apify~youtube-scraper/runs?token=' + apiToken, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -170,12 +170,12 @@ async function fetchFromApify(url: string, apiToken: string) {
   });
   
   if (!startResponse.ok) {
-    throw new Error(`Failed to start Apify task: ${startResponse.status} ${startResponse.statusText}`);
+    throw new Error(`Failed to start Apify actor run: ${startResponse.status} ${startResponse.statusText}`);
   }
   
   const startData = await startResponse.json();
   const runId = startData.data.id;
-  console.log(`Apify run started with ID: ${runId}`);
+  console.log(`Apify actor run started with ID: ${runId}`);
   
   // Wait for the run to finish
   let isFinished = false;
