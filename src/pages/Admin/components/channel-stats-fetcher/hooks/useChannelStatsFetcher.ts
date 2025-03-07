@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ChannelFormData } from "@/types/forms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ChannelStatsResponse } from "supabase/functions/fetch-channel-stats-apify/types";
 
 export interface UseChannelStatsFetcherProps {
   channelUrl: string;
@@ -78,7 +79,7 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
       console.log("Fetching stats for URL:", formattedUrl);
       
       // Call our Apify-powered function with improved error handling
-      const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
+      const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
         body: { channelUrl: formattedUrl }
       });
 
@@ -174,7 +175,7 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
       console.log("Fetching missing fields for URL:", formattedUrl);
       
       // Call our function with a flag to focus on missing fields
-      const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
+      const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
         body: { 
           channelUrl: formattedUrl,
           fetchMissingOnly: true // Modified flag name to be more generic
@@ -216,8 +217,8 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
       
       // Check each field in the response and add to our stats object if present
       Object.entries(fieldMappings).forEach(([apiField, formField]) => {
-        if (data[apiField] && data[apiField].toString().trim() !== "") {
-          partialStats[formField] = data[apiField].toString();
+        if (data[apiField as keyof ChannelStatsResponse] && data[apiField as keyof ChannelStatsResponse]?.toString().trim() !== "") {
+          partialStats[formField] = data[apiField as keyof ChannelStatsResponse]?.toString() || "";
           successfulFields.push(apiField);
         } else if (missingFields.some(field => field.toLowerCase().includes(apiField.toLowerCase()))) {
           failedFields.push(apiField);
