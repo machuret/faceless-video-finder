@@ -1,4 +1,3 @@
-
 import { APIFY_BASE_URL, APIFY_API_TOKEN } from "./config.ts";
 import { ApifyKeyValueStoreResponse, ApifyDatasetItemResponse } from "./types.ts";
 
@@ -12,8 +11,60 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
   try {
     console.log(`Checking key-value store ${storeId} for screenshot`);
     
-    // First, log the full dataset content to debug
-    console.log(`Fetching store content from: ${APIFY_BASE_URL}/key-value-stores/${storeId}/keys?token=${APIFY_API_TOKEN}`);
+    // First try the OUTPUT key directly - this is the primary location according to Apify docs
+    try {
+      console.log("Checking OUTPUT key for screenshot data");
+      const outputUrl = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/OUTPUT?token=${APIFY_API_TOKEN}`;
+      console.log("Fetching OUTPUT from:", outputUrl);
+      
+      const outputResponse = await fetch(outputUrl);
+      
+      if (outputResponse.ok) {
+        const contentType = outputResponse.headers.get('content-type');
+        console.log(`OUTPUT response content type: ${contentType}`);
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const outputData = await outputResponse.json();
+            console.log("OUTPUT data found:", JSON.stringify(outputData));
+            
+            // Handle the specific format seen in the Apify console
+            if (Array.isArray(outputData) && outputData.length > 0) {
+              for (const item of outputData) {
+                if (item.screenshotUrl) {
+                  console.log("Found screenshotUrl in OUTPUT array item:", item.screenshotUrl);
+                  return { 
+                    screenshotUrl: item.screenshotUrl, 
+                    directUrl: item.screenshotUrl 
+                  };
+                }
+              }
+            }
+            // Also try direct object format as fallback
+            else if (outputData && typeof outputData === 'object' && outputData.screenshotUrl) {
+              console.log("Found screenshotUrl in OUTPUT object:", outputData.screenshotUrl);
+              return { 
+                screenshotUrl: outputData.screenshotUrl, 
+                directUrl: outputData.screenshotUrl 
+              };
+            }
+          } catch (e) {
+            console.log("Error parsing OUTPUT as JSON:", e);
+          }
+        }
+        // Check if OUTPUT is directly an image
+        else if (contentType && contentType.startsWith('image/')) {
+          console.log("OUTPUT key contains an image directly");
+          const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/OUTPUT?token=${APIFY_API_TOKEN}`;
+          return { screenshotUrl: url, directUrl: url };
+        }
+      }
+    } catch (outputError) {
+      console.log("Error checking OUTPUT key:", outputError);
+    }
+    
+    // If OUTPUT didn't work, fetch all keys and check for screenshot patterns
+    console.log(`Fetching all store keys from: ${APIFY_BASE_URL}/key-value-stores/${storeId}/keys?token=${APIFY_API_TOKEN}`);
     
     const keysResponse = await fetch(`${APIFY_BASE_URL}/key-value-stores/${storeId}/keys?token=${APIFY_API_TOKEN}`);
     
@@ -25,89 +76,61 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
     const keysData = await keysResponse.json() as ApifyKeyValueStoreResponse;
     console.log("Key-value store keys:", JSON.stringify(keysData));
     
-    // First check for the OUTPUT key specifically (based on user's provided format)
-    try {
-      console.log("First checking OUTPUT key directly based on documented Apify format");
-      const outputResponse = await fetch(`${APIFY_BASE_URL}/key-value-stores/${storeId}/records/OUTPUT?token=${APIFY_API_TOKEN}`);
+    // Check for keys matching screenshot pattern based on the URL from the console
+    // Example: screenshot_https___www_youtube_com__1milliontests_10dedf34a445edc1f5f77248eb636986
+    
+    const screenshotPatterns = [
+      /^screenshot_.*$/i,
+      /^screenshot.*\.(?:png|jpg|jpeg|webp)$/i,
+      /^.*_screenshot.*$/i
+    ];
+    
+    for (const pattern of screenshotPatterns) {
+      console.log(`Checking for keys matching pattern: ${pattern}`);
       
-      if (outputResponse.ok) {
-        // Try to parse as JSON array as shown in the example output
-        const outputData = await outputResponse.json();
-        console.log("OUTPUT data:", JSON.stringify(outputData));
-        
-        // Handle array format from example
-        if (Array.isArray(outputData)) {
-          for (const item of outputData) {
-            if (item.screenshotUrl) {
-              console.log("Found screenshot URL in OUTPUT array:", item.screenshotUrl);
-              return { screenshotUrl: item.screenshotUrl, directUrl: item.screenshotUrl };
+      for (const item of keysData.data.items) {
+        if (pattern.test(item.key)) {
+          console.log("Found key matching screenshot pattern:", item.key);
+          const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/${item.key}?token=${APIFY_API_TOKEN}`;
+          
+          try {
+            // Verify it's an actual image
+            const response = await fetch(url, { method: 'HEAD' });
+            const contentType = response.headers.get('content-type');
+            
+            if (response.ok && contentType && contentType.startsWith('image/')) {
+              console.log(`Verified screenshot URL is valid: ${url} (${contentType})`);
+              return { screenshotUrl: url, directUrl: url };
+            } else {
+              console.log(`Key ${item.key} exists but is not a valid image (${contentType})`);
             }
+          } catch (e) {
+            console.log("Error verifying screenshot URL:", e);
           }
-        } 
-        // Handle object format
-        else if (outputData.screenshotUrl) {
-          console.log("Found screenshot URL in OUTPUT object:", outputData.screenshotUrl);
-          return { screenshotUrl: outputData.screenshotUrl, directUrl: outputData.screenshotUrl };
         }
       }
-    } catch (outputError) {
-      console.log("Error checking OUTPUT key:", outputError);
-      // Continue with other methods
     }
     
-    // Check for screenshot_* keys based on the example URL pattern
-    const screenshotPattern = /screenshot_.*[a-f0-9]+$/i;
-    console.log("Checking for keys matching screenshot pattern:", screenshotPattern);
-    
+    // If we still haven't found anything, look for any image files
     for (const item of keysData.data.items) {
-      if (screenshotPattern.test(item.key)) {
-        console.log("Found key matching screenshot pattern:", item.key);
-        const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/${item.key}?disableRedirect=true`;
+      const key = item.key;
+      if (/\.(png|jpg|jpeg|webp)$/i.test(key) || 
+          key.toLowerCase().includes('image') || 
+          key.toLowerCase().includes('screenshot')) {
+        
+        console.log("Found potential image key:", key);
+        const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/${key}?token=${APIFY_API_TOKEN}`;
         
         try {
-          // Verify it's an actual image
           const response = await fetch(url, { method: 'HEAD' });
-          if (response.ok) {
-            console.log("Verified screenshot URL is valid:", url);
+          const contentType = response.headers.get('content-type');
+          
+          if (response.ok && contentType && contentType.startsWith('image/')) {
+            console.log(`Found image at key ${key} with content type ${contentType}`);
             return { screenshotUrl: url, directUrl: url };
           }
         } catch (e) {
-          console.log("Error verifying screenshot URL:", e);
-        }
-      }
-    }
-    
-    // Find screenshot keys with improved matching that will catch various patterns
-    const screenshotKeys = keysData.data.items.filter(item => 
-      item.key.toLowerCase().includes('screenshot') || 
-      item.key.toLowerCase().includes('output') ||
-      item.key.toLowerCase().includes('image') ||
-      item.key.match(/\.(png|jpg|jpeg|webp)$/i) ||
-      item.key === 'OUTPUT'
-    );
-    
-    console.log(`Found ${screenshotKeys.length} potential screenshot keys:`, JSON.stringify(screenshotKeys));
-    
-    if (screenshotKeys.length > 0) {
-      // Try all potential keys in order until we find a valid image
-      for (const keyItem of screenshotKeys) {
-        const screenshotKey = keyItem.key;
-        const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/${screenshotKey}?disableRedirect=true`;
-        
-        try {
-          // Check if this key actually contains image data
-          const testResponse = await fetch(url, { method: 'HEAD' });
-          const contentType = testResponse.headers.get('content-type');
-          
-          if (testResponse.ok && contentType && contentType.startsWith('image/')) {
-            console.log(`Found valid image at key ${screenshotKey} with content type ${contentType}`);
-            return { screenshotUrl: url, directUrl: url };
-          } else {
-            console.log(`Key ${screenshotKey} is not a valid image (status: ${testResponse.status}, type: ${contentType})`);
-          }
-        } catch (keyError) {
-          console.log(`Error checking key ${screenshotKey}:`, keyError);
-          // Continue to next key
+          console.log(`Error checking key ${key}:`, e);
         }
       }
     }

@@ -19,7 +19,7 @@ export async function startActorRun(url: string): Promise<{
   try {
     console.log(`Starting Apify actor run for URL: ${url}`);
     
-    // Use the configuration that matches the successful run format shown in the example
+    // Use the configuration that matches the successful run format shown in the Apify console
     const startResponse = await fetch(`${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${APIFY_API_TOKEN}`, {
       method: "POST",
       headers: {
@@ -30,7 +30,7 @@ export async function startActorRun(url: string): Promise<{
         "waitForSelectorOnLoad": "#channel-header,#metadata-container,ytd-channel-header-renderer",
         "fullPage": false,
         "hideScrollbar": true,
-        "waitForMillis": 10000, // Increased wait time for better loading
+        "waitForMillis": 15000, // Increased wait time for better loading
         "viewportHeight": 1200,
         "viewportWidth": 1920,
         "ignoreCookieBanners": true,
@@ -39,9 +39,9 @@ export async function startActorRun(url: string): Promise<{
         "maxScrollHeight": 1500,
         "saveScreenshots": true,
         "screenshotQuality": 90,
-        "saveHtml": false, // Disable HTML saving to focus on screenshot only
-        "saveResponses": false, // Disable response saving to speed up process
-        "debugLog": true, // Enable debug logging for better troubleshooting
+        "saveHtml": false,
+        "saveResponses": false,
+        "debugLog": true,
         "additionalMeta": {
           "name": "YouTube Channel Screenshot"
         }

@@ -147,14 +147,23 @@ const ScreenshotUploader = ({
       } else {
         console.error("Screenshot capture error response:", data);
         
-        // Improved error message with specific YouTube format suggestions
-        const errorMessage = data?.error || "Failed to capture screenshot";
+        // More specific error message based on the URL format
+        const channelUrlValue = channelUrl.value.toLowerCase();
+        let formatSuggestion = "";
+        
+        if (channelUrlValue.includes("youtube.com/channel/")) {
+          formatSuggestion = "Try using the handle format instead (e.g., https://www.youtube.com/@HandleName)";
+        } else if (channelUrlValue.includes("youtube.com/@")) {
+          formatSuggestion = "Try using the channel ID format instead (e.g., https://www.youtube.com/channel/UC...)";
+        } else {
+          formatSuggestion = "Make sure you're using the full YouTube URL (https://www.youtube.com/@HandleName or /channel/ID)";
+        }
         
         toast.error(
-          "Could not generate screenshot. Try one of these alternatives:\n" +
-          "1) Upload a screenshot manually using the Upload button\n" +
-          "2) Try a different channel URL format (e.g., use https://www.youtube.com/@handle or https://www.youtube.com/channel/ID)\n" +
-          "3) Try again in a few minutes"
+          `Could not generate screenshot. Try one of these alternatives:\n` +
+          `1) Upload a screenshot manually using the Upload button\n` +
+          `2) ${formatSuggestion}\n` +
+          `3) Try again in a few minutes`
         );
         
         // If we've tried multiple times, provide more detailed guidance

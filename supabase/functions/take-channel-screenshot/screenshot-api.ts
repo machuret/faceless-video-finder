@@ -47,6 +47,7 @@ export async function takeScreenshotViaAPI(url: string): Promise<ScreenshotResul
     }
     
     // Get the run data to extract screenshot URLs
+    console.log(`Fetching run data for ID: ${runResult.runId}`);
     const runDataResponse = await fetch(`${APIFY_BASE_URL}/actor-runs/${runResult.runId}?token=${APIFY_API_TOKEN}`);
     if (!runDataResponse.ok) {
       console.error(`Failed to get run data: ${runDataResponse.status}`);
@@ -79,88 +80,74 @@ export async function takeScreenshotViaAPI(url: string): Promise<ScreenshotResul
       directUrl = dsResult.directUrl;
     }
     
-    // If we still don't have a URL, try checking for other output locations
+    // If we still don't have a URL, log detailed information to help debug
     if (!screenshotUrl && !directUrl) {
       console.error("Could not find screenshot URL in standard Apify response locations");
+      console.log("Full run data:", JSON.stringify(data));
       
-      // Try to use container URL to construct a screenshot URL directly
-      if (data?.containerUrl) {
-        try {
-          // Sometimes the actor stores screenshots at this location
-          const containerUrlBase = data.containerUrl.replace('https://', 'https://api.apify.com/v2/key-value-stores/');
-          const potentialUrls = [
-            `${containerUrlBase}/records/screenshot.png`,
-            `${containerUrlBase}/records/screenshot`,
-            `${containerUrlBase}/records/OUTPUT`
-          ];
+      // As a last resort, try accessing OUTPUT directly without parsing
+      try {
+        if (data?.defaultKeyValueStoreId) {
+          const outputUrl = `${APIFY_BASE_URL}/key-value-stores/${data.defaultKeyValueStoreId}/records/OUTPUT?token=${APIFY_API_TOKEN}`;
+          console.log("Trying direct access to OUTPUT:", outputUrl);
           
-          console.log("Trying container-based URLs:", potentialUrls);
-          
-          // Try each URL
-          for (const potentialUrl of potentialUrls) {
-            try {
-              const response = await fetch(potentialUrl, { method: 'HEAD' });
-              if (response.ok && response.headers.get('content-type')?.startsWith('image/')) {
-                screenshotUrl = potentialUrl;
-                directUrl = potentialUrl;
-                console.log("Found valid image at container URL:", potentialUrl);
-                break;
-              }
-            } catch (e) {
-              // Continue to next URL
+          const outputResponse = await fetch(outputUrl, { method: 'HEAD' });
+          if (outputResponse.ok) {
+            const contentType = outputResponse.headers.get('content-type');
+            console.log(`Direct OUTPUT content type: ${contentType}`);
+            
+            if (contentType && contentType.startsWith('image/')) {
+              // OUTPUT is directly an image
+              directUrl = outputUrl;
+              screenshotUrl = outputUrl;
+              console.log("OUTPUT is directly an image, using as screenshot URL");
             }
           }
-        } catch (e) {
-          console.error("Error trying container URLs:", e);
         }
+      } catch (e) {
+        console.error("Error in last resort OUTPUT check:", e);
       }
       
-      // Check the run logs to see if there's a screenshot URL mentioned
-      if (!screenshotUrl) {
-        console.log("Checking run logs for screenshot URL");
-        const logsResponse = await fetch(`${APIFY_BASE_URL}/actor-runs/${runResult.runId}/log?token=${APIFY_API_TOKEN}`);
-        if (logsResponse.ok) {
-          const logsText = await logsResponse.text();
-          console.log("Run logs:", logsText);
-          
-          // Try to extract screenshot URL from logs using regex
-          const urlMatch = logsText.match(/https:\/\/api\.apify\.com\/v2\/key-value-stores\/[^/]+\/records\/[^"'\s]+\.(png|jpg|jpeg|webp)/i) ||
-                           logsText.match(/https:\/\/api\.apify\.com\/v2\/key-value-stores\/[^/]+\/records\/screenshot[^"'\s]*/i) ||
-                           logsText.match(/https:\/\/api\.apify\.com\/v2\/key-value-stores\/[^/]+\/records\/OUTPUT[^"'\s]*/i);
-          
-          if (urlMatch) {
-            screenshotUrl = urlMatch[0];
-            directUrl = urlMatch[0];
-            console.log("Found screenshot URL in logs:", screenshotUrl);
-          }
-        }
+      if (!screenshotUrl && !directUrl) {
+        console.error("All screenshot extraction methods failed");
+        return { 
+          buffer: null, 
+          directUrl: null, 
+          error: "Screenshot URL not found in Apify response. Please try a different URL format or try again later." 
+        };
       }
-    }
-    
-    if (!screenshotUrl) {
-      console.error("Could not find screenshot URL in any Apify response location");
-      return { 
-        buffer: null, 
-        directUrl: null, 
-        error: "Screenshot URL not found in Apify response. The service might be temporarily unavailable or the channel page structure has changed." 
-      };
     }
     
     console.log("Found screenshot URL:", screenshotUrl);
     
     // Try to fetch the screenshot image
-    const fetchResult = await fetchScreenshotImage(screenshotUrl);
-    
-    // Return the direct URL even if fetching the buffer failed
-    if (!fetchResult.buffer) {
+    if (screenshotUrl) {
+      const fetchResult = await fetchScreenshotImage(screenshotUrl);
+      
+      // Return the direct URL even if fetching the buffer failed
+      if (!fetchResult.buffer) {
+        return { 
+          buffer: null, 
+          directUrl, 
+          error: fetchResult.error 
+        };
+      }
+      
+      return { buffer: fetchResult.buffer, directUrl };
+    } else if (directUrl) {
+      // We have a direct URL but couldn't fetch the buffer
       return { 
         buffer: null, 
         directUrl, 
-        error: fetchResult.error 
+        error: "Unable to fetch screenshot buffer, but direct URL is available" 
       };
     }
     
-    return { buffer: fetchResult.buffer, directUrl };
+    return { 
+      buffer: null, 
+      directUrl: null, 
+      error: "Unknown error extracting screenshot" 
+    };
   } catch (error) {
     console.error("Error in takeScreenshotViaAPI:", error);
     return { 
