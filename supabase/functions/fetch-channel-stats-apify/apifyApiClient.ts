@@ -123,14 +123,20 @@ async function fetchActorResults(runId: string, apiToken: string): Promise<Apify
   // Fetch the dataset items
   console.log(`Fetching dataset items for run ID: ${runId}`);
   
+  // This is the correct endpoint for accessing actor run default dataset
   const datasetResponse = await fetch(
-    `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apiToken}`
+    `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apiToken}`,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    }
   );
   
   if (!datasetResponse.ok) {
     const errorText = await datasetResponse.text();
     console.error("Error response:", errorText);
-    throw new ApifyError(`Failed to fetch dataset: ${datasetResponse.status} ${datasetResponse.statusText}`, datasetResponse.status);
+    throw new ApifyError(`Failed to fetch dataset: ${datasetResponse.status} ${datasetResponse.statusText}`, datasetResponse.status, errorText);
   }
   
   let items;
@@ -138,10 +144,11 @@ async function fetchActorResults(runId: string, apiToken: string): Promise<Apify
     items = await datasetResponse.json();
   } catch (e) {
     console.error("Error parsing JSON from dataset response:", e);
-    throw new ApifyError(`Failed to parse JSON from dataset response: ${e.message}`);
+    throw new ApifyError(`Failed to parse JSON from dataset response: ${e instanceof Error ? e.message : String(e)}`);
   }
   
   console.log(`Retrieved ${items?.length || 0} items from dataset`);
+  console.log("Sample data:", JSON.stringify(items?.[0] || {}, null, 2).substring(0, 1000) + "...");
   
   if (!items || items.length === 0) {
     throw new ApifyError('No data returned from Apify');
@@ -162,13 +169,21 @@ function processChannelData(items: any[]): ApifyChannelData {
     throw new ApifyError('Invalid data format returned from Apify - no items found');
   }
   
-  console.log("Processing first item from dataset:", JSON.stringify(firstItem, null, 2).substring(0, 500) + "...");
+  console.log("Processing channel data from first item:", 
+    JSON.stringify({
+      channelName: firstItem.channelName,
+      numberOfSubscribers: firstItem.numberOfSubscribers,
+      channelTotalViews: firstItem.channelTotalViews,
+      channelLocation: firstItem.channelLocation,
+      channelJoinedDate: firstItem.channelJoinedDate
+    }, null, 2)
+  );
   
   // The format is different from the old scraper, so we need to map fields
   const channelData: ApifyChannelData = {
     channelName: firstItem.channelName,
     channelDescription: firstItem.channelDescription,
-    numberOfSubscribers: firstItem.numberOfSubscribers?.toString() || "0",
+    numberOfSubscribers: firstItem.numberOfSubscribers || "0",
     channelTotalViews: firstItem.channelTotalViews || "0",
     channelTotalVideos: firstItem.channelTotalVideos || "0",
     channelJoinedDate: firstItem.channelJoinedDate,
@@ -178,7 +193,7 @@ function processChannelData(items: any[]): ApifyChannelData {
   };
   
   // Verify essential fields and provide detailed diagnostic info
-  console.log("Channel data verification from Fast YouTube Channel Scraper:");
+  console.log("Channel data verification from Apify:");
   console.log(`- Channel Name: ${channelData.channelName || 'MISSING'}`);
   console.log(`- Subscribers: ${channelData.numberOfSubscribers || 'MISSING'}`);
   console.log(`- Total Views: ${channelData.channelTotalViews || 'MISSING'}`);
@@ -203,7 +218,7 @@ function extractChannelId(url: string): string {
       const matches = url.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
       return matches?.[1] || "";
     } else if (url.includes('/c/') || url.includes('/@')) {
-      // For custom URLs, just return the full URL as ID
+      // For custom URLs, just return the handle part or full URL as ID
       return url;
     }
     return "";

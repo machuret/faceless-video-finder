@@ -2,7 +2,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders } from "./cors.ts";
 import { normalizeYouTubeUrl } from "./urlUtils.ts";
 import { fetchChannelWithApifyAPI } from "./apifyApiClient.ts";
 import { ApifyError } from "./errors.ts";
@@ -38,10 +38,8 @@ serve(async (req) => {
 
     if (!channelUrl) {
       console.error('Missing channelUrl parameter');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Channel URL is required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      const { response } = formatErrorResponse('Channel URL is required', 400);
+      return response;
     }
     
     console.log(`Fetching ${fetchDescriptionOnly ? 'about section' : 'stats'} for channel: ${channelUrl}`);
@@ -51,7 +49,7 @@ serve(async (req) => {
     
     if (!APIFY_API_TOKEN) {
       console.error('Apify API token not configured');
-      const { response } = formatErrorResponse('Apify API token not configured');
+      const { response } = formatErrorResponse('Apify API token not configured', 500);
       return response;
     }
 
@@ -66,7 +64,7 @@ serve(async (req) => {
       
       if (!channelData) {
         console.error('No data returned from Apify');
-        const { response } = formatErrorResponse('No data returned from Apify');
+        const { response } = formatErrorResponse('No data returned from Apify', 500);
         return response;
       }
       
