@@ -24,6 +24,7 @@ const ChannelStatsSection = ({
     if (stats.total_subscribers) handleFieldChange('total_subscribers', stats.total_subscribers);
     if (stats.total_views) handleFieldChange('total_views', stats.total_views);
     if (stats.video_count) handleFieldChange('video_count', stats.video_count);
+    if (stats.description) handleFieldChange('description', stats.description);
     
     // If we received a channel title and the current one is empty or generic, update it
     if (stats.channel_title && (!formData.channel_title || formData.channel_title === "Channel")) {
@@ -60,12 +61,10 @@ const ChannelStatsSection = ({
       description="Statistics and metrics for the YouTube channel"
       actionComponent={
         canFetchData ? (
-          <div className="flex gap-2">
-            <ChannelStatsFetcher 
-              channelUrl={determineChannelReference()} 
-              onStatsReceived={handleStatsReceived} 
-            />
-          </div>
+          <ChannelStatsFetcher 
+            channelUrl={determineChannelReference()} 
+            onStatsReceived={handleStatsReceived} 
+          />
         ) : null
       }
     >
