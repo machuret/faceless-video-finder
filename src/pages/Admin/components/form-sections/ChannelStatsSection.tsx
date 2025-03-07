@@ -1,10 +1,9 @@
-
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import FormSectionWrapper from "./FormSectionWrapper";
 import { ChannelFormData } from "@/types/forms";
-import ChannelStatsFetcher from "../ChannelStatsFetcher";
+import { ChannelStatsFetcher } from "../channel-stats-fetcher";
 import CountrySelector from "../form-dropdowns/CountrySelector";
 import { AlertCircle } from "lucide-react";
 

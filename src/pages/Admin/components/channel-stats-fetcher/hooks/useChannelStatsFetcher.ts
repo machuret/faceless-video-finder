@@ -1,18 +1,15 @@
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { ChannelFormData } from "@/types/forms";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-interface ChannelStatsFetcherProps {
+export interface UseChannelStatsFetcherProps {
   channelUrl: string;
   onStatsReceived: (stats: Partial<ChannelFormData>) => void;
 }
 
-const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetcherProps) => {
+export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChannelStatsFetcherProps) {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<"apify" | "youtube" | null>(null);
@@ -146,55 +143,13 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     }
   };
 
-  return (
-    <div className="space-y-2">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="flex items-center gap-1"
-        onClick={fetchStats}
-        disabled={loading || !channelUrl}
-      >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-        Fetch Stats via Apify
-      </Button>
-
-      {apiError && (
-        <Alert variant="destructive" className="mt-2">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription className="text-sm">{apiError}</AlertDescription>
-        </Alert>
-      )}
-
-      {!apiError && partialData && (
-        <Alert className="mt-2 border-yellow-500 bg-yellow-50">
-          <AlertTitle className="text-yellow-600">Incomplete Data</AlertTitle>
-          <AlertDescription className="text-sm">
-            Missing fields: {missingFields.join(', ')}. You'll need to fill these in manually.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!apiError && dataSource === "apify" && !partialData && (
-        <Alert className="mt-2 border-green-500 bg-green-50">
-          <AlertTitle className="text-green-600">Complete Data Retrieved</AlertTitle>
-          <AlertDescription className="text-sm">
-            All channel data was successfully scraped using Apify's YouTube scraper.
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {consecutiveAttempts >= 2 && (
-        <Alert className="mt-2 border-blue-500 bg-blue-50">
-          <AlertTitle className="text-blue-600">Multiple Fetch Attempts</AlertTitle>
-          <AlertDescription className="text-sm">
-            Consider entering the missing data manually if automated fetching continues to fail.
-          </AlertDescription>
-        </Alert>
-      )}
-    </div>
-  );
-};
-
-export default ChannelStatsFetcher;
+  return {
+    loading,
+    apiError, 
+    dataSource,
+    partialData,
+    missingFields,
+    consecutiveAttempts,
+    fetchStats
+  };
+}
