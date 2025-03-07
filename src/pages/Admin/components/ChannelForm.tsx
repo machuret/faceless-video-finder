@@ -1,91 +1,87 @@
 
-import React from "react";
+import React, { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
+import { ChannelFormData } from "@/types/forms";
 import ChannelIdentitySection from "./form-sections/ChannelIdentitySection";
 import ChannelStatsSection from "./form-sections/ChannelStatsSection";
+import ChannelContentSection from "./form-sections/ChannelContentSection";
 import ChannelTypeCategories from "./form-sections/ChannelTypeCategories";
 import RevenueDetailsSection from "./form-sections/RevenueDetailsSection";
-import ChannelContentSection from "./form-sections/ChannelContentSection";
 import NotesSection from "./form-sections/NotesSection";
 import { Loader2 } from "lucide-react";
 
-interface ChannelFormProps {
+export interface ChannelFormProps {
+  formData: ChannelFormData;
   loading: boolean;
   isEditMode: boolean;
-  formData: any;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-  handleFieldChange: (field: string, value: any) => void;
+  handleSubmit: (e: React.FormEvent) => Promise<void>;
+  handleChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleScreenshotChange: (url: string) => void;
+  handleFieldChange: (field: string, value: any) => void;
   handleKeywordsChange: (keywords: string[]) => void;
-  handleSubmit: (e: React.FormEvent) => void;
 }
 
-const ChannelForm = ({
-  loading,
+const ChannelForm: React.FC<ChannelFormProps> = ({ 
+  formData, 
+  loading, 
   isEditMode,
-  formData,
+  handleSubmit,
   handleChange,
-  handleFieldChange,
   handleScreenshotChange,
-  handleKeywordsChange,
-  handleSubmit
-}: ChannelFormProps) => {
+  handleFieldChange,
+  handleKeywordsChange
+}) => {
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 my-4">
-      {/* Channel Identity Section */}
-      <ChannelIdentitySection
-        formData={formData}
-        handleChange={handleChange}
-        handleScreenshotChange={handleScreenshotChange}
-        isEditMode={isEditMode}
-      />
-
-      {/* Channel Stats Section */}
-      <ChannelStatsSection
-        formData={formData}
-        handleChange={handleChange}
-        handleFieldChange={handleFieldChange}
-        isEditMode={isEditMode}
-      />
-
-      {/* Channel Type & Categories */}
-      <ChannelTypeCategories
-        formData={formData}
-        handleFieldChange={handleFieldChange}
-      />
-
-      {/* Revenue Details */}
-      <RevenueDetailsSection
-        formData={formData}
-        handleChange={handleChange}
-      />
-
-      {/* AI Content Generation */}
-      <ChannelContentSection
-        title={formData.channel_title}
-        description={formData.ai_description || ""}
-        onDescriptionChange={(value) => handleFieldChange("ai_description", value)}
-      />
-
-      {/* Notes */}
-      <NotesSection
-        notes={formData.notes || ""}
-        channelType={formData.channel_type}
-        onFieldChange={(name, value) => handleFieldChange(name, value)}
-      />
-
-      {/* Submit Button */}
-      <div className="flex justify-end pt-4">
-        <Button 
-          type="submit" 
-          disabled={loading}
-          className="w-full md:w-auto flex items-center gap-2"
-        >
-          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isEditMode ? "Update Channel" : "Add Channel"}
+    <Form onSubmit={handleSubmit}>
+      <div className="space-y-8 mb-8">
+        <ChannelIdentitySection 
+          formData={formData}
+          handleChange={handleChange}
+          handleScreenshotChange={handleScreenshotChange}
+        />
+        
+        <ChannelStatsSection 
+          formData={formData}
+          handleChange={handleChange}
+        />
+        
+        <ChannelTypeCategories 
+          formData={formData}
+          handleFieldChange={handleFieldChange}
+          handleKeywordsChange={handleKeywordsChange}
+        />
+        
+        <ChannelContentSection 
+          title={formData.channel_title || ''}
+          description={formData.ai_description || ''}
+          onDescriptionChange={(value) => handleFieldChange('ai_description', value)}
+        />
+        
+        <RevenueDetailsSection 
+          formData={formData}
+          handleChange={handleChange}
+        />
+        
+        <NotesSection 
+          notes={formData.notes || ''}
+          onChange={(value) => handleFieldChange('notes', value)}
+        />
+      </div>
+      
+      <div className="flex justify-end">
+        <Button type="submit" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isEditMode ? "Updating..." : "Creating..."}
+            </>
+          ) : (
+            <>{isEditMode ? "Update Channel" : "Create Channel"}</>
+          )}
         </Button>
       </div>
-    </form>
+    </Form>
   );
 };
 

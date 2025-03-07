@@ -28,9 +28,13 @@ const ChannelContentSection = ({
     try {
       toast.info("Generating AI description...");
       
+      console.log("Calling generate-channel-content with title:", title);
+      
       const { data, error } = await supabase.functions.invoke('generate-channel-content', {
         body: { channelTitle: title }
       });
+      
+      console.log("Response from generate-channel-content:", { data, error });
       
       if (error) {
         console.error("Error generating AI content:", error);
@@ -63,13 +67,14 @@ const ChannelContentSection = ({
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
             className="flex-grow mr-2"
+            rows={10}
           />
           <Button
             type="button"
             variant="outline"
             onClick={handleGenerateContent}
             size="sm"
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 self-start"
           >
             <Wand2 className="h-4 w-4" />
             Generate

@@ -50,7 +50,7 @@ serve(async (req) => {
       });
     }
 
-    // Test OpenAI API connection
+    // Make OpenAI API request
     console.log('Making OpenAI API request...');
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -84,8 +84,7 @@ serve(async (req) => {
       });
 
       console.log('OpenAI API Response Status:', response.status);
-      console.log('OpenAI API Response Headers:', Object.fromEntries(response.headers.entries()));
-
+      
       if (!response.ok) {
         const errorText = await response.text();
         console.error('OpenAI API Error Response:', errorText);
@@ -93,7 +92,7 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('OpenAI API Response Data:', JSON.stringify(data, null, 2));
+      console.log('OpenAI API Response received successfully');
 
       if (!data.choices?.[0]?.message?.content) {
         console.error('Invalid OpenAI response structure:', data);
@@ -102,12 +101,12 @@ serve(async (req) => {
 
       // Get the description from the response
       const description = data.choices[0].message.content.trim();
-      console.log('Generated description:', description);
+      console.log('Generated description length:', description.length);
 
       // Return the AI-generated description
       return new Response(JSON.stringify({
         description: description,
-        niche: channelTitle.split(' ')[0] // Simple niche extraction for demo purposes
+        success: true
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
