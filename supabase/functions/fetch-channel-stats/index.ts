@@ -11,29 +11,108 @@ const corsHeaders = {
 
 // Helper function to extract channel ID from different URL formats
 const extractChannelId = (channelUrl: string): string | null => {
+  console.log("Attempting to extract channel ID from:", channelUrl);
+  
   // Handle direct channel IDs
   if (/^UC[\w-]{21,24}$/.test(channelUrl)) {
+    console.log("Detected direct channel ID format");
     return channelUrl;
   }
   
   try {
     // Extract from YouTube URL patterns
     if (channelUrl.includes('youtube.com/channel/')) {
-      return channelUrl.split('youtube.com/channel/')[1].split('?')[0].split('/')[0];
+      const id = channelUrl.split('youtube.com/channel/')[1].split(/[?/&#]/)[0];
+      console.log("Extracted from channel URL:", id);
+      return id;
     } 
     
+    // Handle @username format
     if (channelUrl.includes('youtube.com/@')) {
-      return channelUrl.split('youtube.com/@')[1].split('?')[0].split('/')[0];
+      const username = channelUrl.split('youtube.com/@')[1].split(/[?/&#]/)[0];
+      console.log("Extracted username from @format:", username);
+      return `@${username}`; // Return in @username format for API lookup
+    }
+    
+    // Handle direct @username format
+    if (channelUrl.startsWith('@')) {
+      console.log("Direct @ format detected:", channelUrl);
+      return channelUrl; // Already in correct format
     }
     
     if (channelUrl.includes('youtube.com/user/')) {
-      return channelUrl.split('youtube.com/user/')[1].split('?')[0].split('/')[0];
+      const username = channelUrl.split('youtube.com/user/')[1].split(/[?/&#]/)[0];
+      console.log("Extracted from user URL:", username);
+      return username; // Return username for API lookup
     }
+    
+    // For other formats, just return the URL for further processing
+    console.log("No standard format detected, using URL as-is");
+    return channelUrl;
   } catch (error) {
     console.error('Error extracting channel ID:', error);
+    return null;
   }
+}
+
+// Function to fetch channel details from a username or handle
+const fetchChannelDetailsFromUsername = async (username: string, apiKey: string): Promise<any> => {
+  console.log(`Attempting to fetch channel details for username: ${username}`);
   
-  return null;
+  try {
+    // First search for the channel
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(username)}&type=channel&key=${apiKey}`;
+    console.log(`Searching for channel with URL: ${searchUrl}`);
+    
+    const searchResponse = await fetch(searchUrl);
+    if (!searchResponse.ok) {
+      throw new Error(`YouTube API search error: ${searchResponse.status} ${searchResponse.statusText}`);
+    }
+    
+    const searchData = await searchResponse.json();
+    console.log("Search response:", JSON.stringify(searchData).substring(0, 200) + "...");
+    
+    if (!searchData.items || searchData.items.length === 0) {
+      throw new Error(`No channel found for username: ${username}`);
+    }
+    
+    // Use the first result's channel ID to get channel details
+    const channelId = searchData.items[0].id.channelId;
+    console.log(`Found channel ID from search: ${channelId}`);
+    
+    // Now get the channel details
+    return await fetchChannelDetails(channelId, apiKey);
+  } catch (error) {
+    console.error(`Error fetching channel from username ${username}:`, error);
+    throw error;
+  }
+}
+
+// Function to fetch channel details from a channel ID
+const fetchChannelDetails = async (channelId: string, apiKey: string): Promise<any> => {
+  console.log(`Fetching channel details for ID: ${channelId}`);
+  
+  try {
+    const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails,brandingSettings&id=${channelId}&key=${apiKey}`;
+    console.log(`Channel details URL: ${channelUrl}`);
+    
+    const channelResponse = await fetch(channelUrl);
+    if (!channelResponse.ok) {
+      throw new Error(`YouTube API channel error: ${channelResponse.status} ${channelResponse.statusText}`);
+    }
+    
+    const channelData = await channelResponse.json();
+    console.log("Channel response:", JSON.stringify(channelData).substring(0, 200) + "...");
+    
+    if (!channelData.items || channelData.items.length === 0) {
+      throw new Error(`No details found for channel ID: ${channelId}`);
+    }
+    
+    return channelData.items[0];
+  } catch (error) {
+    console.error(`Error fetching channel details for ${channelId}:`, error);
+    throw error;
+  }
 }
 
 serve(async (req) => {
@@ -61,76 +140,72 @@ serve(async (req) => {
     
     console.log(`Fetching ${fetchDescriptionOnly ? 'about section' : 'stats'} for channel: ${channelUrl}`);
 
-    // Extract YouTube channel ID
-    const channelId = extractChannelId(channelUrl);
-    console.log(`Extracted channel ID: ${channelId}`);
+    // This should be stored as an environment variable in production
+    const API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"; // Public YouTube API key for demo purposes
     
-    // Use the YouTube Data API to fetch real channel data
-    if (channelId) {
-      try {
-        // This should be stored as an environment variable in production
-        const API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"; // Public YouTube API key for demo purposes
-        
-        // Fetch channel data from YouTube API
-        const response = await fetch(
-          `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings&id=${channelId}&key=${API_KEY}`,
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-        
-        if (!response.ok) {
-          throw new Error(`YouTube API error: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        console.log('YouTube API response:', JSON.stringify(data).substring(0, 200) + '...');
-        
-        // If no channel found in API response
-        if (!data.items || data.items.length === 0) {
-          console.log('No channel found in YouTube API response');
-          
-          // Fall back to mock data for demo purposes
-          return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders);
-        }
-        
-        const channel = data.items[0];
-        
-        // If we're only fetching the description
-        if (fetchDescriptionOnly) {
-          return new Response(
-            JSON.stringify({ 
-              success: true, 
-              description: channel.snippet.description || "" 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-          )
-        }
-        
-        // Format the complete response
-        const channelStats = {
-          success: true,
-          subscriberCount: parseInt(channel.statistics.subscriberCount) || 0,
-          viewCount: parseInt(channel.statistics.viewCount) || 0,
-          videoCount: parseInt(channel.statistics.videoCount) || 0,
-          title: channel.snippet.title || "",
-          description: channel.snippet.description || "",
-          startDate: formatDate(channel.snippet.publishedAt) || "",
-          country: channel.snippet.country || channel.brandingSettings?.channel?.country || ""
-        };
-        
-        console.log('Returning channel stats:', channelStats);
-        
+    // Extract YouTube channel identifier
+    const channelIdentifier = extractChannelId(channelUrl);
+    console.log(`Extracted channel identifier: ${channelIdentifier}`);
+    
+    if (!channelIdentifier) {
+      console.error('Could not extract channel identifier');
+      return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders);
+    }
+    
+    let channel;
+    
+    try {
+      // Determine the approach based on identifier format
+      if (/^UC[\w-]{21,24}$/.test(channelIdentifier)) {
+        // Direct channel ID
+        console.log("Using direct channel ID fetch approach");
+        channel = await fetchChannelDetails(channelIdentifier, API_KEY);
+      } else if (channelIdentifier.startsWith('@') || !channelIdentifier.includes('UC')) {
+        // Username or handle
+        console.log("Using username/handle fetch approach");
+        channel = await fetchChannelDetailsFromUsername(channelIdentifier, API_KEY);
+      } else {
+        // Try direct approach as fallback
+        console.log("Using fallback direct fetch approach");
+        channel = await fetchChannelDetails(channelIdentifier, API_KEY);
+      }
+      
+      console.log("Channel data fetched successfully:", JSON.stringify(channel).substring(0, 200) + "...");
+      
+      // If we're only fetching the description
+      if (fetchDescriptionOnly) {
         return new Response(
-          JSON.stringify(channelStats),
+          JSON.stringify({ 
+            success: true, 
+            description: channel.snippet.description || "" 
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
-      } catch (error) {
-        console.error('Error fetching from YouTube API:', error);
-        
-        // Fall back to mock data if API fails
-        return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders);
       }
-    } else {
-      console.log('Could not extract channel ID, falling back to mock data');
+      
+      // Format the complete response
+      const channelStats = {
+        success: true,
+        subscriberCount: parseInt(channel.statistics.subscriberCount) || 0,
+        viewCount: parseInt(channel.statistics.viewCount) || 0,
+        videoCount: parseInt(channel.statistics.videoCount) || 0,
+        title: channel.snippet.title || "",
+        description: channel.snippet.description || "",
+        startDate: formatDate(channel.snippet.publishedAt) || "",
+        country: channel.snippet.country || channel.brandingSettings?.channel?.country || ""
+      };
+      
+      console.log('Returning channel stats:', channelStats);
+      
+      return new Response(
+        JSON.stringify(channelStats),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      )
+    } catch (error) {
+      console.error('Error processing channel data:', error);
+      
+      // Fall back to mock data if API fails
+      console.log('API processing failed, falling back to mock data');
       return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders);
     }
     

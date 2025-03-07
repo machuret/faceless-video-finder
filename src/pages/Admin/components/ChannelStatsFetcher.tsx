@@ -24,8 +24,27 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     toast.info("Fetching channel stats...");
 
     try {
+      // Check if the URL has standard YouTube patterns
+      const isValidYouTubeUrl = 
+        channelUrl.includes('youtube.com/') || 
+        channelUrl.includes('youtu.be/') || 
+        channelUrl.includes('@') ||
+        /^UC[\w-]{21,24}$/.test(channelUrl);
+
+      if (!isValidYouTubeUrl) {
+        toast.warning("URL may not be a valid YouTube channel URL");
+      }
+
+      // Ensure URL is properly formatted for the API
+      let formattedUrl = channelUrl;
+      if (formattedUrl.startsWith('@') && !formattedUrl.includes('youtube.com')) {
+        formattedUrl = `https://www.youtube.com/${formattedUrl}`;
+      }
+      
+      console.log("Fetching stats for URL:", formattedUrl);
+      
       const { data, error } = await supabase.functions.invoke('fetch-channel-stats', {
-        body: { channelUrl }
+        body: { channelUrl: formattedUrl }
       });
 
       if (error) {
