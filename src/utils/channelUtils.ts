@@ -63,6 +63,23 @@ export const formatDate = (dateString: string | null): string => {
   });
 };
 
+/**
+ * Creates a URL-friendly slug for a channel, combining channel title with ID
+ */
+export const getChannelSlug = (channel: { channel_title: string; id: string }): string => {
+  if (!channel || !channel.channel_title) return `channel-${channel.id}`;
+  
+  // Convert the title to lowercase and replace spaces and special characters with hyphens
+  const titleSlug = channel.channel_title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
+  
+  // Return a slug that includes both the title and ID
+  return `${titleSlug}-${channel.id}`;
+};
+
 // Add countries list for dropdown
 export const countries = [
   { code: "US", name: "United States" },
