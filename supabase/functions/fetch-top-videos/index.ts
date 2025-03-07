@@ -26,7 +26,7 @@ serve(async (req) => {
       throw new Error('YouTube API key is not configured');
     }
 
-    console.log(`Fetching top videos for channel ID: ${channelId}`);
+    console.log(`Fetching top and latest videos for channel ID: ${channelId}`);
 
     // Check if channelId is a YouTube channel ID
     const youtubeChannelIdPattern = /^UC[\w-]{21}[AQgw]$/;
@@ -52,18 +52,50 @@ serve(async (req) => {
       throw new Error('No videos found for this channel');
     }
     
-    // Get video IDs for additional statistics
-    const videoIds = mostViewedVideosData.items.map(item => item.id.videoId).join(',');
+    // Get video IDs for additional statistics for most viewed
+    const viewedVideoIds = mostViewedVideosData.items.map(item => item.id.videoId).join(',');
     
     // Fetch detailed statistics for these videos
-    const videoStatsResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+    const viewedVideoStatsResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${viewedVideoIds}&key=${YOUTUBE_API_KEY}`
     );
     
-    const videoStatsData = await videoStatsResponse.json();
+    const viewedVideoStatsData = await viewedVideoStatsResponse.json();
     
-    // Process and combine the data
-    const topVideos = videoStatsData.items.map(video => ({
+    // Process and combine the data for most viewed
+    const topViewedVideos = viewedVideoStatsData.items.map(video => ({
+      id: video.id,
+      title: video.snippet.title,
+      thumbnailUrl: video.snippet.thumbnails.high.url,
+      viewCount: parseInt(video.statistics.viewCount, 10),
+      likeCount: parseInt(video.statistics.likeCount, 10) || 0,
+      commentCount: parseInt(video.statistics.commentCount, 10) || 0,
+      publishedAt: video.snippet.publishedAt
+    }));
+    
+    // Fetch latest videos
+    const latestVideosResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=5&order=date&type=video&key=${YOUTUBE_API_KEY}`
+    );
+    
+    const latestVideosData = await latestVideosResponse.json();
+    
+    if (!latestVideosData.items || latestVideosData.items.length === 0) {
+      throw new Error('No latest videos found for this channel');
+    }
+    
+    // Get video IDs for additional statistics for latest videos
+    const latestVideoIds = latestVideosData.items.map(item => item.id.videoId).join(',');
+    
+    // Fetch detailed statistics for these videos
+    const latestVideoStatsResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${latestVideoIds}&key=${YOUTUBE_API_KEY}`
+    );
+    
+    const latestVideoStatsData = await latestVideoStatsResponse.json();
+    
+    // Process and combine the data for latest videos
+    const latestVideos = latestVideoStatsData.items.map(video => ({
       id: video.id,
       title: video.snippet.title,
       thumbnailUrl: video.snippet.thumbnails.high.url,
@@ -74,14 +106,15 @@ serve(async (req) => {
     }));
     
     // Sort by most viewed and most engaging (likes + comments)
-    const mostViewed = [...topVideos].sort((a, b) => b.viewCount - a.viewCount);
-    const mostEngaging = [...topVideos].sort((a, b) => 
+    const mostViewed = [...topViewedVideos].sort((a, b) => b.viewCount - a.viewCount);
+    const mostEngaging = [...topViewedVideos].sort((a, b) => 
       (b.likeCount + b.commentCount) - (a.likeCount + a.commentCount)
     );
     
     return new Response(JSON.stringify({
       mostViewed: mostViewed.slice(0, 1)[0],
-      mostEngaging: mostEngaging.slice(0, 1)[0]
+      mostEngaging: mostEngaging.slice(0, 1)[0],
+      latestVideos: latestVideos.slice(0, 3) // Return top 3 latest videos
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

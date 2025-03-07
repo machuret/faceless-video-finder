@@ -17,6 +17,7 @@ export interface ChannelDetailsState {
   topVideosLoading: boolean;
   mostViewedVideo: TopVideo | null;
   mostEngagingVideo: TopVideo | null;
+  latestVideos: TopVideo[]; // Added latest videos array
   topVideosError: boolean;
 }
 

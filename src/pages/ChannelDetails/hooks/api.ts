@@ -45,7 +45,7 @@ export const fetchChannelDetails = async (id: string) => {
 /**
  * Fetches top performing videos for a YouTube channel
  * @param youtubeChannelId YouTube channel ID
- * @returns Most viewed and most engaging videos
+ * @returns Most viewed, most engaging videos, and latest videos
  */
 export const fetchTopPerformingVideos = async (youtubeChannelId: string) => {
   console.log(`Fetching top videos with YouTube channel ID: ${youtubeChannelId}`);
@@ -66,6 +66,7 @@ export const fetchTopPerformingVideos = async (youtubeChannelId: string) => {
 
   return {
     mostViewedVideo: data.mostViewed as TopVideo || null,
-    mostEngagingVideo: data.mostEngaging as TopVideo || null
+    mostEngagingVideo: data.mostEngaging as TopVideo || null,
+    latestVideos: data.latestVideos as TopVideo[] || []
   };
 };
