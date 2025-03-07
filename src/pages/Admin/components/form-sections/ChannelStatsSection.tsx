@@ -67,8 +67,8 @@ const ChannelStatsSection = ({
     return formData.channel_url;
   };
 
-  // Show the fetch buttons only if we have either a channel URL or title
-  const canFetchData = isEditMode && (formData.channel_url || formData.channel_title);
+  // Allow fetching data regardless of edit mode - just need a channel URL
+  const canFetchData = formData.channel_url || formData.channel_title;
 
   return (
     <FormSectionWrapper 
