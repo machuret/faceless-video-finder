@@ -44,16 +44,36 @@ serve(async (req) => {
     const result = await handleScreenshot(supabase, channelId, channelUrl);
     
     if (!result.success) {
-      return createErrorResponse(result.error || "Screenshot processing failed", 500);
+      console.error("Screenshot processing failed:", result.error);
+      // Return 200 status with error details instead of 500 to ensure the UI can display the error properly
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: result.error || "Screenshot processing failed",
+          message: "Unable to capture screenshot, please try again later"
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }, 
+          status: 200 // Use 200 instead of 500 to allow the frontend to handle the error
+        }
+      );
     }
     
     return createSuccessResponse(result);
     
   } catch (error) {
     console.error("Unhandled error in screenshot function:", error);
-    return createErrorResponse(
-      error.message || "An unexpected error occurred while taking the screenshot",
-      500
+    // Return 200 status with error details instead of 500
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message || "An unexpected error occurred while taking the screenshot",
+        message: "Screenshot service encountered an error, please try again"
+      }),
+      { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, 
+        status: 200 // Use 200 to allow the frontend to display the error message
+      }
     );
   }
 });

@@ -13,7 +13,7 @@ const ChannelScreenshot = ({ screenshotUrl, channelTitle }: ChannelScreenshotPro
   
   if (!screenshotUrl || imageError) return null;
   
-  // Clean up URL if it's from Apify - remove the disableRedirect parameter
+  // Clean up URL if it's from Apify - remove the disableRedirect parameter if present
   const cleanedUrl = screenshotUrl.includes('?disableRedirect=true') 
     ? screenshotUrl.replace('?disableRedirect=true', '') 
     : screenshotUrl;

@@ -112,29 +112,32 @@ const ScreenshotUploader = ({
       }
 
       if (data?.success) {
-        // Try different possible screenshot URL locations
+        // Check for the different possible URLs
         const newScreenshotUrl = data.screenshotUrl || data.apifyUrl || "";
         if (newScreenshotUrl) {
           console.log("Setting new screenshot URL:", newScreenshotUrl);
           onScreenshotChange(newScreenshotUrl);
           setLocalScreenshotUrl(newScreenshotUrl);
-          toast.success("Screenshot captured successfully");
+          toast.success(data.message || "Screenshot captured successfully");
         } else {
           console.error("No screenshot URL found in response:", data);
           toast.error("Screenshot captured but no URL was returned");
         }
       } else if (data?.warning) {
+        // Handle partial success with warning
         const newScreenshotUrl = data.screenshotUrl || data.apifyUrl || "";
         if (newScreenshotUrl) {
           onScreenshotChange(newScreenshotUrl);
           setLocalScreenshotUrl(newScreenshotUrl);
+          toast.warning(`Screenshot captured but: ${data.warning}`);
+        } else {
+          toast.warning(data.warning || "Screenshot process completed with warnings");
         }
-        toast.warning(`Screenshot captured but: ${data.warning}`);
       } else {
         console.error("Screenshot capture error response:", data);
         toast.error(data?.error || "Failed to capture screenshot");
         
-        // If we've tried less than 2 times and got a specific error about empty image, suggest retry
+        // If we've tried less than 2 times and got a specific error, suggest retry
         if (captureAttempts < 2 && data?.error?.includes("empty or invalid")) {
           toast.info("This can happen occasionally. Please try capturing the screenshot again.");
         }

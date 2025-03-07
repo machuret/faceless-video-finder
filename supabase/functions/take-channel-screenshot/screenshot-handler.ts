@@ -74,139 +74,127 @@ export async function handleScreenshot(
     
     console.log(`Using sanitized URL: ${sanitizedUrl} (custom formatted: ${isCustomFormatted})`);
     
-    // Direct Apify approach for debugging/fallback
-    if (APIFY_API_TOKEN) {
-      try {
-        console.log("Attempting direct Apify screenshot request...");
-        const startResponse = await fetch("https://api.apify.com/v2/actor-tasks/xPTZ2w3ZjmfnmHE8R/run-sync?token=" + APIFY_API_TOKEN, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            startUrls: [{ url: sanitizedUrl }],
-            waitForSelectorOnLoad: "body",
-            fullPage: false,
-            hideScrollbar: true,
-            waitForMillis: 5000,
-          }),
-        });
-
-        if (startResponse.ok) {
-          const responseData = await startResponse.json();
-          console.log("Direct Apify response:", JSON.stringify(responseData));
-          
-          // Try to extract direct screenshot URL from dataset
-          if (responseData?.defaultDatasetId) {
-            const datasetUrl = `https://api.apify.com/v2/datasets/${responseData.defaultDatasetId}/items?token=${APIFY_API_TOKEN}`;
-            const datasetResponse = await fetch(datasetUrl);
-            if (datasetResponse.ok) {
-              const datasetItems = await datasetResponse.json();
-              if (datasetItems.length > 0 && datasetItems[0].screenshotUrl) {
-                const directApifyUrl = datasetItems[0].screenshotUrl;
-                console.log("Found direct Apify URL:", directApifyUrl);
-                
-                // Update the channel record with this URL
-                const updateResult = await updateChannelWithScreenshotUrl(
-                  supabase, 
-                  channelId, 
-                  directApifyUrl
-                );
-                
-                if (updateResult.success) {
-                  return { 
-                    success: true, 
-                    screenshotUrl: directApifyUrl,
-                    apifyUrl: directApifyUrl,
-                    message: "Screenshot taken using direct Apify URL"
-                  };
-                }
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Direct Apify approach failed:", err);
-        // Continue with regular flow
+    // Get screenshot from Apify
+    console.log("Requesting screenshot from Apify...");
+    const screenshotResult = await takeScreenshotViaAPI(sanitizedUrl);
+    
+    // Check if we have a direct Apify URL we can use even if the buffer fetch failed
+    if (screenshotResult.directUrl) {
+      console.log("We have a direct Apify URL we can use:", screenshotResult.directUrl);
+      
+      // Update the channel record with this direct URL
+      const updateResult = await updateChannelWithScreenshotUrl(
+        supabase, 
+        channelId, 
+        screenshotResult.directUrl
+      );
+      
+      if (updateResult.success) {
+        console.log("Updated channel with direct Apify URL");
+        return { 
+          success: true, 
+          screenshotUrl: screenshotResult.directUrl,
+          apifyUrl: screenshotResult.directUrl,
+          message: screenshotResult.error 
+            ? "Using direct Apify URL due to download issues" 
+            : "Screenshot taken using direct Apify URL"
+        };
+      } else {
+        return { 
+          success: true, 
+          screenshotUrl: screenshotResult.directUrl,
+          apifyUrl: screenshotResult.directUrl,
+          warning: updateResult.error,
+          message: "Screenshot URL obtained but channel update failed" 
+        };
       }
     }
     
-    const bucketName = "channel_screenshots";
-    
-    // Ensure the bucket exists
-    const bucketResult = await ensureStorageBucket(supabase, bucketName);
-    if (!bucketResult.success) {
-      return { success: false, error: bucketResult.error };
-    }
-    
-    // Get screenshot from Apify
-    console.log("Requesting screenshot from Apify...");
-    const screenshotBuffer = await takeScreenshotViaAPI(sanitizedUrl);
-    if (!screenshotBuffer) {
+    // If we don't have a buffer or a direct URL, return an error
+    if (!screenshotResult.buffer && !screenshotResult.directUrl) {
       return { 
         success: false, 
-        error: "Failed to generate screenshot. Apify API did not return a valid image."
+        error: screenshotResult.error || "Failed to generate screenshot. Apify API did not return a valid image."
       };
     }
     
-    // Check if the screenshot buffer is valid
-    if (!screenshotBuffer.byteLength) {
-      return { 
-        success: false, 
-        error: "Generated screenshot is empty or invalid" 
-      };
-    }
-    
-    console.log(`Screenshot received: ${screenshotBuffer.byteLength} bytes`);
-    
-    // Generate filename
-    const filename = generateScreenshotFilename(channelId);
-    
-    // Upload the screenshot to Supabase Storage
-    console.log(`Uploading screenshot to bucket ${bucketName} with filename ${filename}...`);
-    const uploadResult = await uploadScreenshot(
-      supabase, 
-      bucketName, 
-      filename, 
-      screenshotBuffer
-    );
-    
-    if (!uploadResult.success) {
-      return { success: false, error: uploadResult.error };
-    }
-    
-    // Get the public URL of the uploaded screenshot
-    const urlResult = await getPublicUrl(supabase, bucketName, filename);
-    if (!urlResult.url) {
-      return { success: false, error: urlResult.error || "Failed to get public URL" };
-    }
-    
-    const screenshotUrl = urlResult.url;
-    console.log(`Screenshot uploaded with URL: ${screenshotUrl}`);
-    
-    // Update the channel record with the screenshot URL
-    const updateResult = await updateChannelWithScreenshotUrl(
-      supabase, 
-      channelId, 
-      screenshotUrl
-    );
-    
-    if (!updateResult.success) {
-      // Still return the URL even if updating the channel failed
+    // Continue with normal flow if we have a buffer
+    if (screenshotResult.buffer) {
+      const screenshotBuffer = screenshotResult.buffer;
+      
+      // Check if the screenshot buffer is valid
+      if (!screenshotBuffer.byteLength) {
+        return { 
+          success: false, 
+          error: "Generated screenshot is empty or invalid" 
+        };
+      }
+      
+      console.log(`Screenshot received: ${screenshotBuffer.byteLength} bytes`);
+      
+      const bucketName = "channel_screenshots";
+      
+      // Ensure the bucket exists
+      const bucketResult = await ensureStorageBucket(supabase, bucketName);
+      if (!bucketResult.success) {
+        return { success: false, error: bucketResult.error };
+      }
+      
+      // Generate filename
+      const filename = generateScreenshotFilename(channelId);
+      
+      // Upload the screenshot to Supabase Storage
+      console.log(`Uploading screenshot to bucket ${bucketName} with filename ${filename}...`);
+      const uploadResult = await uploadScreenshot(
+        supabase, 
+        bucketName, 
+        filename, 
+        screenshotBuffer
+      );
+      
+      if (!uploadResult.success) {
+        return { success: false, error: uploadResult.error };
+      }
+      
+      // Get the public URL of the uploaded screenshot
+      const urlResult = await getPublicUrl(supabase, bucketName, filename);
+      if (!urlResult.url) {
+        return { success: false, error: urlResult.error || "Failed to get public URL" };
+      }
+      
+      const screenshotUrl = urlResult.url;
+      console.log(`Screenshot uploaded with URL: ${screenshotUrl}`);
+      
+      // Update the channel record with the screenshot URL
+      const updateResult = await updateChannelWithScreenshotUrl(
+        supabase, 
+        channelId, 
+        screenshotUrl
+      );
+      
+      if (!updateResult.success) {
+        // Still return the URL even if updating the channel failed
+        return { 
+          success: true, 
+          screenshotUrl: screenshotUrl,
+          warning: updateResult.error,
+          message: "Screenshot taken but channel update failed" 
+        };
+      }
+      
+      console.log(`Screenshot saved and channel updated: ${screenshotUrl}`);
+      
       return { 
         success: true, 
         screenshotUrl: screenshotUrl,
-        warning: updateResult.error,
-        message: "Screenshot taken but channel update failed" 
+        message: "Screenshot taken and saved successfully" 
       };
     }
     
-    console.log(`Screenshot saved and channel updated: ${screenshotUrl}`);
-    
+    // This code should not be reached if everything above is working correctly
     return { 
-      success: true, 
-      screenshotUrl: screenshotUrl,
-      message: "Screenshot taken and saved successfully" 
+      success: false,
+      error: "Unable to process screenshot. Please try again.",
     };
   } catch (error) {
     console.error("Error in handleScreenshot:", error);
