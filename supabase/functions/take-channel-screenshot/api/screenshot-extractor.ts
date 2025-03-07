@@ -1,3 +1,4 @@
+
 import { APIFY_BASE_URL, APIFY_API_TOKEN } from "./config.ts";
 import { ApifyKeyValueStoreResponse, ApifyDatasetItemResponse } from "./types.ts";
 
@@ -28,14 +29,20 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
             const outputData = await outputResponse.json();
             console.log("OUTPUT data found:", JSON.stringify(outputData));
             
-            // Handle the specific format seen in the Apify console
+            // Handle the specific format of the Apify OUTPUT that includes an array of objects
+            // with a screenshotUrl property, as shown in the example:
+            // [{ "url": "https://www.youtube.com/@1MillionTests", "screenshotUrl": "https://api.apify.com/..." }]
             if (Array.isArray(outputData) && outputData.length > 0) {
               for (const item of outputData) {
                 if (item.screenshotUrl) {
                   console.log("Found screenshotUrl in OUTPUT array item:", item.screenshotUrl);
+                  // Clean the URL if it contains disableRedirect parameter
+                  const cleanUrl = item.screenshotUrl.includes('?disableRedirect=true') 
+                    ? item.screenshotUrl.replace('?disableRedirect=true', '') 
+                    : item.screenshotUrl;
                   return { 
-                    screenshotUrl: item.screenshotUrl, 
-                    directUrl: item.screenshotUrl 
+                    screenshotUrl: cleanUrl, 
+                    directUrl: cleanUrl 
                   };
                 }
               }
@@ -43,9 +50,12 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
             // Also try direct object format as fallback
             else if (outputData && typeof outputData === 'object' && outputData.screenshotUrl) {
               console.log("Found screenshotUrl in OUTPUT object:", outputData.screenshotUrl);
+              const cleanUrl = outputData.screenshotUrl.includes('?disableRedirect=true') 
+                ? outputData.screenshotUrl.replace('?disableRedirect=true', '') 
+                : outputData.screenshotUrl;
               return { 
-                screenshotUrl: outputData.screenshotUrl, 
-                directUrl: outputData.screenshotUrl 
+                screenshotUrl: cleanUrl, 
+                directUrl: cleanUrl 
               };
             }
           } catch (e) {
@@ -76,9 +86,10 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
     const keysData = await keysResponse.json() as ApifyKeyValueStoreResponse;
     console.log("Key-value store keys:", JSON.stringify(keysData));
     
-    // Check for keys matching screenshot pattern based on the URL from the console
-    // Example: screenshot_https___www_youtube_com__1milliontests_10dedf34a445edc1f5f77248eb636986
+    // Look specifically for the screenshot key format shown in the example
+    // "screenshot_https___www_youtube_com__1milliontests_10dedf34a445edc1f5f77248eb636986"
     
+    // Check for keys matching screenshot pattern based on the URL from the console
     const screenshotPatterns = [
       /^screenshot_.*$/i,
       /^screenshot.*\.(?:png|jpg|jpeg|webp)$/i,

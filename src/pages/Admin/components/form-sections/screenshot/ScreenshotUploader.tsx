@@ -147,7 +147,7 @@ const ScreenshotUploader = ({
       } else {
         console.error("Screenshot capture error response:", data);
         
-        // More specific error message based on the URL format
+        // More specific error message based on the YouTube URL format
         const channelUrlValue = channelUrl.value.toLowerCase();
         let formatSuggestion = "";
         
@@ -155,8 +155,10 @@ const ScreenshotUploader = ({
           formatSuggestion = "Try using the handle format instead (e.g., https://www.youtube.com/@HandleName)";
         } else if (channelUrlValue.includes("youtube.com/@")) {
           formatSuggestion = "Try using the channel ID format instead (e.g., https://www.youtube.com/channel/UC...)";
+        } else if (!channelUrlValue.includes("youtube.com")) {
+          formatSuggestion = "Make sure you're using a full YouTube URL (https://www.youtube.com/@HandleName or /channel/ID)";
         } else {
-          formatSuggestion = "Make sure you're using the full YouTube URL (https://www.youtube.com/@HandleName or /channel/ID)";
+          formatSuggestion = "Try a different URL format or check that the channel exists and is public";
         }
         
         toast.error(
@@ -181,6 +183,20 @@ const ScreenshotUploader = ({
       setCapturingScreenshot(false);
     }
   };
+  
+  // Guide user if this is the edit page for an existing channel
+  React.useEffect(() => {
+    if (channelId && !screenshotUrl) {
+      const timer = setTimeout(() => {
+        toast.info(
+          "This channel doesn't have a screenshot yet. Click 'Capture Screenshot' to generate one automatically, " +
+          "or 'Upload' to add one from your computer."
+        );
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [channelId, screenshotUrl]);
   
   return (
     <div className="mt-4">
