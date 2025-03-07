@@ -1,12 +1,19 @@
+
 import { ApifyChannelData } from "./types.ts";
 import { corsHeaders } from "./cors.ts";
 
 /**
  * Utility function to safely extract a number from a string
  */
-function extractNumberFromString(value: string | undefined): number {
-  if (!value) return 0;
-  const numberPart = value.replace(/[^0-9.]/g, '');
+function extractNumberFromString(value: string | number | undefined): number {
+  if (value === undefined || value === null) return 0;
+  
+  // If value is already a number, return it directly
+  if (typeof value === 'number') return value;
+  
+  // Ensure value is a string before using replace
+  const stringValue = String(value);
+  const numberPart = stringValue.replace(/[^0-9.]/g, '');
   const parsedNumber = parseFloat(numberPart);
   return isNaN(parsedNumber) ? 0 : parsedNumber;
 }
@@ -33,6 +40,9 @@ function formatDate(dateString: string | undefined): string {
  * Format the channel response to provide all data we can extract regardless of request type
  */
 export function formatChannelStatsResponse(channelData: ApifyChannelData) {
+  // Log the incoming data to help debug issues
+  console.log("Formatting channel data:", JSON.stringify(channelData, null, 2));
+  
   // Extract all the data we can from the channel data
   return {
     success: true,

@@ -62,9 +62,11 @@ export const mapPartialResponseToFormData = (
     if (data[responseField] !== undefined && 
         data[responseField] !== null && 
         String(data[responseField]).trim() !== "") {
-      // Use explicit string conversion
-      partialStats[formField] = String(data[responseField]);
-      successfulFields.push(apiField);
+      // Use explicit string conversion for all values to ensure proper typing
+      if (typeof formField === 'string') {
+        partialStats[formField as keyof ChannelFormData] = String(data[responseField]) as any;
+        successfulFields.push(apiField);
+      }
     } else if (missingFields.some(field => field.toLowerCase().includes(apiField.toLowerCase()))) {
       failedFields.push(apiField);
     }
