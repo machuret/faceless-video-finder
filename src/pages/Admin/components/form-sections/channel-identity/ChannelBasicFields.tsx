@@ -46,13 +46,13 @@ const ChannelBasicFields = ({
         </div>
       </div>
       <div className="mt-4">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">About</Label>
         <Textarea
           id="description"
           name="description"
           value={description || ""}
           onChange={handleChange}
-          placeholder="Enter channel description"
+          placeholder="Enter channel about information"
           rows={3}
         />
       </div>
