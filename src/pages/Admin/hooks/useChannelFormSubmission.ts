@@ -58,6 +58,7 @@ export const useChannelFormSubmission = (
         channel_title: formData.channel_title,
         channel_url: formData.channel_url,
         description: formData.description || null,
+        ai_description: formData.ai_description || null, // Add AI description field here
         screenshot_url: formData.screenshot_url || null,
         total_subscribers: formData.total_subscribers ? parseInt(formData.total_subscribers) : null,
         total_views: formData.total_views ? parseInt(formData.total_views) : null,
