@@ -19,13 +19,18 @@ const TrainingHero: React.FC<TrainingHeroProps> = ({ startLink }) => {
           Comprehensive training materials to help you create, grow, and monetize your faceless YouTube channel
         </p>
         <div className="mt-8">
-          <Button 
-            size="lg" 
-            className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-semibold"
-            onClick={handleTrainingClick}
+          <a 
+            href="https://facelesstraining.com/" 
+            target="_blank" 
+            rel="noopener noreferrer"
           >
-            Start Free Training
-          </Button>
+            <Button 
+              size="lg" 
+              className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-semibold"
+            >
+              Start Free Training
+            </Button>
+          </a>
         </div>
       </div>
     </div>

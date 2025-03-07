@@ -1,4 +1,3 @@
-
 import { 
   Home, 
   Info, 
@@ -7,8 +6,7 @@ import {
   Lightbulb, 
   BookOpen, 
   GraduationCap, 
-  Mail,
-  Settings
+  Mail
 } from "lucide-react";
 import { ReactNode } from "react";
 
@@ -16,6 +14,7 @@ export interface NavItemConfig {
   path: string;
   label: string;
   icon: ReactNode;
+  isExternal?: boolean;
 }
 
 export const navigationItems: NavItemConfig[] = [
@@ -50,19 +49,15 @@ export const navigationItems: NavItemConfig[] = [
     icon: <BookOpen className="h-4 w-4" />
   },
   {
-    path: "/training",
+    path: "https://facelesstraining.com/",
     label: "Training",
-    icon: <GraduationCap className="h-4 w-4" />
+    icon: <GraduationCap className="h-4 w-4" />,
+    isExternal: true
   },
   {
     path: "/contact",
     label: "Contact Us",
     icon: <Mail className="h-4 w-4" />
-  },
-  {
-    path: "/admin/dashboard",
-    label: "Admin",
-    icon: <Settings className="h-4 w-4" />
   }
 ];
 
@@ -71,7 +66,7 @@ export const isIdeasActive = (path: string): boolean => {
   return path === '/faceless-channels' || path === '/faceless-channel-ideas';
 };
 
-// Special case handling for Admin menu item
+// Special case handling for Admin menu item - keeping this function as other code might reference it
 export const isAdminActive = (path: string): boolean => {
   return path.startsWith('/admin');
 };

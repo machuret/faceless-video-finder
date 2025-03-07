@@ -48,6 +48,7 @@ const ChannelIdentitySection = ({
         channelUrl={formData.channel_url}
         description={formData.description || ""}
         handleChange={handleChange}
+        channelId={isEditMode ? formData.id : undefined}
       />
       
       <ScreenshotUploader 

@@ -1,4 +1,5 @@
 
+import { Link } from "react-router-dom";
 import NavItem from "./NavItem";
 import { navigationItems, isIdeasActive, isAdminActive } from "./navConfig";
 
@@ -20,6 +21,7 @@ const DesktopNav = ({ isActive }: DesktopNavProps) => {
           } 
           icon={item.icon} 
           label={item.label} 
+          isExternal={item.isExternal}
         />
       ))}
     </nav>

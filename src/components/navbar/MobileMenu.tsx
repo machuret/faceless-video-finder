@@ -31,6 +31,7 @@ const MobileMenu = ({ isOpen, isActive, onItemClick }: MobileMenuProps) => {
             label={item.label} 
             onClick={onItemClick}
             isMobile={true}
+            isExternal={item.isExternal}
           />
         ))}
       </div>
