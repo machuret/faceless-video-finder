@@ -22,7 +22,7 @@ export async function takeScreenshotViaAPI(url: string): Promise<{
       };
     }
     
-    // Step 1: Start the Apify actor run to take a screenshot (using the actor directly instead of a task)
+    // Use the website-screenshot-crawler actor directly with the run API
     console.log("Starting Apify screenshot actor...");
     const startResponse = await fetch("https://api.apify.com/v2/acts/apify~website-screenshot-crawler/runs?token=" + APIFY_API_TOKEN, {
       method: "POST",
@@ -48,11 +48,11 @@ export async function takeScreenshotViaAPI(url: string): Promise<{
       };
     }
     
-    // Step 2: Get the response from Apify
+    // Get the response from Apify
     const responseData = await startResponse.json();
     console.log("Apify actor response:", JSON.stringify(responseData));
     
-    // Step 3: Extract the screenshot URL from the response
+    // Extract the screenshot URL from the response
     // First, try the dataset
     let screenshotUrl = null;
     let directUrl = null;
