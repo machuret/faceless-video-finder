@@ -74,7 +74,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       setDataSource(data.source || "apify");
       toast.success(`Channel stats fetched successfully via ${data.source || "Apify"}`);
 
-      // Make sure we include all fields including country
+      // Make sure we include all fields including country and description
       const stats: Partial<ChannelFormData> = {
         total_subscribers: data.subscriberCount?.toString() || "",
         total_views: data.viewCount?.toString() || "",

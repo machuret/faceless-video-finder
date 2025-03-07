@@ -1,7 +1,5 @@
 
 import { corsHeaders } from "./cors.ts";
-import { extractTitleFromUrl } from "./urlUtils.ts";
-import { ChannelStatsResponse, ChannelDescriptionResponse } from "./types.ts";
 
 /**
  * Helper function to provide error response when real data can't be fetched

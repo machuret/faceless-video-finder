@@ -1,63 +1,80 @@
 
-// Function to take screenshots via screenshotapi.net
+// Function to take screenshots via Apify's Screenshot URL Actor
 export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | null> {
   try {
-    console.log("Taking screenshot via screenshotapi.net:", url);
+    console.log("Taking screenshot via Apify Screenshot URL actor:", url);
     
     // Get API key from environment
-    const apiKey = Deno.env.get("SCREENSHOT_API_KEY");
+    const apiKey = Deno.env.get("APIFY_API_KEY") || Deno.env.get("APIFY_API_TOKEN");
     if (!apiKey) {
-      console.error("SCREENSHOT_API_KEY not configured");
-      throw new Error("Screenshot API key not configured");
+      console.error("APIFY_API_KEY not configured");
+      throw new Error("Apify API key not configured");
     }
     
-    // Prepare the API request
-    const encodedUrl = encodeURIComponent(url);
-    const output = "image";
-    const fileType = "png";
-    
-    // Set parameters to handle YouTube's consent screen
-    const delay = 5000; // 5 seconds delay to ensure page is fully loaded
-    const fullPage = false; // Get only the first viewport
-    const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    const width = 1366; // Common desktop width
-    const height = 768; // Common desktop height
-    
-    // Try to optimize the URL to target channel page specifically
-    let optimizedUrl = url;
-    if (url.includes("youtube.com/channel/") || url.includes("youtube.com/c/") || url.includes("youtube.com/@")) {
-      // Add /featured to go directly to channel homepage
-      if (!url.endsWith("/")) {
-        optimizedUrl = url + "/featured";
-      } else {
-        optimizedUrl = url + "featured";
+    // Prepare the Apify Actor input
+    const input = {
+      "urls": [
+        {
+          "url": url
+        }
+      ],
+      "format": "png",
+      "waitUntil": "domcontentloaded",
+      "delay": 5000, // 5 seconds delay to ensure page is fully loaded
+      "viewportWidth": 1366,
+      "viewportHeight": 768,
+      "scrollToBottom": false,
+      "proxy": {
+        "useApifyProxy": true
       }
-      console.log("Optimized URL for screenshot:", optimizedUrl);
-    }
+    };
     
-    const encodedOptimizedUrl = encodeURIComponent(optimizedUrl);
+    console.log("Calling Apify Screenshot URL actor");
     
-    // Set the YouTube consent cookie directly - this is the key improvement
-    // SOCS cookie value that indicates consent has been given
-    const cookies = "SOCS=CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg";
-    
-    // Construct the API URL with the cookie parameter
-    const apiUrl = `https://shot.screenshotapi.net/screenshot?token=${apiKey}&url=${encodedOptimizedUrl}&output=${output}&file_type=${fileType}&delay=${delay}&full_page=${fullPage}&user_agent=${encodeURIComponent(userAgent)}&width=${width}&height=${height}&cookies=${encodeURIComponent(cookies)}`;
-    
-    console.log("Calling screenshot API with YouTube consent cookie");
-    
-    // Make the request to the screenshot API
-    const response = await fetch(apiUrl);
+    // Use the Apify API to run Screenshot URL actor synchronously
+    const response = await fetch(
+      `https://api.apify.com/v2/acts/apify~screenshot-url/run-sync?token=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input)
+      }
+    );
     
     if (!response.ok) {
-      console.error("Screenshot API error:", response.status, response.statusText);
-      throw new Error(`Screenshot API returned ${response.status}: ${response.statusText}`);
+      console.error("Apify Screenshot URL actor error:", response.status, response.statusText);
+      throw new Error(`Apify Screenshot URL actor returned ${response.status}: ${response.statusText}`);
     }
     
-    console.log("Screenshot API response received");
-    return await response.arrayBuffer();
+    // The response should be a JSON with a "data" field containing items
+    const responseData = await response.json();
+    
+    // If no items were returned, throw an error
+    if (!responseData || !responseData.items || responseData.items.length === 0) {
+      console.error("No screenshot data returned from Apify");
+      throw new Error("No screenshot data returned from Apify");
+    }
+    
+    // Get the screenshot URL from the first item
+    const screenshotUrl = responseData.items[0].screenshotUrl;
+    if (!screenshotUrl) {
+      console.error("No screenshot URL found in Apify response");
+      throw new Error("No screenshot URL found in Apify response");
+    }
+    
+    // Fetch the actual screenshot image from the URL
+    const imageResponse = await fetch(screenshotUrl);
+    if (!imageResponse.ok) {
+      console.error("Error fetching screenshot image:", imageResponse.status, imageResponse.statusText);
+      throw new Error(`Error fetching screenshot image: ${imageResponse.status}`);
+    }
+    
+    console.log("Screenshot image fetched successfully");
+    return await imageResponse.arrayBuffer();
   } catch (err) {
-    console.error("Error taking screenshot via API:", err);
+    console.error("Error taking screenshot via Apify API:", err);
     return null;
   }
 }

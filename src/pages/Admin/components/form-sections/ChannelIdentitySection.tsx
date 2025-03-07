@@ -10,15 +10,13 @@ interface ChannelIdentitySectionProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleScreenshotChange: (url: string) => void;
   isEditMode: boolean;
-  onFetchAbout?: () => (about: string) => void;
 }
 
 const ChannelIdentitySection = ({ 
   formData, 
   handleChange, 
   handleScreenshotChange, 
-  isEditMode,
-  onFetchAbout
+  isEditMode
 }: ChannelIdentitySectionProps) => {
   return (
     <FormSectionWrapper 
