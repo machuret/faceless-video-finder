@@ -39,6 +39,13 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
       console.log("Stats received:", data);
 
+      // Warn if using mock data
+      if (data.is_mock) {
+        toast.warning("Using mock data - couldn't fetch actual channel stats");
+      } else {
+        toast.success("Channel stats fetched successfully");
+      }
+
       // Make sure we include all fields including country
       const stats: Partial<ChannelFormData> = {
         total_subscribers: data.subscriberCount?.toString() || "",
@@ -47,12 +54,11 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         description: data.description || "",
         channel_title: data.title || "",
         start_date: data.startDate || "",
-        country: data.country || "" // Add country field
+        country: data.country || ""
       };
 
       console.log("Processed stats with all fields:", stats);
       onStatsReceived(stats);
-      toast.success("Channel stats updated successfully");
     } catch (err) {
       console.error("Error in fetch stats flow:", err);
       toast.error(err instanceof Error ? err.message : "Unknown error fetching stats");

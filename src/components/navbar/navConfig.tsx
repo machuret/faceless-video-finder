@@ -1,72 +1,52 @@
-import { 
-  Home, 
-  Info, 
-  Calculator, 
-  GridIcon, 
-  Lightbulb, 
-  BookOpen, 
-  GraduationCap, 
-  Mail
-} from "lucide-react";
-import { ReactNode } from "react";
+import { Home, Calculator, Lightbulb, Layers, GraduationCap, HelpCircle, Users, Settings } from "lucide-react";
+import { matchPath } from "react-router-dom";
 
-export interface NavItemConfig {
-  path: string;
-  label: string;
-  icon: ReactNode;
-  isExternal?: boolean;
-}
-
-export const navigationItems: NavItemConfig[] = [
+// Define navigation items
+export const navigationItems = [
   {
     path: "/",
+    icon: <Home className="h-4 w-4" />,
     label: "Home",
-    icon: <Home className="h-4 w-4" />
-  },
-  {
-    path: "/about",
-    label: "About Us",
-    icon: <Info className="h-4 w-4" />
   },
   {
     path: "/calculators",
-    label: "Calculator",
-    icon: <Calculator className="h-4 w-4" />
+    icon: <Calculator className="h-4 w-4" />,
+    label: "Calculators",
   },
   {
-    path: "/",
-    label: "Channels",
-    icon: <GridIcon className="h-4 w-4" />
-  },
-  {
-    path: "/faceless-channels",
+    path: "/faceless-ideas",
+    icon: <Lightbulb className="h-4 w-4" />,
     label: "Ideas",
-    icon: <Lightbulb className="h-4 w-4" />
   },
   {
     path: "/channel-types",
-    label: "Types",
-    icon: <BookOpen className="h-4 w-4" />
+    icon: <Layers className="h-4 w-4" />,
+    label: "Channel Types",
   },
   {
     path: "https://facelesstraining.com/",
-    label: "Training",
     icon: <GraduationCap className="h-4 w-4" />,
-    isExternal: true
+    label: "Training",
+    isExternal: true,
   },
   {
-    path: "/contact",
-    label: "Contact Us",
-    icon: <Mail className="h-4 w-4" />
-  }
+    path: "/how-it-works",
+    icon: <HelpCircle className="h-4 w-4" />,
+    label: "How It Works",
+  },
+  {
+    path: "/about-us",
+    icon: <Users className="h-4 w-4" />,
+    label: "About Us",
+  },
 ];
 
-// Special case handling for Ideas menu item
-export const isIdeasActive = (path: string): boolean => {
-  return path === '/faceless-channels' || path === '/faceless-channel-ideas';
+// Function to check if "Ideas" is active
+export const isIdeasActive = (pathname: string): boolean => {
+  return !!matchPath({ path: "/faceless-ideas/*", end: false }, pathname) || pathname === '/faceless-ideas';
 };
 
-// Special case handling for Admin menu item - keeping this function as other code might reference it
-export const isAdminActive = (path: string): boolean => {
-  return path.startsWith('/admin');
+// Function to check if "Admin" is active
+export const isAdminActive = (pathname: string): boolean => {
+  return !!matchPath({ path: "/admin/*", end: false }, pathname) || pathname === '/admin';
 };
