@@ -18,6 +18,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
   const [dataSource, setDataSource] = useState<"apify" | "youtube" | null>(null);
   const [partialData, setPartialData] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [consecutiveAttempts, setConsecutiveAttempts] = useState(0);
 
   const verifyRequiredFields = (data: any): string[] => {
     const requiredFields = [
@@ -48,7 +49,16 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     setDataSource(null);
     setPartialData(false);
     setMissingFields([]);
-    toast.info("Fetching channel stats via Apify...");
+    
+    // Increment consecutive attempts
+    setConsecutiveAttempts(prev => prev + 1);
+    
+    // If too many consecutive attempts with failures
+    if (consecutiveAttempts >= 2) {
+      toast.warning("Multiple fetch attempts detected. Please try filling in data manually if fetching continues to fail.");
+    } else {
+      toast.info("Fetching channel stats via Apify...");
+    }
 
     try {
       // Normalize URL if it's a handle without full URL
@@ -100,8 +110,14 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       if (hasPartialData) {
         console.warn("Partial data received. Missing fields:", missing);
         toast.warning(`Some channel data is missing: ${missing.join(', ')}`);
+        
+        // Reset consecutive attempts if we got any data
+        if (Object.keys(data).length > 2) { // success + source = 2 keys
+          setConsecutiveAttempts(0);
+        }
       } else {
         toast.success(`Channel stats fetched successfully via ${data.source || "Apify"}`);
+        setConsecutiveAttempts(0); // Reset consecutive attempts on success
       }
 
       // Set data source
@@ -165,6 +181,15 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
           <AlertTitle className="text-green-600">Complete Data Retrieved</AlertTitle>
           <AlertDescription className="text-sm">
             All channel data was successfully scraped using Apify's YouTube scraper.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {consecutiveAttempts >= 2 && (
+        <Alert className="mt-2 border-blue-500 bg-blue-50">
+          <AlertTitle className="text-blue-600">Multiple Fetch Attempts</AlertTitle>
+          <AlertDescription className="text-sm">
+            Consider entering the missing data manually if automated fetching continues to fail.
           </AlertDescription>
         </Alert>
       )}

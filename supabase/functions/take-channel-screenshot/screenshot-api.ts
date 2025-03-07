@@ -15,19 +15,24 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     const input = {
       "urls": [
         {
-          "url": url
+          "url": url,
+          "fullPage": false,
+          "saveImages": true,
+          "screenshotQuality": 85,
+          "ignoreCookieBanners": true
         }
       ],
       "format": "png",
       "waitUntil": "networkidle2",
-      "delay": 10000, // 10 seconds delay to ensure page is fully loaded
+      "delay": 15000, // Increased delay to 15 seconds
       "viewportWidth": 1366,
       "viewportHeight": 768,
       "scrollToBottom": false,
       "proxy": {
         "useApifyProxy": true,
         "apifyProxyGroups": ["RESIDENTIAL"]
-      }
+      },
+      "debugLog": true
     };
     
     console.log("Calling Apify Screenshot URL actor with input:", JSON.stringify(input, null, 2));
@@ -53,7 +58,8 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     
     // The response should be a JSON with a "data" field containing items
     const responseData = await response.json();
-    console.log("Apify response:", JSON.stringify(responseData, null, 2).substring(0, 500) + "...");
+    console.log(`Apify response status: ${response.status}`);
+    console.log(`Received Apify response data - item count: ${responseData.items?.length || 0}`);
     
     // If no items were returned, throw an error
     if (!responseData || !responseData.items || responseData.items.length === 0) {
@@ -62,9 +68,11 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     }
     
     // Get the screenshot URL from the first item
-    const screenshotUrl = responseData.items[0].screenshotUrl;
+    const screenshotUrl = responseData.items[0]?.screenshotUrl;
     if (!screenshotUrl) {
       console.error("No screenshot URL found in Apify response");
+      const responseDataString = JSON.stringify(responseData).substring(0, 500);
+      console.error(`Response data preview: ${responseDataString}...`);
       throw new Error("No screenshot URL found in Apify response");
     }
     

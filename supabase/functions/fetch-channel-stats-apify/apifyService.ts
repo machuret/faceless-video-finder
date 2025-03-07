@@ -24,7 +24,10 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
   
   // Prepare Actor input with improved settings to ensure we get all required data
   const input = {
-    "startUrls": [{ "url": url }],
+    "startUrls": [
+      { "url": url },
+      { "url": `${url}/about` } // Also scrape the About page to get more data
+    ],
     "maxVideos": 1,
     "proxy": {
       "useApifyProxy": true,
@@ -70,6 +73,21 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
             if (countryMatch && countryMatch[1]) {
               data.channelLocation = countryMatch[1].trim();
               console.log('Successfully extracted country: ' + countryMatch[1].trim());
+            }
+            
+            // Extract more metadata directly from the DOM
+            // Try to get total views
+            const viewsMatch = html.match(/([\\d,]+)\\s+views<\\/div>/);
+            if (viewsMatch && viewsMatch[1]) {
+              data.channelTotalViews = viewsMatch[1].replace(/,/g, '');
+              console.log('Successfully extracted total views: ' + data.channelTotalViews);
+            }
+            
+            // Try to get video count
+            const videosMatch = html.match(/([\\d,]+)\\s+videos<\\/div>/);
+            if (videosMatch && videosMatch[1]) {
+              data.channelTotalVideos = videosMatch[1].replace(/,/g, '');
+              console.log('Successfully extracted video count: ' + data.channelTotalVideos);
             }
           } catch (e) {
             console.log('Error fetching about page:', e);
@@ -173,8 +191,26 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
       throw new ApifyError('No data returned from Apify');
     }
     
-    // Get the first item (channel data)
-    const channelData = items[0] as ApifyChannelData;
+    // Process all items and merge channel data
+    let channelData: ApifyChannelData = {};
+    
+    for (const item of items) {
+      if (item.type === 'channel') {
+        // Merge with existing channel data, prioritizing the current item
+        channelData = { 
+          ...channelData, 
+          ...item,
+          // Overwrite with more specific fields if they exist in this item
+          channelName: item.channelName || channelData.channelName,
+          channelDescription: item.channelDescription || channelData.channelDescription,
+          numberOfSubscribers: item.numberOfSubscribers || channelData.numberOfSubscribers,
+          channelTotalViews: item.channelTotalViews || channelData.channelTotalViews,
+          channelTotalVideos: item.channelTotalVideos || channelData.channelTotalVideos,
+          channelJoinedDate: item.channelJoinedDate || channelData.channelJoinedDate,
+          channelLocation: item.channelLocation || channelData.channelLocation
+        };
+      }
+    }
     
     // Verify essential fields and provide detailed diagnostic info
     console.log("Channel data verification:");

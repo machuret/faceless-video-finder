@@ -24,6 +24,18 @@ export function formatChannelStatsResponse(data: ApifyChannelData) {
   // Get country/location
   const country = data.channelLocation || data.country || '';
   
+  // Validate required fields
+  const missingFields = [];
+  if (!viewCount) missingFields.push('viewCount');
+  if (!videoCount) missingFields.push('videoCount');
+  if (!startDate) missingFields.push('startDate');
+  if (!description) missingFields.push('description');
+  if (!country) missingFields.push('country');
+  
+  if (missingFields.length > 0) {
+    console.error(`Warning: Missing channel data fields: ${missingFields.join(', ')}`);
+  }
+  
   return {
     success: true,
     title,
@@ -33,7 +45,8 @@ export function formatChannelStatsResponse(data: ApifyChannelData) {
     startDate,
     description,
     country,
-    source: "apify"
+    source: "apify",
+    missingFields: missingFields.length > 0 ? missingFields : undefined
   };
 }
 
