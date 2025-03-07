@@ -19,7 +19,7 @@ serve(async (req) => {
     console.log('Request received in fetch-channel-stats function');
     
     // Parse request
-    const { channelUrl } = await req.json()
+    const { channelUrl, fetchDescriptionOnly } = await req.json()
 
     if (!channelUrl) {
       console.error('Missing channelUrl parameter');
@@ -32,7 +32,7 @@ serve(async (req) => {
       )
     }
     
-    console.log(`Fetching stats for channel: ${channelUrl}`);
+    console.log(`Fetching ${fetchDescriptionOnly ? 'about section' : 'stats'} for channel: ${channelUrl}`);
 
     // This is a placeholder for actual YouTube API integration
     // In a real implementation, you would use the YouTube API to fetch channel stats
@@ -51,16 +51,34 @@ serve(async (req) => {
     console.log(`Extracted channel ID: ${channelId}`);
     
     // Mock data - in a real implementation, this would come from the YouTube API
+    const mockDescription = "This is a sample YouTube channel description fetched by our API. " +
+      "This channel is focused on creating content about technology, gaming, and lifestyle. " +
+      "We post new videos every week and strive to deliver high-quality content for our viewers. " +
+      "Join our community to stay updated with the latest trends and tips!";
+      
     const mockStats = {
       subscriberCount: 100000 + Math.floor(Math.random() * 900000),
       viewCount: 5000000 + Math.floor(Math.random() * 5000000),
       videoCount: 50 + Math.floor(Math.random() * 150),
       title: channelId ? `Channel: ${channelId}` : "Sample YouTube Channel",
-      description: "This is a sample YouTube channel description fetched by our API.",
-      startDate: "2018-01-15" // Ensure we're providing a start date
+      description: mockDescription,
+      startDate: "2018-01-15", // Ensure we're providing a start date in YYYY-MM-DD format
+      country: "US" // Add country code
     };
     
-    console.log('Returning mock stats:', mockStats);
+    // If we're only fetching the description, return a simplified response
+    if (fetchDescriptionOnly) {
+      console.log('Returning mock description');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          description: mockDescription
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      )
+    }
+    
+    console.log('Returning mock stats with start date and country:', mockStats);
 
     return new Response(
       JSON.stringify({ 

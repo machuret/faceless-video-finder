@@ -1,71 +1,74 @@
 
 import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ChannelFormData } from "@/types/forms";
 
 interface AboutSectionFetcherProps {
   channelUrl: string;
   onAboutReceived: (about: string) => void;
+  disabled?: boolean;
 }
 
-const fetchAboutSection = async (channelUrl: string, onAboutReceived: (about: string) => void) => {
-  if (!channelUrl) {
-    toast.error("Channel URL or name is required to fetch about section");
-    return;
-  }
+const AboutSectionFetcher = ({ channelUrl, onAboutReceived, disabled = false }: AboutSectionFetcherProps) => {
+  const [loading, setLoading] = useState(false);
 
-  try {
+  const fetchAbout = async () => {
+    if (!channelUrl) {
+      toast.error("Please enter a channel URL first");
+      return;
+    }
+
+    setLoading(true);
     toast.info("Fetching channel's about section...");
-    
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] 📄 Requesting about section for: ${channelUrl}`);
-    
-    // Call the stats endpoint with fetchDescriptionOnly flag
-    const { data, error } = await supabase.functions.invoke('fetch-channel-stats', {
-      body: {
-        url: channelUrl.trim(),
-        timestamp,
-        includeDescription: true,
-        fetchDescriptionOnly: true
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-channel-stats', {
+        body: { 
+          channelUrl,
+          fetchDescriptionOnly: true
+        }
+      });
+
+      if (error) {
+        console.error("Error fetching about section:", error);
+        throw new Error(`Failed to fetch about section: ${error.message}`);
       }
-    });
-    
-    if (error) {
-      console.error(`[${timestamp}] ❌ Error fetching about section:`, error);
-      toast.error(`Failed to fetch about section: ${error.message}`);
-      return;
+
+      if (!data || !data.success) {
+        throw new Error(data?.error || "Failed to fetch channel about section");
+      }
+
+      console.log("About section received:", data);
+      
+      // Extract the description from the response
+      const description = data.description || "";
+      
+      // Call the callback function with the description
+      onAboutReceived(description);
+      toast.success("Channel about section updated successfully");
+    } catch (err) {
+      console.error("Error in fetch about flow:", err);
+      toast.error(err instanceof Error ? err.message : "Unknown error fetching about section");
+    } finally {
+      setLoading(false);
     }
-    
-    if (!data) {
-      console.error(`[${timestamp}] ❌ No data received`);
-      toast.error("No about section data received");
-      return;
-    }
-    
-    if (data.error) {
-      console.error(`[${timestamp}] ❌ API error:`, data.error);
-      toast.error(`Error: ${data.error}`);
-      return;
-    }
-    
-    if (!data.channelInfo || !data.channelInfo.description) {
-      console.error(`[${timestamp}] ❌ No about section found`);
-      toast.error("Could not retrieve about section");
-      return;
-    }
-    
-    console.log(`[${timestamp}] ✅ About section received:`, data.channelInfo.description);
-    
-    toast.success("Channel about section fetched successfully!");
-    
-    // Pass the about section up to the parent component
-    onAboutReceived(data.channelInfo.description);
-    
-  } catch (err) {
-    console.error("Unexpected error fetching about section:", err);
-    toast.error(`Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`);
-  }
+  };
+
+  return (
+    <Button 
+      type="button" 
+      variant="outline" 
+      size="sm" 
+      onClick={fetchAbout}
+      disabled={loading || disabled || !channelUrl}
+      className="flex items-center gap-1"
+    >
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+      Fetch About
+    </Button>
+  );
 };
 
-export { fetchAboutSection };
+export default AboutSectionFetcher;
