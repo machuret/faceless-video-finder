@@ -1,6 +1,7 @@
 
 import { corsHeaders } from "./cors.ts";
 import { extractTitleFromUrl } from "./urlUtils.ts";
+import { ChannelStatsResponse, ChannelDescriptionResponse } from "./types.ts";
 
 /**
  * Helper function to provide mock data when real data can't be fetched
@@ -17,20 +18,23 @@ export function provideMockData(channelUrl: string, fetchDescriptionOnly: boolea
   // If we're only fetching the description
   if (fetchDescriptionOnly) {
     console.log('Returning mock description');
+    
+    const response: ChannelDescriptionResponse = {
+      success: true, 
+      description: mockDescription,
+      is_mock: true,
+      error_reason: errorReason,
+      source: "mock"
+    };
+    
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        description: mockDescription,
-        is_mock: true,
-        error_reason: errorReason,
-        source: "mock"
-      }),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   }
   
   // Mock stats with a consistent naming pattern
-  const mockStats = {
+  const mockStats: ChannelStatsResponse = {
     success: true,
     subscriberCount: 100000 + Math.floor(Math.random() * 900000),
     viewCount: 5000000 + Math.floor(Math.random() * 5000000),

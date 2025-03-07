@@ -1,8 +1,23 @@
 
+import { ApifyChannelData } from "./types.ts";
+
+/**
+ * Error class for Apify API failures
+ */
+export class ApifyError extends Error {
+  status?: number;
+  
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "ApifyError";
+    this.status = status;
+  }
+}
+
 /**
  * Fetches channel data using direct Apify API calls
  */
-export async function fetchChannelWithApifyAPI(url: string, apiToken: string) {
+export async function fetchChannelWithApifyAPI(url: string, apiToken: string): Promise<ApifyChannelData> {
   console.log(`Calling Apify YouTube Scraper actor with direct API call for URL: ${url}`);
   
   // Prepare Actor input
@@ -30,11 +45,15 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string) {
     
     if (!runResponse.ok) {
       const errorText = await runResponse.text();
-      throw new Error(`Failed to start Apify actor: ${runResponse.status} ${errorText}`);
+      throw new ApifyError(`Failed to start Apify actor: ${runResponse.status} ${errorText}`, runResponse.status);
     }
     
     const runData = await runResponse.json();
-    const runId = runData.data.id;
+    const runId = runData.data?.id;
+    
+    if (!runId) {
+      throw new ApifyError("Invalid response from Apify: Run ID not found");
+    }
     
     console.log(`Apify actor run started with ID: ${runId}`);
     
@@ -54,11 +73,18 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string) {
       
       if (!statusResponse.ok) {
         retries++;
+        console.warn(`Error fetching run status (retry ${retries}): ${statusResponse.status}`);
         continue;
       }
       
       const statusData = await statusResponse.json();
-      lastStatus = statusData.data.status;
+      lastStatus = statusData.data?.status;
+      
+      if (!lastStatus) {
+        retries++;
+        console.warn(`Invalid status response (retry ${retries})`);
+        continue;
+      }
       
       if (['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT'].includes(lastStatus)) {
         isFinished = true;
@@ -69,7 +95,7 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string) {
     }
     
     if (lastStatus !== 'SUCCEEDED') {
-      throw new Error(`Apify actor run did not succeed. Last status: ${lastStatus}`);
+      throw new ApifyError(`Apify actor run did not succeed. Last status: ${lastStatus}`);
     }
     
     // Fetch the dataset items
@@ -78,20 +104,26 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string) {
     );
     
     if (!datasetResponse.ok) {
-      throw new Error(`Failed to fetch dataset: ${datasetResponse.status}`);
+      throw new ApifyError(`Failed to fetch dataset: ${datasetResponse.status}`, datasetResponse.status);
     }
     
     const items = await datasetResponse.json();
     console.log(`Retrieved ${items.length} items from dataset`);
     
     if (!items || items.length === 0) {
-      throw new Error('No data returned from Apify');
+      throw new ApifyError('No data returned from Apify');
     }
     
     // Return the first item (channel data)
-    return items[0];
+    return items[0] as ApifyChannelData;
   } catch (error) {
+    // Re-throw Apify errors as is
+    if (error instanceof ApifyError) {
+      throw error;
+    }
+    
+    // Wrap other errors
     console.error('Error in Apify API execution:', error);
-    throw new Error(`Apify API error: ${error instanceof Error ? error.message : String(error)}`);
+    throw new ApifyError(`Apify API error: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

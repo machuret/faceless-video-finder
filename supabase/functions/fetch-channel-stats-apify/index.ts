@@ -4,9 +4,14 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 import { corsHeaders } from "./cors.ts";
 import { normalizeYouTubeUrl } from "./urlUtils.ts";
-import { formatDate } from "./dateUtils.ts";
-import { fetchChannelWithApifyAPI } from "./apifyService.ts";
+import { fetchChannelWithApifyAPI, ApifyError } from "./apifyService.ts";
 import { provideMockData } from "./mockService.ts";
+import { 
+  formatChannelStatsResponse, 
+  formatDescriptionResponse, 
+  formatErrorResponse 
+} from "./responseFormatter.ts";
+import { ChannelStatsRequest } from "./types.ts";
 
 serve(async (req) => {
   // Handle CORS preflight request
@@ -19,15 +24,24 @@ serve(async (req) => {
     console.log('Request received in fetch-channel-stats-apify function');
     
     // Parse request
-    const { channelUrl, fetchDescriptionOnly } = await req.json();
+    let requestData: ChannelStatsRequest;
+    try {
+      requestData = await req.json();
+    } catch (error) {
+      console.error('Error parsing request JSON:', error);
+      const { response } = formatErrorResponse('Invalid JSON in request body', 400);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid JSON in request body' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const { channelUrl, fetchDescriptionOnly } = requestData;
 
     if (!channelUrl) {
       console.error('Missing channelUrl parameter');
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Channel URL is required' 
-        }),
+        JSON.stringify({ success: false, error: 'Channel URL is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -39,7 +53,12 @@ serve(async (req) => {
     
     if (!APIFY_API_TOKEN) {
       console.error('Apify API token not configured');
-      return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders, "Apify API token not configured");
+      return provideMockData(
+        channelUrl, 
+        Boolean(fetchDescriptionOnly), 
+        corsHeaders, 
+        "Apify API token not configured"
+      );
     }
 
     try {
@@ -55,7 +74,7 @@ serve(async (req) => {
         console.error('No data returned from Apify');
         return provideMockData(
           channelUrl, 
-          fetchDescriptionOnly, 
+          Boolean(fetchDescriptionOnly), 
           corsHeaders, 
           'No data returned from Apify'
         );
@@ -63,29 +82,15 @@ serve(async (req) => {
       
       // If we're only fetching the description
       if (fetchDescriptionOnly) {
+        const response = formatDescriptionResponse(channelData);
         return new Response(
-          JSON.stringify({ 
-            success: true, 
-            description: channelData.channelDescription || "", 
-            source: "apify"
-          }),
+          JSON.stringify(response),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
       }
       
       // Format the complete response
-      const channelStats = {
-        success: true,
-        subscriberCount: channelData.numberOfSubscribers || 0,
-        viewCount: parseInt(channelData.channelTotalViews?.replace(/,/g, '') || "0") || 0,
-        videoCount: channelData.channelTotalVideos || 0,
-        title: channelData.channelName || "",
-        description: channelData.channelDescription || "",
-        startDate: formatDate(channelData.channelJoinedDate) || "",
-        country: channelData.channelLocation || "",
-        source: "apify"
-      };
-      
+      const channelStats = formatChannelStatsResponse(channelData);
       console.log('Returning channel stats:', channelStats);
       
       return new Response(
@@ -100,7 +105,7 @@ serve(async (req) => {
       console.log(`API processing failed (${errorReason}), falling back to mock data`);
       
       // Fall back to mock data if API fails
-      return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders, errorReason);
+      return provideMockData(channelUrl, Boolean(fetchDescriptionOnly), corsHeaders, errorReason);
     }
     
   } catch (error) {
@@ -108,7 +113,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Unknown error occurred' 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );

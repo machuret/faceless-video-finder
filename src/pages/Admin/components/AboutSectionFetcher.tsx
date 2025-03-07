@@ -37,17 +37,23 @@ const AboutSectionFetcher = ({ channelUrl, onAboutReceived, disabled = false }: 
       }
 
       if (!data || !data.success) {
-        throw new Error(data?.error || "Failed to fetch channel about section");
+        const errorMessage = data?.error || "Failed to fetch channel about section";
+        throw new Error(errorMessage);
       }
 
       console.log("About section received:", data);
+      
+      if (data.is_mock) {
+        toast.warning(`Using mock description - couldn't fetch actual channel data${data.error_reason ? ` (${data.error_reason})` : ''}`);
+      } else {
+        toast.success("Channel about section fetched successfully");
+      }
       
       // Extract the description from the response
       const description = data.description || "";
       
       // Call the callback function with the description
       onAboutReceived(description);
-      toast.success("Channel about section updated successfully");
     } catch (err) {
       console.error("Error in fetch about flow:", err);
       toast.error(err instanceof Error ? err.message : "Unknown error fetching about section");
