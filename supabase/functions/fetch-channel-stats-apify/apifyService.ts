@@ -60,12 +60,12 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     // Poll for actor run status until it's finished
     let isFinished = false;
     let retries = 0;
-    const maxRetries = 10;
+    const maxRetries = 20; // Increased from 10 to 20
     let lastStatus = '';
     
     while (!isFinished && retries < maxRetries) {
-      // Wait for a few seconds before checking status
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Wait longer between status checks, increase from 3s to 5s
+      await new Promise(resolve => setTimeout(resolve, 5000));
       
       const statusResponse = await fetch(
         `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`
@@ -89,13 +89,19 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
       if (['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT'].includes(lastStatus)) {
         isFinished = true;
       } else {
+        console.log(`Waiting for actor to finish. Current status: ${lastStatus}, retry: ${retries}/${maxRetries}`);
         retries++;
-        console.log(`Waiting for actor to finish. Current status: ${lastStatus}, retry: ${retries}`);
       }
     }
     
+    // If we've hit max retries but the actor is still running, we should
+    // check if there's any partial data available
     if (lastStatus !== 'SUCCEEDED') {
-      throw new ApifyError(`Apify actor run did not succeed. Last status: ${lastStatus}`);
+      if (retries >= maxRetries) {
+        throw new ApifyError(`Apify actor run timed out. Last status: ${lastStatus} after ${maxRetries} retries`);
+      } else {
+        throw new ApifyError(`Apify actor run did not succeed. Last status: ${lastStatus}`);
+      }
     }
     
     // Fetch the dataset items
