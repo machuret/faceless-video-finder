@@ -11,6 +11,7 @@ export interface UseChannelStatsFetcherProps {
 
 export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChannelStatsFetcherProps) {
   const [loading, setLoading] = useState(false);
+  const [fetchingMissing, setFetchingMissing] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<"apify" | "youtube" | null>(null);
   const [partialData, setPartialData] = useState(false);
@@ -143,13 +144,102 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
     }
   };
 
+  // New function to fetch only missing fields
+  const fetchMissingFields = async () => {
+    if (!channelUrl) {
+      toast.error("Please enter a channel URL or title first");
+      return;
+    }
+
+    setFetchingMissing(true);
+    setApiError(null);
+    
+    toast.info("Attempting to fetch missing fields (description, country)...");
+
+    try {
+      // Normalize URL if it's a handle without full URL
+      let formattedUrl = channelUrl;
+      if (formattedUrl.startsWith('@') && !formattedUrl.includes('youtube.com')) {
+        formattedUrl = `https://www.youtube.com/${formattedUrl}`;
+      }
+      
+      // Clean up URL
+      formattedUrl = formattedUrl.trim();
+      if (!formattedUrl.includes('http') && !formattedUrl.startsWith('@') && !formattedUrl.match(/^UC[\w-]{21,24}$/)) {
+        if (formattedUrl.includes('youtube.com') || formattedUrl.includes('youtu.be')) {
+          formattedUrl = `https://${formattedUrl}`;
+        }
+      }
+      
+      console.log("Fetching missing fields for URL:", formattedUrl);
+      
+      // Call our function with a flag to focus on missing fields
+      const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
+        body: { 
+          channelUrl: formattedUrl,
+          fetchDescriptionOnly: true
+        }
+      });
+
+      if (error) {
+        console.error("Error fetching missing fields:", error);
+        setApiError(`Failed to fetch missing fields: ${error.message}`);
+        toast.error(`Failed to fetch missing fields: ${error.message}`);
+        return;
+      }
+
+      if (!data || !data.success) {
+        const errorMessage = data?.error || "Failed to fetch missing fields";
+        console.error(errorMessage);
+        setApiError(errorMessage);
+        toast.error(errorMessage);
+        return;
+      }
+
+      console.log("Missing fields data received:", data);
+      
+      // Only send the fields that were actually received and not empty
+      const partialStats: Partial<ChannelFormData> = {};
+      
+      if (data.description && data.description.trim() !== "") {
+        partialStats.description = data.description;
+        toast.success("Successfully fetched channel description");
+      } else {
+        toast.warning("Could not fetch channel description");
+      }
+      
+      if (data.country && data.country.trim() !== "") {
+        partialStats.country = data.country;
+        toast.success("Successfully fetched channel country");
+      }
+      
+      // Only call onStatsReceived if we have at least one field
+      if (Object.keys(partialStats).length > 0) {
+        console.log("Sending partial stats with missing fields:", partialStats);
+        onStatsReceived(partialStats);
+      } else {
+        toast.warning("Could not fetch any missing fields");
+      }
+      
+    } catch (err) {
+      console.error("Error fetching missing fields:", err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setApiError(errorMessage);
+      toast.error(`Failed to fetch missing fields: ${errorMessage}`);
+    } finally {
+      setFetchingMissing(false);
+    }
+  };
+
   return {
     loading,
-    apiError, 
+    fetchingMissing,
+    apiError,
     dataSource,
     partialData,
     missingFields,
     consecutiveAttempts,
-    fetchStats
+    fetchStats,
+    fetchMissingFields
   };
 }
