@@ -49,16 +49,19 @@ export async function handleScreenshot(
     }
     
     // Check if it's a YouTube URL or handle, and format it correctly
+    let isCustomFormatted = false;
     if (sanitizedUrl.includes('youtube.com/@') || sanitizedUrl.startsWith('https://@')) {
       // It's a YouTube handle
       const handleMatch = sanitizedUrl.match(/@([a-zA-Z0-9_-]+)/);
       if (handleMatch && handleMatch[1]) {
         sanitizedUrl = `https://www.youtube.com/@${handleMatch[1]}`;
+        isCustomFormatted = true;
       }
     } else if (!sanitizedUrl.includes('youtube.com') && sanitizedUrl.startsWith('https://@')) {
       // Convert @handle to proper YouTube URL
       const handle = sanitizedUrl.replace('https://@', '');
       sanitizedUrl = `https://www.youtube.com/@${handle}`;
+      isCustomFormatted = true;
     } else if (sanitizedUrl.includes('youtube.com/channel/')) {
       // It's a channel ID URL, make sure it's properly formatted
       const channelIdMatch = sanitizedUrl.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
@@ -67,7 +70,7 @@ export async function handleScreenshot(
       }
     }
     
-    console.log(`Using sanitized URL: ${sanitizedUrl}`);
+    console.log(`Using sanitized URL: ${sanitizedUrl} (custom formatted: ${isCustomFormatted})`);
     
     const bucketName = "channel_screenshots";
     
@@ -81,8 +84,21 @@ export async function handleScreenshot(
     console.log("Requesting screenshot from Apify...");
     const screenshotBuffer = await takeScreenshotViaAPI(sanitizedUrl);
     if (!screenshotBuffer) {
-      return { success: false, error: "Failed to generate screenshot" };
+      return { 
+        success: false, 
+        error: "Failed to generate screenshot. Apify API did not return a valid image."
+      };
     }
+    
+    // Check if the screenshot buffer is valid
+    if (!screenshotBuffer.byteLength) {
+      return { 
+        success: false, 
+        error: "Generated screenshot is empty or invalid" 
+      };
+    }
+    
+    console.log(`Screenshot received: ${screenshotBuffer.byteLength} bytes`);
     
     // Generate filename
     const filename = generateScreenshotFilename(channelId);

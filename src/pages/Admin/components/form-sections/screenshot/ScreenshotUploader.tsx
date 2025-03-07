@@ -33,6 +33,7 @@ const ScreenshotUploader = ({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [capturingScreenshot, setCapturingScreenshot] = React.useState(false);
+  const [captureAttempts, setCaptureAttempts] = React.useState(0);
   
   const onDelete = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent form submission
@@ -67,12 +68,18 @@ const ScreenshotUploader = ({
 
     try {
       setCapturingScreenshot(true);
+      setCaptureAttempts(prev => prev + 1);
       toast.info("Capturing screenshot... (this may take up to 90 seconds)");
 
       // Start a timeout to show a progress message after 30 seconds
       const timeoutId = setTimeout(() => {
         toast.info("Still working on your screenshot... this can take a bit longer for some channels");
       }, 30000);
+
+      // Start a second timeout for very long waits
+      const longTimeoutId = setTimeout(() => {
+        toast.info("This is taking longer than expected. The screenshot may still succeed, please be patient.");
+      }, 60000);
 
       const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: {
@@ -81,8 +88,9 @@ const ScreenshotUploader = ({
         }
       });
 
-      // Clear the timeout when we get a response
+      // Clear the timeouts when we get a response
       clearTimeout(timeoutId);
+      clearTimeout(longTimeoutId);
 
       if (error) {
         console.error("Error capturing screenshot:", error);
@@ -97,7 +105,13 @@ const ScreenshotUploader = ({
         onScreenshotChange(data.screenshotUrl || "");
         toast.warning(`Screenshot captured but: ${data.warning}`);
       } else {
+        console.error("Screenshot capture error response:", data);
         toast.error(data?.error || "Failed to capture screenshot");
+        
+        // If we've tried less than 2 times and got a specific error about empty image, suggest retry
+        if (captureAttempts < 2 && data?.error?.includes("empty or invalid")) {
+          toast.info("This can happen occasionally. Please try capturing the screenshot again.");
+        }
       }
     } catch (err) {
       console.error("Screenshot capture error:", err);

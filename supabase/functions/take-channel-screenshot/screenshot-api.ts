@@ -87,7 +87,7 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     
     // Poll for the run status until it's completed
     let isFinished = false;
-    let maxAttempts = 30; // 30 attempts with 2 second delay = max 1 minute wait
+    let maxAttempts = 45; // Increased to 45 attempts with 2 second delay = max 90 second wait
     let attempts = 0;
     
     while (!isFinished && attempts < maxAttempts) {
@@ -173,10 +173,44 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     console.log(`Found ${items.length} items in dataset`);
     
     // Get the screenshot URL from the first item
-    const screenshotUrl = items[0].screenshotUrl;
+    const screenshotUrl = items[0].screenshotUrl || items[0].url || items[0].resultUrl;
     if (!screenshotUrl) {
       console.error("No screenshot URL found in items");
       console.error("Items:", JSON.stringify(items));
+      
+      // Check for direct key-value store URLs in logs
+      if (runData.data?.defaultKeyValueStoreId) {
+        const keyValueStoreId = runData.data.defaultKeyValueStoreId;
+        console.log(`Attempting to fetch from key-value store: ${keyValueStoreId}`);
+        
+        // Get the key-value store contents
+        const kvStoreResponse = await fetch(
+          `https://api.apify.com/v2/key-value-stores/${keyValueStoreId}/records?token=${apiKey}`
+        );
+        
+        if (kvStoreResponse.ok) {
+          const kvItems = await kvStoreResponse.json();
+          console.log("Key-value store items:", JSON.stringify(kvItems));
+          
+          // Look for screenshot keys
+          const screenshotKeys = Object.keys(kvItems).filter(key => 
+            key.startsWith('screenshot_') || key.includes('screenshot')
+          );
+          
+          if (screenshotKeys.length > 0) {
+            const screenshotKey = screenshotKeys[0];
+            const directUrl = `https://api.apify.com/v2/key-value-stores/${keyValueStoreId}/records/${screenshotKey}?token=${apiKey}`;
+            console.log(`Found potential screenshot in key-value store: ${directUrl}`);
+            
+            // Fetch this directly
+            const imageResponse = await fetch(directUrl);
+            if (imageResponse.ok) {
+              return await imageResponse.arrayBuffer();
+            }
+          }
+        }
+      }
+      
       throw new Error("No screenshot URL found in the dataset items");
     }
     
