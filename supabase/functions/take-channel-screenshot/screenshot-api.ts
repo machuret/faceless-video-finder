@@ -22,9 +22,9 @@ export async function takeScreenshotViaAPI(url: string): Promise<{
       };
     }
     
-    // Step 1: Start the Apify task to take a screenshot
-    console.log("Starting Apify screenshot task...");
-    const startResponse = await fetch("https://api.apify.com/v2/actor-tasks/xPTZ2w3ZjmfnmHE8R/run-sync?token=" + APIFY_API_TOKEN, {
+    // Step 1: Start the Apify actor run to take a screenshot (using the actor directly instead of a task)
+    console.log("Starting Apify screenshot actor...");
+    const startResponse = await fetch("https://api.apify.com/v2/acts/apify~website-screenshot-crawler/runs?token=" + APIFY_API_TOKEN, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -40,79 +40,126 @@ export async function takeScreenshotViaAPI(url: string): Promise<{
     
     if (!startResponse.ok) {
       const errorText = await startResponse.text();
-      console.error("Error starting Apify task:", errorText);
+      console.error("Error starting Apify actor:", errorText);
       return { 
         buffer: null, 
         directUrl: null, 
-        error: `Failed to start Apify task: ${startResponse.status} ${startResponse.statusText}` 
+        error: `Failed to start Apify actor: ${startResponse.status} ${startResponse.statusText}` 
       };
     }
     
     // Step 2: Get the response from Apify
     const responseData = await startResponse.json();
-    console.log("Apify task response:", JSON.stringify(responseData));
+    console.log("Apify actor response:", JSON.stringify(responseData));
     
     // Step 3: Extract the screenshot URL from the response
     // First, try the dataset
     let screenshotUrl = null;
     let directUrl = null;
 
-    // Look in the dataset
-    if (responseData?.defaultDatasetId) {
-      console.log("Looking for screenshot in dataset...");
-      const datasetUrl = `https://api.apify.com/v2/datasets/${responseData.defaultDatasetId}/items?token=${APIFY_API_TOKEN}`;
-      const datasetResponse = await fetch(datasetUrl);
-      if (datasetResponse.ok) {
-        const datasetItems = await datasetResponse.json();
-        console.log("Dataset items:", JSON.stringify(datasetItems));
-        
-        if (datasetItems && datasetItems.length > 0) {
-          // Try to find the screenshotUrl property
-          for (const item of datasetItems) {
-            if (item.screenshotUrl) {
-              screenshotUrl = item.screenshotUrl;
-              directUrl = item.screenshotUrl;
-              console.log("Found screenshot URL in dataset:", screenshotUrl);
-              break;
-            }
-          }
-        }
+    // Get the run ID to check the status
+    const runId = responseData?.data?.id;
+    if (!runId) {
+      console.error("No run ID found in Apify response");
+      return { 
+        buffer: null, 
+        directUrl: null, 
+        error: "No run ID found in Apify response" 
+      };
+    }
+    
+    console.log(`Apify run started with ID: ${runId}`);
+    
+    // Poll for the run to complete
+    let status = "READY";
+    let attempts = 0;
+    const maxAttempts = 45; // Allow up to 1.5 minutes (2 seconds between checks)
+    
+    while (status !== "SUCCEEDED" && status !== "FAILED" && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      attempts++;
+      
+      console.log(`Checking run status (attempt ${attempts}/${maxAttempts})...`);
+      
+      const statusResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_API_TOKEN}`);
+      if (!statusResponse.ok) {
+        console.error(`Error checking run status: ${statusResponse.status}`);
+        continue;
+      }
+      
+      const statusData = await statusResponse.json();
+      status = statusData?.data?.status;
+      
+      console.log(`Run status: ${status}`);
+      
+      if (status === "FAILED") {
+        return { 
+          buffer: null, 
+          directUrl: null, 
+          error: "Apify run failed" 
+        };
       }
     }
     
-    // If not found in dataset, check the key-value store
-    if (!screenshotUrl && responseData?.defaultKeyValueStoreId) {
-      console.log("Looking for screenshot in key-value store...");
-      
-      // Try to list keys in the store to find screenshots
-      const listKeysUrl = `https://api.apify.com/v2/key-value-stores/${responseData.defaultKeyValueStoreId}/keys?token=${APIFY_API_TOKEN}`;
-      const keysResponse = await fetch(listKeysUrl);
+    if (status !== "SUCCEEDED") {
+      return { 
+        buffer: null, 
+        directUrl: null, 
+        error: "Timeout waiting for Apify run to complete" 
+      };
+    }
+    
+    // If the run succeeded, get the output
+    const defaultKeyValueStoreId = responseData?.data?.defaultKeyValueStoreId;
+    
+    if (defaultKeyValueStoreId) {
+      // Check the key-value store for the screenshot
+      const keysResponse = await fetch(`https://api.apify.com/v2/key-value-stores/${defaultKeyValueStoreId}/keys?token=${APIFY_API_TOKEN}`);
       
       if (keysResponse.ok) {
         const keysData = await keysResponse.json();
         console.log("Key-value store keys:", JSON.stringify(keysData));
         
         // Find screenshot keys
-        const screenshotKeys = keysData.items.filter((item: any) => 
-          item.key.startsWith('screenshot_') || item.key.includes('screenshot')
+        const screenshotKeys = keysData.data.items.filter((item: any) => 
+          item.key.includes('screenshot_')
         );
         
         if (screenshotKeys.length > 0) {
           // Use the first screenshot key
           const screenshotKey = screenshotKeys[0].key;
-          screenshotUrl = `https://api.apify.com/v2/key-value-stores/${responseData.defaultKeyValueStoreId}/records/${screenshotKey}?disableRedirect=true`;
-          directUrl = `https://api.apify.com/v2/key-value-stores/${responseData.defaultKeyValueStoreId}/records/${screenshotKey}?disableRedirect=true`;
+          directUrl = `https://api.apify.com/v2/key-value-stores/${defaultKeyValueStoreId}/records/${screenshotKey}?disableRedirect=true`;
+          screenshotUrl = directUrl;
           console.log("Found screenshot URL in key-value store:", screenshotUrl);
         }
       }
     }
     
-    // Finally check for OUTPUT in the response
-    if (!screenshotUrl && responseData?.OUTPUT) {
-      if (typeof responseData.OUTPUT === 'object' && responseData.OUTPUT.screenshotUrl) {
-        screenshotUrl = responseData.OUTPUT.screenshotUrl;
-        directUrl = responseData.OUTPUT.screenshotUrl;
-        console.log("Found screenshot URL in OUTPUT:", screenshotUrl);
+    // If we didn't find the screenshot in the key-value store, try the dataset
+    if (!screenshotUrl) {
+      const defaultDatasetId = responseData?.data?.defaultDatasetId;
+      
+      if (defaultDatasetId) {
+        console.log("Looking for screenshot in dataset...");
+        const datasetUrl = `https://api.apify.com/v2/datasets/${defaultDatasetId}/items?token=${APIFY_API_TOKEN}`;
+        const datasetResponse = await fetch(datasetUrl);
+        
+        if (datasetResponse.ok) {
+          const datasetItems = await datasetResponse.json();
+          console.log("Dataset items:", JSON.stringify(datasetItems));
+          
+          if (datasetItems?.data?.length > 0) {
+            // Try to find the screenshotUrl property
+            for (const item of datasetItems.data) {
+              if (item.screenshotUrl) {
+                screenshotUrl = item.screenshotUrl;
+                directUrl = item.screenshotUrl;
+                console.log("Found screenshot URL in dataset:", screenshotUrl);
+                break;
+              }
+            }
+          }
+        }
       }
     }
     
@@ -127,7 +174,7 @@ export async function takeScreenshotViaAPI(url: string): Promise<{
     
     console.log("Found screenshot URL:", screenshotUrl);
     
-    // Step 4: Fetch the screenshot image
+    // Try to fetch the screenshot image
     console.log("Fetching screenshot image from URL:", screenshotUrl);
     try {
       const imageResponse = await fetch(screenshotUrl);
@@ -142,7 +189,7 @@ export async function takeScreenshotViaAPI(url: string): Promise<{
         };
       }
       
-      // Step 5: Return the image data as ArrayBuffer
+      // Return the image data as ArrayBuffer
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log(`Screenshot fetched, size: ${imageBuffer.byteLength} bytes`);
       

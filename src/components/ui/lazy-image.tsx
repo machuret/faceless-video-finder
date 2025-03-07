@@ -1,40 +1,58 @@
 
-import { useState } from "react";
-import { useInView } from "react-intersection-observer";
+import React, { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
-interface LazyImageProps {
+export interface LazyImageProps {
   src: string;
   alt: string;
   className?: string;
   onError?: () => void;
 }
 
-const LazyImage = ({ src, alt, className, onError }: LazyImageProps) => {
+const LazyImage = ({ 
+  src, 
+  alt, 
+  className, 
+  onError 
+}: LazyImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
+  const [imgSrc, setImgSrc] = useState('');
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      setImgSrc(src);
+      setIsLoaded(true);
+    };
+    img.onerror = () => {
+      if (onError) {
+        onError();
+      }
+    };
+  }, [src, onError]);
 
   return (
-    <div ref={ref} className={`relative ${className || ""}`}>
-      {inView ? (
-        <>
-          {!isLoaded && (
-            <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
+    <div className={cn('relative', className)}>
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-md">
+          <div className="w-8 h-8 border-t-2 border-b-2 border-primary rounded-full animate-spin"></div>
+        </div>
+      )}
+      {imgSrc && (
+        <img
+          src={imgSrc}
+          alt={alt}
+          className={cn(
+            'w-full h-auto rounded-md transition-opacity duration-300',
+            isLoaded ? 'opacity-100' : 'opacity-0'
           )}
-          <img
-            src={src}
-            alt={alt}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-            onLoad={() => setIsLoaded(true)}
-            onError={() => {
-              if (onError) onError();
-            }}
-          />
-        </>
-      ) : (
-        <div className="w-full h-full bg-gray-200"></div>
+          onError={() => {
+            if (onError) {
+              onError();
+            }
+          }}
+        />
       )}
     </div>
   );
