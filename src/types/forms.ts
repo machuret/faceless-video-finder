@@ -5,6 +5,7 @@ export interface ChannelFormData {
   channel_title: string;
   channel_url: string;
   description?: string;
+  ai_description?: string;
   screenshot_url?: string;
   total_subscribers?: string;
   total_views?: string;
