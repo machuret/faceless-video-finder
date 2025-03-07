@@ -1,40 +1,21 @@
 
 import { useState } from "react";
-import { ChannelFormData } from "@/types/forms";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ChannelStatsResponse } from "supabase/functions/fetch-channel-stats-apify/types";
+import { ChannelFormData } from "@/types/forms";
+import { UseChannelStatsFetcherProps, UseChannelStatsFetcherResult, DataSource } from "./types";
+import { fetchChannelStats, processChannelData, fetchMissingFieldsData, determineDataSource } from "./channelStatsService";
 
-export interface UseChannelStatsFetcherProps {
-  channelUrl: string;
-  onStatsReceived: (stats: Partial<ChannelFormData>) => void;
-}
-
-export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChannelStatsFetcherProps) {
+export function useChannelStatsFetcher({ 
+  channelUrl, 
+  onStatsReceived 
+}: UseChannelStatsFetcherProps): UseChannelStatsFetcherResult {
   const [loading, setLoading] = useState(false);
   const [fetchingMissing, setFetchingMissing] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<"apify" | "youtube" | null>(null);
+  const [dataSource, setDataSource] = useState<DataSource>(null);
   const [partialData, setPartialData] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [consecutiveAttempts, setConsecutiveAttempts] = useState(0);
-
-  const verifyRequiredFields = (data: any): string[] => {
-    const requiredFields = [
-      { key: 'subscriberCount', label: 'Total Subscribers' },
-      { key: 'viewCount', label: 'Total Views' },
-      { key: 'videoCount', label: 'Video Count' },
-      { key: 'startDate', label: 'Start Date' },
-      { key: 'description', label: 'Description' },
-      { key: 'country', label: 'Country' }
-    ];
-    
-    const missing = requiredFields.filter(field => {
-      return !data[field.key] || data[field.key] === "0";
-    });
-    
-    return missing.map(field => field.label);
-  };
 
   const fetchStats = async () => {
     if (!channelUrl) {
@@ -60,50 +41,20 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
     }
 
     try {
-      // Normalize URL if it's a handle without full URL
-      let formattedUrl = channelUrl;
-      if (formattedUrl.startsWith('@') && !formattedUrl.includes('youtube.com')) {
-        formattedUrl = `https://www.youtube.com/${formattedUrl}`;
-      }
+      const { data, error } = await fetchChannelStats(channelUrl);
       
-      // Clean up URL - remove trailing slashes, etc.
-      formattedUrl = formattedUrl.trim();
-      if (!formattedUrl.includes('http') && !formattedUrl.startsWith('@') && !formattedUrl.match(/^UC[\w-]{21,24}$/)) {
-        // If it's not a URL, handle, or channel ID, it could be a search term
-        if (formattedUrl.includes('youtube.com') || formattedUrl.includes('youtu.be')) {
-          // It looks like a URL but without protocol
-          formattedUrl = `https://${formattedUrl}`;
-        }
-      }
-      
-      console.log("Fetching stats for URL:", formattedUrl);
-      
-      // Call our Apify-powered function with improved error handling
-      const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
-        body: { channelUrl: formattedUrl }
-      });
-
-      if (error) {
-        console.error("Error fetching channel stats:", error);
-        setApiError(`Failed to fetch stats: ${error.message}`);
-        toast.error(`Failed to fetch stats: ${error.message}`);
+      if (error || !data) {
+        setApiError(error || "Unknown error occurred");
+        toast.error(`Failed to fetch stats: ${error || "Unknown error occurred"}`);
+        setLoading(false);
         return;
       }
 
-      if (!data || !data.success) {
-        const errorMessage = data?.error || "Failed to fetch channel stats";
-        console.error(errorMessage);
-        setApiError(errorMessage);
-        toast.error(errorMessage);
-        return;
-      }
-
-      console.log("Stats received from Apify:", data);
-
-      // Verify all required fields are present
-      const missing = verifyRequiredFields(data);
+      // Process the data
+      const { stats, missing, hasPartialData } = processChannelData(data);
+      
+      // Update state with results
       setMissingFields(missing);
-      const hasPartialData = missing.length > 0;
       setPartialData(hasPartialData);
       
       if (hasPartialData) {
@@ -119,26 +70,11 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
         setConsecutiveAttempts(0); // Reset consecutive attempts on success
       }
 
-      // Set data source - Fix type error by ensuring we use a valid type
-      if (data.source) {
-        // Only set the known data sources, default to "apify" for unknown sources
-        const source = data.source === "youtube" ? "youtube" : "apify";
-        setDataSource(source);
-      } else {
-        setDataSource("apify");
-      }
+      // Set data source
+      const source = determineDataSource(data);
+      setDataSource(source);
 
-      // Make sure we include all fields including country and description
-      const stats: Partial<ChannelFormData> = {
-        total_subscribers: data.subscriberCount?.toString() || "",
-        total_views: data.viewCount?.toString() || "",
-        video_count: data.videoCount?.toString() || "",
-        description: data.description || "",
-        channel_title: data.title || "",
-        start_date: data.startDate || "",
-        country: data.country || ""
-      };
-
+      // Send data to parent component
       console.log("Processed stats with all fields:", stats);
       onStatsReceived(stats);
     } catch (err) {
@@ -151,7 +87,6 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
     }
   };
 
-  // Modified function to fetch any missing fields, not just description and country
   const fetchMissingFields = async () => {
     if (!channelUrl) {
       toast.error("Please enter a channel URL or title first");
@@ -164,77 +99,15 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
     toast.info(`Attempting to fetch missing fields: ${missingFields.join(', ')}...`);
 
     try {
-      // Normalize URL if it's a handle without full URL
-      let formattedUrl = channelUrl;
-      if (formattedUrl.startsWith('@') && !formattedUrl.includes('youtube.com')) {
-        formattedUrl = `https://www.youtube.com/${formattedUrl}`;
-      }
+      const { partialStats, successfulFields, failedFields, error } = 
+        await fetchMissingFieldsData(channelUrl, missingFields);
       
-      // Clean up URL
-      formattedUrl = formattedUrl.trim();
-      if (!formattedUrl.includes('http') && !formattedUrl.startsWith('@') && !formattedUrl.match(/^UC[\w-]{21,24}$/)) {
-        if (formattedUrl.includes('youtube.com') || formattedUrl.includes('youtu.be')) {
-          formattedUrl = `https://${formattedUrl}`;
-        }
-      }
-      
-      console.log("Fetching missing fields for URL:", formattedUrl);
-      
-      // Call our function with a flag to focus on missing fields
-      const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
-        body: { 
-          channelUrl: formattedUrl,
-          fetchMissingOnly: true // Modified flag name to be more generic
-        }
-      });
-
       if (error) {
-        console.error("Error fetching missing fields:", error);
-        setApiError(`Failed to fetch missing fields: ${error.message}`);
-        toast.error(`Failed to fetch missing fields: ${error.message}`);
+        setApiError(error);
+        toast.error(error);
+        setFetchingMissing(false);
         return;
       }
-
-      if (!data || !data.success) {
-        const errorMessage = data?.error || "Failed to fetch missing fields";
-        console.error(errorMessage);
-        setApiError(errorMessage);
-        toast.error(errorMessage);
-        return;
-      }
-
-      console.log("Missing fields data received:", data);
-      
-      // Create an object to hold any fields that we successfully retrieved
-      const partialStats: Partial<ChannelFormData> = {};
-      const successfulFields: string[] = [];
-      const failedFields: string[] = [];
-      
-      // Map from API field names to form field names
-      const fieldMappings: Record<string, keyof ChannelFormData> = {
-        description: 'description',
-        country: 'country',
-        subscriberCount: 'total_subscribers',
-        viewCount: 'total_views',
-        videoCount: 'video_count',
-        startDate: 'start_date',
-        title: 'channel_title'
-      };
-      
-      // Check each field in the response and add to our stats object if present
-      // Fix TypeScript error by properly typing the data access
-      Object.entries(fieldMappings).forEach(([apiField, formField]) => {
-        const responseField = apiField as keyof ChannelStatsResponse;
-        if (data[responseField] !== undefined && 
-            data[responseField] !== null && 
-            String(data[responseField]).trim() !== "") {
-          // Use type assertion to handle the conversion safely
-          partialStats[formField] = String(data[responseField]);
-          successfulFields.push(apiField);
-        } else if (missingFields.some(field => field.toLowerCase().includes(apiField.toLowerCase()))) {
-          failedFields.push(apiField);
-        }
-      });
       
       // Only call onStatsReceived if we have at least one field
       if (Object.keys(partialStats).length > 0) {
@@ -251,7 +124,6 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
       } else {
         toast.warning("Could not fetch any of the missing fields");
       }
-      
     } catch (err) {
       console.error("Error fetching missing fields:", err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';

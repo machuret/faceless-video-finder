@@ -3,7 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, PlusCircle } from "lucide-react";
 import { ChannelFormData } from "@/types/forms";
-import { useChannelStatsFetcher } from "./hooks/useChannelStatsFetcher";
+import { useChannelStatsFetcher } from "./hooks";
 import { 
   ErrorAlert, 
   PartialDataAlert, 
