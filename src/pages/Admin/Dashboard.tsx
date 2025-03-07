@@ -6,6 +6,7 @@ import FeaturedChannels from "./components/dashboard/FeaturedChannels";
 import AdminActionCards from "./components/dashboard/AdminActionCards";
 import { ChannelList } from "@/components/youtube/channel-list/components/ChannelList";
 import MassScreenshotUpdater from "./components/dashboard/MassScreenshotUpdater";
+import BulkChannelUploader from "./components/dashboard/BulkChannelUploader";
 
 const Dashboard = () => {
   return (
@@ -25,9 +26,15 @@ const Dashboard = () => {
           </div>
         </div>
         
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-3">
+            <BulkChannelUploader />
+          </div>
+        </div>
+        
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
           <h2 className="text-xl font-semibold mb-6">All Channels</h2>
-          <ChannelList isAdmin={true} />
+          <ChannelList isAdmin={true} showAll={true} />
         </div>
       </div>
     </div>
