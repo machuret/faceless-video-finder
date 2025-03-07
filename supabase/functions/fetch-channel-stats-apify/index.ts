@@ -1,6 +1,6 @@
-
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { ApifyClient } from 'https://esm.sh/apify-client@2.9.1';
 
 // Define CORS headers
 const corsHeaders = {
@@ -48,17 +48,17 @@ serve(async (req) => {
       const url = normalizeYouTubeUrl(channelUrl);
       console.log(`Normalized URL: ${url}`);
       
-      // Call Apify API to run the YouTube Scraper actor directly (not using task)
-      const actorRunResponse = await fetchFromApifyActor(url, APIFY_API_TOKEN);
+      // Use Apify client to run the YouTube Scraper actor
+      const channelData = await fetchChannelWithApifyClient(url, APIFY_API_TOKEN);
       console.log("Apify response received");
       
-      if (!actorRunResponse || actorRunResponse.error) {
-        console.error('Error from Apify:', actorRunResponse?.error || 'No response');
+      if (!channelData) {
+        console.error('No data returned from Apify');
         return provideMockData(
           channelUrl, 
           fetchDescriptionOnly, 
           corsHeaders, 
-          actorRunResponse?.error || 'Error fetching data from Apify'
+          'No data returned from Apify'
         );
       }
       
@@ -67,7 +67,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: true, 
-            description: actorRunResponse.channelDescription || "", 
+            description: channelData.channelDescription || "", 
             source: "apify"
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
@@ -77,13 +77,13 @@ serve(async (req) => {
       // Format the complete response
       const channelStats = {
         success: true,
-        subscriberCount: actorRunResponse.numberOfSubscribers || 0,
-        viewCount: parseInt(actorRunResponse.channelTotalViews?.replace(/,/g, '') || "0") || 0,
-        videoCount: actorRunResponse.channelTotalVideos || 0,
-        title: actorRunResponse.channelName || "",
-        description: actorRunResponse.channelDescription || "",
-        startDate: formatDate(actorRunResponse.channelJoinedDate) || "",
-        country: actorRunResponse.channelLocation || "",
+        subscriberCount: channelData.numberOfSubscribers || 0,
+        viewCount: parseInt(channelData.channelTotalViews?.replace(/,/g, '') || "0") || 0,
+        videoCount: channelData.channelTotalVideos || 0,
+        title: channelData.channelName || "",
+        description: channelData.channelDescription || "",
+        startDate: formatDate(channelData.channelJoinedDate) || "",
+        country: channelData.channelLocation || "",
         source: "apify"
       };
       
@@ -148,81 +148,46 @@ function normalizeYouTubeUrl(input: string): string {
 }
 
 /**
- * Fetches channel data directly from Apify's YouTube Scraper actor
+ * Fetches channel data using the Apify client library
  */
-async function fetchFromApifyActor(url: string, apiToken: string) {
-  console.log(`Calling Apify YouTube Scraper actor directly for URL: ${url}`);
+async function fetchChannelWithApifyClient(url: string, apiToken: string) {
+  console.log(`Calling Apify YouTube Scraper actor with client for URL: ${url}`);
   
-  // Start a run of the YouTube Scraper actor
-  const startResponse = await fetch('https://api.apify.com/v2/acts/apify~youtube-scraper/runs?token=' + apiToken, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      "startUrls": [{ "url": url }],
-      "maxVideos": 1,
-      "proxy": {
-        "useApifyProxy": true
-      },
-      "maxResults": 1
-    })
+  // Initialize the ApifyClient with API token
+  const client = new ApifyClient({
+    token: apiToken,
   });
   
-  if (!startResponse.ok) {
-    throw new Error(`Failed to start Apify actor run: ${startResponse.status} ${startResponse.statusText}`);
-  }
+  // Prepare Actor input - we're targeting the YouTube Scraper actor
+  const input = {
+    "startUrls": [{ "url": url }],
+    "maxVideos": 1,
+    "proxy": {
+      "useApifyProxy": true
+    },
+    "maxResults": 1
+  };
   
-  const startData = await startResponse.json();
-  const runId = startData.data.id;
-  console.log(`Apify actor run started with ID: ${runId}`);
-  
-  // Wait for the run to finish
-  let isFinished = false;
-  let attempts = 0;
-  const maxAttempts = 30;  // 30 attempts with 2s delay = max 60s wait
-  
-  while (!isFinished && attempts < maxAttempts) {
-    attempts++;
-    await new Promise(resolve => setTimeout(resolve, 2000));  // 2 second delay
+  try {
+    // Run the YouTube Scraper Actor and wait for it to finish
+    // Use the correct actor ID for YouTube Scraper: "apify/youtube-scraper" or alternative IDs
+    const run = await client.actor("apify/youtube-scraper").call(input);
+    console.log(`Apify actor run completed with ID: ${run.id}`);
     
-    const statusResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`);
-    if (!statusResponse.ok) {
-      console.warn(`Failed to get run status, attempt ${attempts}: ${statusResponse.status}`);
-      continue;
+    // Fetch results from the dataset
+    const { items } = await client.dataset(run.defaultDatasetId).listItems();
+    console.log(`Retrieved ${items.length} items from dataset`);
+    
+    if (!items || items.length === 0) {
+      throw new Error('No data returned from Apify');
     }
     
-    const statusData = await statusResponse.json();
-    console.log(`Run status: ${statusData.data.status}, attempt ${attempts}`);
-    
-    if (['SUCCEEDED', 'FAILED', 'TIMED-OUT', 'ABORTED'].includes(statusData.data.status)) {
-      isFinished = true;
-      
-      if (statusData.data.status !== 'SUCCEEDED') {
-        throw new Error(`Apify run failed with status: ${statusData.data.status}`);
-      }
-    }
+    // Return the first item (channel data)
+    return items[0];
+  } catch (error) {
+    console.error('Error in Apify client execution:', error);
+    throw new Error(`Apify client error: ${error instanceof Error ? error.message : String(error)}`);
   }
-  
-  if (!isFinished) {
-    throw new Error(`Apify run did not complete in time (${maxAttempts} attempts)`);
-  }
-  
-  // Get the dataset items
-  const datasetResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apiToken}`);
-  if (!datasetResponse.ok) {
-    throw new Error(`Failed to get dataset: ${datasetResponse.status} ${datasetResponse.statusText}`);
-  }
-  
-  const datasetItems = await datasetResponse.json();
-  console.log(`Retrieved ${datasetItems.length} items from dataset`);
-  
-  if (!datasetItems || datasetItems.length === 0) {
-    throw new Error('No data returned from Apify');
-  }
-  
-  // Return the first item
-  return datasetItems[0];
 }
 
 // Helper function to provide mock data when real data can't be fetched
