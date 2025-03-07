@@ -5,6 +5,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChannelFormData } from "@/types/forms";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ChannelStatsFetcherProps {
   channelUrl: string;
@@ -13,6 +14,8 @@ interface ChannelStatsFetcherProps {
 
 const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetcherProps) => {
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isMockData, setIsMockData] = useState(false);
 
   const fetchStats = async () => {
     if (!channelUrl) {
@@ -20,7 +23,10 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       return;
     }
 
+    // Reset states
     setLoading(true);
+    setApiError(null);
+    setIsMockData(false);
     toast.info("Fetching channel stats...");
 
     try {
@@ -48,17 +54,24 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
       if (error) {
         console.error("Error fetching channel stats:", error);
-        throw new Error(`Failed to fetch stats: ${error.message}`);
+        setApiError(`Failed to fetch stats: ${error.message}`);
+        toast.error(`Failed to fetch stats: ${error.message}`);
+        return;
       }
 
       if (!data || !data.success) {
-        throw new Error(data?.error || "Failed to fetch channel stats");
+        const errorMessage = data?.error || "Failed to fetch channel stats";
+        console.error(errorMessage);
+        setApiError(errorMessage);
+        toast.error(errorMessage);
+        return;
       }
 
       console.log("Stats received:", data);
 
-      // Warn if using mock data
+      // Set mock data flag and display appropriate notification
       if (data.is_mock) {
+        setIsMockData(true);
         const reason = data.error_reason ? ` (${data.error_reason})` : '';
         toast.warning(`Using mock data - couldn't fetch actual channel stats${reason}`);
       } else {
@@ -80,24 +93,45 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       onStatsReceived(stats);
     } catch (err) {
       console.error("Error in fetch stats flow:", err);
-      toast.error(err instanceof Error ? err.message : "Unknown error fetching stats");
+      const errorMessage = err instanceof Error ? err.message : "Unknown error fetching stats";
+      setApiError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className="flex items-center gap-1"
-      onClick={fetchStats}
-      disabled={loading || !channelUrl}
-    >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-      Fetch Stats
-    </Button>
+    <div className="space-y-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="flex items-center gap-1"
+        onClick={fetchStats}
+        disabled={loading || !channelUrl}
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+        Fetch Stats
+      </Button>
+
+      {apiError && (
+        <Alert variant="destructive" className="mt-2">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription className="text-sm">{apiError}</AlertDescription>
+        </Alert>
+      )}
+
+      {isMockData && !apiError && (
+        <Alert className="mt-2 border-yellow-500">
+          <AlertTitle className="text-yellow-600">Using Mock Data</AlertTitle>
+          <AlertDescription className="text-sm">
+            The provided stats are simulated approximations. The YouTube API request failed with a 403 error.
+            This typically means the API key is invalid or its quota has been exceeded.
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
   );
 };
 

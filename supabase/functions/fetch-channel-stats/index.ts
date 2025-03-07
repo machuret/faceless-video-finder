@@ -76,6 +76,7 @@ const fetchChannelDetailsFromUsername = async (username: string, apiKey: string)
       console.error(`YouTube API search error status: ${searchResponse.status}`);
       console.error(`Response body: ${responseText}`);
       
+      // Provide more detailed error messages for specific status codes
       if (searchResponse.status === 403) {
         throw new Error(`YouTube API key error: Forbidden (403). The API key may be invalid or quota exceeded.`);
       } else if (searchResponse.status === 400) {
@@ -118,6 +119,7 @@ const fetchChannelDetails = async (channelId: string, apiKey: string): Promise<a
       console.error(`YouTube API channel error status: ${channelResponse.status}`);
       console.error(`Response body: ${responseText}`);
       
+      // Provide more detailed error messages
       if (channelResponse.status === 403) {
         throw new Error(`YouTube API key error: Forbidden (403). The API key may be invalid or quota exceeded.`);
       } else {
@@ -165,7 +167,7 @@ serve(async (req) => {
     console.log(`Fetching ${fetchDescriptionOnly ? 'about section' : 'stats'} for channel: ${channelUrl}`);
 
     // Update to a working YouTube API key or request one from the user
-    // This is a test key that might have reached its quota limit
+    // Note: This is likely the cause of the 403 errors
     const API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"; 
     
     // Extract YouTube channel identifier
