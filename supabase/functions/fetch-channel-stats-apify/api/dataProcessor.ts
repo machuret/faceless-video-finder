@@ -19,36 +19,74 @@ export function processChannelData(items: any[]): ApifyChannelData {
   // Try to extract channel information from the first item
   const firstItem = items[0];
   
-  // Determine if we have the channel information in the about page data
-  // Try multiple possible locations for the channel data
+  // Extract channel page sections if available
   const aboutPage = firstItem.aboutPage || {};
   const snippet = firstItem.snippet || {};
+  const channelInfo = firstItem.channelInfo || {};
   
-  // Try to find description from various possible locations in the response
-  const description = aboutPage.channelDescription || 
-                      aboutPage.description || 
-                      snippet.description || 
-                      firstItem.channelDescription || 
-                      firstItem.description || 
-                      "";
-                      
+  // Try to find description from various possible locations
+  // We need to search more aggressively for this field
+  let description = "";
+  
+  // Check all possible description locations
+  const possibleDescriptionSources = [
+    aboutPage.channelDescription,
+    aboutPage.description,
+    snippet.description,
+    firstItem.channelDescription,
+    firstItem.description,
+    channelInfo?.description,
+    firstItem.about,
+    aboutPage.about,
+    // Check nested objects that might contain the description
+    firstItem.details?.description,
+    firstItem.channelDetails?.description,
+    aboutPage.details?.description
+  ];
+  
+  // Find the first non-empty description
+  for (const source of possibleDescriptionSources) {
+    if (source && typeof source === 'string' && source.trim() !== "") {
+      description = source;
+      console.log("✅ Found description from source:", source.substring(0, 50) + "...");
+      break;
+    }
+  }
+  
   // Try to find country/location from various possible locations
-  const location = aboutPage.channelLocation || 
-                   aboutPage.country || 
-                   snippet.country || 
-                   firstItem.channelLocation || 
-                   firstItem.country || 
-                   "";
+  let location = "";
+  const possibleLocationSources = [
+    aboutPage.channelLocation,
+    aboutPage.country,
+    snippet.country,
+    firstItem.channelLocation,
+    firstItem.country,
+    channelInfo?.country,
+    channelInfo?.location,
+    // Check nested objects that might contain the country
+    firstItem.details?.country,
+    firstItem.channelDetails?.country,
+    aboutPage.details?.country
+  ];
+  
+  // Find the first non-empty location
+  for (const source of possibleLocationSources) {
+    if (source && typeof source === 'string' && source.trim() !== "") {
+      location = source;
+      console.log("✅ Found location from source:", location);
+      break;
+    }
+  }
   
   // Log extracted fields for debugging
   console.log("Extracted channel data fields:", {
     name: firstItem.channelName || firstItem.name || snippet.title,
-    description: description,
+    description: description ? `FOUND (${description.length} chars)` : "MISSING",
     subscribers: firstItem.numberOfSubscribers || firstItem.subscriberCount,
     views: firstItem.channelTotalViews || firstItem.viewCount,
     videoCount: firstItem.channelTotalVideos || firstItem.videoCount,
     joinDate: firstItem.channelJoinedDate || firstItem.joinedDate,
-    location: location
+    location: location || "MISSING"
   });
   
   // The format is different from the old scraper, so we need to map fields

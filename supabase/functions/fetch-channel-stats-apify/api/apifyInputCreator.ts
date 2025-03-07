@@ -14,6 +14,7 @@ export function createApifyInput(url: string) {
     includeComments: false,
     includeShortsComments: false,
     includeChannelInfo: true,  // Make sure we're requesting channel info
+    includeAbout: true,  // Explicitly request about page data
     proxyConfiguration: {
       useApifyProxy: true,
       apifyProxyGroups: ["RESIDENTIAL"]  // Use residential proxies to avoid blocks

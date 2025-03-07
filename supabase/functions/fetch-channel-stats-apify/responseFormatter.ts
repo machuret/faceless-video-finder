@@ -43,9 +43,18 @@ export function formatChannelStatsResponse(channelData: ApifyChannelData) {
   // Log the incoming data to help debug issues
   console.log("Formatting channel data:", JSON.stringify(channelData, null, 2));
   
-  // Log specific checks for missing fields
-  console.log("- Description:", channelData.channelDescription ? 'PRESENT' : 'MISSING');
-  console.log("- Country:", channelData.channelLocation ? 'PRESENT' : 'MISSING');
+  // Special diagnostics for the problematic fields
+  if (!channelData.channelDescription || channelData.channelDescription.trim() === '') {
+    console.warn("⚠️ Description is missing in the channel data");
+  } else {
+    console.log(`✅ Description found: ${channelData.channelDescription.substring(0, 50)}...`);
+  }
+  
+  if (!channelData.channelLocation || channelData.channelLocation.trim() === '') {
+    console.warn("⚠️ Country/Location is missing in the channel data");
+  } else {
+    console.log(`✅ Country/Location found: ${channelData.channelLocation}`);
+  }
   
   // Extract all the data we can from the channel data
   return {
