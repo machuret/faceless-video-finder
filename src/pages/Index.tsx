@@ -50,8 +50,9 @@ const Index = () => {
           
         if (countError) throw countError;
         
-        setChannels(channelsData || []);
-        setFeaturedChannels(featuredData || []);
+        // Type assertion to ensure the data conforms to Channel[]
+        setChannels(channelsData as Channel[] || []);
+        setFeaturedChannels(featuredData as Channel[] || []);
         setTotalChannels(count || 0);
         setError(null);
       } catch (err) {

@@ -6,8 +6,19 @@ import { formatDate } from "./dateUtils.ts";
  * Formats the channel data into a complete response
  */
 export function formatChannelStatsResponse(channelData: ApifyChannelData, isMock = false, errorReason?: string): ChannelStatsResponse {
-  // Parse view count from string format (e.g. "1,234,567")
-  const viewCount = parseInt(channelData.channelTotalViews?.replace(/,/g, '') || "0") || 0;
+  // Parse view count safely - handle different data types
+  let viewCount = 0;
+  
+  if (typeof channelData.channelTotalViews === 'string') {
+    // If it's a string, try to remove commas and parse
+    viewCount = parseInt(channelData.channelTotalViews.replace(/,/g, '') || "0");
+  } else if (typeof channelData.channelTotalViews === 'number') {
+    // If it's already a number, use it directly
+    viewCount = channelData.channelTotalViews;
+  }
+  
+  // Make sure we have a valid number, not NaN
+  viewCount = isNaN(viewCount) ? 0 : viewCount;
   
   return {
     success: true,

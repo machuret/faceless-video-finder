@@ -15,9 +15,7 @@ interface ChannelStatsFetcherProps {
 const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetcherProps) => {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [isMockData, setIsMockData] = useState(false);
-  const [dataSource, setDataSource] = useState<"apify" | "youtube" | "mock">("apify");
-  const [mockReason, setMockReason] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<"apify" | "youtube" | null>(null);
 
   const fetchStats = async () => {
     if (!channelUrl) {
@@ -28,9 +26,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     // Reset states
     setLoading(true);
     setApiError(null);
-    setIsMockData(false);
-    setMockReason(null);
-    setDataSource("apify");
+    setDataSource(null);
     toast.info("Fetching channel stats via Apify...");
 
     try {
@@ -76,15 +72,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
       // Set data source and display appropriate notification
       setDataSource(data.source || "apify");
-      
-      if (data.is_mock) {
-        setIsMockData(true);
-        setMockReason(data.error_reason || null);
-        const reason = data.error_reason ? ` (${data.error_reason})` : '';
-        toast.warning(`Using mock data - couldn't fetch actual channel stats${reason}`);
-      } else {
-        toast.success(`Channel stats fetched successfully via ${data.source || "Apify"}`);
-      }
+      toast.success(`Channel stats fetched successfully via ${data.source || "Apify"}`);
 
       // Make sure we include all fields including country
       const stats: Partial<ChannelFormData> = {
@@ -101,9 +89,9 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       onStatsReceived(stats);
     } catch (err) {
       console.error("Error in fetch stats flow:", err);
-      const errorMessage = err instanceof Error ? err.message : "Unknown error fetching stats";
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setApiError(errorMessage);
-      toast.error(errorMessage);
+      toast.error(`Failed to fetch stats: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -130,17 +118,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         </Alert>
       )}
 
-      {isMockData && !apiError && (
-        <Alert className="mt-2 border-yellow-500">
-          <AlertTitle className="text-yellow-600">Using Mock Data</AlertTitle>
-          <AlertDescription className="text-sm">
-            The provided stats are simulated approximations. The data scraping request failed
-            {mockReason ? `: ${mockReason}` : ""}.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!isMockData && !apiError && dataSource === "apify" && (
+      {!apiError && dataSource === "apify" && (
         <Alert className="mt-2 border-blue-500">
           <AlertTitle className="text-blue-600">Using Apify Data</AlertTitle>
           <AlertDescription className="text-sm">

@@ -30,10 +30,7 @@ serve(async (req) => {
     } catch (error) {
       console.error('Error parsing request JSON:', error);
       const { response } = formatErrorResponse('Invalid JSON in request body', 400);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid JSON in request body' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      return response;
     }
 
     const { channelUrl, fetchDescriptionOnly } = requestData;
@@ -53,12 +50,8 @@ serve(async (req) => {
     
     if (!APIFY_API_TOKEN) {
       console.error('Apify API token not configured');
-      return provideMockData(
-        channelUrl, 
-        Boolean(fetchDescriptionOnly), 
-        corsHeaders, 
-        "Apify API token not configured"
-      );
+      const { response } = formatErrorResponse('Apify API token not configured');
+      return response;
     }
 
     try {
@@ -72,12 +65,8 @@ serve(async (req) => {
       
       if (!channelData) {
         console.error('No data returned from Apify');
-        return provideMockData(
-          channelUrl, 
-          Boolean(fetchDescriptionOnly), 
-          corsHeaders, 
-          'No data returned from Apify'
-        );
+        const { response } = formatErrorResponse('No data returned from Apify');
+        return response;
       }
       
       // If we're only fetching the description
@@ -100,12 +89,19 @@ serve(async (req) => {
     } catch (error) {
       console.error('Error processing channel data:', error);
       
-      // More descriptive error for mock data fallback
+      // Return proper error response instead of mock data
       const errorReason = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.log(`API processing failed (${errorReason}), falling back to mock data`);
+      const errorDetails = error instanceof ApifyError ? error.details : undefined;
       
-      // Fall back to mock data if API fails
-      return provideMockData(channelUrl, Boolean(fetchDescriptionOnly), corsHeaders, errorReason);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: errorReason,
+          details: errorDetails,
+          source: "apify"
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
     
   } catch (error) {
@@ -113,7 +109,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        source: "apify"
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
