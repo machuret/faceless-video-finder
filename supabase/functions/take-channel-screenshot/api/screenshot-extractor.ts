@@ -25,8 +25,59 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
     const keysData = await keysResponse.json() as ApifyKeyValueStoreResponse;
     console.log("Key-value store keys:", JSON.stringify(keysData));
     
-    // Find screenshot keys with improved matching that will catch various patterns:
-    // "screenshot" keys, "OUTPUT" keys, or keys ending with ".png", ".jpg", etc.
+    // First check for the OUTPUT key specifically (based on user's provided format)
+    try {
+      console.log("First checking OUTPUT key directly based on documented Apify format");
+      const outputResponse = await fetch(`${APIFY_BASE_URL}/key-value-stores/${storeId}/records/OUTPUT?token=${APIFY_API_TOKEN}`);
+      
+      if (outputResponse.ok) {
+        // Try to parse as JSON array as shown in the example output
+        const outputData = await outputResponse.json();
+        console.log("OUTPUT data:", JSON.stringify(outputData));
+        
+        // Handle array format from example
+        if (Array.isArray(outputData)) {
+          for (const item of outputData) {
+            if (item.screenshotUrl) {
+              console.log("Found screenshot URL in OUTPUT array:", item.screenshotUrl);
+              return { screenshotUrl: item.screenshotUrl, directUrl: item.screenshotUrl };
+            }
+          }
+        } 
+        // Handle object format
+        else if (outputData.screenshotUrl) {
+          console.log("Found screenshot URL in OUTPUT object:", outputData.screenshotUrl);
+          return { screenshotUrl: outputData.screenshotUrl, directUrl: outputData.screenshotUrl };
+        }
+      }
+    } catch (outputError) {
+      console.log("Error checking OUTPUT key:", outputError);
+      // Continue with other methods
+    }
+    
+    // Check for screenshot_* keys based on the example URL pattern
+    const screenshotPattern = /screenshot_.*[a-f0-9]+$/i;
+    console.log("Checking for keys matching screenshot pattern:", screenshotPattern);
+    
+    for (const item of keysData.data.items) {
+      if (screenshotPattern.test(item.key)) {
+        console.log("Found key matching screenshot pattern:", item.key);
+        const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/${item.key}?disableRedirect=true`;
+        
+        try {
+          // Verify it's an actual image
+          const response = await fetch(url, { method: 'HEAD' });
+          if (response.ok) {
+            console.log("Verified screenshot URL is valid:", url);
+            return { screenshotUrl: url, directUrl: url };
+          }
+        } catch (e) {
+          console.log("Error verifying screenshot URL:", e);
+        }
+      }
+    }
+    
+    // Find screenshot keys with improved matching that will catch various patterns
     const screenshotKeys = keysData.data.items.filter(item => 
       item.key.toLowerCase().includes('screenshot') || 
       item.key.toLowerCase().includes('output') ||
@@ -57,30 +108,6 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
         } catch (keyError) {
           console.log(`Error checking key ${screenshotKey}:`, keyError);
           // Continue to next key
-        }
-      }
-    }
-    
-    // If we didn't find any specific screenshot keys, look for the OUTPUT key which often contains the screenshot
-    const outputResponse = await fetch(`${APIFY_BASE_URL}/key-value-stores/${storeId}/records/OUTPUT?token=${APIFY_API_TOKEN}`);
-    if (outputResponse.ok) {
-      try {
-        const outputData = await outputResponse.json();
-        console.log("OUTPUT data:", JSON.stringify(outputData));
-        
-        // Look for screenshot URLs in the OUTPUT data
-        if (outputData.screenshotUrl) {
-          return { screenshotUrl: outputData.screenshotUrl, directUrl: outputData.screenshotUrl };
-        } else if (outputData.screenshot) {
-          return { screenshotUrl: outputData.screenshot, directUrl: outputData.screenshot };
-        } else if (outputData.url) {
-          return { screenshotUrl: outputData.url, directUrl: outputData.url };
-        }
-      } catch (outputError) {
-        // OUTPUT might not be JSON, it could be a direct image
-        if (outputResponse.headers.get('content-type')?.startsWith('image/')) {
-          const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/OUTPUT?disableRedirect=true`;
-          return { screenshotUrl: url, directUrl: url };
         }
       }
     }
@@ -134,31 +161,6 @@ export async function extractScreenshotFromDataset(datasetId: string): Promise<{
                   (item.url.includes('screenshot') || item.url.match(/\.(png|jpg|jpeg|webp)$/i))) {
           console.log("Found URL that appears to be a screenshot:", item.url);
           return { screenshotUrl: item.url, directUrl: item.url };
-        }
-      }
-      
-      // If no specific property found, scan all properties deeply for any URL-like values
-      for (const item of datasetItems.data) {
-        // First-level properties
-        for (const [key, value] of Object.entries(item)) {
-          if (typeof value === 'string' && 
-              (value.includes('screenshot') || key.includes('screenshot') || key.includes('image')) && 
-              (value.startsWith('http://') || value.startsWith('https://'))) {
-            console.log(`Found potential screenshot URL in dataset item property ${key}:`, value);
-            return { screenshotUrl: value, directUrl: value };
-          }
-          
-          // Check nested objects
-          if (value && typeof value === 'object') {
-            for (const [nestedKey, nestedValue] of Object.entries(value)) {
-              if (typeof nestedValue === 'string' && 
-                  (nestedValue.includes('screenshot') || nestedKey.includes('screenshot') || nestedKey.includes('image')) && 
-                  (nestedValue.startsWith('http://') || nestedValue.startsWith('https://'))) {
-                console.log(`Found potential screenshot URL in nested property ${key}.${nestedKey}:`, nestedValue);
-                return { screenshotUrl: nestedValue, directUrl: nestedValue };
-              }
-            }
-          }
         }
       }
     }

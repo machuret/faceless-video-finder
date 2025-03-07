@@ -1,51 +1,34 @@
 
-import React, { useRef } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 
 interface UploadButtonProps {
   uploading: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  inputRef?: React.RefObject<HTMLInputElement>;
 }
 
-const UploadButton = ({ uploading, onChange }: UploadButtonProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const handleClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e);
-    // File input will be cleared in the parent component after processing
-  };
-  
+const UploadButton = ({ uploading, onChange, inputRef }: UploadButtonProps) => {
   return (
-    <div className="relative">
-      <Input
-        ref={fileInputRef}
+    <Button
+      variant="secondary"
+      size="sm"
+      className="flex items-center gap-2 relative"
+      disabled={uploading}
+      type="button"
+    >
+      <Upload className="h-4 w-4" />
+      {uploading ? "Uploading..." : "Upload"}
+      <input
         type="file"
-        id="screenshot_file"
         accept="image/*"
-        onChange={handleChange}
-        className="hidden"
+        className="absolute inset-0 opacity-0 cursor-pointer"
+        onChange={onChange}
         disabled={uploading}
+        ref={inputRef}
       />
-      <Button 
-        variant="secondary" 
-        size="sm" 
-        onClick={handleClick}
-        disabled={uploading}
-        className="flex items-center gap-2"
-        type="button" // Explicitly set type to button to prevent form submission
-      >
-        <Upload className="h-4 w-4" />
-        {uploading ? "Uploading..." : "Upload Screenshot"}
-      </Button>
-    </div>
+    </Button>
   );
 };
 

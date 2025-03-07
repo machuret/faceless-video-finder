@@ -75,16 +75,27 @@ const ScreenshotUploader = ({
     try {
       setCapturingScreenshot(true);
       setCaptureAttempts(prev => prev + 1);
-      toast.info("Capturing screenshot... (this may take up to 90 seconds)");
+      
+      // Show more informative initial toast
+      toast.info(
+        "Capturing screenshot... (this may take up to 90 seconds). " +
+        "We're connecting to YouTube to take a snapshot of the channel."
+      );
 
       // Start a timeout to show a progress message after 30 seconds
       const timeoutId = setTimeout(() => {
-        toast.info("Still working on your screenshot... this can take a bit longer for some channels");
+        toast.info(
+          "Still working on your screenshot... YouTube channels can sometimes take longer to fully load. " +
+          "We're waiting for all elements to appear."
+        );
       }, 30000);
 
       // Start a second timeout for very long waits
       const longTimeoutId = setTimeout(() => {
-        toast.info("This is taking longer than expected. The screenshot may still succeed, please be patient.");
+        toast.info(
+          "This is taking longer than expected. The screenshot service is still processing your request. " +
+          "For faster results, consider uploading a screenshot manually."
+        );
       }, 60000);
 
       console.log("Invoking take-channel-screenshot function with:", {
@@ -136,24 +147,22 @@ const ScreenshotUploader = ({
       } else {
         console.error("Screenshot capture error response:", data);
         
-        // Improved error message
+        // Improved error message with specific YouTube format suggestions
         const errorMessage = data?.error || "Failed to capture screenshot";
         
-        // Special handling for common errors
-        if (errorMessage.includes("URL not found") || errorMessage.includes("not found in Apify")) {
-          toast.error("Could not generate screenshot. Try one of these alternatives: 1) Upload a screenshot manually, 2) Try a different channel URL format, or 3) Try again in a few minutes");
-          
-          // If we've tried multiple times, suggest alternatives
-          if (captureAttempts >= 2) {
-            toast.info("As an alternative, you can manually take a screenshot of the channel and upload it using the 'Upload' button");
-          }
-        } else {
-          toast.error(errorMessage);
-        }
+        toast.error(
+          "Could not generate screenshot. Try one of these alternatives:\n" +
+          "1) Upload a screenshot manually using the Upload button\n" +
+          "2) Try a different channel URL format (e.g., use https://www.youtube.com/@handle or https://www.youtube.com/channel/ID)\n" +
+          "3) Try again in a few minutes"
+        );
         
-        // If we've tried less than 2 times and got a specific error, suggest retry
-        if (captureAttempts < 2 && (errorMessage.includes("empty or invalid") || errorMessage.includes("temporarily unavailable"))) {
-          toast.info("This can happen occasionally. Please try capturing the screenshot again.");
+        // If we've tried multiple times, provide more detailed guidance
+        if (captureAttempts >= 2) {
+          toast.info(
+            "Manual upload option: Take a screenshot of the channel in your browser, save it, " + 
+            "then click the Upload button to add it to this form."
+          );
         }
       }
     } catch (err) {
@@ -172,6 +181,7 @@ const ScreenshotUploader = ({
           <UploadButton 
             uploading={uploading}
             onChange={onUpload}
+            inputRef={fileInputRef}
           />
           <Button 
             variant="secondary" 
