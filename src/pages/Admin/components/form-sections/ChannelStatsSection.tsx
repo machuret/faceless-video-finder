@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import FormSectionWrapper from "./FormSectionWrapper";
 import { ChannelFormData } from "@/types/forms";
 import ChannelStatsFetcher from "../ChannelStatsFetcher";
-import { CountrySelector } from "../form-dropdowns/CountrySelector";
+import CountrySelector from "../form-dropdowns/CountrySelector";
 
 interface ChannelStatsSectionProps {
   formData: ChannelFormData;
@@ -128,10 +128,9 @@ const ChannelStatsSection = ({
           />
         </div>
         <div className="md:col-span-2">
-          <Label htmlFor="country">Country</Label>
           <CountrySelector 
-            value={formData.country || ""}
-            onChange={(value) => handleFieldChange('country', value)}
+            selectedCountry={formData.country || ""}
+            onSelect={(value) => handleFieldChange('country', value)}
           />
         </div>
       </div>
