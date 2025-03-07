@@ -19,31 +19,40 @@ export async function startActorRun(url: string): Promise<{
   try {
     console.log(`Starting Apify actor run for URL: ${url}`);
     
-    // Use the configuration that matches the successful run format shown in the Apify console
+    // Use the configuration for the new Ultimate Scraping actor
     const startResponse = await fetch(`${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${APIFY_API_TOKEN}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        "startUrls": [{ "url": url }],
-        "waitForSelectorOnLoad": "#channel-header,#metadata-container,ytd-channel-header-renderer",
         "fullPage": false,
-        "hideScrollbar": true,
-        "waitForMillis": 15000, // Increased wait time for better loading
-        "viewportHeight": 1200,
-        "viewportWidth": 1920,
-        "ignoreCookieBanners": true,
-        "scrollPage": true,
-        "scrollHeight": 500, 
-        "maxScrollHeight": 1200,
-        "saveScreenshots": true,
-        "screenshotQuality": 100,
-        "saveHtml": false,
-        "saveResponses": false,
-        "debugLog": true,
-        "additionalMeta": {
-          "name": "YouTube Channel Screenshot"
+        "enableSSL": true,
+        "linkUrls": [url],
+        "outputFormat": "jpeg",
+        "waitUntil": "networkidle0",
+        "timeouT": 15,
+        "maxRetries": 3,
+        "delayBeforeScreenshot": 1500,
+        "infiniteScroll": false,
+        "timefullPagE": 10,
+        "frameCounT": 10,
+        "frameIntervaL": 10,
+        "frame": 10,
+        "scrollSteP": 300,
+        "printBackground": true,
+        "formaT": "A4",
+        "toP": 0,
+        "righT": 0,
+        "bottoM": 0,
+        "lefT": 0,
+        "window_Width": 1920,
+        "window_Height": 1080,
+        "scrollToBottom": true,
+        "delayAfterScrolling": 300,
+        "cookies": [],
+        "proxyConfig": {
+          "useApifyProxy": false
         }
       }),
     });

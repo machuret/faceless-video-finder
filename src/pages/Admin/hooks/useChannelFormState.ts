@@ -20,8 +20,8 @@ export const useChannelFormState = () => {
     video_count: "",
     cpm: "4",
     channel_type: "",
-    country: "US", // Default to US
-    channel_category: "entertainment", // Default to entertainment
+    country: "US", // Default to US as requested
+    channel_category: "entertainment", // Default to entertainment as requested
     notes: "",
     keywords: []
   });
