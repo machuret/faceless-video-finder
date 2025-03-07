@@ -62,7 +62,8 @@ serve(async (req) => {
       videoCount: 50 + Math.floor(Math.random() * 150),
       title: channelId ? `Channel: ${channelId}` : "Sample YouTube Channel",
       description: mockDescription,
-      startDate: "2018-01-15" // Ensure we're providing a start date in YYYY-MM-DD format
+      startDate: "2018-01-15", // Ensure we're providing a start date in YYYY-MM-DD format
+      country: "US" // Add country code
     };
     
     // If we're only fetching the description, return a simplified response
@@ -77,7 +78,7 @@ serve(async (req) => {
       )
     }
     
-    console.log('Returning mock stats with start date:', mockStats.startDate);
+    console.log('Returning mock stats with start date and country:', mockStats);
 
     return new Response(
       JSON.stringify({ 

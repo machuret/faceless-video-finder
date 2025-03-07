@@ -34,6 +34,12 @@ const ChannelStatsSection = ({
       handleFieldChange('start_date', stats.start_date);
     }
     
+    // Handle country field
+    if (stats.country) {
+      console.log("Updating country to:", stats.country);
+      handleFieldChange('country', stats.country);
+    }
+    
     // If we received a channel title and the current one is empty or generic, update it
     if (stats.channel_title && (!formData.channel_title || formData.channel_title === "Channel")) {
       handleFieldChange('channel_title', stats.channel_title);

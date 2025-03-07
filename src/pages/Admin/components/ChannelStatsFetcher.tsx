@@ -39,17 +39,18 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
       console.log("Stats received:", data);
 
-      // Make sure we include startDate and explicitly convert it to a string
+      // Make sure we include all fields including country
       const stats: Partial<ChannelFormData> = {
         total_subscribers: data.subscriberCount?.toString() || "",
         total_views: data.viewCount?.toString() || "",
         video_count: data.videoCount?.toString() || "",
         description: data.description || "",
         channel_title: data.title || "",
-        start_date: data.startDate || "" // Make sure this gets passed to form
+        start_date: data.startDate || "",
+        country: data.country || "" // Add country field
       };
 
-      console.log("Processed stats with start date:", stats);
+      console.log("Processed stats with all fields:", stats);
       onStatsReceived(stats);
       toast.success("Channel stats updated successfully");
     } catch (err) {
