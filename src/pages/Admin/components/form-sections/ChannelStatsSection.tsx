@@ -24,21 +24,21 @@ const ChannelStatsSection = ({
   const handleStatsReceived = (stats: Partial<ChannelFormData>) => {
     console.log("Stats received in ChannelStatsSection:", stats);
     
-    if (stats.total_subscribers) handleFieldChange('total_subscribers', stats.total_subscribers);
-    if (stats.total_views) handleFieldChange('total_views', stats.total_views);
-    if (stats.video_count) handleFieldChange('video_count', stats.video_count);
-    if (stats.description) handleFieldChange('description', stats.description);
+    // Update all fields that we received from the API
+    const fieldsToUpdate = [
+      { key: 'total_subscribers', value: stats.total_subscribers },
+      { key: 'total_views', value: stats.total_views },
+      { key: 'video_count', value: stats.video_count },
+      { key: 'description', value: stats.description },
+      { key: 'start_date', value: stats.start_date },
+      { key: 'country', value: stats.country }
+    ];
     
-    // Explicitly handle the start_date field
-    if (stats.start_date) {
-      console.log("Updating start_date to:", stats.start_date);
-      handleFieldChange('start_date', stats.start_date);
-    }
-    
-    // Handle country field
-    if (stats.country) {
-      console.log("Updating country to:", stats.country);
-      handleFieldChange('country', stats.country);
+    for (const field of fieldsToUpdate) {
+      if (field.value !== undefined && field.value !== null && field.value !== '') {
+        console.log(`Updating ${field.key} to:`, field.value);
+        handleFieldChange(field.key, field.value);
+      }
     }
     
     // If we received a channel title and the current one is empty or generic, update it
@@ -90,9 +90,11 @@ const ChannelStatsSection = ({
             type="number"
             id="total_subscribers"
             name="total_subscribers"
-            value={formData.total_subscribers}
+            value={formData.total_subscribers || ""}
             onChange={handleChange}
             placeholder="Enter total subscribers"
+            required
+            className={!formData.total_subscribers ? "border-yellow-500" : ""}
           />
         </div>
         <div>
@@ -101,9 +103,11 @@ const ChannelStatsSection = ({
             type="number"
             id="total_views"
             name="total_views"
-            value={formData.total_views}
+            value={formData.total_views || ""}
             onChange={handleChange}
             placeholder="Enter total views"
+            required
+            className={!formData.total_views ? "border-yellow-500" : ""}
           />
         </div>
         <div>
@@ -112,8 +116,10 @@ const ChannelStatsSection = ({
             type="date"
             id="start_date"
             name="start_date"
-            value={formData.start_date}
+            value={formData.start_date || ""}
             onChange={handleChange}
+            required
+            className={!formData.start_date ? "border-yellow-500" : ""}
           />
         </div>
         <div>
@@ -122,9 +128,11 @@ const ChannelStatsSection = ({
             type="number"
             id="video_count"
             name="video_count"
-            value={formData.video_count}
+            value={formData.video_count || ""}
             onChange={handleChange}
             placeholder="Enter video count"
+            required
+            className={!formData.video_count ? "border-yellow-500" : ""}
           />
         </div>
         <div className="md:col-span-2">

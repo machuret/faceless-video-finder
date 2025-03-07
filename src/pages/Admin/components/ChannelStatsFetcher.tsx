@@ -16,6 +16,23 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<"apify" | "youtube" | null>(null);
+  const [partialData, setPartialData] = useState(false);
+
+  const verifyRequiredFields = (data: any): string[] => {
+    const requiredFields = [
+      { key: 'subscriberCount', label: 'Total Subscribers' },
+      { key: 'viewCount', label: 'Total Views' },
+      { key: 'videoCount', label: 'Video Count' },
+      { key: 'startDate', label: 'Start Date' },
+      { key: 'description', label: 'Description' }
+    ];
+    
+    const missingFields = requiredFields.filter(field => {
+      return !data[field.key] || data[field.key] === "0";
+    });
+    
+    return missingFields.map(field => field.label);
+  };
 
   const fetchStats = async () => {
     if (!channelUrl) {
@@ -27,6 +44,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     setLoading(true);
     setApiError(null);
     setDataSource(null);
+    setPartialData(false);
     toast.info("Fetching channel stats via Apify...");
 
     try {
@@ -70,9 +88,20 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
       console.log("Stats received from Apify:", data);
 
-      // Set data source and display appropriate notification
+      // Verify all required fields are present
+      const missingFields = verifyRequiredFields(data);
+      const hasPartialData = missingFields.length > 0;
+      setPartialData(hasPartialData);
+      
+      if (hasPartialData) {
+        console.warn("Partial data received. Missing fields:", missingFields);
+        toast.warning(`Some channel data is missing or incomplete: ${missingFields.join(', ')}`);
+      } else {
+        toast.success(`Channel stats fetched successfully via ${data.source || "Apify"}`);
+      }
+
+      // Set data source
       setDataSource(data.source || "apify");
-      toast.success(`Channel stats fetched successfully via ${data.source || "Apify"}`);
 
       // Make sure we include all fields including country and description
       const stats: Partial<ChannelFormData> = {
@@ -118,7 +147,16 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         </Alert>
       )}
 
-      {!apiError && dataSource === "apify" && (
+      {!apiError && partialData && (
+        <Alert variant="warning" className="mt-2 border-yellow-500">
+          <AlertTitle className="text-yellow-600">Incomplete Data</AlertTitle>
+          <AlertDescription className="text-sm">
+            Some channel data is missing or incomplete. You may need to fill in the missing fields manually.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!apiError && dataSource === "apify" && !partialData && (
         <Alert className="mt-2 border-blue-500">
           <AlertTitle className="text-blue-600">Using Apify Data</AlertTitle>
           <AlertDescription className="text-sm">

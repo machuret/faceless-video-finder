@@ -7,11 +7,12 @@
 export interface ApifyChannelData {
   channelName?: string;
   channelDescription?: string;
-  numberOfSubscribers?: number;
-  channelTotalViews?: string;
-  channelTotalVideos?: number;
+  numberOfSubscribers?: number | string;
+  channelTotalViews?: string | number;
+  channelTotalVideos?: number | string;
   channelJoinedDate?: string;
   channelLocation?: string;
+  url?: string;
   [key: string]: any; // Allow for additional properties from Apify
 }
 
@@ -28,6 +29,7 @@ export interface ChannelStatsResponse {
   source: "apify" | "youtube" | "mock";
   is_mock?: boolean;
   error_reason?: string;
+  details?: any;
 }
 
 // Description-only response
@@ -44,6 +46,7 @@ export interface ErrorResponse {
   success: false;
   error: string;
   source?: string;
+  details?: any;
 }
 
 // Request parameters

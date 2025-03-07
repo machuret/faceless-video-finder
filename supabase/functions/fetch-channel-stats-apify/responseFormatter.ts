@@ -6,6 +6,8 @@ import { formatDate } from "./dateUtils.ts";
  * Formats the channel data into a complete response
  */
 export function formatChannelStatsResponse(channelData: ApifyChannelData, isMock = false, errorReason?: string): ChannelStatsResponse {
+  console.log("Formatting channel stats from raw data:", JSON.stringify(channelData).substring(0, 500) + "...");
+  
   // Parse view count safely - handle different data types
   let viewCount = 0;
   
@@ -20,11 +22,30 @@ export function formatChannelStatsResponse(channelData: ApifyChannelData, isMock
   // Make sure we have a valid number, not NaN
   viewCount = isNaN(viewCount) ? 0 : viewCount;
   
-  return {
+  // Format subscriber count safely
+  let subscriberCount = 0;
+  if (typeof channelData.numberOfSubscribers === 'string') {
+    subscriberCount = parseInt(channelData.numberOfSubscribers.replace(/,/g, '') || "0");
+  } else if (typeof channelData.numberOfSubscribers === 'number') {
+    subscriberCount = channelData.numberOfSubscribers;
+  }
+  subscriberCount = isNaN(subscriberCount) ? 0 : subscriberCount;
+  
+  // Format video count safely
+  let videoCount = 0;
+  if (typeof channelData.channelTotalVideos === 'string') {
+    videoCount = parseInt(channelData.channelTotalVideos.replace(/,/g, '') || "0");
+  } else if (typeof channelData.channelTotalVideos === 'number') {
+    videoCount = channelData.channelTotalVideos;
+  }
+  videoCount = isNaN(videoCount) ? 0 : videoCount;
+  
+  // Create formatted response object
+  const response: ChannelStatsResponse = {
     success: true,
-    subscriberCount: channelData.numberOfSubscribers || 0,
+    subscriberCount: subscriberCount,
     viewCount: viewCount,
-    videoCount: channelData.channelTotalVideos || 0,
+    videoCount: videoCount,
     title: channelData.channelName || "",
     description: channelData.channelDescription || "",
     startDate: formatDate(channelData.channelJoinedDate || "") || "",
@@ -32,6 +53,24 @@ export function formatChannelStatsResponse(channelData: ApifyChannelData, isMock
     source: "apify",
     ...(isMock && { is_mock: true, error_reason: errorReason })
   };
+  
+  // Log the formatted response for debugging
+  console.log("Formatted channel stats response:", JSON.stringify(response));
+  
+  // Verify all required fields have values
+  const missingFields = [];
+  if (!response.subscriberCount) missingFields.push("subscriberCount");
+  if (!response.viewCount) missingFields.push("viewCount");
+  if (!response.videoCount) missingFields.push("videoCount");
+  if (!response.title) missingFields.push("title");
+  if (!response.description) missingFields.push("description");
+  if (!response.startDate) missingFields.push("startDate");
+  
+  if (missingFields.length > 0) {
+    console.warn(`Warning: Missing channel data fields: ${missingFields.join(", ")}`);
+  }
+  
+  return response;
 }
 
 /**

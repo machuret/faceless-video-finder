@@ -2,7 +2,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-import { corsHeaders } from "./cors.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 import { normalizeYouTubeUrl } from "./urlUtils.ts";
 import { fetchChannelWithApifyAPI, ApifyError } from "./apifyService.ts";
 import { provideMockData } from "./mockService.ts";
@@ -89,7 +89,7 @@ serve(async (req) => {
     } catch (error) {
       console.error('Error processing channel data:', error);
       
-      // Return proper error response instead of mock data
+      // Return proper error response with detailed information
       const errorReason = error instanceof Error ? error.message : 'Unknown error occurred';
       const errorDetails = error instanceof ApifyError ? error.details : undefined;
       

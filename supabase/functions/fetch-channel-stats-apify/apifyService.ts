@@ -6,11 +6,13 @@ import { ApifyChannelData } from "./types.ts";
  */
 export class ApifyError extends Error {
   status?: number;
+  details?: any;
   
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, details?: any) {
     super(message);
     this.name = "ApifyError";
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -20,18 +22,62 @@ export class ApifyError extends Error {
 export async function fetchChannelWithApifyAPI(url: string, apiToken: string): Promise<ApifyChannelData> {
   console.log(`Calling Apify YouTube Scraper actor with direct API call for URL: ${url}`);
   
-  // Prepare Actor input
+  // Prepare Actor input with improved settings to ensure we get all required data
   const input = {
     "startUrls": [{ "url": url }],
     "maxVideos": 1,
     "proxy": {
       "useApifyProxy": true
     },
-    "maxResults": 1
+    "maxResults": 1,
+    "extendOutputFunction": `async ({ data, customData, Apify }) => {
+      // Ensure full channel details are captured, especially the About tab
+      if (data && data.type === 'channel') {
+        // Log that we're in the extendOutputFunction for debugging
+        console.log('Processing channel data in extendOutputFunction');
+        
+        // Make sure we capture the About section for channel description
+        if (!data.channelDescription || data.channelDescription.trim() === '') {
+          console.log('Channel description missing, attempting to fetch from About page');
+          const aboutPageUrl = data.url + '/about';
+          try {
+            const request = await Apify.utils.requestAsBrowser({ url: aboutPageUrl });
+            const html = request.body;
+            
+            // Extract description from About page using appropriate selectors
+            // This is a simplified approach - actual implementation may need to be adjusted
+            const descriptionMatch = html.match(/<meta property="og:description" content="([^"]+)"/);
+            if (descriptionMatch && descriptionMatch[1]) {
+              data.channelDescription = descriptionMatch[1];
+              console.log('Successfully extracted description from About page');
+            }
+            
+            // Extract join date
+            const joinDateMatch = html.match(/Channel created on (.+?)<\\/span>/);
+            if (joinDateMatch && joinDateMatch[1]) {
+              data.channelJoinedDate = joinDateMatch[1];
+              console.log('Successfully extracted join date');
+            }
+            
+            // Extract country
+            const countryMatch = html.match(/Location:<\\/span>.*?>([^<]+)</);
+            if (countryMatch && countryMatch[1]) {
+              data.channelLocation = countryMatch[1].trim();
+              console.log('Successfully extracted country');
+            }
+          } catch (e) {
+            console.log('Error fetching about page:', e);
+          }
+        }
+      }
+      return data;
+    }`
   };
   
   try {
     // Start the actor run
+    console.log("Sending request to Apify with input:", JSON.stringify(input, null, 2).substring(0, 1000) + "...");
+    
     const runResponse = await fetch(
       `https://api.apify.com/v2/acts/streamers~youtube-scraper/runs?token=${apiToken}`,
       {
@@ -45,6 +91,7 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     
     if (!runResponse.ok) {
       const errorText = await runResponse.text();
+      console.error("Apify API error response:", errorText);
       throw new ApifyError(`Failed to start Apify actor: ${runResponse.status} ${errorText}`, runResponse.status);
     }
     
@@ -52,7 +99,7 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     const runId = runData.data?.id;
     
     if (!runId) {
-      throw new ApifyError("Invalid response from Apify: Run ID not found");
+      throw new ApifyError("Invalid response from Apify: Run ID not found", undefined, runData);
     }
     
     console.log(`Apify actor run started with ID: ${runId}`);
@@ -60,11 +107,11 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     // Poll for actor run status until it's finished
     let isFinished = false;
     let retries = 0;
-    const maxRetries = 20; // Increased from 10 to 20
+    const maxRetries = 30; // Increased to allow more time for processing
     let lastStatus = '';
     
     while (!isFinished && retries < maxRetries) {
-      // Wait longer between status checks, increase from 3s to 5s
+      // Wait between status checks
       await new Promise(resolve => setTimeout(resolve, 5000));
       
       const statusResponse = await fetch(
@@ -120,8 +167,20 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
       throw new ApifyError('No data returned from Apify');
     }
     
-    // Return the first item (channel data)
-    return items[0] as ApifyChannelData;
+    // Get the first item (channel data)
+    const channelData = items[0] as ApifyChannelData;
+    
+    // Verify essential fields and provide detailed diagnostic info
+    console.log("Channel data verification:");
+    console.log(`- Channel Name: ${channelData.channelName || 'MISSING'}`);
+    console.log(`- Subscribers: ${channelData.numberOfSubscribers || 'MISSING'}`);
+    console.log(`- Total Views: ${channelData.channelTotalViews || 'MISSING'}`);
+    console.log(`- Total Videos: ${channelData.channelTotalVideos || 'MISSING'}`);
+    console.log(`- Join Date: ${channelData.channelJoinedDate || 'MISSING'}`);
+    console.log(`- Description: ${channelData.channelDescription ? 'PRESENT' : 'MISSING'}`);
+    console.log(`- Location: ${channelData.channelLocation || 'MISSING'}`);
+    
+    return channelData;
   } catch (error) {
     // Re-throw Apify errors as is
     if (error instanceof ApifyError) {
