@@ -1,5 +1,5 @@
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useScreenshotHandler } from "./hooks/useScreenshotHandler";
@@ -32,15 +32,21 @@ const ScreenshotUploader = ({
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [capturingScreenshot, setCapturingScreenshot] = React.useState(false);
-  const [captureAttempts, setCaptureAttempts] = React.useState(0);
+  const [capturingScreenshot, setCapturingScreenshot] = useState(false);
+  const [captureAttempts, setCaptureAttempts] = useState(0);
+  const [localScreenshotUrl, setLocalScreenshotUrl] = useState(screenshotUrl);
+  
+  React.useEffect(() => {
+    // Update local state when prop changes
+    setLocalScreenshotUrl(screenshotUrl);
+  }, [screenshotUrl]);
   
   const onDelete = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent form submission
     
-    if (screenshotUrl) {
-      handleDeleteScreenshot(screenshotUrl);
-      // No navigation occurs as the function updates state directly
+    if (localScreenshotUrl) {
+      handleDeleteScreenshot(localScreenshotUrl);
+      setLocalScreenshotUrl("");
     }
   };
   
@@ -81,6 +87,11 @@ const ScreenshotUploader = ({
         toast.info("This is taking longer than expected. The screenshot may still succeed, please be patient.");
       }, 60000);
 
+      console.log("Invoking take-channel-screenshot function with:", {
+        channelUrl: channelUrl.value,
+        channelId: channelId
+      });
+
       const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: {
           channelUrl: channelUrl.value,
@@ -92,17 +103,32 @@ const ScreenshotUploader = ({
       clearTimeout(timeoutId);
       clearTimeout(longTimeoutId);
 
+      console.log("Screenshot response:", data);
+
       if (error) {
         console.error("Error capturing screenshot:", error);
         toast.error(`Failed to capture screenshot: ${error.message}`);
         return;
       }
 
-      if (data?.success && data?.screenshotUrl) {
-        onScreenshotChange(data.screenshotUrl);
-        toast.success("Screenshot captured successfully");
+      if (data?.success) {
+        // Try different possible screenshot URL locations
+        const newScreenshotUrl = data.screenshotUrl || data.apifyUrl || "";
+        if (newScreenshotUrl) {
+          console.log("Setting new screenshot URL:", newScreenshotUrl);
+          onScreenshotChange(newScreenshotUrl);
+          setLocalScreenshotUrl(newScreenshotUrl);
+          toast.success("Screenshot captured successfully");
+        } else {
+          console.error("No screenshot URL found in response:", data);
+          toast.error("Screenshot captured but no URL was returned");
+        }
       } else if (data?.warning) {
-        onScreenshotChange(data.screenshotUrl || "");
+        const newScreenshotUrl = data.screenshotUrl || data.apifyUrl || "";
+        if (newScreenshotUrl) {
+          onScreenshotChange(newScreenshotUrl);
+          setLocalScreenshotUrl(newScreenshotUrl);
+        }
         toast.warning(`Screenshot captured but: ${data.warning}`);
       } else {
         console.error("Screenshot capture error response:", data);
@@ -141,7 +167,7 @@ const ScreenshotUploader = ({
             <Camera className="h-4 w-4" />
             {capturingScreenshot ? "Capturing..." : "Capture Screenshot"}
           </Button>
-          {screenshotUrl && (
+          {localScreenshotUrl && (
             <DeleteButton onClick={onDelete} />
           )}
         </div>
@@ -150,13 +176,16 @@ const ScreenshotUploader = ({
         type="url"
         id="screenshot_url"
         name="screenshot_url"
-        value={screenshotUrl || ""}
+        value={localScreenshotUrl || ""}
+        onChange={(e) => {
+          setLocalScreenshotUrl(e.target.value);
+          onScreenshotChange(e.target.value);
+        }}
         placeholder="Screenshot URL (auto-filled when uploaded)"
-        readOnly
         className="bg-gray-50"
       />
-      {screenshotUrl && (
-        <ScreenshotPreview screenshotUrl={screenshotUrl} />
+      {localScreenshotUrl && (
+        <ScreenshotPreview screenshotUrl={localScreenshotUrl} />
       )}
     </div>
   );

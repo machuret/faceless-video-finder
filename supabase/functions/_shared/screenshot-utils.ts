@@ -2,6 +2,9 @@
 import { corsHeaders } from "./cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 
+// Export APIFY_API_TOKEN for use in other files
+export const APIFY_API_TOKEN = Deno.env.get("APIFY_API_TOKEN");
+
 // Check if a bucket exists, create it if it doesn't
 export async function ensureStorageBucket(
   supabase: any,

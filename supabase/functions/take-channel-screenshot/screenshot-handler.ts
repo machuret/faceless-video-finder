@@ -1,7 +1,8 @@
 
 import { 
   ensureStorageBucket, 
-  generateScreenshotFilename 
+  generateScreenshotFilename,
+  APIFY_API_TOKEN 
 } from "../_shared/screenshot-utils.ts";
 import { takeScreenshotViaAPI } from "./screenshot-api.ts";
 import { 
@@ -16,6 +17,7 @@ export interface ScreenshotResult {
   error?: string;
   message?: string;
   warning?: string;
+  apifyUrl?: string; // Added to support direct Apify URL as fallback
 }
 
 export async function handleScreenshot(
@@ -71,6 +73,63 @@ export async function handleScreenshot(
     }
     
     console.log(`Using sanitized URL: ${sanitizedUrl} (custom formatted: ${isCustomFormatted})`);
+    
+    // Direct Apify approach for debugging/fallback
+    if (APIFY_API_TOKEN) {
+      try {
+        console.log("Attempting direct Apify screenshot request...");
+        const startResponse = await fetch("https://api.apify.com/v2/actor-tasks/xPTZ2w3ZjmfnmHE8R/run-sync?token=" + APIFY_API_TOKEN, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            startUrls: [{ url: sanitizedUrl }],
+            waitForSelectorOnLoad: "body",
+            fullPage: false,
+            hideScrollbar: true,
+            waitForMillis: 5000,
+          }),
+        });
+
+        if (startResponse.ok) {
+          const responseData = await startResponse.json();
+          console.log("Direct Apify response:", JSON.stringify(responseData));
+          
+          // Try to extract direct screenshot URL from dataset
+          if (responseData?.defaultDatasetId) {
+            const datasetUrl = `https://api.apify.com/v2/datasets/${responseData.defaultDatasetId}/items?token=${APIFY_API_TOKEN}`;
+            const datasetResponse = await fetch(datasetUrl);
+            if (datasetResponse.ok) {
+              const datasetItems = await datasetResponse.json();
+              if (datasetItems.length > 0 && datasetItems[0].screenshotUrl) {
+                const directApifyUrl = datasetItems[0].screenshotUrl;
+                console.log("Found direct Apify URL:", directApifyUrl);
+                
+                // Update the channel record with this URL
+                const updateResult = await updateChannelWithScreenshotUrl(
+                  supabase, 
+                  channelId, 
+                  directApifyUrl
+                );
+                
+                if (updateResult.success) {
+                  return { 
+                    success: true, 
+                    screenshotUrl: directApifyUrl,
+                    apifyUrl: directApifyUrl,
+                    message: "Screenshot taken using direct Apify URL"
+                  };
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Direct Apify approach failed:", err);
+        // Continue with regular flow
+      }
+    }
     
     const bucketName = "channel_screenshots";
     
