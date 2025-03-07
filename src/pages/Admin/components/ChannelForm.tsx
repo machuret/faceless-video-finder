@@ -8,6 +8,7 @@ import ChannelTypeCategories from "./form-sections/ChannelTypeCategories";
 import ChannelContentSection from "./form-sections/ChannelContentSection";
 import RevenueDetailsSection from "./form-sections/RevenueDetailsSection";
 import NotesSection from "./form-sections/NotesSection";
+import KeywordsSection from "./form-sections/KeywordsSection";
 import { Loader2 } from "lucide-react";
 
 export interface ChannelFormProps {
@@ -50,6 +51,14 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
       <ChannelTypeCategories 
         formData={formData}
         handleFieldChange={handleFieldChange}
+      />
+      
+      <KeywordsSection
+        channelTitle={formData.channel_title || ''}
+        description={formData.description || ''}
+        category={formData.channel_category || ''}
+        keywords={formData.keywords || []}
+        onKeywordsChange={handleKeywordsChange}
       />
       
       <ChannelContentSection 
