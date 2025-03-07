@@ -1,9 +1,10 @@
+
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Channel } from "@/types/youtube";
 import { Star } from "lucide-react";
 import LazyImage from "@/components/ui/lazy-image";
-import { generateChannelSlug } from "@/utils/channelSlug";
+import { generateChannelSlug } from "@/pages/ChannelDetails";
 
 interface ChannelCardProps {
   channel: Channel;

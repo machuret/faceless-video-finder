@@ -1,11 +1,12 @@
 
 import React, { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
 import { ChannelFormData } from "@/types/forms";
 import ChannelIdentitySection from "./form-sections/ChannelIdentitySection";
 import ChannelStatsSection from "./form-sections/ChannelStatsSection";
-import ChannelTypeCategories from "./form-sections/ChannelTypeCategories";
 import ChannelContentSection from "./form-sections/ChannelContentSection";
+import ChannelTypeCategories from "./form-sections/ChannelTypeCategories";
 import RevenueDetailsSection from "./form-sections/RevenueDetailsSection";
 import NotesSection from "./form-sections/NotesSection";
 import { Loader2 } from "lucide-react";
@@ -31,24 +32,13 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   handleFieldChange,
   handleKeywordsChange
 }) => {
-  // Function to handle fetching about section
-  const handleFetchAbout = () => {
-    // This function passes the updated description to the form data
-    const handleAboutReceived = (about: string) => {
-      handleFieldChange('description', about);
-    };
-    
-    return handleAboutReceived;
-  };
-
   return (
-    <div className="space-y-8 mb-8">
+    <div className="space-y-8 mb-8" onSubmit={handleSubmit}>
       <ChannelIdentitySection 
         formData={formData}
         handleChange={handleChange}
         handleScreenshotChange={handleScreenshotChange}
         isEditMode={isEditMode}
-        onFetchAbout={isEditMode ? handleFetchAbout : undefined}
       />
       
       <ChannelStatsSection 

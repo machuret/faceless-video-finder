@@ -4,14 +4,14 @@ import { ChannelFormData } from "@/types/forms";
 import FormSectionWrapper from "./FormSectionWrapper";
 import ChannelBasicFields from "./channel-identity/ChannelBasicFields";
 import ScreenshotUploader from "./screenshot/ScreenshotUploader";
-import AboutSectionFetcher from "../AboutSectionFetcher";
 
 interface ChannelIdentitySectionProps {
   formData: ChannelFormData;
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleScreenshotChange: (url: string) => void;
   isEditMode: boolean;
-  onFetchAbout?: () => (about: string) => void;
+  onFetchAbout?: () => void;
+  isLoadingAbout?: boolean;
 }
 
 const ChannelIdentitySection = ({ 
@@ -19,35 +19,18 @@ const ChannelIdentitySection = ({
   handleChange, 
   handleScreenshotChange, 
   isEditMode,
-  onFetchAbout
+  onFetchAbout,
+  isLoadingAbout
 }: ChannelIdentitySectionProps) => {
-  // Process for fetching about section
-  const handleFetchAboutClick = () => {
-    if (onFetchAbout) {
-      return onFetchAbout();
-    }
-    return () => {}; // Return a no-op function if onFetchAbout is not provided
-  };
-
   return (
-    <FormSectionWrapper 
-      title="Channel Identity" 
-      description="Basic information about the YouTube channel"
-      actionComponent={
-        isEditMode ? (
-          <AboutSectionFetcher
-            channelUrl={formData.channel_url}
-            onAboutReceived={handleFetchAboutClick()}
-            disabled={!formData.channel_url}
-          />
-        ) : null
-      }
-    >
+    <FormSectionWrapper title="Channel Identity" description="Basic information about the YouTube channel">
       <ChannelBasicFields 
         channelTitle={formData.channel_title}
         channelUrl={formData.channel_url}
         description={formData.description || ""}
         handleChange={handleChange}
+        onFetchAbout={isEditMode ? onFetchAbout : undefined}
+        isLoading={isLoadingAbout}
       />
       
       <ScreenshotUploader 

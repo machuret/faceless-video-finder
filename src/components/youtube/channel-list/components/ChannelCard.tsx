@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Channel } from "@/types/youtube";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +14,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Star, StarOff } from "lucide-react";
-import { generateChannelSlug } from "@/utils/channelSlug";
+import { generateChannelSlug } from "@/pages/ChannelDetails";
 
 interface ChannelCardProps {
   channel: Channel;

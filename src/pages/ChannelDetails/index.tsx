@@ -1,69 +1,115 @@
 
-import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import MainNavbar from "@/components/MainNavbar";
+import PageFooter from "@/components/home/PageFooter";
+import { Loader2 } from "lucide-react";
 import { useChannelDetails } from "./hooks/useChannelDetails";
 import ChannelHeader from "./components/ChannelHeader";
+import ChannelStats from "./components/ChannelStats";
+import ChannelTypeInfo from "./components/ChannelTypeInfo";
 import ChannelVideos from "./components/ChannelVideos";
 import TopPerformingVideos from "./components/TopPerformingVideos";
 import RelatedChannels from "./components/RelatedChannels";
-import { generateChannelSlug } from "@/utils/channelSlug";
-import LatestVideos from "./components/LatestVideos";
+import { useEffect } from "react";
 
-const ChannelDetailsPage = () => {
-  const { slug } = useParams<{ slug: string }>();
-  const {
-    channel,
-    videoStats,
-    loading,
-    error,
-    topVideosLoading,
-    mostViewedVideo,
+const ChannelDetails = () => {
+  const { channelId, slug } = useParams();
+  const navigate = useNavigate();
+  const { 
+    channel, 
+    videoStats, 
+    loading, 
+    error, 
+    topVideosLoading, 
+    mostViewedVideo, 
     mostEngagingVideo,
-    latestVideos,
-    topVideosError
-  } = useChannelDetails(undefined, slug);
+    topVideosError 
+  } = useChannelDetails(channelId, slug);
+
+  useEffect(() => {
+    if (!loading && channel && channelId && !slug) {
+      const channelSlug = generateChannelSlug(channel.channel_title);
+      navigate(`/channel/${channelSlug}-${channel.id}`, { replace: true });
+    }
+  }, [loading, channel, channelId, slug, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainNavbar />
+        <div className="container mx-auto px-4 py-16 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-blue-600" />
+            <h2 className="text-xl font-semibold">Loading channel details...</h2>
+          </div>
+        </div>
+        <PageFooter />
+      </div>
+    );
+  }
+
+  if (!channel) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainNavbar />
+        <div className="container mx-auto px-4 py-16">
+          <div className="bg-white p-8 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Channel not found</h2>
+            <p className="text-gray-600">The channel you're looking for doesn't exist or has been removed.</p>
+          </div>
+        </div>
+        <PageFooter />
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {loading && <p>Loading channel details...</p>}
-      {error && <p className="text-red-500">Error: {error}</p>}
-      
-      {!loading && !error && channel && (
-        <div className="space-y-8">
-          <ChannelHeader channel={channel} />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Channel Description</h2>
-              <p>{channel.description}</p>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Channel Stats</h2>
-              <ul>
-                <li>Subscribers: {channel.total_subscribers}</li>
-                <li>Views: {channel.total_views}</li>
-                <li>Videos: {channel.video_count}</li>
-              </ul>
-            </div>
-          </div>
-          
-          {/* Add Latest Videos section before Top Performing Videos */}
-          <LatestVideos videos={latestVideos} loading={topVideosLoading} />
-          
-          <TopPerformingVideos
-            mostViewed={mostViewedVideo}
-            mostEngaging={mostEngagingVideo}
+    <div className="min-h-screen bg-gray-50">
+      <MainNavbar />
+      <main className="container mx-auto px-4 py-8">
+        {/* Channel Header */}
+        <ChannelHeader channel={channel} />
+        
+        {/* Top Performing Videos Section */}
+        <div className="mt-8">
+          <TopPerformingVideos 
+            mostViewed={mostViewedVideo} 
+            mostEngaging={mostEngagingVideo} 
             loading={topVideosLoading}
             error={topVideosError}
           />
-          
-          <ChannelVideos videos={videoStats} />
-          
-          <RelatedChannels currentChannelId={channel.id} />
         </div>
-      )}
+        
+        {/* Channel Statistics and Videos */}
+        <div className="grid grid-cols-1 gap-8 mt-8">
+          <div>
+            <ChannelStats showOnlyRevenue={true} channel={channel} />
+            <ChannelVideos videos={videoStats} />
+          </div>
+        </div>
+        
+        {/* Channel Type Info */}
+        <div className="mt-8">
+          <ChannelTypeInfo channelType={channel.metadata?.ui_channel_type || channel.channel_type?.toString()} />
+        </div>
+        
+        {/* Related Channels */}
+        <div className="mt-8">
+          {channelId && <RelatedChannels currentChannelId={channelId} />}
+        </div>
+      </main>
+      <PageFooter />
     </div>
   );
 };
 
-export default ChannelDetailsPage;
+export const generateChannelSlug = (title: string): string => {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-')     // Replace spaces with hyphens
+    .replace(/-+/g, '-')      // Remove consecutive hyphens
+    .trim();                  // Trim leading/trailing spaces
+};
+
+export default ChannelDetails;

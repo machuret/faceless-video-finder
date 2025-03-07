@@ -21,24 +21,11 @@ const ChannelStatsSection = ({
 }: ChannelStatsSectionProps) => {
   
   const handleStatsReceived = (stats: Partial<ChannelFormData>) => {
-    console.log("Stats received in ChannelStatsSection:", stats);
-    
     if (stats.total_subscribers) handleFieldChange('total_subscribers', stats.total_subscribers);
     if (stats.total_views) handleFieldChange('total_views', stats.total_views);
     if (stats.video_count) handleFieldChange('video_count', stats.video_count);
     if (stats.description) handleFieldChange('description', stats.description);
-    
-    // Explicitly handle the start_date field
-    if (stats.start_date) {
-      console.log("Updating start_date to:", stats.start_date);
-      handleFieldChange('start_date', stats.start_date);
-    }
-    
-    // Handle country field
-    if (stats.country) {
-      console.log("Updating country to:", stats.country);
-      handleFieldChange('country', stats.country);
-    }
+    if (stats.start_date) handleFieldChange('start_date', stats.start_date); // Make sure we're updating start_date
     
     // If we received a channel title and the current one is empty or generic, update it
     if (stats.channel_title && (!formData.channel_title || formData.channel_title === "Channel")) {

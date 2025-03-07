@@ -14,7 +14,6 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
     topVideosLoading: true,
     mostViewedVideo: null,
     mostEngagingVideo: null,
-    latestVideos: [], // Initialize empty array for latest videos
     topVideosError: false
   });
 
@@ -77,13 +76,12 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
   const loadTopPerformingVideos = async (youtubeChannelId: string) => {
     setState(prev => ({ ...prev, topVideosLoading: true, topVideosError: false }));
     try {
-      const { mostViewedVideo, mostEngagingVideo, latestVideos } = await fetchTopPerformingVideos(youtubeChannelId);
+      const { mostViewedVideo, mostEngagingVideo } = await fetchTopPerformingVideos(youtubeChannelId);
       
       setState(prev => ({
         ...prev,
         mostViewedVideo,
         mostEngagingVideo,
-        latestVideos: latestVideos || [], // Add latest videos to state
         topVideosLoading: false,
         topVideosError: false
       }));
@@ -105,7 +103,6 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
     topVideosLoading: state.topVideosLoading,
     mostViewedVideo: state.mostViewedVideo,
     mostEngagingVideo: state.mostEngagingVideo,
-    latestVideos: state.latestVideos, // Return latest videos array
     topVideosError: state.topVideosError
   };
 };
