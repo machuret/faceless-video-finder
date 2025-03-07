@@ -1,7 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { ApifyClient } from 'https://esm.sh/apify-client@2.9.1';
+import { ApifyClient } from 'https://esm.sh/apify-client';
 
 // Define CORS headers
 const corsHeaders = {
@@ -159,7 +159,7 @@ async function fetchChannelWithApifyClient(url: string, apiToken: string) {
     token: apiToken,
   });
   
-  // Prepare Actor input - we're targeting the YouTube Scraper actor
+  // Prepare Actor input - now using the streamers~youtube-scraper actor ID
   const input = {
     "startUrls": [{ "url": url }],
     "maxVideos": 1,
@@ -171,7 +171,7 @@ async function fetchChannelWithApifyClient(url: string, apiToken: string) {
   
   try {
     // Run the YouTube Scraper Actor and wait for it to finish
-    const run = await client.actor("apify/youtube-scraper").call(input);
+    const run = await client.actor("streamers~youtube-scraper").call(input);
     console.log(`Apify actor run completed with ID: ${run.id}`);
     
     // Fetch results from the dataset
