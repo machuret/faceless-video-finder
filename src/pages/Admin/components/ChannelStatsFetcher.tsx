@@ -59,7 +59,8 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
       // Warn if using mock data
       if (data.is_mock) {
-        toast.warning("Using mock data - couldn't fetch actual channel stats");
+        const reason = data.error_reason ? ` (${data.error_reason})` : '';
+        toast.warning(`Using mock data - couldn't fetch actual channel stats${reason}`);
       } else {
         toast.success("Channel stats fetched successfully");
       }

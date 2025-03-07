@@ -66,13 +66,23 @@ const fetchChannelDetailsFromUsername = async (username: string, apiKey: string)
   console.log(`Attempting to fetch channel details for username/handle: ${username}`);
   
   try {
-    // First search for the channel
+    // First search for the channel - we need to handle potentially invalid API key
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(username)}&type=channel&key=${apiKey}`;
-    console.log(`Searching for channel with URL: ${searchUrl}`);
+    console.log(`Searching for channel with URL: ${searchUrl.replace(apiKey, 'API_KEY_REDACTED')}`);
     
     const searchResponse = await fetch(searchUrl);
     if (!searchResponse.ok) {
-      throw new Error(`YouTube API search error: ${searchResponse.status} ${searchResponse.statusText}`);
+      const responseText = await searchResponse.text();
+      console.error(`YouTube API search error status: ${searchResponse.status}`);
+      console.error(`Response body: ${responseText}`);
+      
+      if (searchResponse.status === 403) {
+        throw new Error(`YouTube API key error: Forbidden (403). The API key may be invalid or quota exceeded.`);
+      } else if (searchResponse.status === 400) {
+        throw new Error(`YouTube API search error: Bad Request (400). Check API key format.`);
+      } else {
+        throw new Error(`YouTube API search error: ${searchResponse.status} ${searchResponse.statusText}`);
+      }
     }
     
     const searchData = await searchResponse.json();
@@ -100,11 +110,19 @@ const fetchChannelDetails = async (channelId: string, apiKey: string): Promise<a
   
   try {
     const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails,brandingSettings&id=${channelId}&key=${apiKey}`;
-    console.log(`Channel details URL: ${channelUrl}`);
+    console.log(`Channel details URL: ${channelUrl.replace(apiKey, 'API_KEY_REDACTED')}`);
     
     const channelResponse = await fetch(channelUrl);
     if (!channelResponse.ok) {
-      throw new Error(`YouTube API channel error: ${channelResponse.status} ${channelResponse.statusText}`);
+      const responseText = await channelResponse.text();
+      console.error(`YouTube API channel error status: ${channelResponse.status}`);
+      console.error(`Response body: ${responseText}`);
+      
+      if (channelResponse.status === 403) {
+        throw new Error(`YouTube API key error: Forbidden (403). The API key may be invalid or quota exceeded.`);
+      } else {
+        throw new Error(`YouTube API channel error: ${channelResponse.status} ${channelResponse.statusText}`);
+      }
     }
     
     const channelData = await channelResponse.json();
@@ -146,8 +164,9 @@ serve(async (req) => {
     
     console.log(`Fetching ${fetchDescriptionOnly ? 'about section' : 'stats'} for channel: ${channelUrl}`);
 
-    // This should be stored as an environment variable in production
-    const API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"; // Public YouTube API key for demo purposes
+    // Update to a working YouTube API key or request one from the user
+    // This is a test key that might have reached its quota limit
+    const API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"; 
     
     // Extract YouTube channel identifier
     const channelIdentifier = extractChannelId(channelUrl);
@@ -155,7 +174,7 @@ serve(async (req) => {
     
     if (!channelIdentifier) {
       console.error('Could not extract channel identifier');
-      return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders);
+      return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders, "Could not extract channel identifier");
     }
     
     let channel;
@@ -210,9 +229,12 @@ serve(async (req) => {
     } catch (error) {
       console.error('Error processing channel data:', error);
       
+      // More descriptive error for mock data fallback
+      const errorReason = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.log(`API processing failed (${errorReason}), falling back to mock data`);
+      
       // Fall back to mock data if API fails
-      console.log('API processing failed, falling back to mock data');
-      return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders);
+      return provideMockData(channelUrl, fetchDescriptionOnly, corsHeaders, errorReason);
     }
     
   } catch (error) {
@@ -228,8 +250,8 @@ serve(async (req) => {
 })
 
 // Helper function to provide mock data when real data can't be fetched
-function provideMockData(channelUrl: string, fetchDescriptionOnly: boolean, corsHeaders: any) {
-  console.log(`Providing mock data for: ${channelUrl}`);
+function provideMockData(channelUrl: string, fetchDescriptionOnly: boolean, corsHeaders: any, errorReason = "API error") {
+  console.log(`Providing mock data for: ${channelUrl} (Reason: ${errorReason})`);
   
   // Mock description
   const mockDescription = "This is a sample YouTube channel description fetched by our API. " +
@@ -244,7 +266,8 @@ function provideMockData(channelUrl: string, fetchDescriptionOnly: boolean, cors
       JSON.stringify({ 
         success: true, 
         description: mockDescription,
-        is_mock: true
+        is_mock: true,
+        error_reason: errorReason
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
@@ -260,7 +283,8 @@ function provideMockData(channelUrl: string, fetchDescriptionOnly: boolean, cors
     description: mockDescription,
     startDate: "2018-01-15",
     country: "US",
-    is_mock: true
+    is_mock: true,
+    error_reason: errorReason
   };
   
   console.log('Returning mock stats:', mockStats);
