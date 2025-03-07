@@ -46,7 +46,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         video_count: data.videoCount?.toString() || "",
         description: data.description || "",
         channel_title: data.title || "",
-        start_date: data.startDate || "" // Ensure we're handling the start date
+        start_date: data.startDate || "" // Make sure we're capturing start date from response
       };
 
       onStatsReceived(stats);

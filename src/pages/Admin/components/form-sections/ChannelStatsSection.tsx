@@ -25,6 +25,7 @@ const ChannelStatsSection = ({
     if (stats.total_views) handleFieldChange('total_views', stats.total_views);
     if (stats.video_count) handleFieldChange('video_count', stats.video_count);
     if (stats.description) handleFieldChange('description', stats.description);
+    if (stats.start_date) handleFieldChange('start_date', stats.start_date); // Make sure we're updating start_date
     
     // If we received a channel title and the current one is empty or generic, update it
     if (stats.channel_title && (!formData.channel_title || formData.channel_title === "Channel")) {
