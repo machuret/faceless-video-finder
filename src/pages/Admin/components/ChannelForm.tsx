@@ -46,10 +46,12 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
 }) => {
   const [keywords, setKeywords] = useState<string[]>(formData.keywords || []);
   const [aboutLoading, setAboutLoading] = useState(false);
+  const [aiDescription, setAiDescription] = useState<string>(formData.ai_description || "");
 
   useEffect(() => {
     setKeywords(formData.keywords || []);
-  }, [formData.keywords]);
+    setAiDescription(formData.ai_description || "");
+  }, [formData.keywords, formData.ai_description]);
 
   const handleFetchAbout = async () => {
     setAboutLoading(true);
@@ -57,6 +59,11 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
       handleFieldChange('description', aboutText);
     });
     setAboutLoading(false);
+  };
+
+  const handleAiDescriptionChange = (value: string) => {
+    setAiDescription(value);
+    handleFieldChange('ai_description', value);
   };
 
   return (
@@ -87,8 +94,8 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
 
       <ChannelContentSection
         title={formData.channel_title}
-        description={formData.description || ""}
-        onDescriptionChange={(value) => handleFieldChange('description', value)}
+        description={aiDescription}
+        onDescriptionChange={handleAiDescriptionChange}
       />
 
       <ChannelStatsSection

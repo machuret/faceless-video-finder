@@ -12,6 +12,7 @@ export const useChannelFormState = () => {
     channel_title: "",
     channel_url: "",
     description: "",
+    ai_description: "",
     screenshot_url: "",
     total_subscribers: "",
     total_views: "",
