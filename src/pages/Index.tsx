@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import HeroSection from '@/components/home/HeroSection';
 import FeaturedVideos from '@/components/home/FeaturedVideos';
 import ChannelSection from '@/components/home/ChannelSection';
-import StatsSection from '@/components/home/StatsSection';
 import ToolsSection from '@/components/home/ToolsSection';
 import PageFooter from '@/components/home/PageFooter';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,7 +84,6 @@ const Index = () => {
         channelsPerPage={channelsPerPage}
         setCurrentPage={setCurrentPage}
       />
-      <StatsSection />
       <ToolsSection />
       <PageFooter />
     </div>

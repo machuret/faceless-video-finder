@@ -17,8 +17,8 @@ const Dashboard = () => {
         <FeaturedChannels />
         
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-6">Recently Added Channels</h2>
-          <ChannelList isAdmin={true} limit={6} />
+          <h2 className="text-xl font-semibold mb-6">All Channels</h2>
+          <ChannelList isAdmin={true} />
         </div>
       </div>
     </div>

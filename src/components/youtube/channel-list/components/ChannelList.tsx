@@ -30,10 +30,11 @@ export const ChannelList: React.FC<ChannelListProps> = ({
 
   useEffect(() => {
     console.log("ChannelList useEffect running, fetching channels with limit:", limit);
-    fetchChannels(limit);
+    // In admin view without specific limit, fetch up to 30 channels
+    const effectiveLimit = isAdmin && !limit ? 30 : limit;
+    fetchChannels(effectiveLimit);
     // Don't include fetchChannels in the dependency array as it would cause infinite rerenders
-    // since useCallback doesn't memoize based on arguments
-  }, [limit]); // Only re-run if limit changes
+  }, [isAdmin, limit]); // Only re-run if isAdmin or limit changes
 
   if (loading) {
     return <LoadingState />;
@@ -74,7 +75,7 @@ export const ChannelList: React.FC<ChannelListProps> = ({
       </div>
       
       {/* Add a View All button if we're showing a limited set of channels */}
-      {limit && channels.length >= limit && isAdmin && (
+      {limit && channels.length >= limit && !isAdmin && (
         <div className="flex justify-center mt-4">
           <Button 
             variant="outline" 

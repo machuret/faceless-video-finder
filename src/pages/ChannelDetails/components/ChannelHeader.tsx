@@ -1,3 +1,4 @@
+
 import { Globe, BarChart, Bookmark, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Channel } from "@/types/youtube";
@@ -49,7 +50,6 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
             <div className="space-y-4">
               {channel.description && (
                 <div>
-                  <h3 className="text-lg font-medium mb-2">Description</h3>
                   <p className="text-gray-700 text-lg">{channel.description}</p>
                 </div>
               )}
