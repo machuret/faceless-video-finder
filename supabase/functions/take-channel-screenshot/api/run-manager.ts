@@ -1,4 +1,3 @@
-
 import { 
   APIFY_BASE_URL, 
   APIFY_ACTOR_ID, 
@@ -19,7 +18,7 @@ export async function startActorRun(url: string): Promise<{
   try {
     console.log(`Starting Apify actor run for URL: ${url}`);
     
-    // Use the configuration for the new Ultimate Scraping actor
+    // Use the configuration for the new Ultimate Scraping actor with improved settings
     const startResponse = await fetch(`${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${APIFY_API_TOKEN}`, {
       method: "POST",
       headers: {
@@ -30,27 +29,15 @@ export async function startActorRun(url: string): Promise<{
         "enableSSL": true,
         "linkUrls": [url],
         "outputFormat": "jpeg",
-        "waitUntil": "networkidle0",
-        "timeouT": 15,
-        "maxRetries": 3,
-        "delayBeforeScreenshot": 1500,
-        "infiniteScroll": false,
-        "timefullPagE": 10,
-        "frameCounT": 10,
-        "frameIntervaL": 10,
-        "frame": 10,
-        "scrollSteP": 300,
-        "printBackground": true,
-        "formaT": "A4",
-        "toP": 0,
-        "righT": 0,
-        "bottoM": 0,
-        "lefT": 0,
+        "waitUntil": "networkidle0", // Wait until network is idle
+        "timeouT": 30, // Increase timeout for better loading
+        "maxRetries": 5, // More retries for reliability
+        "delayBeforeScreenshot": 3000, // Longer delay to ensure content loads
+        "scrollToBottom": true, // Scroll to bottom to load all content
+        "delayAfterScrolling": 1000, // Wait after scrolling
         "window_Width": 1920,
         "window_Height": 1080,
-        "scrollToBottom": true,
-        "delayAfterScrolling": 300,
-        "cookies": [],
+        "printBackground": true,
         "proxyConfig": {
           "useApifyProxy": false
         }

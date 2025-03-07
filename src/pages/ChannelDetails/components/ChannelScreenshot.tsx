@@ -14,9 +14,10 @@ const ChannelScreenshot = ({ screenshotUrl, channelTitle }: ChannelScreenshotPro
   if (!screenshotUrl || imageError) return null;
   
   // Clean up URL if it's from Apify - remove the disableRedirect parameter if present
-  const cleanedUrl = screenshotUrl.includes('?disableRedirect=true') 
-    ? screenshotUrl.replace('?disableRedirect=true', '') 
-    : screenshotUrl;
+  // or other common query parameters that might cause issues
+  const cleanedUrl = screenshotUrl
+    .replace(/\?disableRedirect=true/i, '')
+    .replace(/\?token=[^&]+/i, '');
   
   return (
     <div className="mb-6">

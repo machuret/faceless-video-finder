@@ -29,42 +29,59 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
             const outputData = await outputResponse.json();
             console.log("OUTPUT data found:", JSON.stringify(outputData));
             
-            // Handle the specific format of the Apify OUTPUT that includes an array of objects
-            // with a screenshotUrl property, as shown in the example:
-            // [{ "url": "https://www.youtube.com/@1MillionTests", "screenshotUrl": "https://api.apify.com/..." }]
+            // For Ultimate Screenshot Actor: Output might be an array of objects
+            // with urls and screenshots
             if (Array.isArray(outputData) && outputData.length > 0) {
               for (const item of outputData) {
-                if (item.screenshotUrl) {
-                  console.log("Found screenshotUrl in OUTPUT array item:", item.screenshotUrl);
-                  // Clean the URL if it contains disableRedirect parameter
-                  const cleanUrl = item.screenshotUrl.includes('?disableRedirect=true') 
-                    ? item.screenshotUrl.replace('?disableRedirect=true', '') 
-                    : item.screenshotUrl;
-                  return { 
-                    screenshotUrl: cleanUrl, 
-                    directUrl: cleanUrl 
-                  };
+                // Check for typical screenshot URL fields
+                if (item.screenshotUrl || item.screenshot || item.imageUrl) {
+                  const url = item.screenshotUrl || item.screenshot || item.imageUrl;
+                  console.log("Found screenshot URL in OUTPUT array:", url);
+                  return { screenshotUrl: url, directUrl: url };
+                }
+                
+                // Some actors might include the actual URL under a "url" field
+                // with a corresponding "resultUrl" or similar for the screenshot
+                if (item.url && (item.resultUrl || item.resultScreenshotUrl)) {
+                  const url = item.resultUrl || item.resultScreenshotUrl;
+                  console.log("Found result URL in OUTPUT array:", url);
+                  return { screenshotUrl: url, directUrl: url };
                 }
               }
             }
-            // Also try direct object format as fallback
-            else if (outputData && typeof outputData === 'object' && outputData.screenshotUrl) {
-              console.log("Found screenshotUrl in OUTPUT object:", outputData.screenshotUrl);
-              const cleanUrl = outputData.screenshotUrl.includes('?disableRedirect=true') 
-                ? outputData.screenshotUrl.replace('?disableRedirect=true', '') 
-                : outputData.screenshotUrl;
-              return { 
-                screenshotUrl: cleanUrl, 
-                directUrl: cleanUrl 
-              };
+            // Some actors output a direct object with the URL
+            else if (outputData && typeof outputData === 'object') {
+              // Check for common screenshot URL fields
+              for (const field of ['screenshotUrl', 'screenshot', 'imageUrl', 'resultUrl', 'url']) {
+                if (outputData[field] && typeof outputData[field] === 'string') {
+                  console.log(`Found ${field} in OUTPUT:`, outputData[field]);
+                  return { 
+                    screenshotUrl: outputData[field], 
+                    directUrl: outputData[field] 
+                  };
+                }
+              }
+              
+              // Some actors nest the result
+              if (outputData.result && typeof outputData.result === 'object') {
+                for (const field of ['screenshotUrl', 'screenshot', 'imageUrl', 'resultUrl', 'url']) {
+                  if (outputData.result[field] && typeof outputData.result[field] === 'string') {
+                    console.log(`Found ${field} in OUTPUT.result:`, outputData.result[field]);
+                    return { 
+                      screenshotUrl: outputData.result[field], 
+                      directUrl: outputData.result[field] 
+                    };
+                  }
+                }
+              }
             }
           } catch (e) {
             console.log("Error parsing OUTPUT as JSON:", e);
           }
         }
-        // Check if OUTPUT is directly an image
+        // If OUTPUT is directly an image
         else if (contentType && contentType.startsWith('image/')) {
-          console.log("OUTPUT key contains an image directly");
+          console.log("OUTPUT key contains the image directly");
           const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/OUTPUT?token=${APIFY_API_TOKEN}`;
           return { screenshotUrl: url, directUrl: url };
         }
@@ -86,62 +103,37 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
     const keysData = await keysResponse.json() as ApifyKeyValueStoreResponse;
     console.log("Key-value store keys:", JSON.stringify(keysData));
     
-    // Look specifically for the screenshot key format shown in the example
-    // "screenshot_https___www_youtube_com__1milliontests_10dedf34a445edc1f5f77248eb636986"
-    
-    // Check for keys matching screenshot pattern based on the URL from the console
-    const screenshotPatterns = [
-      /^screenshot_.*$/i,
-      /^screenshot.*\.(?:png|jpg|jpeg|webp)$/i,
-      /^.*_screenshot.*$/i
+    // Look for specific key patterns that might contain the screenshot
+    const possibleScreenshotKeys = [
+      'screenshot', 
+      'image',
+      'result',
+      'output',
+      '.jpg',
+      '.jpeg',
+      '.png'
     ];
     
-    for (const pattern of screenshotPatterns) {
-      console.log(`Checking for keys matching pattern: ${pattern}`);
-      
-      for (const item of keysData.data.items) {
-        if (pattern.test(item.key)) {
-          console.log("Found key matching screenshot pattern:", item.key);
-          const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/${item.key}?token=${APIFY_API_TOKEN}`;
-          
-          try {
-            // Verify it's an actual image
-            const response = await fetch(url, { method: 'HEAD' });
-            const contentType = response.headers.get('content-type');
-            
-            if (response.ok && contentType && contentType.startsWith('image/')) {
-              console.log(`Verified screenshot URL is valid: ${url} (${contentType})`);
-              return { screenshotUrl: url, directUrl: url };
-            } else {
-              console.log(`Key ${item.key} exists but is not a valid image (${contentType})`);
-            }
-          } catch (e) {
-            console.log("Error verifying screenshot URL:", e);
-          }
-        }
-      }
-    }
-    
-    // If we still haven't found anything, look for any image files
     for (const item of keysData.data.items) {
-      const key = item.key;
-      if (/\.(png|jpg|jpeg|webp)$/i.test(key) || 
-          key.toLowerCase().includes('image') || 
-          key.toLowerCase().includes('screenshot')) {
-        
-        console.log("Found potential image key:", key);
-        const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/${key}?token=${APIFY_API_TOKEN}`;
+      const key = item.key.toLowerCase();
+      
+      if (possibleScreenshotKeys.some(pattern => key.includes(pattern))) {
+        console.log("Found potential screenshot key:", item.key);
+        const url = `${APIFY_BASE_URL}/key-value-stores/${storeId}/records/${item.key}?token=${APIFY_API_TOKEN}`;
         
         try {
+          // Verify it's an image
           const response = await fetch(url, { method: 'HEAD' });
           const contentType = response.headers.get('content-type');
           
           if (response.ok && contentType && contentType.startsWith('image/')) {
-            console.log(`Found image at key ${key} with content type ${contentType}`);
+            console.log(`Verified screenshot URL is valid: ${url} (${contentType})`);
             return { screenshotUrl: url, directUrl: url };
+          } else {
+            console.log(`Key ${item.key} exists but is not a valid image (${contentType})`);
           }
         } catch (e) {
-          console.log(`Error checking key ${key}:`, e);
+          console.log("Error verifying screenshot URL:", e);
         }
       }
     }
@@ -178,23 +170,34 @@ export async function extractScreenshotFromDataset(datasetId: string): Promise<{
     console.log("Dataset items:", JSON.stringify(datasetItems));
     
     // Check for any items in the dataset
-    if (datasetItems?.data && Array.isArray(datasetItems.data) && datasetItems.data.length > 0) {
-      // First try to find an item with the specific screenshotUrl property
+    if (datasetItems?.data && Array.isArray(datasetItems.data)) {
+      // First try to find items with the specific URL fields
       for (const item of datasetItems.data) {
-        // Check for screenshot URL in various formats
-        if (item.screenshotUrl) {
-          console.log("Found direct screenshot URL in dataset item:", item.screenshotUrl);
-          return { screenshotUrl: item.screenshotUrl, directUrl: item.screenshotUrl };
-        } else if (item.screenshot) {
-          console.log("Found screenshot property in dataset item:", item.screenshot);
-          return { screenshotUrl: item.screenshot, directUrl: item.screenshot };
-        } else if (item.imageUrl) {
-          console.log("Found imageUrl in dataset item:", item.imageUrl);
-          return { screenshotUrl: item.imageUrl, directUrl: item.imageUrl };
-        } else if (item.url && typeof item.url === 'string' && 
-                  (item.url.includes('screenshot') || item.url.match(/\.(png|jpg|jpeg|webp)$/i))) {
+        // Check for common screenshot URL fields
+        for (const field of ['screenshotUrl', 'screenshot', 'imageUrl', 'resultUrl']) {
+          if (item[field] && typeof item[field] === 'string') {
+            console.log(`Found ${field} in dataset item:`, item[field]);
+            return { screenshotUrl: item[field], directUrl: item[field] };
+          }
+        }
+        
+        // Some output might have URL field with direct image link
+        if (item.url && typeof item.url === 'string' && 
+           (item.url.match(/\.(?:png|jpg|jpeg|webp|gif)$/i) || 
+            item.url.includes('screenshot') || 
+            item.url.includes('image'))) {
           console.log("Found URL that appears to be a screenshot:", item.url);
           return { screenshotUrl: item.url, directUrl: item.url };
+        }
+        
+        // Some actors might nest results
+        if (item.result && typeof item.result === 'object') {
+          for (const field of ['screenshotUrl', 'screenshot', 'imageUrl', 'resultUrl']) {
+            if (item.result[field] && typeof item.result[field] === 'string') {
+              console.log(`Found ${field} in dataset item.result:`, item.result[field]);
+              return { screenshotUrl: item.result[field], directUrl: item.result[field] };
+            }
+          }
         }
       }
     }
@@ -236,11 +239,13 @@ export async function fetchScreenshotImage(screenshotUrl: string): Promise<{
         const data = await imageResponse.json();
         console.log("Response data (expected image but got JSON):", JSON.stringify(data));
         
-        if (data.url && typeof data.url === 'string' && 
-           (data.url.startsWith('http://') || data.url.startsWith('https://'))) {
-          // If we got JSON with a URL, try to fetch that URL instead
-          console.log("Found URL in JSON response, trying to fetch that instead:", data.url);
-          return fetchScreenshotImage(data.url);
+        // Check various common fields for URLs
+        for (const field of ['url', 'screenshotUrl', 'screenshot', 'imageUrl', 'resultUrl']) {
+          if (data[field] && typeof data[field] === 'string' && 
+             (data[field].startsWith('http://') || data[field].startsWith('https://'))) {
+            console.log(`Found ${field} in JSON response, trying to fetch that instead:`, data[field]);
+            return fetchScreenshotImage(data[field]);
+          }
         }
       } catch (e) {
         // Not JSON, just log the first part of the response
