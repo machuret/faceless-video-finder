@@ -16,6 +16,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isMockData, setIsMockData] = useState(false);
+  const [dataSource, setDataSource] = useState<"apify" | "youtube" | "mock">("apify");
 
   const fetchStats = async () => {
     if (!channelUrl) {
@@ -27,6 +28,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     setLoading(true);
     setApiError(null);
     setIsMockData(false);
+    setDataSource("apify");
     toast.info("Fetching channel stats...");
 
     try {
@@ -48,7 +50,8 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       
       console.log("Fetching stats for URL:", formattedUrl);
       
-      const { data, error } = await supabase.functions.invoke('fetch-channel-stats', {
+      // Use our new Apify-powered function
+      const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
         body: { channelUrl: formattedUrl }
       });
 
@@ -69,13 +72,15 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
       console.log("Stats received:", data);
 
-      // Set mock data flag and display appropriate notification
+      // Set data source and display appropriate notification
+      setDataSource(data.source || "apify");
+      
       if (data.is_mock) {
         setIsMockData(true);
         const reason = data.error_reason ? ` (${data.error_reason})` : '';
         toast.warning(`Using mock data - couldn't fetch actual channel stats${reason}`);
       } else {
-        toast.success("Channel stats fetched successfully");
+        toast.success(`Channel stats fetched successfully via ${data.source || "Apify"}`);
       }
 
       // Make sure we include all fields including country
@@ -112,7 +117,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         disabled={loading || !channelUrl}
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-        Fetch Stats
+        Fetch Stats via Apify
       </Button>
 
       {apiError && (
@@ -126,8 +131,16 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
         <Alert className="mt-2 border-yellow-500">
           <AlertTitle className="text-yellow-600">Using Mock Data</AlertTitle>
           <AlertDescription className="text-sm">
-            The provided stats are simulated approximations. The YouTube API request failed with a 403 error.
-            This typically means the API key is invalid or its quota has been exceeded.
+            The provided stats are simulated approximations. The data scraping request failed.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!isMockData && !apiError && dataSource === "apify" && (
+        <Alert className="mt-2 border-blue-500">
+          <AlertTitle className="text-blue-600">Using Apify Data</AlertTitle>
+          <AlertDescription className="text-sm">
+            Channel data was successfully scraped using Apify's YouTube scraper.
           </AlertDescription>
         </Alert>
       )}
