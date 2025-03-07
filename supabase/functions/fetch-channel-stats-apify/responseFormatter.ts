@@ -7,17 +7,41 @@ import { parseDate } from "./dateUtils.ts";
  * Formats a successful channel stats response
  */
 export function formatChannelStatsResponse(channelData: ApifyChannelData) {
-  const subscribers = typeof channelData.numberOfSubscribers === 'string' 
-    ? channelData.numberOfSubscribers.replace(/,/g, '') 
-    : String(channelData.numberOfSubscribers);
+  // Log what we're working with
+  console.log("Formatting channel data response with:", channelData);
   
-  const views = channelData.channelTotalViews?.replace(/,/g, '') || "0";
+  // Clean and parse subscriber count (remove commas and convert to number)
+  let subscribers = typeof channelData.numberOfSubscribers === 'string' 
+    ? channelData.numberOfSubscribers.replace(/,/g, '') 
+    : String(channelData.numberOfSubscribers || 0);
+  
+  // Clean and parse view count
+  let views = typeof channelData.channelTotalViews === 'string'
+    ? channelData.channelTotalViews.replace(/,/g, '')
+    : String(channelData.channelTotalViews || 0);
+  
+  // Clean and parse video count
+  let videoCount = typeof channelData.channelTotalVideos === 'string'
+    ? channelData.channelTotalVideos.replace(/,/g, '')
+    : String(channelData.channelTotalVideos || 0);
+  
+  // Make sure we have valid numbers, defaulting to 0 if parsing fails
+  const subscriberCount = parseInt(subscribers) || 0;
+  const viewCount = parseInt(views) || 0;
+  const totalVideoCount = parseInt(videoCount) || 0;
+  
+  // Log what we've parsed
+  console.log("Parsed numeric values:", {
+    subscriberCount,
+    viewCount,
+    totalVideoCount
+  });
   
   return {
     success: true,
-    subscriberCount: parseInt(subscribers) || 0,
-    viewCount: parseInt(views) || 0,
-    videoCount: parseInt(String(channelData.channelTotalVideos).replace(/,/g, '')) || 0,
+    subscriberCount: subscriberCount,
+    viewCount: viewCount,
+    videoCount: totalVideoCount,
     title: channelData.channelName || "",
     description: channelData.channelDescription || "",
     startDate: parseDate(channelData.channelJoinedDate || ""),
@@ -42,6 +66,8 @@ export function formatDescriptionResponse(channelData: ApifyChannelData) {
  * Formats an error response
  */
 export function formatErrorResponse(message: string, statusCode: number = 500) {
+  console.error(`Error response: ${message} (${statusCode})`);
+  
   const response = new Response(
     JSON.stringify({
       success: false,

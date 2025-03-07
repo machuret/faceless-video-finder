@@ -5,35 +5,46 @@ import { ApifyChannelData } from "../types.ts";
  * Processes the channel data from Apify Fast YouTube Channel Scraper
  */
 export function processChannelData(items: any[]): ApifyChannelData {
-  // The Fast YouTube Channel Scraper returns an array of videos
-  // We need to extract the channel information which is present in each video item
-  const firstItem = items[0]; // Get the first item which contains channel data
+  console.log(`Processing ${items.length} items from Apify dataset`);
   
-  if (!firstItem) {
+  // The Fast YouTube Channel Scraper returns data in a specific format
+  // We need to extract the channel information which is present
+  if (!items || items.length === 0) {
     throw new Error('Invalid data format returned from Apify - no items found');
   }
   
-  console.log("Processing channel data from first item:", 
-    JSON.stringify({
-      channelName: firstItem.channelName,
-      numberOfSubscribers: firstItem.numberOfSubscribers,
-      channelTotalViews: firstItem.channelTotalViews,
-      channelLocation: firstItem.channelLocation,
-      channelJoinedDate: firstItem.channelJoinedDate
-    }, null, 2)
-  );
+  // Log the first item to debug what's in the response
+  console.log("First item from Apify dataset:", JSON.stringify(items[0], null, 2));
+  
+  // Try to extract channel information from the first item
+  const firstItem = items[0];
+  
+  // Determine if we have the channel information in the about page data
+  const channelInfo = firstItem.aboutPage || firstItem; 
+  
+  // Log extracted fields for debugging
+  console.log("Extracted channel data fields:", {
+    name: channelInfo.channelName || channelInfo.name,
+    description: channelInfo.channelDescription || channelInfo.description,
+    subscribers: channelInfo.numberOfSubscribers || channelInfo.subscriberCount,
+    views: channelInfo.channelTotalViews || channelInfo.viewCount,
+    videoCount: channelInfo.channelTotalVideos || channelInfo.videoCount,
+    joinDate: channelInfo.channelJoinedDate || channelInfo.joinedDate,
+    location: channelInfo.channelLocation || channelInfo.country
+  });
   
   // The format is different from the old scraper, so we need to map fields
+  // with fallbacks for different possible formats
   const channelData: ApifyChannelData = {
-    channelName: firstItem.channelName,
-    channelDescription: firstItem.channelDescription,
-    numberOfSubscribers: firstItem.numberOfSubscribers || "0",
-    channelTotalViews: firstItem.channelTotalViews || "0",
-    channelTotalVideos: firstItem.channelTotalVideos || "0",
-    channelJoinedDate: firstItem.channelJoinedDate,
-    channelLocation: firstItem.channelLocation,
-    channelUrl: firstItem.channelUrl,
-    channelId: extractChannelId(firstItem.channelUrl)
+    channelName: channelInfo.channelName || channelInfo.name || firstItem.title || "",
+    channelDescription: channelInfo.channelDescription || channelInfo.description || "",
+    numberOfSubscribers: channelInfo.numberOfSubscribers || channelInfo.subscriberCount || "0",
+    channelTotalViews: channelInfo.channelTotalViews || channelInfo.viewCount || "0",
+    channelTotalVideos: channelInfo.channelTotalVideos || channelInfo.videoCount || "0",
+    channelJoinedDate: channelInfo.channelJoinedDate || channelInfo.joinedDate || "",
+    channelLocation: channelInfo.channelLocation || channelInfo.country || "",
+    channelUrl: channelInfo.channelUrl || firstItem.url || "",
+    channelId: extractChannelId(channelInfo.channelUrl || firstItem.url || "")
   };
   
   // Verify essential fields and provide detailed diagnostic info

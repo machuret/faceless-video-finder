@@ -22,15 +22,18 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     
     // Use the poll function to wait for the actor run to complete
     const statusData = await pollForActorStatus(runId, apiToken);
+    console.log(`Actor run completed with status: ${statusData.lastStatus}`);
     
     // Fetch and process the data
     const items = await fetchDataset(runId, apiToken);
+    console.log(`Successfully fetched ${items.length} items from Apify dataset`);
     
     // Process the channel data
     return processChannelData(items);
   } catch (error) {
     // Re-throw Apify errors as is
     if (error instanceof ApifyError) {
+      console.error(`Apify error: ${error.message}`, error);
       throw error;
     }
     

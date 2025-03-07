@@ -8,37 +8,45 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
   // Poll for actor run status until it's finished
   let isFinished = false;
   let retries = 0;
-  const maxRetries = 60; // Allow up to 2 minutes (checking every 2 seconds)
+  const maxRetries = 30; // Allow up to 1 minute (checking every 2 seconds)
   let lastStatus = '';
+  
+  console.log(`Starting to poll for actor run ${runId} status`);
   
   while (!isFinished && retries < maxRetries) {
     // Wait between status checks
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    const statusResponse = await fetch(
-      `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`
-    );
-    
-    if (!statusResponse.ok) {
+    try {
+      const statusResponse = await fetch(
+        `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`
+      );
+      
+      if (!statusResponse.ok) {
+        retries++;
+        console.warn(`Error fetching run status (retry ${retries}): ${statusResponse.status}`);
+        continue;
+      }
+      
+      const statusData = await statusResponse.json();
+      lastStatus = statusData.data?.status;
+      
+      if (!lastStatus) {
+        retries++;
+        console.warn(`Invalid status response (retry ${retries}): ${JSON.stringify(statusData)}`);
+        continue;
+      }
+      
+      console.log(`Actor run status: ${lastStatus} (retry: ${retries}/${maxRetries})`);
+      
+      if (['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT'].includes(lastStatus)) {
+        isFinished = true;
+      } else {
+        retries++;
+      }
+    } catch (error) {
       retries++;
-      console.warn(`Error fetching run status (retry ${retries}): ${statusResponse.status}`);
-      continue;
-    }
-    
-    const statusData = await statusResponse.json();
-    lastStatus = statusData.data?.status;
-    
-    if (!lastStatus) {
-      retries++;
-      console.warn(`Invalid status response (retry ${retries})`);
-      continue;
-    }
-    
-    if (['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT'].includes(lastStatus)) {
-      isFinished = true;
-    } else {
-      console.log(`Waiting for actor to finish. Current status: ${lastStatus}, retry: ${retries}/${maxRetries}`);
-      retries++;
+      console.error(`Error polling for status (retry ${retries}):`, error);
     }
   }
   
