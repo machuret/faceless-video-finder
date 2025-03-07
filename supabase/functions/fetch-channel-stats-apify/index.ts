@@ -4,7 +4,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { normalizeYouTubeUrl } from "./urlUtils.ts";
-import { fetchChannelWithApifyAPI, ApifyError } from "./apifyService.ts";
+import { fetchChannelWithApifyAPI } from "./apifyApiClient.ts";
+import { ApifyError } from "./errors.ts";
 import { provideMockData } from "./mockService.ts";
 import { 
   formatChannelStatsResponse, 
