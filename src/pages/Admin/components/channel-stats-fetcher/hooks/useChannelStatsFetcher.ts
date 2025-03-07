@@ -119,8 +119,14 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
         setConsecutiveAttempts(0); // Reset consecutive attempts on success
       }
 
-      // Set data source
-      setDataSource(data.source || "apify");
+      // Set data source - Fix type error by ensuring we use a valid type
+      if (data.source) {
+        // Only set the known data sources, default to "apify" for unknown sources
+        const source = data.source === "youtube" ? "youtube" : "apify";
+        setDataSource(source);
+      } else {
+        setDataSource("apify");
+      }
 
       // Make sure we include all fields including country and description
       const stats: Partial<ChannelFormData> = {
@@ -216,9 +222,14 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
       };
       
       // Check each field in the response and add to our stats object if present
+      // Fix TypeScript error by properly typing the data access
       Object.entries(fieldMappings).forEach(([apiField, formField]) => {
-        if (data[apiField as keyof ChannelStatsResponse] && data[apiField as keyof ChannelStatsResponse]?.toString().trim() !== "") {
-          partialStats[formField] = data[apiField as keyof ChannelStatsResponse]?.toString() || "";
+        const responseField = apiField as keyof ChannelStatsResponse;
+        if (data[responseField] !== undefined && 
+            data[responseField] !== null && 
+            String(data[responseField]).trim() !== "") {
+          // Use type assertion to handle the conversion safely
+          partialStats[formField] = String(data[responseField]);
           successfulFields.push(apiField);
         } else if (missingFields.some(field => field.toLowerCase().includes(apiField.toLowerCase()))) {
           failedFields.push(apiField);
