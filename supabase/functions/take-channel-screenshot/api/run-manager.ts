@@ -20,6 +20,7 @@ export async function startActorRun(url: string): Promise<{
     console.log(`Starting Apify actor run for URL: ${url}`);
     
     // Use the correct endpoint for Apify API - directly call the actor
+    // Updated configuration for better screenshot results
     const startResponse = await fetch(`${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${APIFY_API_TOKEN}`, {
       method: "POST",
       headers: {
@@ -27,10 +28,18 @@ export async function startActorRun(url: string): Promise<{
       },
       body: JSON.stringify({
         "startUrls": [{ "url": url }],
-        "waitForSelectorOnLoad": "body",
+        "waitForSelectorOnLoad": "#channel-header,#metadata-container,ytd-channel-header-renderer",
         "fullPage": false,
         "hideScrollbar": true,
-        "waitForMillis": 5000,
+        "waitForMillis": 8000, // Increased wait time for better loading
+        "viewportHeight": 1200,
+        "viewportWidth": 1600,
+        "ignoreCookieBanners": true,
+        "scrollPage": true,
+        "scrollHeight": 800, // Scroll down a bit to capture more content
+        "maxScrollHeight": 1500, // But limit how far we scroll
+        "saveScreenshots": true, // Ensure screenshots are saved
+        "screenshotQuality": 80, // Slightly lower quality for faster processing
       }),
     });
     

@@ -135,10 +135,24 @@ const ScreenshotUploader = ({
         }
       } else {
         console.error("Screenshot capture error response:", data);
-        toast.error(data?.error || "Failed to capture screenshot");
+        
+        // Improved error message
+        const errorMessage = data?.error || "Failed to capture screenshot";
+        
+        // Special handling for common errors
+        if (errorMessage.includes("URL not found") || errorMessage.includes("not found in Apify")) {
+          toast.error("Could not generate screenshot. Try one of these alternatives: 1) Upload a screenshot manually, 2) Try a different channel URL format, or 3) Try again in a few minutes");
+          
+          // If we've tried multiple times, suggest alternatives
+          if (captureAttempts >= 2) {
+            toast.info("As an alternative, you can manually take a screenshot of the channel and upload it using the 'Upload' button");
+          }
+        } else {
+          toast.error(errorMessage);
+        }
         
         // If we've tried less than 2 times and got a specific error, suggest retry
-        if (captureAttempts < 2 && data?.error?.includes("empty or invalid")) {
+        if (captureAttempts < 2 && (errorMessage.includes("empty or invalid") || errorMessage.includes("temporarily unavailable"))) {
           toast.info("This can happen occasionally. Please try capturing the screenshot again.");
         }
       }
