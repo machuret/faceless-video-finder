@@ -6,6 +6,7 @@ import FormSectionWrapper from "./FormSectionWrapper";
 import { ChannelFormData } from "@/types/forms";
 import ChannelStatsFetcher from "../ChannelStatsFetcher";
 import CountrySelector from "../form-dropdowns/CountrySelector";
+import { AlertCircle } from "lucide-react";
 
 interface ChannelStatsSectionProps {
   formData: ChannelFormData;
@@ -70,6 +71,12 @@ const ChannelStatsSection = ({
   // Allow fetching data regardless of edit mode - just need a channel URL
   const canFetchData = formData.channel_url || formData.channel_title;
 
+  // Function to determine field status
+  const getFieldStatus = (value: string | undefined | null) => {
+    if (!value) return "missing";
+    return "complete";
+  };
+
   return (
     <FormSectionWrapper 
       title="Channel Stats" 
@@ -85,7 +92,15 @@ const ChannelStatsSection = ({
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <Label htmlFor="total_subscribers">Total Subscribers</Label>
+          <div className="flex items-center justify-between mb-1">
+            <Label htmlFor="total_subscribers">Total Subscribers</Label>
+            {getFieldStatus(formData.total_subscribers) === "missing" && (
+              <div className="flex items-center text-yellow-600 text-sm">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                <span>Required</span>
+              </div>
+            )}
+          </div>
           <Input
             type="number"
             id="total_subscribers"
@@ -98,7 +113,15 @@ const ChannelStatsSection = ({
           />
         </div>
         <div>
-          <Label htmlFor="total_views">Total Views</Label>
+          <div className="flex items-center justify-between mb-1">
+            <Label htmlFor="total_views">Total Views</Label>
+            {getFieldStatus(formData.total_views) === "missing" && (
+              <div className="flex items-center text-yellow-600 text-sm">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                <span>Required</span>
+              </div>
+            )}
+          </div>
           <Input
             type="number"
             id="total_views"
@@ -111,7 +134,15 @@ const ChannelStatsSection = ({
           />
         </div>
         <div>
-          <Label htmlFor="start_date">Start Date</Label>
+          <div className="flex items-center justify-between mb-1">
+            <Label htmlFor="start_date">Start Date</Label>
+            {getFieldStatus(formData.start_date) === "missing" && (
+              <div className="flex items-center text-yellow-600 text-sm">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                <span>Required</span>
+              </div>
+            )}
+          </div>
           <Input
             type="date"
             id="start_date"
@@ -123,7 +154,15 @@ const ChannelStatsSection = ({
           />
         </div>
         <div>
-          <Label htmlFor="video_count">Video Count</Label>
+          <div className="flex items-center justify-between mb-1">
+            <Label htmlFor="video_count">Video Count</Label>
+            {getFieldStatus(formData.video_count) === "missing" && (
+              <div className="flex items-center text-yellow-600 text-sm">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                <span>Required</span>
+              </div>
+            )}
+          </div>
           <Input
             type="number"
             id="video_count"
@@ -136,6 +175,15 @@ const ChannelStatsSection = ({
           />
         </div>
         <div className="md:col-span-2">
+          <div className="flex items-center justify-between mb-1">
+            <Label htmlFor="country">Country</Label>
+            {getFieldStatus(formData.country) === "missing" && (
+              <div className="flex items-center text-yellow-600 text-sm">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                <span>Required</span>
+              </div>
+            )}
+          </div>
           <CountrySelector 
             selectedCountry={formData.country || ""}
             onSelect={(value) => handleFieldChange('country', value)}

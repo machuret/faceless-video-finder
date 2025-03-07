@@ -15,8 +15,14 @@ serve(async (req) => {
     console.log("Screenshot request received");
     
     // Parse the request body
-    const requestBody = await req.json();
-    console.log("Request body:", JSON.stringify(requestBody));
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log("Request body:", JSON.stringify(requestBody));
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return createErrorResponse("Invalid JSON in request body", 400);
+    }
     
     // Validate the request body
     const validation = validateRequestBody(requestBody);

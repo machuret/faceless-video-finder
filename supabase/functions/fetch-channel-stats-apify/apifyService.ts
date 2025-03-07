@@ -113,12 +113,12 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     // Poll for actor run status until it's finished
     let isFinished = false;
     let retries = 0;
-    const maxRetries = 40; // Increased to allow more time for processing
+    const maxRetries = 60; // Increased to allow more time for processing
     let lastStatus = '';
     
     while (!isFinished && retries < maxRetries) {
       // Wait between status checks - longer wait times for better results
-      await new Promise(resolve => setTimeout(resolve, 6000));
+      await new Promise(resolve => setTimeout(resolve, 8000));
       
       const statusResponse = await fetch(
         `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`

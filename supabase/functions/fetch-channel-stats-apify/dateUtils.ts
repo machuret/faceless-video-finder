@@ -58,6 +58,20 @@ export function formatDate(dateString: string): string | null {
       return formattedDate;
     }
     
+    // Handle date formats used in different countries (DD-MM-YYYY or MM-DD-YYYY)
+    const dashMatch = dateString.match(/(\d{1,2})[-.\/](\d{1,2})[-.\/](\d{4})/);
+    if (dashMatch) {
+      // For simplicity, assume MM-DD-YYYY format, but in a real app, you might
+      // want to detect the locale or make the format configurable
+      const month = dashMatch[1].padStart(2, '0');
+      const day = dashMatch[2].padStart(2, '0');
+      const year = dashMatch[3];
+      
+      const formattedDate = `${year}-${month}-${day}`;
+      console.log(`Formatted date from dashed pattern: ${formattedDate}`);
+      return formattedDate;
+    }
+    
     // Try parsing a variety of date formats
     const date = new Date(dateString);
     if (!isNaN(date.getTime())) {

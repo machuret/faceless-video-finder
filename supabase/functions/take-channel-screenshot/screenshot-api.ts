@@ -20,7 +20,7 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
       ],
       "format": "png",
       "waitUntil": "networkidle2",
-      "delay": 8000, // 8 seconds delay to ensure page is fully loaded
+      "delay": 10000, // 10 seconds delay to ensure page is fully loaded
       "viewportWidth": 1366,
       "viewportHeight": 768,
       "scrollToBottom": false,
@@ -30,7 +30,7 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
       }
     };
     
-    console.log("Calling Apify Screenshot URL actor");
+    console.log("Calling Apify Screenshot URL actor with input:", JSON.stringify(input, null, 2));
     
     // Use the Apify API to run Screenshot URL actor synchronously
     const response = await fetch(
@@ -45,12 +45,15 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
     );
     
     if (!response.ok) {
+      const errorText = await response.text();
       console.error("Apify Screenshot URL actor error:", response.status, response.statusText);
-      throw new Error(`Apify Screenshot URL actor returned ${response.status}: ${response.statusText}`);
+      console.error("Error response body:", errorText);
+      throw new Error(`Apify Screenshot URL actor returned ${response.status}: ${errorText || response.statusText}`);
     }
     
     // The response should be a JSON with a "data" field containing items
     const responseData = await response.json();
+    console.log("Apify response:", JSON.stringify(responseData, null, 2).substring(0, 500) + "...");
     
     // If no items were returned, throw an error
     if (!responseData || !responseData.items || responseData.items.length === 0) {
@@ -64,6 +67,8 @@ export async function takeScreenshotViaAPI(url: string): Promise<ArrayBuffer | n
       console.error("No screenshot URL found in Apify response");
       throw new Error("No screenshot URL found in Apify response");
     }
+    
+    console.log("Screenshot URL from Apify:", screenshotUrl);
     
     // Fetch the actual screenshot image from the URL
     const imageResponse = await fetch(screenshotUrl);
