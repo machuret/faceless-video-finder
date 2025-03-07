@@ -144,7 +144,7 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
     }
   };
 
-  // New function to fetch only missing fields
+  // Modified function to fetch any missing fields, not just description and country
   const fetchMissingFields = async () => {
     if (!channelUrl) {
       toast.error("Please enter a channel URL or title first");
@@ -154,7 +154,7 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
     setFetchingMissing(true);
     setApiError(null);
     
-    toast.info("Attempting to fetch missing fields (description, country)...");
+    toast.info(`Attempting to fetch missing fields: ${missingFields.join(', ')}...`);
 
     try {
       // Normalize URL if it's a handle without full URL
@@ -177,7 +177,7 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
       const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
         body: { 
           channelUrl: formattedUrl,
-          fetchDescriptionOnly: true
+          fetchMissingOnly: true // Modified flag name to be more generic
         }
       });
 
@@ -198,27 +198,46 @@ export function useChannelStatsFetcher({ channelUrl, onStatsReceived }: UseChann
 
       console.log("Missing fields data received:", data);
       
-      // Only send the fields that were actually received and not empty
+      // Create an object to hold any fields that we successfully retrieved
       const partialStats: Partial<ChannelFormData> = {};
+      const successfulFields: string[] = [];
+      const failedFields: string[] = [];
       
-      if (data.description && data.description.trim() !== "") {
-        partialStats.description = data.description;
-        toast.success("Successfully fetched channel description");
-      } else {
-        toast.warning("Could not fetch channel description");
-      }
+      // Map from API field names to form field names
+      const fieldMappings = {
+        description: 'description',
+        country: 'country',
+        subscriberCount: 'total_subscribers',
+        viewCount: 'total_views',
+        videoCount: 'video_count',
+        startDate: 'start_date',
+        title: 'channel_title'
+      };
       
-      if (data.country && data.country.trim() !== "") {
-        partialStats.country = data.country;
-        toast.success("Successfully fetched channel country");
-      }
+      // Check each field in the response and add to our stats object if present
+      Object.entries(fieldMappings).forEach(([apiField, formField]) => {
+        if (data[apiField] && data[apiField].toString().trim() !== "") {
+          partialStats[formField as keyof ChannelFormData] = data[apiField].toString();
+          successfulFields.push(apiField);
+        } else if (missingFields.some(field => field.toLowerCase().includes(apiField.toLowerCase()))) {
+          failedFields.push(apiField);
+        }
+      });
       
       // Only call onStatsReceived if we have at least one field
       if (Object.keys(partialStats).length > 0) {
-        console.log("Sending partial stats with missing fields:", partialStats);
+        console.log("Sending partial stats with retrieved fields:", partialStats);
         onStatsReceived(partialStats);
+        toast.success(`Successfully fetched: ${successfulFields.join(', ')}`);
+        
+        // Update missing fields list
+        const updatedMissingFields = missingFields.filter(field => 
+          !successfulFields.some(success => field.toLowerCase().includes(success.toLowerCase()))
+        );
+        setMissingFields(updatedMissingFields);
+        setPartialData(updatedMissingFields.length > 0);
       } else {
-        toast.warning("Could not fetch any missing fields");
+        toast.warning("Could not fetch any of the missing fields");
       }
       
     } catch (err) {

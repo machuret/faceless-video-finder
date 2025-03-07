@@ -9,7 +9,7 @@ import { ApifyError } from "./errors.ts";
 import { provideMockData } from "./mockService.ts";
 import { 
   formatChannelStatsResponse, 
-  formatDescriptionResponse, 
+  formatAllAvailableDataResponse, 
   formatErrorResponse 
 } from "./responseFormatter.ts";
 import { ChannelStatsRequest } from "./types.ts";
@@ -34,7 +34,7 @@ serve(async (req) => {
       return response;
     }
 
-    const { channelUrl, fetchDescriptionOnly } = requestData;
+    const { channelUrl, fetchMissingOnly } = requestData;
 
     if (!channelUrl) {
       console.error('Missing channelUrl parameter');
@@ -42,7 +42,7 @@ serve(async (req) => {
       return response;
     }
     
-    console.log(`Fetching ${fetchDescriptionOnly ? 'about section' : 'stats'} for channel: ${channelUrl}`);
+    console.log(`Fetching ${fetchMissingOnly ? 'missing fields' : 'stats'} for channel: ${channelUrl}`);
 
     // Get Apify API token from environment variable
     const APIFY_API_TOKEN = Deno.env.get("APIFY_API_KEY") || Deno.env.get("APIFY_API_TOKEN");
@@ -68,9 +68,10 @@ serve(async (req) => {
         return response;
       }
       
-      // If we're only fetching the description
-      if (fetchDescriptionOnly) {
-        const response = formatDescriptionResponse(channelData);
+      // If we're fetching any missing fields, return all available data
+      // so the frontend can use whatever was successfully fetched
+      if (fetchMissingOnly) {
+        const response = formatAllAvailableDataResponse(channelData);
         return new Response(
           JSON.stringify(response),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

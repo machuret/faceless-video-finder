@@ -19,5 +19,5 @@ export interface ApifyChannelData {
  */
 export interface ChannelStatsRequest {
   channelUrl: string;
-  fetchDescriptionOnly?: boolean;
+  fetchMissingOnly?: boolean;  // More generic flag to fetch any missing fields
 }
