@@ -6,9 +6,10 @@ interface LazyImageProps {
   src: string;
   alt: string;
   className?: string;
+  onError?: () => void;
 }
 
-const LazyImage = ({ src, alt, className }: LazyImageProps) => {
+const LazyImage = ({ src, alt, className, onError }: LazyImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const { ref, inView } = useInView({
     triggerOnce: true,
@@ -27,6 +28,9 @@ const LazyImage = ({ src, alt, className }: LazyImageProps) => {
             alt={alt}
             className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => setIsLoaded(true)}
+            onError={() => {
+              if (onError) onError();
+            }}
           />
         </>
       ) : (
