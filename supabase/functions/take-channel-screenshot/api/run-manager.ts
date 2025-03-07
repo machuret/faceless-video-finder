@@ -19,18 +19,18 @@ export async function startActorRun(url: string): Promise<{
   try {
     console.log(`Starting Apify actor run for URL: ${url}`);
     
-    // Use the correct endpoint format for Apify API
-    const startResponse = await fetch(`${APIFY_BASE_URL}/actor-tasks/${APIFY_ACTOR_ID}/runs?token=${APIFY_API_TOKEN}`, {
+    // Use the correct endpoint for Apify API - directly call the actor
+    const startResponse = await fetch(`${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${APIFY_API_TOKEN}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        startUrls: [{ url }],
-        waitForSelectorOnLoad: "body",
-        fullPage: false,
-        hideScrollbar: true,
-        waitForMillis: 5000,
+        "startUrls": [{ "url": url }],
+        "waitForSelectorOnLoad": "body",
+        "fullPage": false,
+        "hideScrollbar": true,
+        "waitForMillis": 5000,
       }),
     });
     

@@ -22,9 +22,9 @@ export async function extractScreenshotFromKeyValueStore(storeId: string): Promi
     const keysData = await keysResponse.json() as ApifyKeyValueStoreResponse;
     console.log("Key-value store keys:", JSON.stringify(keysData));
     
-    // Find screenshot keys
+    // Find screenshot keys (improved to match pattern in the successful response)
     const screenshotKeys = keysData.data.items.filter(item => 
-      item.key.includes('screenshot_')
+      item.key.startsWith('screenshot_')
     );
     
     if (screenshotKeys.length > 0) {
