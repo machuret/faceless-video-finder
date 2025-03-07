@@ -43,6 +43,10 @@ export function formatChannelStatsResponse(channelData: ApifyChannelData) {
   // Log the incoming data to help debug issues
   console.log("Formatting channel data:", JSON.stringify(channelData, null, 2));
   
+  // Log specific checks for missing fields
+  console.log("- Description:", channelData.channelDescription ? 'PRESENT' : 'MISSING');
+  console.log("- Country:", channelData.channelLocation ? 'PRESENT' : 'MISSING');
+  
   // Extract all the data we can from the channel data
   return {
     success: true,

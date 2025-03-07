@@ -66,8 +66,14 @@ export const mapPartialResponseToFormData = (
       const fieldName = formField as keyof ChannelFormData;
       const fieldValue = String(data[responseField]);
       
-      // Now assign with proper typing
-      partialStats[fieldName] = fieldValue as any;
+      // Now assign with proper type casting for different field types
+      if (fieldName === 'total_subscribers' || fieldName === 'total_views' || fieldName === 'video_count') {
+        partialStats[fieldName] = fieldValue;
+      } else if (fieldName === 'description' || fieldName === 'channel_title' || 
+                fieldName === 'start_date' || fieldName === 'country') {
+        partialStats[fieldName] = fieldValue;
+      }
+      
       successfulFields.push(apiField);
     } else if (missingFields.some(field => field.toLowerCase().includes(apiField.toLowerCase()))) {
       failedFields.push(apiField);
