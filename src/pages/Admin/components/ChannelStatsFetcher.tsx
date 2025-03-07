@@ -24,21 +24,20 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
     toast.info("Fetching channel stats...");
 
     try {
-      // Check if the URL has standard YouTube patterns
-      const isValidYouTubeUrl = 
-        channelUrl.includes('youtube.com/') || 
-        channelUrl.includes('youtu.be/') || 
-        channelUrl.includes('@') ||
-        /^UC[\w-]{21,24}$/.test(channelUrl);
-
-      if (!isValidYouTubeUrl) {
-        toast.warning("URL may not be a valid YouTube channel URL");
-      }
-
-      // Ensure URL is properly formatted for the API
+      // Normalize URL if it's a handle without full URL
       let formattedUrl = channelUrl;
       if (formattedUrl.startsWith('@') && !formattedUrl.includes('youtube.com')) {
         formattedUrl = `https://www.youtube.com/${formattedUrl}`;
+      }
+      
+      // Clean up URL - remove trailing slashes, etc.
+      formattedUrl = formattedUrl.trim();
+      if (!formattedUrl.includes('http') && !formattedUrl.startsWith('@') && !formattedUrl.match(/^UC[\w-]{21,24}$/)) {
+        // If it's not a URL, handle, or channel ID, it could be a search term
+        if (formattedUrl.includes('youtube.com') || formattedUrl.includes('youtu.be')) {
+          // It looks like a URL but without protocol
+          formattedUrl = `https://${formattedUrl}`;
+        }
       }
       
       console.log("Fetching stats for URL:", formattedUrl);

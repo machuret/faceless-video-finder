@@ -46,6 +46,12 @@ const extractChannelId = (channelUrl: string): string | null => {
       return username; // Return username for API lookup
     }
     
+    if (channelUrl.includes('youtube.com/c/')) {
+      const customPath = channelUrl.split('youtube.com/c/')[1].split(/[?/&#]/)[0];
+      console.log("Extracted custom path:", customPath);
+      return customPath; // Return custom path for API lookup
+    }
+    
     // For other formats, just return the URL for further processing
     console.log("No standard format detected, using URL as-is");
     return channelUrl;
@@ -57,7 +63,7 @@ const extractChannelId = (channelUrl: string): string | null => {
 
 // Function to fetch channel details from a username or handle
 const fetchChannelDetailsFromUsername = async (username: string, apiKey: string): Promise<any> => {
-  console.log(`Attempting to fetch channel details for username: ${username}`);
+  console.log(`Attempting to fetch channel details for username/handle: ${username}`);
   
   try {
     // First search for the channel
