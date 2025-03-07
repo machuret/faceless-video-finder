@@ -50,17 +50,15 @@ const ScreenshotUploader = ({
     <div className="mt-4">
       <div className="flex items-center justify-between mb-2">
         <Label htmlFor="screenshot_url">Screenshot</Label>
-        {channelId && (
-          <div className="flex space-x-2">
-            <UploadButton 
-              uploading={uploading}
-              onChange={onUpload}
-            />
-            {screenshotUrl && (
-              <DeleteButton onClick={onDelete} />
-            )}
-          </div>
-        )}
+        <div className="flex space-x-2">
+          <UploadButton 
+            uploading={uploading}
+            onChange={onUpload}
+          />
+          {screenshotUrl && (
+            <DeleteButton onClick={onDelete} />
+          )}
+        </div>
       </div>
       <Input
         type="url"
