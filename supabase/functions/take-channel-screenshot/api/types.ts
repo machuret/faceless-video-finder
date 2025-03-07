@@ -34,3 +34,7 @@ export interface ApifyKeyValueStoreResponse {
     items: ApifyKeyValueStoreItem[];
   };
 }
+
+export interface ApifyDatasetItemResponse {
+  data: Array<Record<string, any>>;
+}
