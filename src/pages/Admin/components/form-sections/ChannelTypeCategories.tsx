@@ -30,7 +30,7 @@ const ChannelTypeCategories = ({
         />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
         <CountrySelector 
           selectedCountry={formData.country} 
           onSelect={(country) => handleFieldChange('country', country)} 

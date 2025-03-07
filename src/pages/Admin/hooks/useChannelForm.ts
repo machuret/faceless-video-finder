@@ -29,8 +29,13 @@ export const useChannelForm = () => {
   const { fetchChannelData } = 
     useChannelDataFetcher(setLoading, setFormData);
   
-  const { handleSubmit } = 
-    useChannelFormSubmission(formData, setLoading);
+  const { handleSubmit: submitForm } = 
+    useChannelFormSubmission(formData, setLoading, false);
+
+  // Custom submit handler that accepts returnToList parameter
+  const handleSubmit = async (e: React.FormEvent, returnToList: boolean = true) => {
+    return submitForm(e, returnToList);
+  };
 
   // To prevent multiple calls to fetchChannelData
   const hasInitialized = useRef(false);
@@ -62,8 +67,8 @@ export const useChannelForm = () => {
         video_count: "",
         cpm: "4",
         channel_type: "",
-        country: "",
-        channel_category: "",
+        country: "US", // Default to US
+        channel_category: "entertainment", // Default to entertainment
         notes: "",
         keywords: []
       });

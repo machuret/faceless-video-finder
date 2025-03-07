@@ -111,6 +111,14 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/admin/channels" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
         
         {/* 404 Not Found */}
         <Route path="*" element={<NotFound />} />

@@ -10,7 +10,7 @@ export const useChannelFormSubmission = (
   setLoading: Dispatch<SetStateAction<boolean>>,
   redirectToList: boolean = true
 ) => {
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent, returnToList: boolean = true) => {
     e.preventDefault();
     console.log("Form submission initiated");
     console.log("Form data:", formData);
@@ -38,7 +38,7 @@ export const useChannelFormSubmission = (
       }
       
       // Validate channel category (must be a valid ChannelCategory)
-      let channelCategory: ChannelCategory = "other";
+      let channelCategory: ChannelCategory = "entertainment"; // Default to entertainment
       if (formData.channel_category && ["entertainment", "education", "gaming", "music", "news", "sports", "technology", "other"].includes(formData.channel_category as string)) {
         channelCategory = formData.channel_category as ChannelCategory;
       }
@@ -51,6 +51,9 @@ export const useChannelFormSubmission = (
       
       // For manual entries without a video_id, generate a placeholder
       const video_id = formData.video_id || `manual-${Date.now()}`;
+      
+      // Set default country to US if not provided
+      const country = formData.country || "US";
       
       // Format data for database
       const channelData = {
@@ -66,7 +69,7 @@ export const useChannelFormSubmission = (
         video_count: formData.video_count ? parseInt(formData.video_count) : null,
         cpm: formData.cpm ? parseFloat(formData.cpm) : null,
         channel_type: dbChannelType,
-        country: formData.country || null,
+        country: country,
         channel_category: channelCategory,
         notes: formData.notes || null,
         keywords: formData.keywords || [],
@@ -131,7 +134,7 @@ export const useChannelFormSubmission = (
       }
       
       // Redirect to dashboard if requested
-      if (redirectToList) {
+      if (returnToList) {
         window.location.href = "/admin/dashboard";
       }
       

@@ -10,12 +10,13 @@ import RevenueDetailsSection from "./form-sections/RevenueDetailsSection";
 import NotesSection from "./form-sections/NotesSection";
 import KeywordsSection from "./form-sections/KeywordsSection";
 import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export interface ChannelFormProps {
   formData: ChannelFormData;
   loading: boolean;
   isEditMode: boolean;
-  handleSubmit: (e: React.FormEvent) => Promise<void>;
+  handleSubmit: (e: React.FormEvent, returnToList?: boolean) => Promise<void>;
   handleChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleScreenshotChange: (url: string) => void;
   handleFieldChange: (field: string, value: any) => void;
@@ -32,6 +33,8 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   handleFieldChange,
   handleKeywordsChange
 }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-8 mb-8">
       <ChannelIdentitySection 
@@ -78,15 +81,44 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
         onFieldChange={handleFieldChange}
       />
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={loading} onClick={handleSubmit}>
+      <div className="flex justify-end gap-4">
+        <Button 
+          type="button" 
+          variant="outline" 
+          disabled={loading} 
+          onClick={() => navigate("/admin/dashboard")}
+        >
+          Cancel
+        </Button>
+        
+        <Button 
+          type="button" 
+          variant="secondary" 
+          disabled={loading} 
+          onClick={(e) => handleSubmit(e as React.FormEvent, false)}
+        >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isEditMode ? "Updating..." : "Creating..."}
+              Saving...
             </>
           ) : (
-            <>{isEditMode ? "Update Channel" : "Create Channel"}</>
+            "Save"
+          )}
+        </Button>
+        
+        <Button 
+          type="button" 
+          disabled={loading} 
+          onClick={(e) => handleSubmit(e as React.FormEvent, true)}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            "Update & Return"
           )}
         </Button>
       </div>
