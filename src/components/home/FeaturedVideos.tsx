@@ -1,10 +1,9 @@
-
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoStats } from "@/types/youtube";
 import { Play } from "lucide-react";
 import LazyImage from "@/components/ui/lazy-image";
-import { generateChannelSlug } from "@/pages/ChannelDetails";
+import { generateChannelSlug } from "@/utils/channelSlug";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 

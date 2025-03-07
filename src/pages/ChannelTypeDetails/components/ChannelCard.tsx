@@ -1,9 +1,8 @@
-
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Channel } from "@/types/youtube";
 import { formatDate } from "@/utils/channelUtils";
-import { generateChannelSlug } from "@/pages/ChannelDetails";
+import { generateChannelSlug } from "@/utils/channelSlug";
 
 interface ChannelCardProps {
   channel: Channel;

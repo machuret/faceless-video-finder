@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useChannelDetails } from "./hooks/useChannelDetails";
@@ -5,7 +6,7 @@ import ChannelHeader from "./components/ChannelHeader";
 import ChannelVideos from "./components/ChannelVideos";
 import TopPerformingVideos from "./components/TopPerformingVideos";
 import RelatedChannels from "./components/RelatedChannels";
-import { generateChannelSlug } from ".";
+import { generateChannelSlug } from "@/utils/channelSlug";
 import LatestVideos from "./components/LatestVideos";
 
 const ChannelDetailsPage = () => {
@@ -50,15 +51,15 @@ const ChannelDetailsPage = () => {
           <LatestVideos videos={latestVideos} loading={topVideosLoading} />
           
           <TopPerformingVideos
-            mostViewedVideo={mostViewedVideo}
-            mostEngagingVideo={mostEngagingVideo}
+            mostViewed={mostViewedVideo}
+            mostEngaging={mostEngagingVideo}
             loading={topVideosLoading}
             error={topVideosError}
           />
           
           <ChannelVideos videos={videoStats} />
           
-          <RelatedChannels />
+          <RelatedChannels currentChannelId={channel.id} />
         </div>
       )}
     </div>

@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { generateChannelSlug } from "@/pages/ChannelDetails";
+import { generateChannelSlug } from "@/utils/channelSlug";
 
 interface Channel {
   id: string;
