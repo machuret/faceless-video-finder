@@ -1,126 +1,89 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { ChannelFormData } from "@/types/forms";
-import YouTubeUrlInput from "./YouTubeUrlInput";
 import ChannelIdentitySection from "./form-sections/ChannelIdentitySection";
-import ChannelTypeCategories from "./form-sections/ChannelTypeCategories";
-import ChannelContentSection from "./form-sections/ChannelContentSection";
 import ChannelStatsSection from "./form-sections/ChannelStatsSection";
+import ChannelTypeCategories from "./form-sections/ChannelTypeCategories";
 import RevenueDetailsSection from "./form-sections/RevenueDetailsSection";
-import NotesFormSection from "./form-sections/NotesFormSection";
-import { fetchAboutSection } from "./AboutSectionFetcher";
+import ChannelContentSection from "./form-sections/ChannelContentSection";
+import NotesSection from "./form-sections/NotesSection";
+import { Loader2 } from "lucide-react";
 
 interface ChannelFormProps {
-  formData: ChannelFormData;
   loading: boolean;
-  youtubeUrl: string;
   isEditMode: boolean;
-  setYoutubeUrl: (url: string) => void;
-  fetchYoutubeData: () => void;
-  handleSubmit: (e: React.FormEvent) => void;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  formData: any;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  handleFieldChange: (field: string, value: any) => void;
   handleScreenshotChange: (url: string) => void;
-  handleFieldChange: (field: string, value: string) => void;
   handleKeywordsChange: (keywords: string[]) => void;
-  debugInfo?: {
-    lastError: string | null;
-    lastResponse: any;
-  };
+  handleSubmit: (e: React.FormEvent) => void;
 }
 
-const ChannelForm: React.FC<ChannelFormProps> = ({
-  formData,
+const ChannelForm = ({
   loading,
-  youtubeUrl,
   isEditMode,
-  setYoutubeUrl,
-  fetchYoutubeData,
-  handleSubmit,
+  formData,
   handleChange,
-  handleScreenshotChange,
   handleFieldChange,
+  handleScreenshotChange,
   handleKeywordsChange,
-  debugInfo
-}) => {
-  const [keywords, setKeywords] = useState<string[]>(formData.keywords || []);
-  const [aboutLoading, setAboutLoading] = useState(false);
-  const [aiDescription, setAiDescription] = useState<string>(formData.ai_description || "");
-
-  useEffect(() => {
-    setKeywords(formData.keywords || []);
-    setAiDescription(formData.ai_description || "");
-  }, [formData.keywords, formData.ai_description]);
-
-  const handleFetchAbout = async () => {
-    setAboutLoading(true);
-    await fetchAboutSection(formData.channel_url, (aboutText) => {
-      handleFieldChange('description', aboutText);
-    });
-    setAboutLoading(false);
-  };
-
-  const handleAiDescriptionChange = (value: string) => {
-    setAiDescription(value);
-    handleFieldChange('ai_description', value);
-  };
-
+  handleSubmit
+}: ChannelFormProps) => {
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {!isEditMode && (
-        <YouTubeUrlInput
-          youtubeUrl={youtubeUrl}
-          setYoutubeUrl={setYoutubeUrl}
-          onFetch={fetchYoutubeData}
-          loading={loading}
-          debugInfo={debugInfo}
-        />
-      )}
-
+    <form onSubmit={handleSubmit} className="space-y-8 my-4">
+      {/* Channel Identity Section */}
       <ChannelIdentitySection
         formData={formData}
         handleChange={handleChange}
-        handleScreenshotChange={handleScreenshotChange}
-        isEditMode={isEditMode}
-        onFetchAbout={handleFetchAbout}
-        isLoadingAbout={aboutLoading}
-      />
-      
-      <ChannelTypeCategories 
-        formData={formData}
         handleFieldChange={handleFieldChange}
+        handleScreenshotChange={handleScreenshotChange}
       />
 
-      <ChannelContentSection
-        title={formData.channel_title}
-        description={aiDescription}
-        onDescriptionChange={handleAiDescriptionChange}
-      />
-
+      {/* Channel Stats Section */}
       <ChannelStatsSection
         formData={formData}
         handleChange={handleChange}
         handleFieldChange={handleFieldChange}
         isEditMode={isEditMode}
       />
-      
+
+      {/* Channel Type & Categories */}
+      <ChannelTypeCategories
+        formData={formData}
+        handleChange={handleChange}
+        handleFieldChange={handleFieldChange}
+        handleKeywordsChange={handleKeywordsChange}
+      />
+
+      {/* Revenue Details */}
       <RevenueDetailsSection
         formData={formData}
         handleChange={handleChange}
       />
-      
-      <NotesFormSection
-        notes={formData.notes || ""}
-        onNotesChange={(value) => handleFieldChange('notes', value)}
+
+      {/* AI Content Generation */}
+      <ChannelContentSection
+        title={formData.channel_title}
+        description={formData.ai_description || ""}
+        onDescriptionChange={(value) => handleFieldChange("ai_description", value)}
       />
 
-      <div className="flex justify-end space-x-4">
-        <Button type="button" variant="outline" onClick={() => window.history.back()}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : (isEditMode ? 'Update Channel' : 'Create Channel')}
+      {/* Notes */}
+      <NotesSection
+        notes={formData.notes || ""}
+        onNotesChange={(value) => handleFieldChange("notes", value)}
+      />
+
+      {/* Submit Button */}
+      <div className="flex justify-end pt-4">
+        <Button 
+          type="submit" 
+          disabled={loading}
+          className="w-full md:w-auto flex items-center gap-2"
+        >
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isEditMode ? "Update Channel" : "Add Channel"}
         </Button>
       </div>
     </form>

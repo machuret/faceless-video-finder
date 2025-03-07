@@ -1,8 +1,8 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChannelFormData } from "@/types/forms";
 
@@ -14,99 +14,62 @@ interface ChannelStatsFetcherProps {
 const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetcherProps) => {
   const [loading, setLoading] = useState(false);
 
-  const fetchLatestStats = async () => {
+  const fetchStats = async () => {
     if (!channelUrl) {
-      toast.error("Channel URL or name is required to fetch stats");
+      toast.error("Please enter a channel URL or title first");
       return;
     }
 
+    setLoading(true);
+    toast.info("Fetching channel stats...");
+
     try {
-      setLoading(true);
-      toast.info("Fetching latest channel information...");
-      
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] 🔄 Requesting data for: ${channelUrl}`);
-      
-      // Extract channel ID if it's in a URL format
-      let channelId = channelUrl;
-      
-      // Handle URLs with /channel/ format
-      if (channelUrl.includes('/channel/')) {
-        const match = channelUrl.match(/\/channel\/([^\/\?]+)/);
-        if (match && match[1]) {
-          channelId = match[1];
-        }
-      }
-      
-      // For non-URL non-ID inputs, treat as channel name/title
-      const isUrl = channelUrl.includes('youtube.com') || channelUrl.includes('youtu.be');
-      const isChannelId = /^UC[\w-]{21,24}$/.test(channelUrl);
-      
-      // Call the stats endpoint
       const { data, error } = await supabase.functions.invoke('fetch-channel-stats', {
-        body: {
-          channelId: isChannelId ? channelUrl : undefined,
-          url: channelUrl.trim(),
-          timestamp
-        }
+        body: { channelUrl }
       });
-      
+
       if (error) {
-        console.error(`[${timestamp}] ❌ Error fetching stats:`, error);
-        toast.error(`Failed to fetch information: ${error.message}`);
-        return;
+        console.error("Error fetching channel stats:", error);
+        throw new Error(`Failed to fetch stats: ${error.message}`);
       }
-      
-      if (!data) {
-        console.error(`[${timestamp}] ❌ No data received`);
-        toast.error("No data received from the API");
-        return;
+
+      if (!data || !data.success) {
+        throw new Error(data?.error || "Failed to fetch channel stats");
       }
-      
-      if (data.error) {
-        console.error(`[${timestamp}] ❌ API error:`, data.error);
-        toast.error(`Error: ${data.error}`);
-        return;
-      }
-      
-      console.log(`[${timestamp}] ✅ Channel information received:`, data);
-      
-      // Format the received stats to match our form data structure
-      const formattedStats: Partial<ChannelFormData> = {
-        total_subscribers: data.subscriberCount ? String(data.subscriberCount) : undefined,
-        total_views: data.viewCount ? String(data.viewCount) : undefined,
-        video_count: data.videoCount ? String(data.videoCount) : undefined
+
+      console.log("Stats received:", data);
+
+      // Prepare stats data for form
+      const stats: Partial<ChannelFormData> = {
+        total_subscribers: data.subscriberCount?.toString() || "",
+        total_views: data.viewCount?.toString() || "",
+        video_count: data.videoCount?.toString() || "",
+        description: data.description || "",
+        channel_title: data.title || "",
+        start_date: data.startDate || "" // Ensure we're handling the start date
       };
-      
-      // If we have channel info and no channel title in the form, set it
-      if (data.channelInfo && data.channelInfo.title) {
-        formattedStats.channel_title = data.channelInfo.title;
-      }
-      
-      toast.success("Channel information fetched successfully!");
-      
-      // Pass the stats up to the parent component
-      onStatsReceived(formattedStats);
-      
+
+      onStatsReceived(stats);
+      toast.success("Channel stats updated successfully");
     } catch (err) {
-      console.error("Unexpected error fetching stats:", err);
-      toast.error(`Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`);
+      console.error("Error in fetch stats flow:", err);
+      toast.error(err instanceof Error ? err.message : "Unknown error fetching stats");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Button 
-      type="button" 
-      variant="outline" 
-      size="sm" 
-      onClick={fetchLatestStats} 
-      disabled={loading || !channelUrl}
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
       className="flex items-center gap-1"
+      onClick={fetchStats}
+      disabled={loading || !channelUrl}
     >
-      <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-      {loading ? "Fetching..." : "Refresh Channel Stats"}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+      Fetch Stats
     </Button>
   );
 };

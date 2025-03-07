@@ -122,6 +122,7 @@ export type Database = {
       }
       youtube_channels: {
         Row: {
+          ai_description: string | null
           channel_category:
             | Database["public"]["Enums"]["channel_category"]
             | null
@@ -151,6 +152,7 @@ export type Database = {
           video_id: string
         }
         Insert: {
+          ai_description?: string | null
           channel_category?:
             | Database["public"]["Enums"]["channel_category"]
             | null
@@ -180,6 +182,7 @@ export type Database = {
           video_id: string
         }
         Update: {
+          ai_description?: string | null
           channel_category?:
             | Database["public"]["Enums"]["channel_category"]
             | null
