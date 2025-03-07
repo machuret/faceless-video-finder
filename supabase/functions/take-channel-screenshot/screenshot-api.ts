@@ -1,6 +1,6 @@
 
 import { APIFY_API_TOKEN } from "../_shared/screenshot-utils.ts";
-import { validateApiToken } from "./api/config.ts";
+import { validateApiToken, APIFY_BASE_URL } from "./api/config.ts";
 import { startActorRun, pollForRunCompletion } from "./api/run-manager.ts";
 import { 
   extractScreenshotFromKeyValueStore, 
