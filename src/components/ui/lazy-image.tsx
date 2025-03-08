@@ -6,6 +6,7 @@ export interface LazyImageProps {
   src: string;
   alt: string;
   className?: string;
+  fallback?: string;
   onError?: () => void;
 }
 
@@ -13,10 +14,12 @@ const LazyImage = ({
   src, 
   alt, 
   className, 
+  fallback = '/placeholder.svg', 
   onError 
 }: LazyImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const img = new Image();
@@ -24,13 +27,24 @@ const LazyImage = ({
     img.onload = () => {
       setImgSrc(src);
       setIsLoaded(true);
+      setError(false);
     };
     img.onerror = () => {
+      setError(true);
+      if (fallback) {
+        setImgSrc(fallback);
+        setIsLoaded(true);
+      }
       if (onError) {
         onError();
       }
     };
-  }, [src, onError]);
+
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [src, fallback, onError]);
 
   return (
     <div className={cn('relative', className)}>
@@ -48,6 +62,10 @@ const LazyImage = ({
             isLoaded ? 'opacity-100' : 'opacity-0'
           )}
           onError={() => {
+            if (!error && fallback) {
+              setImgSrc(fallback);
+              setError(true);
+            }
             if (onError) {
               onError();
             }
