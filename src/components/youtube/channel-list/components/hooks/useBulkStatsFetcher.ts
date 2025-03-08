@@ -49,25 +49,36 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
       console.log(`Fetching stats for channel: ${channel.title} (${channel.url})`);
       setCurrentChannel(channel.title);
       
+      // Show an initial progress message for the current channel
+      toast.info(`Processing stats for ${channel.title}. This may take up to 3 minutes.`);
+      
       const { data, error } = await supabase.functions.invoke<any>('fetch-channel-stats-apify', {
-        body: { channelUrl: channel.url }
+        body: { 
+          channelUrl: channel.url,
+          forceRefresh: true,  // Force a fresh fetch to avoid cached results
+          timestamp: Date.now() // Add timestamp to prevent caching
+        }
       });
 
       if (error) {
         console.error(`Error fetching stats for ${channel.title}:`, error);
+        const errorMessage = `API error: ${error.message}`;
         setFailedChannels(prev => [...prev, {
           channel,
-          error: `API error: ${error.message}`
+          error: errorMessage
         }]);
+        toast.error(`Failed to fetch stats for ${channel.title}: ${errorMessage}`);
         return false;
       }
 
       if (!data || !data.success) {
         console.error(`Failed to fetch stats for ${channel.title}:`, data?.error || "Unknown error");
+        const errorMessage = data?.error || "Unknown error occurred";
         setFailedChannels(prev => [...prev, {
           channel,
-          error: data?.error || "Unknown error occurred"
+          error: errorMessage
         }]);
+        toast.error(`Failed to fetch stats for ${channel.title}: ${errorMessage}`);
         return false;
       }
 
@@ -92,6 +103,9 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
       addField('description', data.description, !!data.description);
       addField('country', data.country, !!data.country);
       
+      // Log what fields we actually got back
+      console.log(`Got fields for ${channel.title}:`, Object.keys(updateData).join(', '));
+      
       // Store the results
       setStatsResults(prev => [...prev, { 
         channel,
@@ -111,10 +125,12 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
             channel,
             error: `Database update error: ${updateError.message}`
           }]);
+          toast.error(`Failed to update stats in database for ${channel.title}: ${updateError.message}`);
           return false;
         }
         
         console.log(`Successfully updated stats for ${channel.title}`);
+        toast.success(`Updated ${Object.keys(updateData).length} fields for ${channel.title}`);
         return true;
       }
       
@@ -123,13 +139,16 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
         channel,
         error: `No valid data received for the channel`
       }]);
+      toast.warning(`No data fields could be retrieved for ${channel.title}`);
       return false;
     } catch (error) {
       console.error(`Exception when fetching stats for ${channel.title}:`, error);
+      const errorMessage = `Unexpected error: ${error instanceof Error ? error.message : String(error)}`;
       setFailedChannels(prev => [...prev, {
         channel,
-        error: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`
+        error: errorMessage
       }]);
+      toast.error(`Failed to fetch stats for ${channel.title}: ${errorMessage}`);
       return false;
     }
   };
@@ -167,18 +186,27 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
         const newProgress = Math.floor(((i + 1) / channels.length) * 100);
         setProgress(newProgress);
         
-        // Add a small delay between requests to be nice to the API
+        // Add a longer delay between requests to respect rate limits
         if (i < channels.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          const delayMessage = "Waiting before processing next channel to respect API rate limits...";
+          console.log(delayMessage);
+          
+          if (channels.length > 2) {
+            toast.info(delayMessage);
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 3000)); // Increased delay to 3s
         }
       }
 
       if (successCount === channels.length) {
         toast.success(`Successfully fetched stats for all ${channels.length} channels!`);
-      } else {
+      } else if (successCount > 0) {
         toast.warning(
           `Stats fetch completed: ${successCount} successful, ${channels.length - successCount} failed.`
         );
+      } else {
+        toast.error(`Failed to fetch stats for all ${channels.length} channels. Please try again later.`);
       }
     } catch (error) {
       console.error("Error in bulk stats fetch process:", error);
@@ -195,6 +223,7 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
       return;
     }
     
+    toast.info(`Retrying ${failedChannels.length} failed channels...`);
     const channelsToRetry = failedChannels.map(item => item.channel);
     setFailedChannels([]);
     await fetchStatsForChannels(channelsToRetry);

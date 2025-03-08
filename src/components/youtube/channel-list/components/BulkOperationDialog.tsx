@@ -1,25 +1,16 @@
 
 import React from "react";
-import { Check, X } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-
-type BulkOperationType = 'stats' | 'type' | 'keywords' | 'screenshot' | null;
+import { Loader2 } from "lucide-react";
+import { BulkOperation } from "../context/BulkOperationsContext";
 
 interface BulkOperationDialogProps {
   showDialog: boolean;
   onClose: () => void;
   onDone: () => void;
-  currentOperation: BulkOperationType;
+  currentOperation: BulkOperation | null;
   isProcessing: boolean;
   progress: number;
   currentChannel: string | null;
@@ -27,6 +18,18 @@ interface BulkOperationDialogProps {
   errorCount: number;
   totalCount: number;
 }
+
+const getOperationTitle = (operation: BulkOperation | null): string => {
+  if (!operation) return "Bulk Operation";
+  
+  switch (operation) {
+    case "stats": return "Bulk Update Channel Stats";
+    case "types": return "Bulk Generate Channel Types";
+    case "keywords": return "Bulk Generate Keywords";
+    case "screenshots": return "Bulk Take Screenshots";
+    default: return "Bulk Operation";
+  }
+};
 
 const BulkOperationDialog: React.FC<BulkOperationDialogProps> = ({
   showDialog,
@@ -38,88 +41,110 @@ const BulkOperationDialog: React.FC<BulkOperationDialogProps> = ({
   currentChannel,
   successCount,
   errorCount,
-  totalCount,
+  totalCount
 }) => {
-  const getOperationTitle = () => {
-    switch (currentOperation) {
-      case 'stats': return "Fetching Channel Stats";
-      case 'type': return "Generating Channel Types";
-      case 'keywords': return "Generating Channel Keywords";
-      case 'screenshot': return "Taking Channel Screenshots";
-      default: return "Bulk Operation";
-    }
-  };
+  const operationTitle = getOperationTitle(currentOperation);
+  const isComplete = !isProcessing && (successCount > 0 || errorCount > 0);
+  const allCompleted = successCount + errorCount >= totalCount;
 
   return (
-    <AlertDialog open={showDialog} onOpenChange={onClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {isProcessing ? `${getOperationTitle()}...` : `${getOperationTitle()} Complete`}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {isProcessing ? (
-              <div className="space-y-4">
-                <p>
-                  {getOperationTitle()} for {totalCount} channels. This may take some time.
-                  Please don't close this window.
+    <Dialog open={showDialog} onOpenChange={(open) => {
+      if (!open && !isProcessing) onClose();
+    }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{operationTitle}</DialogTitle>
+        </DialogHeader>
+        
+        <div className="py-4">
+          {isProcessing ? (
+            <>
+              <div className="flex items-center gap-2 mb-3">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm font-medium">
+                  Processing {currentChannel && `"${currentChannel}"`}...
+                </span>
+              </div>
+              <Progress value={progress} className="h-2 mb-2" />
+              <p className="text-xs text-muted-foreground">
+                {currentChannel 
+                  ? `Currently processing: ${currentChannel}`
+                  : "Starting process..."}
+              </p>
+              <div className="mt-3 text-sm">
+                <p>Progress: {successCount + errorCount} of {totalCount} channels processed</p>
+                <p>Success: {successCount} | Errors: {errorCount}</p>
+              </div>
+              {errorCount > 0 && (
+                <p className="text-xs text-yellow-600 mt-2">
+                  Some errors occurred. You'll be able to retry failed operations after completion.
                 </p>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Progress: {progress}%</span>
-                    <span>
-                      {successCount} success, {errorCount} failed
-                    </span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                </div>
-                {currentChannel && (
-                  <p className="text-sm text-muted-foreground truncate">
-                    Current: {currentChannel}
+              )}
+            </>
+          ) : isComplete ? (
+            <>
+              <h3 className="text-lg font-medium mb-2">
+                {allCompleted ? "Operation Complete" : "Operation Partially Complete"}
+              </h3>
+              
+              <div className="space-y-2">
+                <p>
+                  <span className="font-medium">Successful:</span> {successCount} of {totalCount} channels
+                </p>
+                
+                {errorCount > 0 && (
+                  <p>
+                    <span className="font-medium">Failed:</span> {errorCount} of {totalCount} channels
                   </p>
                 )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p>
-                  Completed {getOperationTitle().toLowerCase()} for {totalCount} channels.
-                </p>
-                <div className="flex justify-center gap-8">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-green-100 text-green-600 p-2 rounded-full">
-                      <Check className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-lg font-medium">{successCount}</p>
-                      <p className="text-sm text-muted-foreground">Success</p>
-                    </div>
+                
+                {successCount === 0 && errorCount > 0 && (
+                  <div className="mt-4 p-3 bg-red-50 text-red-600 rounded border border-red-200 text-sm">
+                    <p className="font-medium">All operations failed</p>
+                    <p className="text-xs mt-1">
+                      Possible causes:
+                    </p>
+                    <ul className="text-xs mt-1 list-disc pl-4">
+                      <li>API rate limits may have been exceeded</li>
+                      <li>The YouTube channels may be unavailable</li>
+                      <li>Network connectivity issues</li>
+                      <li>The API service may be experiencing problems</li>
+                    </ul>
+                    <p className="text-xs mt-2">
+                      Consider trying again later or with fewer channels at once.
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="bg-red-100 text-red-600 p-2 rounded-full">
-                      <X className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-lg font-medium">{errorCount}</p>
-                      <p className="text-sm text-muted-foreground">Failed</p>
-                    </div>
+                )}
+                
+                {successCount > 0 && errorCount > 0 && (
+                  <div className="mt-4 p-3 bg-yellow-50 text-yellow-600 rounded border border-yellow-200 text-sm">
+                    <p className="font-medium">Some operations failed</p>
+                    <p className="text-xs mt-1">
+                      You can retry the failed operations or try again later.
+                    </p>
                   </div>
-                </div>
+                )}
               </div>
-            )}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          {!isProcessing && (
-            <AlertDialogAction onClick={onDone}>
-              Done
-            </AlertDialogAction>
+            </>
+          ) : (
+            <p>Preparing to process {totalCount} channels...</p>
           )}
-          {isProcessing && (
-            <AlertDialogCancel disabled>Cancel</AlertDialogCancel>
+        </div>
+        
+        <DialogFooter>
+          {isProcessing ? (
+            <Button variant="outline" disabled>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </Button>
+          ) : (
+            <Button onClick={onDone}>
+              {isComplete ? "Done" : "Cancel"}
+            </Button>
           )}
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

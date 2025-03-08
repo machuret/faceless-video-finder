@@ -35,12 +35,40 @@ export function validateRequestBody(body: any): ValidationResult {
     };
   }
   
+  // Validate YouTube URL format
+  let channelUrl = body.channelUrl;
+  
+  // Add https:// if missing
+  if (!channelUrl.startsWith('http://') && !channelUrl.startsWith('https://')) {
+    channelUrl = `https://${channelUrl}`;
+  }
+  
+  // Check if it's a valid URL
+  try {
+    new URL(channelUrl);
+  } catch (e) {
+    return {
+      isValid: false,
+      error: `Invalid URL: ${channelUrl}`
+    };
+  }
+  
+  // Simple validation for YouTube URLs
+  const isYouTubeUrl = channelUrl.includes('youtube.com') || 
+                      channelUrl.includes('youtu.be') ||
+                      (channelUrl.startsWith('https://@') && !channelUrl.includes('.'));
+  
+  if (!isYouTubeUrl) {
+    console.warn(`URL may not be a YouTube channel: ${channelUrl}`);
+    // We'll accept it but log a warning
+  }
+  
   // Return validated data
   return {
     isValid: true,
     data: {
       channelId: body.channelId,
-      channelUrl: body.channelUrl
+      channelUrl: channelUrl // Return normalized URL
     }
   };
 }

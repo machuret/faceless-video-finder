@@ -19,7 +19,7 @@ export async function startActorRun(url: string): Promise<{
   try {
     console.log(`Starting Apify actor run for URL: ${url}`);
     
-    // Use the configuration for the new Ultimate Scraping actor with improved settings
+    // Use the configuration for the Ultimate Scraping actor with improved settings
     const startResponse = await fetch(`${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${APIFY_API_TOKEN}`, {
       method: "POST",
       headers: {
@@ -30,20 +30,22 @@ export async function startActorRun(url: string): Promise<{
         "enableSSL": true,
         "linkUrls": [url],
         "outputFormat": "jpeg",
-        "waitUntil": "networkidle2", // Changed from networkidle0 to networkidle2 for faster completion
-        "timeouT": 45, // Increased timeout from 30 to 45 seconds
-        "maxRetries": 3, // Reduced from 5 to 3 for faster completion
-        "delayBeforeScreenshot": 2000, // Reduced from 3000 to 2000ms
+        "waitUntil": "networkidle2", 
+        "timeouT": 180, // Increased to 180 seconds as recommended for Google Trends Scraper
+        "maxRetries": 3,
+        "delayBeforeScreenshot": 3000, // Increased back to 3000ms to allow more time for page elements to load
         "scrollToBottom": true, 
-        "delayAfterScrolling": 500, // Reduced from 1000 to 500ms
+        "delayAfterScrolling": 1000, // Increased to 1000ms to ensure all elements render
         "window_Width": 1920,
         "window_Height": 1080,
         "printBackground": true,
         "proxyConfig": {
-          "useApifyProxy": true, // Set to true to use Apify proxy which can bypass some YouTube restrictions
+          "useApifyProxy": true,
           "apifyProxyGroups": ["RESIDENTIAL"]
         }
       }),
+      // Add request timeout
+      signal: AbortSignal.timeout(30000), // 30-second timeout for the API request itself
     });
     
     if (!startResponse.ok) {
@@ -70,10 +72,11 @@ export async function startActorRun(url: string): Promise<{
     console.log(`Apify run started with ID: ${runId}`);
     return { success: true, runId };
   } catch (error) {
-    console.error("Error starting Apify actor run:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error starting Apify actor run:", errorMessage);
     return { 
       success: false, 
-      error: `Error starting Apify actor run: ${error.message}` 
+      error: `Error starting Apify actor run: ${errorMessage}` 
     };
   }
 }
@@ -98,10 +101,26 @@ export async function pollForRunCompletion(runId: string): Promise<{
     console.log(`Checking run status (attempt ${attempts}/${MAX_POLLING_ATTEMPTS}, elapsed: ${elapsedTime}s)...`);
     
     try {
-      const statusResponse = await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}?token=${APIFY_API_TOKEN}`);
+      const statusResponse = await fetch(
+        `${APIFY_BASE_URL}/actor-runs/${runId}?token=${APIFY_API_TOKEN}`,
+        {
+          headers: {
+            'Accept': 'application/json'
+          },
+          signal: AbortSignal.timeout(15000) // 15-second timeout for status checks
+        }
+      );
       
       if (!statusResponse.ok) {
-        console.error(`Error checking run status: ${statusResponse.status}`);
+        const errorText = await statusResponse.text().catch(() => "Could not read error response");
+        console.error(`Error checking run status: ${statusResponse.status} - ${errorText}`);
+        
+        // If we're hitting rate limits (429), wait longer
+        if (statusResponse.status === 429) {
+          console.log("Rate limit hit, waiting longer before next attempt...");
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait an additional 5 seconds
+        }
+        
         continue;
       }
       
@@ -123,7 +142,8 @@ export async function pollForRunCompletion(runId: string): Promise<{
         break;
       }
     } catch (error) {
-      console.error(`Error polling run status: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error polling run status: ${errorMessage}`);
       // Continue polling despite errors
     }
   }

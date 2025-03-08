@@ -23,8 +23,10 @@ export function useBulkScreenshotGenerator() {
       console.log(`Generating screenshot for channel: ${channel.title} (${channel.url})`);
       setCurrentChannel(channel.title);
       
-      // Call the edge function to generate screenshot without any additional options
-      // Only pass the required body parameter
+      // Show an initial progress message for the current channel
+      toast.info(`Processing screenshot for ${channel.title}. This may take up to 3 minutes.`);
+      
+      // Call the edge function to generate screenshot
       const { data, error } = await supabase.functions.invoke<any>('take-channel-screenshot', {
         body: { 
           channelUrl: channel.url,
@@ -34,10 +36,12 @@ export function useBulkScreenshotGenerator() {
 
       if (error) {
         console.error(`Error generating screenshot for ${channel.title}:`, error);
+        const errorMessage = `API error: ${error.message}`;
         setFailedChannels(prev => [...prev, {
           channel,
-          error: `API error: ${error.message}`
+          error: errorMessage
         }]);
+        toast.error(`Failed to generate screenshot for ${channel.title}: ${errorMessage}`);
         return false;
       }
 
@@ -47,23 +51,29 @@ export function useBulkScreenshotGenerator() {
         // Include more detailed error information
         const errorMsg = data?.error || "Unknown error occurred";
         const errorDetail = data?.message ? ` (${data.message})` : "";
+        const fullErrorMessage = `${errorMsg}${errorDetail}`;
         
         setFailedChannels(prev => [...prev, {
           channel,
-          error: `${errorMsg}${errorDetail}`
+          error: fullErrorMessage
         }]);
+        
+        toast.error(`Failed to generate screenshot for ${channel.title}: ${fullErrorMessage}`);
         return false;
       }
 
       // If we got this far, we were successful
       console.log(`Successfully generated screenshot for ${channel.title}`);
+      toast.success(`Screenshot generated for ${channel.title}`);
       return true;
     } catch (error) {
       console.error(`Exception when generating screenshot for ${channel.title}:`, error);
+      const errorMessage = `Unexpected error: ${error instanceof Error ? error.message : String(error)}`;
       setFailedChannels(prev => [...prev, {
         channel,
-        error: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`
+        error: errorMessage
       }]);
+      toast.error(`Failed to generate screenshot for ${channel.title}: ${errorMessage}`);
       return false;
     }
   };
@@ -100,9 +110,17 @@ export function useBulkScreenshotGenerator() {
         const newProgress = Math.floor(((i + 1) / channels.length) * 100);
         setProgress(newProgress);
         
-        // Add a small delay between requests to be nice to the API
+        // Add a longer delay between requests to respect rate limits
+        // The Apify API has a rate limit of 30 requests per second per resource
         if (i < channels.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay to 1.5s
+          const delayMessage = "Waiting before processing next channel to respect API rate limits...";
+          console.log(delayMessage);
+          
+          if (channels.length > 2) {
+            toast.info(delayMessage);
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 3000)); // Increased delay to 3s
         }
       }
 
