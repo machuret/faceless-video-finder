@@ -1,9 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChannelSearch from "./ChannelSearch";
 import ChannelGrid from "./ChannelGrid";
 import ChannelPagination from "./ChannelPagination";
 import { ChannelCategory } from "@/types/youtube";
+import { Button } from "@/components/ui/button";
+import { ArrowUpDown } from "lucide-react";
 
 interface ChannelSectionProps {
   channels: any[];
@@ -30,13 +32,16 @@ const ChannelSection = ({
 }: ChannelSectionProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<ChannelCategory | "">("");
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
 
   const resetFilters = () => {
     setSearchTerm("");
     setSelectedCategory("");
     setCurrentPage(1);
+    setSortAlphabetically(false);
   };
 
+  // Apply search filter
   const filteredChannels = channels.filter(channel => {
     if (!searchTerm) return true;
     
@@ -50,6 +55,19 @@ const ChannelSection = ({
       ))
     );
   });
+
+  // Apply sorting if needed
+  const sortedChannels = [...filteredChannels].sort((a, b) => {
+    if (sortAlphabetically) {
+      return (a.channel_title || "").localeCompare(b.channel_title || "");
+    }
+    return 0; // Keep original order if not sorting alphabetically
+  });
+
+  // Toggle alphabetical sorting
+  const toggleAlphabeticalSort = () => {
+    setSortAlphabetically(!sortAlphabetically);
+  };
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -67,13 +85,24 @@ const ChannelSection = ({
         </div>
       )}
 
-      <ChannelSearch 
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        selectedCategory={selectedCategory}
-        handleCategorySelect={(category) => setSelectedCategory(category)}
-        channelCount={filteredChannels.length}
-      />
+      <div className="flex justify-between items-center mb-6">
+        <ChannelSearch 
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          selectedCategory={selectedCategory}
+          handleCategorySelect={(category) => setSelectedCategory(category)}
+          channelCount={filteredChannels.length}
+        />
+        
+        <Button 
+          variant="outline" 
+          onClick={toggleAlphabeticalSort}
+          className="flex items-center gap-2"
+        >
+          <ArrowUpDown className="h-4 w-4" />
+          {sortAlphabetically ? "Original Order" : "Sort A-Z"}
+        </Button>
+      </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
@@ -83,7 +112,7 @@ const ChannelSection = ({
       )}
 
       <ChannelGrid 
-        channels={filteredChannels}
+        channels={sortedChannels}
         loading={loading}
         resetFilters={resetFilters}
         isFeatured={false}

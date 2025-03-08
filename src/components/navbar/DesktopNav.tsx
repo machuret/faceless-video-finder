@@ -1,5 +1,5 @@
 
-import { Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import NavItem from "./NavItem";
 import { navigationItems, isIdeasActive, isAdminActive } from "./navConfig";
 
@@ -8,6 +8,8 @@ interface DesktopNavProps {
 }
 
 const DesktopNav = ({ isActive }: DesktopNavProps) => {
+  const location = useLocation();
+  
   return (
     <nav className="hidden md:flex items-center gap-6">
       {navigationItems.map(item => (

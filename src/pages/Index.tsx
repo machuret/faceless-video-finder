@@ -7,6 +7,7 @@ import ToolsSection from '@/components/home/ToolsSection';
 import PageFooter from '@/components/home/PageFooter';
 import { supabase } from '@/integrations/supabase/client';
 import { Channel } from '@/types/youtube';
+import { toast } from "sonner";
 
 const Index = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -15,38 +16,33 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [totalChannels, setTotalChannels] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const channelsPerPage = 9;
+  const channelsPerPage = 18; // 3 rows x 6 columns
 
-  // This is just a simple placeholder implementation to fix type errors
-  // In a real implementation, you would fetch actual data from your API
   useEffect(() => {
     const fetchChannels = async () => {
       try {
         setLoading(true);
         
-        // Simulate fetching channels
-        const { data: channelsData, error: channelsError } = await supabase
+        // Calculate offset based on current page
+        const offset = (currentPage - 1) * channelsPerPage;
+        
+        // Fetch channels with pagination and random order
+        const { data: channelsData, error: channelsError, count } = await supabase
           .from('youtube_channels')
-          .select('*')
-          .limit(channelsPerPage);
+          .select('*, videoStats:youtube_video_stats(*)', { count: 'exact' })
+          .order('created_at', { ascending: false }) // Default ordering
+          .range(offset, offset + channelsPerPage - 1);
           
         if (channelsError) throw channelsError;
         
-        // Simulate fetching featured channels
+        // Fetch featured channels
         const { data: featuredData, error: featuredError } = await supabase
           .from('youtube_channels')
-          .select('*')
+          .select('*, videoStats:youtube_video_stats(*)')
           .eq('is_featured', true)
           .limit(3);
           
         if (featuredError) throw featuredError;
-        
-        // Simulate fetching total count
-        const { count, error: countError } = await supabase
-          .from('youtube_channels')
-          .select('*', { count: 'exact', head: true });
-          
-        if (countError) throw countError;
         
         // Type assertion to ensure the data conforms to Channel[]
         setChannels(channelsData as Channel[] || []);
@@ -56,13 +52,22 @@ const Index = () => {
       } catch (err) {
         console.error('Error fetching channels:', err);
         setError('Failed to load channels. Please try again later.');
+        toast.error('Failed to load channels. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
     
     fetchChannels();
-  }, [currentPage]);
+  }, [currentPage, channelsPerPage]);
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    console.log(`Changing to page ${newPage}`);
+    setCurrentPage(newPage);
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Extract all videos from the channels for the FeaturedVideos component
   const allVideos = [...channels, ...featuredChannels]
@@ -82,7 +87,7 @@ const Index = () => {
         currentPage={currentPage}
         showFeatured={true}
         channelsPerPage={channelsPerPage}
-        setCurrentPage={setCurrentPage}
+        setCurrentPage={handlePageChange}
       />
       <ToolsSection />
       <PageFooter />

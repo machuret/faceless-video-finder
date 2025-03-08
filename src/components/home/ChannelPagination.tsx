@@ -8,6 +8,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useEffect } from "react";
 
 interface ChannelPaginationProps {
   currentPage: number;
@@ -23,6 +24,11 @@ const ChannelPagination = ({
   setCurrentPage
 }: ChannelPaginationProps) => {
   const totalPages = Math.ceil(totalChannels / channelsPerPage);
+
+  // Log pagination info for debugging
+  useEffect(() => {
+    console.log(`Pagination: Current page: ${currentPage}, Total pages: ${totalPages}, Total channels: ${totalChannels}, Per page: ${channelsPerPage}`);
+  }, [currentPage, totalPages, totalChannels, channelsPerPage]);
 
   // Generate array of page numbers to display
   const getPageNumbers = () => {
@@ -57,6 +63,14 @@ const ChannelPagination = ({
     return pageNumbers;
   };
 
+  // Handle page click
+  const handlePageClick = (page: number) => {
+    console.log(`Clicked page: ${page}`);
+    if (page !== currentPage) {
+      setCurrentPage(page);
+    }
+  };
+
   if (totalPages <= 1) return null;
 
   return (
@@ -64,7 +78,7 @@ const ChannelPagination = ({
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious 
-            onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+            onClick={() => handlePageClick(Math.max(currentPage - 1, 1))}
             className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
           />
         </PaginationItem>
@@ -76,7 +90,7 @@ const ChannelPagination = ({
             ) : (
               <PaginationLink
                 isActive={currentPage === page}
-                onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                onClick={() => typeof page === 'number' && handlePageClick(page)}
                 className="cursor-pointer"
               >
                 {page}
@@ -87,7 +101,7 @@ const ChannelPagination = ({
         
         <PaginationItem>
           <PaginationNext 
-            onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+            onClick={() => handlePageClick(Math.min(currentPage + 1, totalPages))}
             className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
           />
         </PaginationItem>
