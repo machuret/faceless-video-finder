@@ -71,7 +71,7 @@ const BulkOperationsHandler: React.FC<BulkOperationsHandlerProps> = ({
 
   // Bulk operations hooks
   const {
-    fetchStats,
+    fetchStatsForChannels,
     isProcessing: isProcessingStats,
     progress: statsProgress,
     currentChannel: statsCurrentChannel,
@@ -81,7 +81,7 @@ const BulkOperationsHandler: React.FC<BulkOperationsHandlerProps> = ({
   } = useBulkStatsFetcher();
 
   const {
-    generateTypes,
+    generateTypesForChannels,
     isProcessing: isProcessingTypes,
     progress: typeProgress,
     currentChannel: typeCurrentChannel,
@@ -91,7 +91,7 @@ const BulkOperationsHandler: React.FC<BulkOperationsHandlerProps> = ({
   } = useBulkTypeGenerator();
 
   const {
-    generateKeywords,
+    generateKeywordsForChannels,
     isProcessing: isProcessingKeywords,
     progress: keywordsProgress,
     currentChannel: keywordsCurrentChannel,
@@ -101,7 +101,7 @@ const BulkOperationsHandler: React.FC<BulkOperationsHandlerProps> = ({
   } = useBulkKeywordsGenerator();
 
   const {
-    takeScreenshots,
+    generateScreenshotsForChannels,
     isProcessing: isProcessingScreenshots,
     progress: screenshotProgress,
     currentChannel: screenshotCurrentChannel,
@@ -223,19 +223,19 @@ const BulkOperationsHandler: React.FC<BulkOperationsHandlerProps> = ({
     // Start the appropriate operation
     switch (currentOperation) {
       case 'stats':
-        fetchStats(selectedChannels);
+        fetchStatsForChannels(selectedChannels);
         break;
       case 'type':
-        generateTypes(selectedChannels);
+        generateTypesForChannels(selectedChannels);
         break;
       case 'keywords':
-        generateKeywords(selectedChannels);
+        generateKeywordsForChannels(selectedChannels);
         break;
       case 'screenshot':
-        takeScreenshots(selectedChannels);
+        generateScreenshotsForChannels(selectedChannels);
         break;
     }
-  }, [currentOperation, getSelectedChannels, setShowBulkDialog, setCurrentOperation, fetchStats, generateTypes, generateKeywords, takeScreenshots]);
+  }, [currentOperation, getSelectedChannels, setShowBulkDialog, setCurrentOperation, fetchStatsForChannels, generateTypesForChannels, generateKeywordsForChannels, generateScreenshotsForChannels]);
 
   return (
     <BulkOperationDialog />
