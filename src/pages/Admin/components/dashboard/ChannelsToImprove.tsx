@@ -25,7 +25,15 @@ const ChannelsToImprove = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setChannels(data || []);
+      
+      // Transform the data to make it compatible with Channel type
+      const typedChannels: Channel[] = (data || []).map(channel => ({
+        ...channel,
+        // Ensure metadata is properly typed
+        metadata: channel.metadata as Channel['metadata']
+      }));
+      
+      setChannels(typedChannels);
     } catch (error) {
       console.error("Error fetching channels with no screenshot:", error);
       toast.error("Failed to fetch channels with no screenshot");
@@ -44,7 +52,15 @@ const ChannelsToImprove = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setChannels(data || []);
+      
+      // Transform the data to make it compatible with Channel type
+      const typedChannels: Channel[] = (data || []).map(channel => ({
+        ...channel,
+        // Ensure metadata is properly typed
+        metadata: channel.metadata as Channel['metadata']
+      }));
+      
+      setChannels(typedChannels);
     } catch (error) {
       console.error("Error fetching channels with no type:", error);
       toast.error("Failed to fetch channels with no type");
@@ -63,7 +79,15 @@ const ChannelsToImprove = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setChannels(data || []);
+      
+      // Transform the data to make it compatible with Channel type
+      const typedChannels: Channel[] = (data || []).map(channel => ({
+        ...channel,
+        // Ensure metadata is properly typed
+        metadata: channel.metadata as Channel['metadata']
+      }));
+      
+      setChannels(typedChannels);
     } catch (error) {
       console.error("Error fetching channels with no stats:", error);
       toast.error("Failed to fetch channels with no stats");
