@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { ChannelFormData } from "@/types/forms";
@@ -171,12 +172,21 @@ export function useChannelStatsFetcher({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
+      // Fix: Remove abortSignal property as it's not supported in FunctionInvokeOptions
       const { data, error } = await supabase.functions.invoke('test-apify-connection', {
-        body: { timestamp: Date.now() }, // Add timestamp to prevent caching
-        abortSignal: controller.signal
+        body: { timestamp: Date.now() } // Add timestamp to prevent caching
       });
 
       clearTimeout(timeoutId);
+
+      // Handle controller abort manually if needed
+      if (controller.signal.aborted) {
+        console.error("Connection test timed out");
+        setApiError("Connection test timed out after 10 seconds");
+        toast.error("Connection test timed out after 10 seconds");
+        setTestingConnection(false);
+        return;
+      }
 
       if (error) {
         console.error("Error testing Apify connection:", error);
