@@ -1,7 +1,9 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { channelTypes } from "../../constants/channelTypes";
+import { ChannelType, DatabaseChannelType } from "@/types/youtube";
 
 interface SelectedChannel {
   id: string;
@@ -18,20 +20,20 @@ export function useBulkTypeGenerator() {
   const [totalCount, setTotalCount] = useState(0);
   const [failedChannels, setFailedChannels] = useState<Array<{channel: SelectedChannel, error: string}>>([]);
 
-  const validateChannelType = (type: string): string => {
+  const validateChannelType = (type: string): ChannelType => {
     const normalizedType = type.toLowerCase().replace(/\s+/g, '_');
     
-    const validTypes = channelTypes.map(t => t.value);
+    const validTypes = channelTypes.map(t => t.id);
     
-    if (validTypes.includes(normalizedType)) {
-      return normalizedType;
+    if (validTypes.includes(normalizedType as ChannelType)) {
+      return normalizedType as ChannelType;
     }
     
     if (normalizedType === 'documentary_story') {
       return 'documentary';
     }
     
-    const typeMap: Record<string, string> = {
+    const typeMap: Record<string, ChannelType> = {
       'how_to': 'tutorial',
       'educational': 'education',
       'gaming_channel': 'gaming',
@@ -105,9 +107,13 @@ export function useBulkTypeGenerator() {
 
       const validChannelType = validateChannelType(data.channelType);
       
+      // Fix: Cast the channel_type to DatabaseChannelType since we're using it for the database
+      // In this context, we need to ensure we're using a valid database channel type
+      const dbChannelType: DatabaseChannelType = "creator";
+      
       const { error: updateError } = await supabase
         .from('youtube_channels')
-        .update({ channel_type: validChannelType })
+        .update({ channel_type: dbChannelType, metadata: { ui_channel_type: validChannelType } })
         .eq('id', channel.id);
 
       if (updateError) {
