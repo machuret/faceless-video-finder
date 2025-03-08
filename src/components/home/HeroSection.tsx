@@ -4,9 +4,12 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import MainNavbar from "@/components/MainNavbar";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
   const [channelCount, setChannelCount] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const navigate = useNavigate();
 
   // Fetch the total number of channels
   useEffect(() => {
@@ -26,6 +29,13 @@ const HeroSection = () => {
     fetchChannelCount();
   }, []);
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/channels?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
     <>
       <MainNavbar />
@@ -41,16 +51,23 @@ const HeroSection = () => {
           <p className="text-sm mb-8 text-blue-200">
             So far {channelCount.toLocaleString()} YouTube Channels Indexed
           </p>
-          <div className="flex justify-center mb-6">
+          <form onSubmit={handleSearch} className="flex justify-center mb-6">
             <div className="relative w-full max-w-xl">
               <Input 
                 type="text" 
                 placeholder="Search for niches, channels, or keywords..." 
                 className="py-6 pr-12 pl-4 rounded-lg text-black border-2 border-white focus:border-yellow-300"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <button 
+                type="submit"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-transparent border-none p-0 cursor-pointer"
+              >
+                <Search className="h-5 w-5 text-gray-400" />
+              </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </>
