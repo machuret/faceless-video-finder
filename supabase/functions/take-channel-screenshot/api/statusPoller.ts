@@ -19,12 +19,19 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
     
     try {
       const statusResponse = await fetch(
-        `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`
+        `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`,
+        {
+          headers: {
+            'Accept': 'application/json'
+          },
+          signal: AbortSignal.timeout(8000) // 8 second timeout
+        }
       );
       
       if (!statusResponse.ok) {
+        const statusText = await statusResponse.text().catch(() => 'Unable to read response');
+        console.warn(`Error fetching run status (retry ${retries}): ${statusResponse.status} - ${statusText}`);
         retries++;
-        console.warn(`Error fetching run status (retry ${retries}): ${statusResponse.status}`);
         continue;
       }
       
@@ -32,8 +39,8 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
       lastStatus = statusData.data?.status;
       
       if (!lastStatus) {
-        retries++;
         console.warn(`Invalid status response (retry ${retries}): ${JSON.stringify(statusData)}`);
+        retries++;
         continue;
       }
       
@@ -45,8 +52,9 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
         retries++;
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error polling for status (retry ${retries}):`, errorMessage);
       retries++;
-      console.error(`Error polling for status (retry ${retries}):`, error);
     }
   }
   

@@ -22,13 +22,17 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
         `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`,
         {
           // Add a timeout for the request
-          signal: AbortSignal.timeout(5000) // 5 second timeout
+          signal: AbortSignal.timeout(5000), // 5 second timeout
+          headers: {
+            'Accept': 'application/json'
+          }
         }
       );
       
       if (!statusResponse.ok) {
+        const statusText = await statusResponse.text().catch(() => 'Unable to read response');
+        console.warn(`Error fetching run status (retry ${retries}): ${statusResponse.status} - ${statusText}`);
         retries++;
-        console.warn(`Error fetching run status (retry ${retries}): ${statusResponse.status}`);
         continue;
       }
       
@@ -36,8 +40,8 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
       lastStatus = statusData.data?.status;
       
       if (!lastStatus) {
-        retries++;
         console.warn(`Invalid status response (retry ${retries}): ${JSON.stringify(statusData)}`);
+        retries++;
         continue;
       }
       
@@ -49,8 +53,9 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
         retries++;
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error polling for status (retry ${retries}):`, errorMessage);
       retries++;
-      console.error(`Error polling for status (retry ${retries}):`, error);
     }
   }
   
@@ -63,9 +68,15 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
   
   if (lastStatus !== 'SUCCEEDED' && lastStatus !== 'RUNNING') {
     if (retries >= maxRetries) {
-      throw new ApifyError(`Apify actor run timed out. Last status: ${lastStatus} after ${maxRetries} retries`);
+      throw new ApifyError(`Apify actor run timed out after ${maxRetries * 2} seconds. Last status: ${lastStatus}`, {
+        status: lastStatus,
+        retries: retries,
+        maxRetries: maxRetries
+      });
     } else {
-      throw new ApifyError(`Apify actor run did not succeed. Last status: ${lastStatus}`);
+      throw new ApifyError(`Apify actor run failed with status: ${lastStatus}. This might indicate the YouTube channel is unavailable or the URL format is incorrect.`, {
+        status: lastStatus
+      });
     }
   }
   

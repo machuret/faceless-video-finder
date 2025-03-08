@@ -1,37 +1,46 @@
 
-/**
- * Validates the request body for the take-channel-screenshot function
- */
-export function validateRequestBody(requestBody: any): { 
-  isValid: boolean; 
+interface ValidationResult {
+  isValid: boolean;
   error?: string;
-  data?: { channelUrl: string; channelId: string } 
-} {
-  try {
-    // Check if required fields are present
-    if (!requestBody) {
-      return { isValid: false, error: "Missing request body" };
-    }
-    
-    const { channelUrl, channelId } = requestBody;
-    
-    if (!channelUrl) {
-      return { isValid: false, error: "Channel URL is required" };
-    }
-    
-    if (!channelId) {
-      return { isValid: false, error: "Channel ID is required" };
-    }
-    
-    return { 
-      isValid: true, 
-      data: { channelUrl, channelId }
-    };
-  } catch (error) {
-    console.error("Error validating request body:", error);
+  data?: {
+    channelId: string;
+    channelUrl: string;
+  };
+}
+
+export function validateRequestBody(body: any): ValidationResult {
+  console.log("Validating request body:", body);
+  
+  // Check if body exists
+  if (!body) {
     return { 
       isValid: false, 
-      error: "Invalid request format" 
+      error: "Request body is required" 
     };
   }
+  
+  // Check if channelId is provided
+  if (!body.channelId) {
+    return { 
+      isValid: false, 
+      error: "Channel ID is required" 
+    };
+  }
+  
+  // Check if channelUrl is provided
+  if (!body.channelUrl) {
+    return { 
+      isValid: false, 
+      error: "Channel URL is required" 
+    };
+  }
+  
+  // Return validated data
+  return {
+    isValid: true,
+    data: {
+      channelId: body.channelId,
+      channelUrl: body.channelUrl
+    }
+  };
 }
