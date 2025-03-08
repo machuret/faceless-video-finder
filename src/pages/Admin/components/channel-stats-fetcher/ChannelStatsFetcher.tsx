@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, PlusCircle } from "lucide-react";
+import { Loader2, RefreshCw, PlusCircle, TestTube2 } from "lucide-react";
 import { ChannelFormData } from "@/types/forms";
 import { useChannelStatsFetcher } from "./hooks";
 import { 
@@ -20,13 +20,15 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
   const {
     loading,
     fetchingMissing,
+    testingConnection,
     apiError,
     dataSource,
     partialData,
     missingFields,
     consecutiveAttempts,
     fetchStats,
-    fetchMissingFields
+    fetchMissingFields,
+    testApifyConnection
   } = useChannelStatsFetcher({ channelUrl, onStatsReceived });
 
   return (
@@ -38,7 +40,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
           size="sm"
           className="flex items-center gap-1"
           onClick={fetchStats}
-          disabled={loading || fetchingMissing || !channelUrl}
+          disabled={loading || fetchingMissing || testingConnection || !channelUrl}
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           Fetch Stats via Apify
@@ -51,12 +53,24 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
             size="sm"
             className="flex items-center gap-1"
             onClick={fetchMissingFields}
-            disabled={loading || fetchingMissing || !channelUrl}
+            disabled={loading || fetchingMissing || testingConnection || !channelUrl}
           >
             {fetchingMissing ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
             Fetch Missing Fields
           </Button>
         )}
+        
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-800 hover:text-amber-900 border-amber-300"
+          onClick={testApifyConnection}
+          disabled={loading || fetchingMissing || testingConnection || !channelUrl}
+        >
+          {testingConnection ? <Loader2 className="h-4 w-4 animate-spin" /> : <TestTube2 className="h-4 w-4" />}
+          Test Connection
+        </Button>
         
         <Button
           type="button"

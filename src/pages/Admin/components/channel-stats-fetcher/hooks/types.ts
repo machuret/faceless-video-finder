@@ -1,22 +1,15 @@
 
-import { ChannelFormData } from "@/types/forms";
-
 export interface UseChannelStatsFetcherProps {
   channelUrl: string;
-  onStatsReceived: (stats: Partial<ChannelFormData>) => void;
+  onStatsReceived: (stats: any) => void;
 }
 
 export type DataSource = "apify" | "youtube" | null;
 
-export interface ProcessedChannelData {
-  stats: Partial<ChannelFormData>;
-  missing: string[];
-  hasPartialData: boolean;
-}
-
 export interface UseChannelStatsFetcherResult {
   loading: boolean;
   fetchingMissing: boolean;
+  testingConnection: boolean;
   apiError: string | null;
   dataSource: DataSource;
   partialData: boolean;
@@ -24,13 +17,25 @@ export interface UseChannelStatsFetcherResult {
   consecutiveAttempts: number;
   fetchStats: () => Promise<void>;
   fetchMissingFields: () => Promise<void>;
+  testApifyConnection: () => Promise<void>;
 }
 
-export interface UrlFormatOptions {
-  preferredFormat?: 'channel' | 'username' | 'custom';
+export interface ProcessedChannelData {
+  stats: any;
+  missing: string[];
+  hasPartialData: boolean;
 }
 
-export interface RequiredFieldDefinition {
-  key: string;
-  label: string;
+export interface ChannelStatsResult {
+  channel: {
+    id: string;
+    title: string;
+    url: string;
+  };
+  results: {
+    field: string;
+    value: any;
+    success: boolean;
+  }[];
+  error?: string;
 }

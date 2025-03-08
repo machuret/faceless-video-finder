@@ -1,9 +1,10 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { ChannelFormData } from "@/types/forms";
 import { UseChannelStatsFetcherProps, UseChannelStatsFetcherResult, DataSource } from "./types";
 import { fetchChannelStats, processChannelData, fetchMissingFieldsData, determineDataSource } from "./channelStatsService";
+import { supabase } from "@/integrations/supabase/client";
+import { formatChannelUrl } from "./urlUtils";
 
 export function useChannelStatsFetcher({ 
   channelUrl, 
@@ -11,6 +12,7 @@ export function useChannelStatsFetcher({
 }: UseChannelStatsFetcherProps): UseChannelStatsFetcherResult {
   const [loading, setLoading] = useState(false);
   const [fetchingMissing, setFetchingMissing] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<DataSource>(null);
   const [partialData, setPartialData] = useState(false);
@@ -153,15 +155,79 @@ export function useChannelStatsFetcher({
     }
   };
 
+  const testApifyConnection = async () => {
+    if (!channelUrl || channelUrl.trim() === "") {
+      toast.error("Please enter a channel URL or title first");
+      return;
+    }
+
+    setTestingConnection(true);
+    setApiError(null);
+    
+    toast.info("Testing connection to Apify...");
+
+    const formattedUrl = formatChannelUrl(channelUrl);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
+        body: { 
+          channelUrl: formattedUrl,
+          testMode: true,  // Special flag to just test connection
+          timestamp: Date.now() // Add timestamp to prevent caching
+        }
+      });
+
+      if (error) {
+        console.error("Error testing Apify connection:", error);
+        toast.error(`Connection test failed: ${error.message}`);
+        setApiError(`Connection test error: ${error.message}`);
+        setTestingConnection(false);
+        return;
+      }
+
+      if (!data || !data.success) {
+        const errorMsg = data?.error || data?.message || "Unknown error occurred";
+        console.error("Failed connection test:", errorMsg);
+        toast.error(`Connection test failed: ${errorMsg}`);
+        setApiError(`Connection test failed: ${errorMsg}`);
+        setTestingConnection(false);
+        return;
+      }
+
+      // If we got a title, that's good news!
+      if (data.title) {
+        toast.success(`Connection successful! Retrieved channel title: ${data.title}`);
+        
+        // Update the form with just the title
+        onStatsReceived({ 
+          channel_title: data.title 
+        });
+      } else {
+        toast.success("Connection to Apify successful, but couldn't retrieve channel title");
+      }
+      
+      console.log("Connection test result:", data);
+    } catch (err) {
+      console.error("Error in connection test:", err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setApiError(`Connection test error: ${errorMessage}`);
+      toast.error(`Connection test failed: ${errorMessage}`);
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
   return {
     loading,
     fetchingMissing,
+    testingConnection,
     apiError,
     dataSource,
     partialData,
     missingFields,
     consecutiveAttempts,
     fetchStats,
-    fetchMissingFields
+    fetchMissingFields,
+    testApifyConnection
   };
 }
