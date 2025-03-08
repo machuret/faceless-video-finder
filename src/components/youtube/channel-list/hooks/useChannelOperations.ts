@@ -11,6 +11,7 @@ export function useChannelOperations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set());
 
   const fetchChannels = useCallback(async (offset?: number, limit?: number) => {
     try {
@@ -125,14 +126,66 @@ export function useChannelOperations() {
     }
   };
 
+  // Toggle channel selection
+  const toggleChannelSelection = (channelId: string) => {
+    setSelectedChannels(prev => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(channelId)) {
+        newSelection.delete(channelId);
+      } else {
+        newSelection.add(channelId);
+      }
+      return newSelection;
+    });
+  };
+
+  // Clear all selections
+  const clearSelection = () => {
+    setSelectedChannels(new Set());
+  };
+
+  // Select all channels on the current page
+  const selectAllChannels = () => {
+    const channelIds = channels.map(channel => channel.id);
+    setSelectedChannels(new Set(channelIds));
+  };
+
+  // Check if a channel is selected
+  const isChannelSelected = (channelId: string) => {
+    return selectedChannels.has(channelId);
+  };
+
+  // Get the number of selected channels
+  const getSelectedCount = () => {
+    return selectedChannels.size;
+  };
+
+  // Get the selected channel IDs and URLs as an array of objects
+  const getSelectedChannels = () => {
+    return channels
+      .filter(channel => selectedChannels.has(channel.id))
+      .map(channel => ({
+        id: channel.id,
+        url: channel.channel_url,
+        title: channel.channel_title
+      }));
+  };
+
   return {
     channels,
     loading,
     error,
     totalCount,
+    selectedChannels,
     fetchChannels,
     handleEdit,
     handleDelete,
-    toggleFeatured
+    toggleFeatured,
+    toggleChannelSelection,
+    clearSelection,
+    selectAllChannels,
+    isChannelSelected,
+    getSelectedCount,
+    getSelectedChannels
   };
 }
