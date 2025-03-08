@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Upload } from "lucide-react";
+import { Upload, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import UploadProgress from "./components/UploadProgress";
 import { useBulkChannelUpload } from "./hooks/useBulkChannelUpload";
 
@@ -15,6 +15,8 @@ const BulkChannelUploader = () => {
     currentChannel,
     processedCount,
     totalCount,
+    errorCount,
+    successCount,
     processChannelUrls
   } = useBulkChannelUpload();
   
@@ -52,6 +54,8 @@ https://www.youtube.com/@another"
           totalCount={totalCount}
           progress={progress}
           currentChannel={currentChannel}
+          errorCount={errorCount}
+          successCount={successCount}
         />
       )}
       
