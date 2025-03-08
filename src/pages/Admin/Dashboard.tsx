@@ -8,6 +8,7 @@ import { ChannelList } from "@/components/youtube/channel-list/components/Channe
 import MassScreenshotUpdater from "./components/dashboard/MassScreenshotUpdater";
 import MassStatsUpdater from "./components/dashboard/MassStatsUpdater";
 import BulkChannelUploader from "./components/dashboard/BulkChannelUploader";
+import ChannelsToImprove from "./components/dashboard/ChannelsToImprove";
 
 const Dashboard = () => {
   return (
@@ -31,6 +32,12 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-3">
             <BulkChannelUploader />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-3">
+            <ChannelsToImprove />
           </div>
         </div>
         
