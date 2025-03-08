@@ -2,7 +2,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import ChannelListPagination from "./ChannelListPagination";
 
 interface ChannelListFooterProps {
   isAdmin: boolean;
@@ -12,6 +11,7 @@ interface ChannelListFooterProps {
   onPageChange: (page: number) => void;
   limit?: number;
   channelsLength: number;
+  children?: React.ReactNode;
 }
 
 const ChannelListFooter: React.FC<ChannelListFooterProps> = ({
@@ -21,19 +21,14 @@ const ChannelListFooter: React.FC<ChannelListFooterProps> = ({
   totalPages,
   onPageChange,
   limit,
-  channelsLength
+  channelsLength,
+  children
 }) => {
   const navigate = useNavigate();
 
   return (
     <>
-      {isAdmin && showAll && (
-        <ChannelListPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
-      )}
+      {children}
       
       {limit && channelsLength >= limit && !isAdmin && !showAll && (
         <div className="flex justify-center mt-4">
