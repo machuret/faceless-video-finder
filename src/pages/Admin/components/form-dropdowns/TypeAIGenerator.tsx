@@ -69,23 +69,28 @@ const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIG
     } catch (error) {
       console.error('Error generating channel type:', error);
       
-      // Error handling with retry logic - but limit retries appropriately
-      if (retryCount < 2) {
-        toast.error(`Retrying channel type generation (attempt ${retryCount + 1}/2)...`);
+      // Fixed retry logic - limits the number of retries to 1 (total 2 attempts)
+      // and properly releases locks when failing
+      if (retryCount < 1) {  // Changed from < 2 to < 1 to only allow one retry
+        toast.error(`Retrying channel type generation (attempt ${retryCount + 1}/1)...`);
         setRetryCount(prev => prev + 1);
+        
         // Set a timeout before retrying
         setTimeout(() => {
           isRequestInProgress.current = false; // Release the lock before retrying
           generateChannelType();
         }, 2000); // Retry after 2 seconds
-        return;
+      } else {
+        toast.error('Failed to generate channel type: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        setRetryCount(0);
+        // Release locks to allow manual retry
+        isRequestInProgress.current = false;
+        setIsGenerating(false);
       }
-      
-      toast.error('Failed to generate channel type: ' + (error instanceof Error ? error.message : 'Unknown error'));
-      setRetryCount(0);
+      return;
     } finally {
       // Only set generating to false if we're not about to retry
-      if (retryCount >= 2) {
+      if (retryCount >= 1) {  // Changed from >= 2 to >= 1
         setIsGenerating(false);
         isRequestInProgress.current = false;
       }

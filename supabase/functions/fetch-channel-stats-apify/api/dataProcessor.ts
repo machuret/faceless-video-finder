@@ -23,6 +23,7 @@ export function processChannelData(items: any[]): ApifyChannelData {
   const aboutPage = firstItem.aboutPage || {};
   const snippet = firstItem.snippet || {};
   const channelInfo = firstItem.channelInfo || {};
+  const statistics = firstItem.statistics || channelInfo.statistics || {};
   
   // Try to find description from various possible locations
   // We need to search more aggressively for this field
@@ -41,7 +42,11 @@ export function processChannelData(items: any[]): ApifyChannelData {
     // Check nested objects that might contain the description
     firstItem.details?.description,
     firstItem.channelDetails?.description,
-    aboutPage.details?.description
+    aboutPage.details?.description,
+    // Try to get from other possible locations
+    firstItem.longDescription,
+    statistics.description,
+    firstItem.brandingSettings?.channel?.description
   ];
   
   // Find the first non-empty description
@@ -66,7 +71,11 @@ export function processChannelData(items: any[]): ApifyChannelData {
     // Check nested objects that might contain the country
     firstItem.details?.country,
     firstItem.channelDetails?.country,
-    aboutPage.details?.country
+    aboutPage.details?.country,
+    // Try harder to find country data
+    firstItem.brandingSettings?.channel?.country,
+    firstItem.topicDetails?.country,
+    aboutPage.details?.location?.country
   ];
   
   // Find the first non-empty location
@@ -78,14 +87,20 @@ export function processChannelData(items: any[]): ApifyChannelData {
     }
   }
   
+  // Extract subscriber count from multiple possible sources
+  const subscriberCount = extractSubscriberCount(firstItem);
+  
+  // Extract video count from multiple possible sources
+  const videoCount = extractVideoCount(firstItem);
+  
   // Log extracted fields for debugging
   console.log("Extracted channel data fields:", {
     name: firstItem.channelName || firstItem.name || snippet.title,
     description: description ? `FOUND (${description.length} chars)` : "MISSING",
-    subscribers: firstItem.numberOfSubscribers || firstItem.subscriberCount,
-    views: firstItem.channelTotalViews || firstItem.viewCount,
-    videoCount: firstItem.channelTotalVideos || firstItem.videoCount,
-    joinDate: firstItem.channelJoinedDate || firstItem.joinedDate,
+    subscribers: subscriberCount,
+    views: firstItem.channelTotalViews || firstItem.viewCount || statistics.viewCount,
+    videoCount: videoCount,
+    joinDate: firstItem.channelJoinedDate || firstItem.joinedDate || firstItem.publishedAt,
     location: location || "MISSING"
   });
   
@@ -94,10 +109,10 @@ export function processChannelData(items: any[]): ApifyChannelData {
   const channelData: ApifyChannelData = {
     channelName: firstItem.channelName || firstItem.name || snippet.title || "",
     channelDescription: description,
-    numberOfSubscribers: firstItem.numberOfSubscribers || firstItem.subscriberCount || "0",
-    channelTotalViews: firstItem.channelTotalViews || firstItem.viewCount || "0",
-    channelTotalVideos: firstItem.channelTotalVideos || firstItem.videoCount || "0",
-    channelJoinedDate: firstItem.channelJoinedDate || firstItem.joinedDate || "",
+    numberOfSubscribers: subscriberCount || "0",
+    channelTotalViews: firstItem.channelTotalViews || firstItem.viewCount || statistics.viewCount || "0",
+    channelTotalVideos: videoCount || "0",
+    channelJoinedDate: firstItem.channelJoinedDate || firstItem.joinedDate || firstItem.publishedAt || "",
     channelLocation: location,
     channelUrl: firstItem.channelUrl || firstItem.url || "",
     channelId: extractChannelId(firstItem.channelUrl || firstItem.url || "")
@@ -115,6 +130,49 @@ export function processChannelData(items: any[]): ApifyChannelData {
   console.log(`- Channel URL: ${channelData.channelUrl || 'MISSING'}`);
   
   return channelData;
+}
+
+/**
+ * Helper function to extract subscriber count from multiple possible sources
+ */
+function extractSubscriberCount(item: any): string {
+  const possibleSources = [
+    item.numberOfSubscribers,
+    item.subscriberCount,
+    item.statistics?.subscriberCount,
+    item.channelInfo?.statistics?.subscriberCount,
+    item.snippet?.subscriberCount
+  ];
+  
+  for (const source of possibleSources) {
+    if (source !== undefined && source !== null) {
+      return String(source);
+    }
+  }
+  
+  return "0";
+}
+
+/**
+ * Helper function to extract video count from multiple possible sources
+ */
+function extractVideoCount(item: any): string {
+  const possibleSources = [
+    item.channelTotalVideos,
+    item.videoCount,
+    item.statistics?.videoCount,
+    item.channelInfo?.statistics?.videoCount,
+    item.snippet?.videoCount,
+    item.contentDetails?.totalUploadVideos
+  ];
+  
+  for (const source of possibleSources) {
+    if (source !== undefined && source !== null) {
+      return String(source);
+    }
+  }
+  
+  return "0";
 }
 
 /**

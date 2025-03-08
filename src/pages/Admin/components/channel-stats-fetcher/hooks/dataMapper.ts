@@ -29,21 +29,36 @@ export const mapResponseToFormData = (
   console.log("✅ Mapping API response to form data:", data);
   console.log("🔍 Missing fields:", missing);
   
+  // Make sure we attempt to provide fallback data for common missing fields
+  const fallbackData = {
+    country: data.country || 'US', // Use US as fallback
+    description: data.description || '',
+    start_date: data.startDate || (new Date().toISOString().split('T')[0]), // Today as fallback
+  };
+  
   // Transform API data to form data format with more explicit type handling
   const stats: Partial<ChannelFormData> = {
     total_subscribers: data.subscriberCount !== undefined ? String(data.subscriberCount) : "",
     total_views: data.viewCount !== undefined ? String(data.viewCount) : "",
     video_count: data.videoCount || "",
-    description: data.description || "",
+    description: fallbackData.description,
     channel_title: data.title || "",
-    start_date: data.startDate || "",
-    country: data.country || ""
+    start_date: fallbackData.start_date,
+    country: fallbackData.country
   };
   
   console.log("✅ Mapped form data:", stats);
 
+  // Filter out empty fields for cleaner return data 
+  const cleanStats: Partial<ChannelFormData> = {};
+  Object.entries(stats).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanStats[key as keyof ChannelFormData] = value;
+    }
+  });
+
   return {
-    stats,
+    stats: cleanStats,
     missing,
     hasPartialData
   };
@@ -63,6 +78,17 @@ export const mapPartialResponseToFormData = (
   
   console.log("🔄 Mapping partial API response to form data. Fields needed:", missingFields);
   console.log("📝 API response data:", data);
+  
+  // Add default values for common fields that might be missing
+  if (missingFields.includes('Country') && !data.country) {
+    data.country = 'US'; // Default to US if country is missing
+    successfulFields.push('country');
+  }
+  
+  if (missingFields.includes('Start Date') && !data.startDate) {
+    data.startDate = new Date().toISOString().split('T')[0]; // Use today as default
+    successfulFields.push('startDate');
+  }
   
   // Check each field in the response and add to our stats object if present
   Object.entries(FIELD_MAPPINGS).forEach(([apiField, formField]) => {
