@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Star } from "lucide-react";
 import { Channel } from "@/types/youtube";
-import { LazyImage } from "@/components/ui/lazy-image";
+import LazyImage from "@/components/ui/lazy-image";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 
