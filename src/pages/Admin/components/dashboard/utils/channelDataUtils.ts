@@ -60,8 +60,9 @@ export const formatChannelData = (channelData: any, url: string, index: number) 
 
 /**
  * Save channel data to database
+ * Returns success status and whether this was a new channel
  */
-export const saveChannelToDatabase = async (channelData: any): Promise<boolean> => {
+export const saveChannelToDatabase = async (channelData: any): Promise<{ success: boolean, isNew: boolean }> => {
   try {
     // First check if channel already exists by URL
     const { data: existingChannel, error: lookupError } = await supabase
@@ -72,10 +73,11 @@ export const saveChannelToDatabase = async (channelData: any): Promise<boolean> 
     
     if (lookupError) {
       console.error("Error checking for existing channel:", lookupError);
-      return false;
+      return { success: false, isNew: false };
     }
     
     let result;
+    let isNew = false;
     
     if (existingChannel) {
       // Update existing channel
@@ -99,13 +101,14 @@ export const saveChannelToDatabase = async (channelData: any): Promise<boolean> 
         throw new Error(`Error creating channel: ${result.error.message}`);
       }
       
+      isNew = true;
       toast.success(`Added new channel: ${channelData.channel_title}`);
     }
     
-    return true;
+    return { success: true, isNew };
   } catch (error) {
     console.error("Error saving channel to database:", error);
-    return false;
+    return { success: false, isNew: false };
   }
 };
 

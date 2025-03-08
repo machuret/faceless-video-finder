@@ -5,10 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Upload, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import UploadProgress from "./components/UploadProgress";
+import UploadResultsReport from "./components/UploadResultsReport";
 import { useBulkChannelUpload } from "./hooks/useBulkChannelUpload";
 
 const BulkChannelUploader = () => {
   const [urls, setUrls] = useState<string>("");
+  const [showResults, setShowResults] = useState<boolean>(false);
+  
   const {
     isProcessing,
     progress,
@@ -17,6 +20,7 @@ const BulkChannelUploader = () => {
     totalCount,
     errorCount,
     successCount,
+    uploadResults,
     processChannelUrls
   } = useBulkChannelUpload();
   
@@ -25,7 +29,13 @@ const BulkChannelUploader = () => {
   };
   
   const startBulkUpload = async () => {
+    setShowResults(false);
     await processChannelUrls(urls);
+    setShowResults(true);
+  };
+  
+  const handleCloseResults = () => {
+    setShowResults(false);
     setUrls("");
   };
   
@@ -36,6 +46,13 @@ const BulkChannelUploader = () => {
         Enter up to 10 YouTube channel URLs (one per line) to add them in bulk. 
         We'll automatically fetch channel data for each URL.
       </p>
+      
+      {showResults && uploadResults.length > 0 && (
+        <UploadResultsReport 
+          results={uploadResults} 
+          onClose={handleCloseResults} 
+        />
+      )}
       
       <Textarea
         placeholder="Enter YouTube channel URLs (one per line)

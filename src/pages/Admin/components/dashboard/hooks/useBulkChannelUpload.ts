@@ -3,6 +3,15 @@ import { toast } from "sonner";
 import { parseChannelUrls, validateUrlsCount } from "./utils/urlUtils";
 import { useBulkUploadState } from "./useBulkUploadState";
 import { useChannelProcessor } from "./useChannelProcessor";
+import { useState } from "react";
+
+export interface UploadResult {
+  url: string;
+  channelTitle: string;
+  success: boolean;
+  message: string;
+  isNew: boolean;
+}
 
 export const useBulkChannelUpload = () => {
   const {
@@ -16,6 +25,7 @@ export const useBulkChannelUpload = () => {
     finishProcessing
   } = useBulkUploadState();
   
+  const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
   const { processChannelUrl } = useChannelProcessor();
   
   /**
@@ -31,26 +41,32 @@ export const useBulkChannelUpload = () => {
       return;
     }
     
+    // Reset upload results
+    setUploadResults([]);
+    
     initializeProgress(urlsToProcess.length);
     toast.info(`Starting bulk upload of ${urlsToProcess.length} channels. This may take a while.`);
     console.log(`Processing ${urlsToProcess.length} URLs:`, urlsToProcess);
     
     // Process each URL individually with proper sequential processing
     try {
+      const results: UploadResult[] = [];
+      
       for (let i = 0; i < urlsToProcess.length; i++) {
         const url = urlsToProcess[i];
         updateCurrentChannel(url);
         console.log(`Processing URL ${i + 1}/${urlsToProcess.length}: ${url}`);
         
         // Process one URL at a time and wait for it to complete
-        const success = await processChannelUrl(url, i, urlsToProcess.length);
+        const result = await processChannelUrl(url, i, urlsToProcess.length);
         
-        if (success) {
+        if (result.success) {
           incrementSuccessCount();
         } else {
           incrementErrorCount();
         }
         
+        results.push(result);
         updateProgress(i + 1, urlsToProcess.length);
         
         // Add a delay between requests to avoid overwhelming the API
@@ -58,6 +74,8 @@ export const useBulkChannelUpload = () => {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
+      
+      setUploadResults(results);
     } catch (error) {
       console.error("Error in bulk processing:", error);
       toast.error("An error occurred during bulk processing");
@@ -74,6 +92,7 @@ export const useBulkChannelUpload = () => {
     totalCount: progressState.totalCount,
     errorCount: progressState.errorCount,
     successCount: progressState.successCount,
+    uploadResults,
     processChannelUrls
   };
 };
