@@ -1,4 +1,3 @@
-
 import { ChannelFormData } from "@/types/forms";
 import { ChannelStatsResponse } from "supabase/functions/fetch-channel-stats-apify/types";
 import { FieldMapping, ProcessedChannelData } from "./types";
@@ -50,16 +49,13 @@ export const mapResponseToFormData = (
   console.log("✅ Mapped form data:", stats);
 
   // Filter out empty fields for cleaner return data 
-  const cleanStats: Partial<ChannelFormData> = {};
+  const cleanStats = {} as Partial<ChannelFormData>;
   
   // Properly assign values to the cleanStats object
   Object.entries(stats).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
-      // We need to ensure TypeScript understands that this is a valid key-value pair for ChannelFormData
-      const typedKey = key as keyof ChannelFormData;
-      
-      // Create a properly typed assignment
-      cleanStats[typedKey] = value as any;
+      // Type the key properly and safely assign the value
+      (cleanStats as any)[key] = value;
     }
   });
 
