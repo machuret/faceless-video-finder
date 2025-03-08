@@ -10,7 +10,7 @@ export async function startActorRun(input: Record<string, any>, apiToken: string
   try {
     // Use a longer timeout for this request
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
     
     const runResponse = await fetch(
       `https://api.apify.com/v2/acts/streamers~youtube-channel-scraper/runs?token=${apiToken}`,
@@ -49,7 +49,7 @@ export async function startActorRun(input: Record<string, any>, apiToken: string
       throw error;
     }
     if (error.name === 'AbortError') {
-      throw new ApifyError('Request timed out when starting Apify actor run');
+      throw new ApifyError('Request timed out when starting Apify actor run (90s limit exceeded)');
     }
     throw new ApifyError(`Failed to start Apify actor: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -64,7 +64,7 @@ export async function fetchDataset(runId: string, apiToken: string): Promise<any
   try {
     // Use a longer timeout for this request
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
     
     // This is the correct endpoint for accessing actor run default dataset
     const datasetResponse = await fetch(
@@ -92,8 +92,7 @@ export async function fetchDataset(runId: string, apiToken: string): Promise<any
       
       // Log a sample of the data to help debug
       if (items && items.length > 0) {
-        console.log("Sample data keys:", Object.keys(items[0]));
-        console.log("First item sample:", JSON.stringify(items[0]).substring(0, 500) + "...");
+        console.log("Sample data structure:", Object.keys(items[0]));
         
         // Check for key fields
         const hasSubscriberCount = 'subscriberCount' in items[0] || 
@@ -121,7 +120,7 @@ export async function fetchDataset(runId: string, apiToken: string): Promise<any
       throw error;
     }
     if (error.name === 'AbortError') {
-      throw new ApifyError('Request timed out when fetching dataset');
+      throw new ApifyError('Request timed out when fetching dataset (90s limit exceeded)');
     }
     throw new ApifyError(`Failed to fetch dataset: ${error instanceof Error ? error.message : String(error)}`);
   }

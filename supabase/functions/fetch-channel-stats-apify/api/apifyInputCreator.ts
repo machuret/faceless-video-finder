@@ -15,19 +15,20 @@ export function createApifyInput(url: string) {
   
   console.log(`Using final URL for Apify: ${finalUrl}`);
   
-  // Create a more robust input that will work with the scraper
+  // Use the recommended input structure for YouTube Channel Scraper
   return {
     startUrls: [{ url: finalUrl }],
-    maxResults: 1, // We only need one video to get channel info
+    maxResults: 1, // Only need 1 result to get channel info
     proxyConfiguration: {
       useApifyProxy: true,
       apifyProxyGroups: ["RESIDENTIAL"]  // Use residential proxies for better results
     },
-    includeChannelInfo: true,  // Make sure we're requesting channel info
-    includeAbout: true,  // Explicitly request about page data
-    debugLog: true,     // Enable debug logging in Apify
-    maxConcurrency: 1,  // Limit concurrency to prevent rate limiting
-    maxRequestRetries: 3, // Add retries for resilience
+    includeChannelInfo: true,
+    includeAbout: true,
+    scrapeChannelInfo: true, // Explicitly request channel info
+    debugLog: true,
+    maxConcurrency: 1,  // Lower concurrency to prevent rate limiting
+    maxRequestRetries: 3,
     // Force full page load to get all channel info
     extendOutputFunction: `async ({ page, data, customData, request }) => {
       console.log('In extendOutputFunction, making sure we get all data');
@@ -46,12 +47,9 @@ export function createApifyInput(url: string) {
           console.log('About tab not found, may already be on the about page');
         }
         
-        // Additional logging to help debug
-        const content = await page.content();
-        console.log('Page content length:', content.length);
-        
-        // Check for subscriber count
+        // Extract subscriber count from multiple possible elements
         const subscriberText = await page.evaluate(() => {
+          // Look for subscriber count in various elements
           const elements = Array.from(document.querySelectorAll('*'));
           for (const el of elements) {
             const text = el.textContent || '';
@@ -61,7 +59,12 @@ export function createApifyInput(url: string) {
           }
           return null;
         });
-        console.log('Found subscriber text:', subscriberText);
+        
+        if (subscriberText) {
+          console.log('Found subscriber text:', subscriberText);
+        } else {
+          console.log('Could not find subscriber count text on page');
+        }
       } catch (e) {
         console.log('Error in extend function:', e);
       }

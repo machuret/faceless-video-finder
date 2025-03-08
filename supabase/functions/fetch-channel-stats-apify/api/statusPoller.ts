@@ -14,7 +14,7 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
   
   let attempts = 0;
   const maxAttempts = 40; // Increased to 40 for longer running tasks
-  const pollInterval = 5000; // 5 seconds
+  const pollInterval = 7500; // 7.5 seconds
   
   while (attempts < maxAttempts) {
     attempts++;
@@ -23,7 +23,7 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
     try {
       // Use a timeout for the fetch request
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
       const response = await fetch(
         `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`,
