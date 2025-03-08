@@ -118,6 +118,8 @@ export function useChannelStatsFetcher({
       // Only call onStatsReceived if we have at least one field
       if (Object.keys(partialStats).length > 0) {
         console.log("Sending partial stats with retrieved fields:", partialStats);
+        
+        // Ensure the callback gets called with the updated data
         onStatsReceived(partialStats);
         
         if (successfulFields.length > 0) {

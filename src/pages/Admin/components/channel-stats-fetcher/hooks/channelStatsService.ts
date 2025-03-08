@@ -80,10 +80,13 @@ export const fetchMissingFieldsData = async (
   console.log("📝 Missing fields:", missingFields);
   
   try {
+    // Force a fresh fetch attempt for missing fields
     const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
       body: { 
         channelUrl: formattedUrl,
-        fetchMissingOnly: true
+        fetchMissingOnly: true,
+        forceRefresh: true, // Add this parameter to force a fresh fetch
+        timestamp: Date.now() // Add timestamp to prevent caching
       }
     });
 

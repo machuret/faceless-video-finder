@@ -75,7 +75,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
 
       {!apiError && dataSource === "apify" && !partialData && <SuccessAlert />}
       
-      <MultipleAttemptsAlert attemptsCount={consecutiveAttempts} />
+      {consecutiveAttempts > 1 && <MultipleAttemptsAlert attemptsCount={consecutiveAttempts} />}
     </div>
   );
 };
