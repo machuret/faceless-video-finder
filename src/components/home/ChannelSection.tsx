@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import ChannelSearch from "./ChannelSearch";
 import ChannelGrid from "./ChannelGrid";
 import ChannelPagination from "./ChannelPagination";
 import { ChannelCategory } from "@/types/youtube";
@@ -30,34 +29,15 @@ const ChannelSection = ({
   channelsPerPage,
   setCurrentPage,
 }: ChannelSectionProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<ChannelCategory | "">("");
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
 
   const resetFilters = () => {
-    setSearchTerm("");
-    setSelectedCategory("");
     setCurrentPage(1);
     setSortAlphabetically(false);
   };
 
-  // Apply search filter
-  const filteredChannels = channels.filter(channel => {
-    if (!searchTerm) return true;
-    
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      channel.channel_title?.toLowerCase().includes(searchLower) ||
-      channel.description?.toLowerCase().includes(searchLower) ||
-      channel.niche?.toLowerCase().includes(searchLower) ||
-      (channel.keywords && channel.keywords.some((keyword: string) => 
-        keyword.toLowerCase().includes(searchLower)
-      ))
-    );
-  });
-
   // Apply sorting if needed
-  const sortedChannels = [...filteredChannels].sort((a, b) => {
+  const sortedChannels = [...channels].sort((a, b) => {
     if (sortAlphabetically) {
       return (a.channel_title || "").localeCompare(b.channel_title || "");
     }
@@ -85,15 +65,7 @@ const ChannelSection = ({
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-6">
-        <ChannelSearch 
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          selectedCategory={selectedCategory}
-          handleCategorySelect={(category) => setSelectedCategory(category)}
-          channelCount={filteredChannels.length}
-        />
-        
+      <div className="flex justify-end mb-6">
         <Button 
           variant="outline" 
           onClick={toggleAlphabeticalSort}
