@@ -166,9 +166,63 @@ export function useChannelStatsFetcher({
     
     toast.info("Testing connection to Apify...");
 
-    const formattedUrl = formatChannelUrl(channelUrl);
-
     try {
+      // Call the dedicated test connection function with a short timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const { data, error } = await supabase.functions.invoke('test-apify-connection', {
+        body: { timestamp: Date.now() }, // Add timestamp to prevent caching
+        abortSignal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (error) {
+        console.error("Error testing Apify connection:", error);
+        setApiError(`Connection test error: ${error.message}`);
+        toast.error(`Connection test failed: ${error.message}`);
+        setTestingConnection(false);
+        return;
+      }
+
+      if (!data || !data.success) {
+        const errorMsg = data?.error || "Unknown error occurred";
+        console.error("Failed connection test:", errorMsg);
+        setApiError(`Connection test failed: ${errorMsg}`);
+        toast.error(`Connection test failed: ${errorMsg}`);
+        setTestingConnection(false);
+        return;
+      }
+
+      // Successfully connected
+      toast.success(`Connection to Apify successful!`);
+      console.log("Connection test result:", data);
+      
+      // If we have user info, that's good news!
+      if (data.user) {
+        toast.success(`Connected as: ${data.user.username} (${data.user.plan} plan)`);
+      }
+      
+      // Test fetching just the title to make sure we can get data
+      await testFetchChannelTitle();
+      
+    } catch (err) {
+      console.error("Error in connection test:", err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setApiError(`Connection test error: ${errorMessage}`);
+      toast.error(`Connection test failed: ${errorMessage}`);
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const testFetchChannelTitle = async () => {
+    const formattedUrl = formatChannelUrl(channelUrl);
+    
+    try {
+      toast.info("Testing channel data fetch...");
+      
       const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
         body: { 
           channelUrl: formattedUrl,
@@ -178,42 +232,32 @@ export function useChannelStatsFetcher({
       });
 
       if (error) {
-        console.error("Error testing Apify connection:", error);
-        toast.error(`Connection test failed: ${error.message}`);
-        setApiError(`Connection test error: ${error.message}`);
-        setTestingConnection(false);
+        console.error("Error testing channel fetch:", error);
+        toast.error(`Channel fetch test failed: ${error.message}`);
         return;
       }
 
       if (!data || !data.success) {
-        const errorMsg = data?.error || data?.message || "Unknown error occurred";
-        console.error("Failed connection test:", errorMsg);
-        toast.error(`Connection test failed: ${errorMsg}`);
-        setApiError(`Connection test failed: ${errorMsg}`);
-        setTestingConnection(false);
+        const errorMsg = data?.error || "Unknown error occurred";
+        console.error("Failed channel fetch test:", errorMsg);
+        toast.error(`Channel fetch test failed: ${errorMsg}`);
         return;
       }
 
       // If we got a title, that's good news!
       if (data.title) {
-        toast.success(`Connection successful! Retrieved channel title: ${data.title}`);
+        toast.success(`Successfully retrieved channel title: ${data.title}`);
         
         // Update the form with just the title
         onStatsReceived({ 
           channel_title: data.title 
         });
       } else {
-        toast.success("Connection to Apify successful, but couldn't retrieve channel title");
+        toast.warning("Connection successful, but couldn't retrieve channel title");
       }
-      
-      console.log("Connection test result:", data);
     } catch (err) {
-      console.error("Error in connection test:", err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setApiError(`Connection test error: ${errorMessage}`);
-      toast.error(`Connection test failed: ${errorMessage}`);
-    } finally {
-      setTestingConnection(false);
+      console.error("Error in channel title test:", err);
+      toast.error(`Channel title test failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
