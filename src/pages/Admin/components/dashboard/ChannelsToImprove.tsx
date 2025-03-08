@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ImageOff, FileText, BarChart, Tag } from "lucide-react";
+import { ImageOff, FileText, BarChart, Tag, AlertCircle, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,8 @@ import { useBulkScreenshotGenerator } from "@/components/youtube/channel-list/co
 import { useBulkStatsFetcher } from "@/components/youtube/channel-list/components/hooks/useBulkStatsFetcher";
 import { useBulkTypeGenerator } from "@/components/youtube/channel-list/components/hooks/useBulkTypeGenerator";
 import { useBulkKeywordsGenerator } from "@/components/youtube/channel-list/components/hooks/useBulkKeywordsGenerator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const ChannelsToImprove = () => {
   const navigate = useNavigate();
@@ -25,6 +27,7 @@ const ChannelsToImprove = () => {
   const typeGenerator = useBulkTypeGenerator();
   const keywordsGenerator = useBulkKeywordsGenerator();
 
+  // Function to fetch channels with no screenshot
   const fetchChannelsWithNoScreenshot = async () => {
     setLoading(true);
     try {
@@ -52,6 +55,7 @@ const ChannelsToImprove = () => {
     }
   };
 
+  // Function to fetch channels with no type
   const fetchChannelsWithNoType = async () => {
     setLoading(true);
     try {
@@ -79,6 +83,7 @@ const ChannelsToImprove = () => {
     }
   };
 
+  // Function to fetch channels with no stats
   const fetchChannelsWithNoStats = async () => {
     setLoading(true);
     try {
@@ -106,6 +111,7 @@ const ChannelsToImprove = () => {
     }
   };
 
+  // Function to fetch channels with no keywords
   const fetchChannelsWithNoKeywords = async () => {
     setLoading(true);
     try {
@@ -133,6 +139,7 @@ const ChannelsToImprove = () => {
     }
   };
 
+  // Handle tab change and load appropriate data
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     switch (value) {
@@ -151,14 +158,17 @@ const ChannelsToImprove = () => {
     }
   };
 
+  // Load screenshot data on initial render
   React.useEffect(() => {
     fetchChannelsWithNoScreenshot();
   }, []);
 
+  // Navigate to edit page for a channel
   const navigateToEdit = (channelId: string) => {
     navigate(`/admin/edit-channel/${channelId}`);
   };
 
+  // Screenshot generation handler
   const generateScreenshot = (channel: Channel) => {
     const selectedChannel = {
       id: channel.id,
@@ -172,6 +182,7 @@ const ChannelsToImprove = () => {
       });
   };
 
+  // Stats generation handler
   const generateStats = (channel: Channel) => {
     const selectedChannel = {
       id: channel.id,
@@ -185,6 +196,7 @@ const ChannelsToImprove = () => {
       });
   };
 
+  // Type generation handler
   const generateType = (channel: Channel) => {
     const selectedChannel = {
       id: channel.id,
@@ -198,6 +210,7 @@ const ChannelsToImprove = () => {
       });
   };
 
+  // Keywords generation handler
   const generateKeywords = (channel: Channel) => {
     const selectedChannel = {
       id: channel.id,
@@ -209,6 +222,127 @@ const ChannelsToImprove = () => {
       .then(() => {
         fetchChannelsWithNoKeywords();
       });
+  };
+
+  // Refresh current tab data
+  const refreshCurrentTab = () => {
+    handleTabChange(activeTab);
+  };
+
+  // Handler to retry failed channels
+  const retryFailed = () => {
+    switch (activeTab) {
+      case "no-screenshot":
+        if (screenshotGenerator.failedChannels.length > 0) {
+          screenshotGenerator.retryFailedChannels().then(refreshCurrentTab);
+        } else {
+          toast.info("No failed channels to retry");
+        }
+        break;
+      case "no-type":
+        if (typeGenerator.failedChannels.length > 0) {
+          typeGenerator.retryFailedChannels().then(refreshCurrentTab);
+        } else {
+          toast.info("No failed channels to retry");
+        }
+        break;
+      case "no-stats":
+        if (statsFetcher.failedChannels.length > 0) {
+          statsFetcher.retryFailedChannels().then(refreshCurrentTab);
+        } else {
+          toast.info("No failed channels to retry");
+        }
+        break;
+      case "no-keywords":
+        if (keywordsGenerator.failedChannels.length > 0) {
+          keywordsGenerator.retryFailedChannels().then(refreshCurrentTab);
+        } else {
+          toast.info("No failed channels to retry");
+        }
+        break;
+    }
+  };
+
+  // Get failed channels from the active tab
+  const getFailedChannelsForActiveTab = () => {
+    switch (activeTab) {
+      case "no-screenshot":
+        return screenshotGenerator.failedChannels;
+      case "no-type":
+        return typeGenerator.failedChannels;
+      case "no-stats":
+        return statsFetcher.failedChannels;
+      case "no-keywords":
+        return keywordsGenerator.failedChannels;
+      default:
+        return [];
+    }
+  };
+
+  // Get if any operation is processing based on the active tab
+  const isProcessingOnActiveTab = () => {
+    switch (activeTab) {
+      case "no-screenshot":
+        return screenshotGenerator.isProcessing;
+      case "no-type":
+        return typeGenerator.isProcessing;
+      case "no-stats":
+        return statsFetcher.isProcessing;
+      case "no-keywords":
+        return keywordsGenerator.isProcessing;
+      default:
+        return false;
+    }
+  };
+
+  // Show error report if we have failures
+  const renderErrorReport = () => {
+    const failedChannels = getFailedChannelsForActiveTab();
+
+    if (failedChannels.length === 0) return null;
+
+    return (
+      <div className="mt-4 p-4 border rounded-md bg-red-50">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-red-700">
+            <AlertCircle className="h-5 w-5" />
+            <h3 className="font-medium">Failed operations ({failedChannels.length})</h3>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-red-700 hover:text-red-800 hover:bg-red-100"
+            onClick={retryFailed}
+            disabled={isProcessingOnActiveTab()}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry Failed
+          </Button>
+        </div>
+        
+        <ScrollArea className="h-[200px] w-full">
+          <Accordion type="multiple" className="w-full">
+            {failedChannels.map((item, index) => (
+              <AccordionItem value={`item-${index}`} key={index}>
+                <AccordionTrigger className="text-sm">
+                  <span className="truncate max-w-[400px]">{item.channel.title}</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="p-2 text-sm bg-white rounded border mb-2">
+                    <p className="text-gray-500 mb-1">Channel URL:</p>
+                    <p className="truncate">{item.channel.url}</p>
+                  </div>
+                  <div className="p-2 text-sm bg-white rounded border">
+                    <p className="text-gray-500 mb-1">Error:</p>
+                    <p className="text-red-600">{item.error}</p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </ScrollArea>
+      </div>
+    );
   };
 
   return (
@@ -255,6 +389,7 @@ const ChannelsToImprove = () => {
               </Button>
             </div>
           ))}
+          {renderErrorReport()}
         </TabsContent>
         
         <TabsContent value="no-type" className="mt-0">
@@ -277,6 +412,7 @@ const ChannelsToImprove = () => {
               </Button>
             </div>
           ))}
+          {renderErrorReport()}
         </TabsContent>
         
         <TabsContent value="no-stats" className="mt-0">
@@ -299,6 +435,7 @@ const ChannelsToImprove = () => {
               </Button>
             </div>
           ))}
+          {renderErrorReport()}
         </TabsContent>
         
         <TabsContent value="no-keywords" className="mt-0">
@@ -321,6 +458,7 @@ const ChannelsToImprove = () => {
               </Button>
             </div>
           ))}
+          {renderErrorReport()}
         </TabsContent>
       </Tabs>
     </Card>

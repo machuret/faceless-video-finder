@@ -9,6 +9,18 @@ interface SelectedChannel {
   title: string;
 }
 
+interface StatsResult {
+  field: string;
+  value: any;
+  success: boolean;
+}
+
+interface ChannelStatsResult {
+  channel: SelectedChannel;
+  results: StatsResult[];
+  error?: string;
+}
+
 interface UseBulkStatsFetcherResult {
   fetchStatsForChannels: (channels: SelectedChannel[]) => Promise<void>;
   isProcessing: boolean;
@@ -17,6 +29,9 @@ interface UseBulkStatsFetcherResult {
   successCount: number;
   errorCount: number;
   totalCount: number;
+  statsResults: ChannelStatsResult[];
+  failedChannels: Array<{channel: SelectedChannel, error: string}>;
+  retryFailedChannels: () => Promise<void>;
 }
 
 export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
@@ -26,6 +41,8 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
   const [successCount, setSuccessCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [statsResults, setStatsResults] = useState<ChannelStatsResult[]>([]);
+  const [failedChannels, setFailedChannels] = useState<Array<{channel: SelectedChannel, error: string}>>([]);
 
   const fetchStatsForSingleChannel = async (channel: SelectedChannel): Promise<boolean> => {
     try {
@@ -38,24 +55,48 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
 
       if (error) {
         console.error(`Error fetching stats for ${channel.title}:`, error);
+        setFailedChannels(prev => [...prev, {
+          channel,
+          error: `API error: ${error.message}`
+        }]);
         return false;
       }
 
       if (!data || !data.success) {
         console.error(`Failed to fetch stats for ${channel.title}:`, data?.error || "Unknown error");
+        setFailedChannels(prev => [...prev, {
+          channel,
+          error: data?.error || "Unknown error occurred"
+        }]);
         return false;
       }
 
-      // If successful, update the channel with the new stats
+      // Track which fields were successfully retrieved
+      const results: StatsResult[] = [];
       const updateData: Record<string, any> = {};
       
-      if (data.title) updateData.channel_title = data.title;
-      if (data.subscriberCount) updateData.total_subscribers = data.subscriberCount;
-      if (data.viewCount) updateData.total_views = data.viewCount;
-      if (data.videoCount) updateData.video_count = data.videoCount;
-      if (data.startDate) updateData.start_date = data.startDate;
-      if (data.description) updateData.description = data.description;
-      if (data.country) updateData.country = data.country;
+      // Helper to add a field to both results and updateData
+      const addField = (field: string, value: any, fieldSuccess: boolean = true) => {
+        results.push({ field, value, success: fieldSuccess });
+        if (fieldSuccess && value !== undefined && value !== null) {
+          updateData[field] = value;
+        }
+      };
+      
+      // Check each field and record its status
+      addField('channel_title', data.title, !!data.title);
+      addField('total_subscribers', data.subscriberCount, !!data.subscriberCount);
+      addField('total_views', data.viewCount, !!data.viewCount);
+      addField('video_count', data.videoCount, !!data.videoCount);
+      addField('start_date', data.startDate, !!data.startDate);
+      addField('description', data.description, !!data.description);
+      addField('country', data.country, !!data.country);
+      
+      // Store the results
+      setStatsResults(prev => [...prev, { 
+        channel,
+        results,
+      }]);
       
       // Only update if we have data to update
       if (Object.keys(updateData).length > 0) {
@@ -66,6 +107,10 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
 
         if (updateError) {
           console.error(`Error updating stats for ${channel.title}:`, updateError);
+          setFailedChannels(prev => [...prev, {
+            channel,
+            error: `Database update error: ${updateError.message}`
+          }]);
           return false;
         }
         
@@ -73,9 +118,18 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
         return true;
       }
       
+      // If we didn't have any fields to update, consider it a failure
+      setFailedChannels(prev => [...prev, {
+        channel,
+        error: `No valid data received for the channel`
+      }]);
       return false;
     } catch (error) {
       console.error(`Exception when fetching stats for ${channel.title}:`, error);
+      setFailedChannels(prev => [...prev, {
+        channel,
+        error: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`
+      }]);
       return false;
     }
   };
@@ -92,6 +146,8 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
     setErrorCount(0);
     setTotalCount(channels.length);
     setCurrentChannel(null);
+    setStatsResults([]);
+    setFailedChannels([]);
 
     toast.info(`Starting stats fetch for ${channels.length} channels. This may take a while.`);
 
@@ -117,8 +173,6 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
         }
       }
 
-      const successCount = channels.filter((_, i) => i < channels.length).length;
-      
       if (successCount === channels.length) {
         toast.success(`Successfully fetched stats for all ${channels.length} channels!`);
       } else {
@@ -135,6 +189,17 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
     }
   };
 
+  const retryFailedChannels = async () => {
+    if (failedChannels.length === 0) {
+      toast.info("No failed channels to retry");
+      return;
+    }
+    
+    const channelsToRetry = failedChannels.map(item => item.channel);
+    setFailedChannels([]);
+    await fetchStatsForChannels(channelsToRetry);
+  };
+
   return {
     fetchStatsForChannels,
     isProcessing,
@@ -142,6 +207,9 @@ export function useBulkStatsFetcher(): UseBulkStatsFetcherResult {
     currentChannel,
     successCount,
     errorCount,
-    totalCount
+    totalCount,
+    statsResults,
+    failedChannels,
+    retryFailedChannels
   };
 }
