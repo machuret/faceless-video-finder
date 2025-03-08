@@ -16,13 +16,14 @@ export const useMassScreenshotUpdate = () => {
 
   const fetchChannelsWithoutScreenshots = async () => {
     try {
+      // Improved query to catch all variations of missing screenshots
       const { data, error, count } = await supabase
         .from('youtube_channels')
-        .select('id, channel_url', { count: 'exact' })
-        .is('screenshot_url', null)
-        .or('screenshot_url.eq.');
+        .select('id, channel_url, channel_title', { count: 'exact' })
+        .or('screenshot_url.is.null,screenshot_url.eq."",screenshot_url.eq.null');
       
       if (error) throw error;
+      console.log(`Found ${count || 0} channels without screenshots`);
       return { channels: data, count: count || 0 };
     } catch (error) {
       console.error("Error fetching channels without screenshots:", error);
@@ -75,6 +76,7 @@ export const useMassScreenshotUpdate = () => {
       }
 
       toast.info(`Starting screenshot update for ${channels.length} channels without screenshots. This may take a while.`);
+      console.log(`Starting screenshot update for ${channels.length} channels:`, channels);
       
       // Process channels in batches to avoid overloading the server
       const batchSize = 5;
@@ -84,9 +86,10 @@ export const useMassScreenshotUpdate = () => {
         const batch = channels.slice(i, i + batchSize);
         
         // Update screenshots for this batch in parallel
-        const batchPromises = batch.map(channel => 
-          updateScreenshot(channel.id, channel.channel_url)
-        );
+        const batchPromises = batch.map(channel => {
+          console.log(`Processing channel: ${channel.channel_title || channel.id}`);
+          return updateScreenshot(channel.id, channel.channel_url);
+        });
         
         const batchResults = await Promise.all(batchPromises);
         

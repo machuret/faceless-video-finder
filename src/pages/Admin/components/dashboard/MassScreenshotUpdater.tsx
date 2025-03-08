@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Camera } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useMassScreenshotUpdate } from "./hooks/useMassScreenshotUpdate";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const MassScreenshotUpdater = () => {
   const {
@@ -14,6 +15,25 @@ const MassScreenshotUpdater = () => {
     processedChannels,
     startMassUpdate
   } = useMassScreenshotUpdate();
+  
+  const [noChannelsFound, setNoChannelsFound] = useState(false);
+  
+  // Reset the "no channels" state when starting a new process
+  useEffect(() => {
+    if (isProcessing) {
+      setNoChannelsFound(false);
+    } else if (totalChannels === 0 && processedChannels === 0) {
+      setNoChannelsFound(false);
+    }
+  }, [isProcessing, totalChannels, processedChannels]);
+
+  const handleStartUpdate = async () => {
+    setNoChannelsFound(false);
+    const result = await startMassUpdate();
+    if (totalChannels === 0) {
+      setNoChannelsFound(true);
+    }
+  };
 
   return (
     <Card className="p-6">
@@ -32,8 +52,16 @@ const MassScreenshotUpdater = () => {
         </div>
       )}
       
+      {noChannelsFound && !isProcessing && (
+        <Alert className="mb-4 bg-green-50 border-green-200">
+          <AlertDescription className="text-green-700">
+            All channels already have screenshots. Great job!
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Button 
-        onClick={startMassUpdate} 
+        onClick={handleStartUpdate} 
         disabled={isProcessing}
         className="w-full"
       >
@@ -43,7 +71,10 @@ const MassScreenshotUpdater = () => {
             Processing...
           </>
         ) : (
-          "Update Missing Channel Screenshots"
+          <>
+            <Camera className="h-4 w-4 mr-2" />
+            Update Missing Channel Screenshots
+          </>
         )}
       </Button>
     </Card>
