@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,17 +29,17 @@ export function useBulkTypeGenerator() {
     }
     
     if (normalizedType === 'documentary_story') {
-      return 'documentary';
+      return 'documentary_story';
     }
     
     const typeMap: Record<string, ChannelType> = {
-      'how_to': 'tutorial',
-      'educational': 'education',
-      'gaming_channel': 'gaming',
-      'entertainment_channel': 'entertainment',
-      'music_channel': 'music',
-      'news_channel': 'news',
-      'tech_review': 'technology'
+      'how_to': 'screen_recording_tutorial',
+      'educational': 'history_educational',
+      'gaming_channel': 'other',
+      'entertainment_channel': 'other',
+      'music_channel': 'music_curation',
+      'news_channel': 'news_aggregation',
+      'tech_review': 'other'
     };
     
     if (typeMap[normalizedType]) {
@@ -107,8 +106,6 @@ export function useBulkTypeGenerator() {
 
       const validChannelType = validateChannelType(data.channelType);
       
-      // Fix: Cast the channel_type to DatabaseChannelType since we're using it for the database
-      // In this context, we need to ensure we're using a valid database channel type
       const dbChannelType: DatabaseChannelType = "creator";
       
       const { error: updateError } = await supabase
