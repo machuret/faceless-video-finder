@@ -29,10 +29,8 @@ export function useBulkScreenshotGenerator() {
           channelUrl: channel.url,
           channelId: channel.id
         },
-        // Set a longer timeout for the function call
-        options: {
-          timeout: 180000 // 3 minutes
-        }
+        // Remove the options property as it's not supported in the FunctionInvokeOptions type
+        abortSignal: new AbortController().signal
       });
 
       if (error) {
