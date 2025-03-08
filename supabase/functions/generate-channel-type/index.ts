@@ -39,17 +39,17 @@ serve(async (req) => {
       );
     }
 
-    const { title, description } = body;
+    const { channelTitle, description } = body;
     
-    if (!title) {
-      console.error("Missing required field: title");
+    if (!channelTitle) {
+      console.error("Missing required field: channelTitle");
       return new Response(
-        JSON.stringify({ error: "Missing required field: title" }),
+        JSON.stringify({ error: "Missing required field: channelTitle" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
     
-    console.log(`Processing request for channel: ${title}`);
+    console.log(`Processing request for channel: ${channelTitle}`);
     
     // List of available channel types
     const channelTypes = [
@@ -77,7 +77,8 @@ serve(async (req) => {
       "court_reactions",
       "live_drama_freakouts",
       "virtual_avatar",
-      "found_footage_archival"
+      "found_footage_archival",
+      "other"
     ];
 
     // Clean description and remove HTML tags
@@ -88,7 +89,7 @@ serve(async (req) => {
     const prompt = `
       Analyze this YouTube channel and determine the most likely channel type from the provided list.
       
-      Channel Title: ${title}
+      Channel Title: ${channelTitle}
       Channel Description: ${truncatedDescription}
       
       Available Channel Types: 

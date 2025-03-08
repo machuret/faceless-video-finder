@@ -49,7 +49,9 @@ export function useBulkTypeGenerator() {
         return false;
       }
 
-      if (!data || !data.typeId) {
+      console.log(`Generation response for ${channel.title}:`, data);
+
+      if (!data || !data.channelType) {
         console.error(`Failed to generate type for ${channel.title}:`, data?.error || "Unknown error");
         return false;
       }
@@ -57,7 +59,7 @@ export function useBulkTypeGenerator() {
       // Update the channel with the new type
       const { error: updateError } = await supabase
         .from('youtube_channels')
-        .update({ channel_type: data.typeId })
+        .update({ channel_type: data.channelType })
         .eq('id', channel.id);
 
       if (updateError) {
@@ -65,7 +67,7 @@ export function useBulkTypeGenerator() {
         return false;
       }
       
-      console.log(`Successfully updated type for ${channel.title} to ${data.typeId}`);
+      console.log(`Successfully updated type for ${channel.title} to ${data.channelType}`);
       return true;
     } catch (error) {
       console.error(`Exception when generating type for ${channel.title}:`, error);
@@ -110,7 +112,7 @@ export function useBulkTypeGenerator() {
         }
       }
 
-      if (successCount === channels.length) {
+      if (errorCount === 0 && successCount > 0) {
         toast.success(`Successfully generated types for all ${channels.length} channels!`);
       } else {
         toast.warning(
