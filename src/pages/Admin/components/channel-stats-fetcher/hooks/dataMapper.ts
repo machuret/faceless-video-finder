@@ -53,7 +53,8 @@ export const mapResponseToFormData = (
   const cleanStats: Partial<ChannelFormData> = {};
   Object.entries(stats).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
-      cleanStats[key as keyof ChannelFormData] = value;
+      // Fix: Type assertion to ensure TypeScript understands this is a valid key
+      cleanStats[key as keyof ChannelFormData] = value as string;
     }
   });
 
