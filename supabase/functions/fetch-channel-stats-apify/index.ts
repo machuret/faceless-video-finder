@@ -34,7 +34,7 @@ serve(async (req) => {
       return response;
     }
 
-    const { channelUrl, fetchMissingOnly } = requestData;
+    const { channelUrl, fetchMissingOnly, forceRefresh, timestamp } = requestData;
 
     if (!channelUrl) {
       console.error('Missing channelUrl parameter');
@@ -43,6 +43,9 @@ serve(async (req) => {
     }
     
     console.log(`Fetching ${fetchMissingOnly ? 'missing fields' : 'stats'} for channel: ${channelUrl}`);
+    if (forceRefresh) {
+      console.log(`Force refresh requested at ${timestamp || 'unknown timestamp'}`);
+    }
 
     // Get Apify API token from environment variable
     const APIFY_API_TOKEN = Deno.env.get("APIFY_API_KEY") || Deno.env.get("APIFY_API_TOKEN");
@@ -88,6 +91,18 @@ serve(async (req) => {
       );
     } catch (error) {
       console.error('Error processing channel data:', error);
+      
+      // Check for timeout errors specifically
+      if (error instanceof Error && error.message.includes('timed out')) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Request timed out - the Apify scraper is taking too long. Please try again later.',
+            source: "apify"
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 504 }
+        );
+      }
       
       // Return proper error response with detailed information
       const errorReason = error instanceof Error ? error.message : 'Unknown error occurred';

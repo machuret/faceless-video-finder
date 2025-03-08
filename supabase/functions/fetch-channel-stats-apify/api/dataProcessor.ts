@@ -24,7 +24,7 @@ export function processChannelData(items: any[]): ApifyChannelData {
   const snippet = channelInfo.snippet || firstItem.snippet || {};
   
   // Extract channel details from "about" page if available
-  const aboutPage = firstItem.aboutPage || {};
+  const aboutPage = firstItem.aboutPage || firstItem.about || {};
   
   // Try to find description from various possible locations
   let description = "";
@@ -34,7 +34,11 @@ export function processChannelData(items: any[]): ApifyChannelData {
     snippet.description,
     channelInfo.description,
     firstItem.description,
-    firstItem.channelDescription
+    firstItem.channelDescription,
+    // Add more potential sources
+    aboutPage.detailedText,
+    firstItem.detailedDescription,
+    firstItem.about?.description
   ];
   
   // Use the first non-empty description we find
@@ -54,7 +58,11 @@ export function processChannelData(items: any[]): ApifyChannelData {
     aboutPage.channelLocation,
     channelInfo.country,
     firstItem.country,
-    snippet.country
+    snippet.country,
+    // Add more potential sources
+    aboutPage.details?.country,
+    aboutPage.locationDetails,
+    firstItem.location
   ];
   
   for (const source of possibleLocationSources) {
@@ -65,28 +73,100 @@ export function processChannelData(items: any[]): ApifyChannelData {
     }
   }
   
-  // Extract video count - could be in different fields
-  const videoCount = firstItem.amountOfVideos || 
-                     statistics.videoCount || 
-                     channelInfo.videoCount || 
-                     firstItem.videoCount || "0";
-                     
-  // Extract subscriber count from multiple possible sources
-  const subscriberCount = firstItem.subscriberCount || 
-                         statistics.subscriberCount || 
-                         channelInfo.subscriberCount || "0";
+  // Try directly accessing the subscriber count string if available
+  let subscriberCount = null;
+  const subscriberInfoSources = [
+    // Direct properties
+    firstItem.subscriberCount,
+    statistics.subscriberCount,
+    channelInfo.subscriberCount,
+    aboutPage.subscriberCount,
+    // New fallbacks
+    firstItem.stats?.subscriberCount,
+    firstItem.channelStats?.subscriberCount,
+    aboutPage.stats?.subscriberCount
+  ];
+  
+  for (const source of subscriberInfoSources) {
+    if (source !== undefined && source !== null) {
+      subscriberCount = source;
+      console.log("Found subscriber count:", subscriberCount);
+      break;
+    }
+  }
+  
+  // Extract video count from multiple possible sources
+  const videoCountSources = [
+    firstItem.amountOfVideos,
+    statistics.videoCount,
+    channelInfo.videoCount,
+    firstItem.videoCount,
+    // New fallbacks
+    firstItem.stats?.videoCount,
+    firstItem.channelStats?.videoCount,
+    aboutPage.stats?.videoCount
+  ];
+  
+  let videoCount = "0";
+  for (const source of videoCountSources) {
+    if (source !== undefined && source !== null) {
+      videoCount = String(source);
+      console.log("Found video count:", videoCount);
+      break;
+    }
+  }
+  
+  // Extract channel total views from multiple sources
+  const viewCountSources = [
+    statistics.viewCount,
+    firstItem.viewCount,
+    channelInfo.viewCount,
+    aboutPage.viewCount,
+    // New fallbacks
+    firstItem.stats?.viewCount,
+    firstItem.totalViews,
+    aboutPage.stats?.totalViews
+  ];
+  
+  let viewCount = "0";
+  for (const source of viewCountSources) {
+    if (source !== undefined && source !== null) {
+      viewCount = String(source);
+      console.log("Found view count:", viewCount);
+      break;
+    }
+  }
+  
+  // Try to find the channel joined date
+  const joinedDateSources = [
+    channelInfo.publishedAt,
+    firstItem.publishedAt,
+    snippet.publishedAt,
+    firstItem.creationDate,
+    aboutPage.joinedDate,
+    channelInfo.joinedDate
+  ];
+  
+  let joinedDate = "";
+  for (const source of joinedDateSources) {
+    if (source !== undefined && source !== null) {
+      joinedDate = String(source);
+      console.log("Found joined date:", joinedDate);
+      break;
+    }
+  }
   
   // Format to our expected data structure with fallbacks for different API responses
   const channelData: ApifyChannelData = {
-    channelName: firstItem.channelName || channelInfo.title || snippet.title || "",
+    channelName: firstItem.channelName || channelInfo.title || snippet.title || firstItem.title || "",
     channelDescription: description,
-    numberOfSubscribers: subscriberCount,
-    channelTotalViews: statistics.viewCount || firstItem.viewCount || "0",
+    numberOfSubscribers: subscriberCount !== null ? String(subscriberCount) : "",
+    channelTotalViews: viewCount,
     channelTotalVideos: videoCount,
-    channelJoinedDate: channelInfo.publishedAt || firstItem.publishedAt || "",
+    channelJoinedDate: joinedDate,
     channelLocation: location,
-    channelUrl: firstItem.channelUrl || channelInfo.url || "",
-    channelId: extractChannelId(firstItem.channelUrl || channelInfo.url || "")
+    channelUrl: firstItem.channelUrl || channelInfo.url || firstItem.url || "",
+    channelId: extractChannelId(firstItem.channelUrl || channelInfo.url || firstItem.url || "")
   };
   
   // Verify what data we were able to extract
