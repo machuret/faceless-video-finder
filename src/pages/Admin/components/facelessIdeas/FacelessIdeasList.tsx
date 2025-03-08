@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { FacelessIdeaInfo } from "@/services/facelessIdeas";
 import { IdeasTable } from "./components/IdeasTable";
-import { SearchBar } from "./components/SearchBar";
+import { FacelessIdeasSearchBar } from "./components/SearchBar";
 import { HeaderActions } from "./components/HeaderActions";
 import { ImportHelp } from "./components/ImportHelp";
 import { LoadingState } from "./components/LoadingState";
@@ -90,7 +90,7 @@ export const FacelessIdeasList: React.FC<FacelessIdeasListProps> = ({
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between gap-4 items-start">
         <div className="w-full md:w-1/3">
-          <SearchBar 
+          <FacelessIdeasSearchBar 
             searchQuery={searchQuery} 
             setSearchQuery={setSearchQuery} 
           />

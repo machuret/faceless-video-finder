@@ -7,7 +7,7 @@ interface FacelessIdeasSearchBarProps {
   setSearchQuery: (query: string) => void;
 }
 
-export const SearchBar: React.FC<FacelessIdeasSearchBarProps> = ({ 
+export const FacelessIdeasSearchBar: React.FC<FacelessIdeasSearchBarProps> = ({ 
   searchQuery, 
   setSearchQuery 
 }) => {
