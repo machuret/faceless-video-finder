@@ -1,8 +1,7 @@
-
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ImageOff, FileText, BarChart, Tag, AlertCircle, RefreshCw } from "lucide-react";
+import { ImageOff, FileText, BarChart, Tag, AlertCircle, RefreshCw, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +13,7 @@ import { useBulkTypeGenerator } from "@/components/youtube/channel-list/componen
 import { useBulkKeywordsGenerator } from "@/components/youtube/channel-list/components/hooks/useBulkKeywordsGenerator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ChannelsToImprove = () => {
   const navigate = useNavigate();
@@ -90,7 +90,7 @@ const ChannelsToImprove = () => {
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
-        .or('total_subscribers.is.null,total_views.is.null,video_count.is.null')
+        .or('total_subscribers.is.null,total_views.is.null,video_count.is.null,start_date.is.null,cpm.is.null')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -345,6 +345,34 @@ const ChannelsToImprove = () => {
     );
   };
 
+  // Render empty state with appropriate message based on tab
+  const renderEmptyState = () => {
+    const getEmptyMessage = () => {
+      switch (activeTab) {
+        case "no-screenshot":
+          return "All channels have screenshots. Great job!";
+        case "no-type":
+          return "All channels have types assigned. Great job!";
+        case "no-stats":
+          return "All channels have complete statistics. Great job!";
+        case "no-keywords":
+          return "All channels have keywords assigned. Great job!";
+        default:
+          return "No channels found in this category.";
+      }
+    };
+
+    return (
+      <Alert className="bg-green-50 border-green-200">
+        <Info className="h-5 w-5 text-green-600" />
+        <AlertTitle className="text-green-800">All Set!</AlertTitle>
+        <AlertDescription className="text-green-700">
+          {getEmptyMessage()}
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   return (
     <Card className="p-6">
       <h2 className="text-xl font-semibold mb-4">Channels To Improve</h2>
@@ -470,7 +498,7 @@ const ChannelsToImprove = () => {
     }
 
     if (channels.length === 0) {
-      return <div className="text-gray-500 py-4">No channels found in this category.</div>;
+      return renderEmptyState();
     }
 
     return (
