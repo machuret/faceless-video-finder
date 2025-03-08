@@ -37,6 +37,11 @@ export function useBulkTypeGenerator() {
       const description = channelData?.description || "";
       
       // Call the edge function to generate channel type
+      console.log(`Calling edge function for ${channel.title} with:`, { 
+        channelTitle: channel.title, 
+        description: description 
+      });
+      
       const { data, error } = await supabase.functions.invoke<any>('generate-channel-type', {
         body: { 
           channelTitle: channel.title,
