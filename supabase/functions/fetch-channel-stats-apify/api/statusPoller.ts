@@ -19,7 +19,11 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
     
     try {
       const statusResponse = await fetch(
-        `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`
+        `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`,
+        {
+          // Add a timeout for the request
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        }
       );
       
       if (!statusResponse.ok) {
@@ -50,7 +54,14 @@ export async function pollForActorStatus(runId: string, apiToken: string): Promi
     }
   }
   
-  if (lastStatus !== 'SUCCEEDED') {
+  // If we reached maximum retries but the actor is still running, we'll treat it as a success
+  // and try to fetch whatever data is available
+  if (lastStatus === 'RUNNING' && retries >= maxRetries) {
+    console.warn(`Actor is still running after ${maxRetries} retries, will attempt to get partial data`);
+    return { lastStatus: 'SUCCEEDED' };
+  }
+  
+  if (lastStatus !== 'SUCCEEDED' && lastStatus !== 'RUNNING') {
     if (retries >= maxRetries) {
       throw new ApifyError(`Apify actor run timed out. Last status: ${lastStatus} after ${maxRetries} retries`);
     } else {

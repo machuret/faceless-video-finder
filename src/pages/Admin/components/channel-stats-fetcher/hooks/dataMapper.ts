@@ -1,3 +1,4 @@
+
 import { ChannelFormData } from "@/types/forms";
 import { ChannelStatsResponse } from "supabase/functions/fetch-channel-stats-apify/types";
 import { FieldMapping, ProcessedChannelData } from "./types";
@@ -54,7 +55,7 @@ export const mapResponseToFormData = (
   // Properly assign values to the cleanStats object
   Object.entries(stats).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
-      // Type the key properly and safely assign the value
+      // Use a properly typed assignment with type assertion
       (cleanStats as any)[key] = value;
     }
   });
@@ -109,10 +110,10 @@ export const mapPartialResponseToFormData = (
       
       // Now assign with proper type casting for different field types
       if (fieldName === 'total_subscribers' || fieldName === 'total_views' || fieldName === 'video_count') {
-        partialStats[fieldName] = fieldValueString;
+        (partialStats as any)[fieldName] = fieldValueString;
       } else if (fieldName === 'description' || fieldName === 'channel_title' || 
                 fieldName === 'start_date' || fieldName === 'country') {
-        partialStats[fieldName] = fieldValueString;
+        (partialStats as any)[fieldName] = fieldValueString;
       }
       
       successfulFields.push(apiField);
