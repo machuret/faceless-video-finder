@@ -34,10 +34,10 @@ const AdminActionCards = () => {
       </Card>
       
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Keyword Research</h2>
-        <p className="text-gray-600 mb-4">Research YouTube keywords for video optimization.</p>
-        <Button onClick={() => navigate("/keyword-research")} className="w-full">
-          Research Keywords
+        <h2 className="text-xl font-semibold mb-4">Did You Know Facts</h2>
+        <p className="text-gray-600 mb-4">Manage facts that appear on channel pages.</p>
+        <Button onClick={() => navigate("/admin/did-you-know-facts")} className="w-full">
+          Manage Facts
         </Button>
       </Card>
     </div>

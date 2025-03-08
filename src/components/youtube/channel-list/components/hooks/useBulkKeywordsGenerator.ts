@@ -16,7 +16,6 @@ export function useBulkKeywordsGenerator() {
   const [successCount, setSuccessCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [failedChannels, setFailedChannels] = useState<Array<{channel: SelectedChannel, error: string}>>([]);
 
   const generateKeywordsForChannel = async (channel: SelectedChannel): Promise<boolean> => {
     try {
@@ -32,10 +31,6 @@ export function useBulkKeywordsGenerator() {
       
       if (channelError) {
         console.error(`Error fetching description for ${channel.title}:`, channelError);
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: `Failed to fetch channel data: ${channelError.message}`
-        }]);
         return false;
       }
       
@@ -53,19 +48,11 @@ export function useBulkKeywordsGenerator() {
 
       if (error) {
         console.error(`Error generating keywords for ${channel.title}:`, error);
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: `Generation API error: ${error.message}`
-        }]);
         return false;
       }
 
       if (!data || !data.keywords || !Array.isArray(data.keywords)) {
         console.error(`Failed to generate keywords for ${channel.title}:`, data?.error || "Unknown error");
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: data?.error || "No keywords returned from AI"
-        }]);
         return false;
       }
 
@@ -77,10 +64,6 @@ export function useBulkKeywordsGenerator() {
 
       if (updateError) {
         console.error(`Error updating keywords for ${channel.title}:`, updateError);
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: `Database update error: ${updateError.message}`
-        }]);
         return false;
       }
       
@@ -88,10 +71,6 @@ export function useBulkKeywordsGenerator() {
       return true;
     } catch (error) {
       console.error(`Exception when generating keywords for ${channel.title}:`, error);
-      setFailedChannels(prev => [...prev, {
-          channel,
-          error: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`
-        }]);
       return false;
     }
   };
@@ -108,7 +87,6 @@ export function useBulkKeywordsGenerator() {
     setErrorCount(0);
     setTotalCount(channels.length);
     setCurrentChannel(null);
-    setFailedChannels([]);
 
     toast.info(`Starting keywords generation for ${channels.length} channels. This may take a while.`);
 
@@ -150,17 +128,6 @@ export function useBulkKeywordsGenerator() {
     }
   };
 
-  const retryFailedChannels = async () => {
-    if (failedChannels.length === 0) {
-      toast.info("No failed channels to retry");
-      return;
-    }
-    
-    const channelsToRetry = failedChannels.map(item => item.channel);
-    setFailedChannels([]);
-    await generateKeywordsForChannels(channelsToRetry);
-  };
-
   return {
     generateKeywordsForChannels,
     isProcessing,
@@ -168,8 +135,6 @@ export function useBulkKeywordsGenerator() {
     currentChannel,
     successCount,
     errorCount,
-    totalCount,
-    failedChannels,
-    retryFailedChannels
+    totalCount
   };
 }

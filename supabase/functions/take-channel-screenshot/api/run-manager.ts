@@ -1,4 +1,3 @@
-
 import { 
   APIFY_BASE_URL, 
   APIFY_ACTOR_ID, 
@@ -19,7 +18,7 @@ export async function startActorRun(url: string): Promise<{
   try {
     console.log(`Starting Apify actor run for URL: ${url}`);
     
-    // Use the configuration for the Ultimate Scraping actor with improved settings
+    // Use the configuration for the new Ultimate Scraping actor with improved settings
     const startResponse = await fetch(`${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${APIFY_API_TOKEN}`, {
       method: "POST",
       headers: {
@@ -30,22 +29,19 @@ export async function startActorRun(url: string): Promise<{
         "enableSSL": true,
         "linkUrls": [url],
         "outputFormat": "jpeg",
-        "waitUntil": "networkidle2", 
-        "timeouT": 180, // Increased to 180 seconds as recommended for Google Trends Scraper
-        "maxRetries": 3,
-        "delayBeforeScreenshot": 3000, // Increased back to 3000ms to allow more time for page elements to load
-        "scrollToBottom": true, 
-        "delayAfterScrolling": 1000, // Increased to 1000ms to ensure all elements render
+        "waitUntil": "networkidle0", // Wait until network is idle
+        "timeouT": 30, // Increase timeout for better loading
+        "maxRetries": 5, // More retries for reliability
+        "delayBeforeScreenshot": 3000, // Longer delay to ensure content loads
+        "scrollToBottom": true, // Scroll to bottom to load all content
+        "delayAfterScrolling": 1000, // Wait after scrolling
         "window_Width": 1920,
         "window_Height": 1080,
         "printBackground": true,
         "proxyConfig": {
-          "useApifyProxy": true,
-          "apifyProxyGroups": ["RESIDENTIAL"]
+          "useApifyProxy": false
         }
       }),
-      // Add request timeout
-      signal: AbortSignal.timeout(30000), // 30-second timeout for the API request itself
     });
     
     if (!startResponse.ok) {
@@ -72,11 +68,10 @@ export async function startActorRun(url: string): Promise<{
     console.log(`Apify run started with ID: ${runId}`);
     return { success: true, runId };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Error starting Apify actor run:", errorMessage);
+    console.error("Error starting Apify actor run:", error);
     return { 
       success: false, 
-      error: `Error starting Apify actor run: ${errorMessage}` 
+      error: `Error starting Apify actor run: ${error.message}` 
     };
   }
 }
@@ -91,69 +86,44 @@ export async function pollForRunCompletion(runId: string): Promise<{
 }> {
   let status = "READY";
   let attempts = 0;
-  let startTime = Date.now();
   
   while (status !== "SUCCEEDED" && status !== "FAILED" && attempts < MAX_POLLING_ATTEMPTS) {
     await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS));
     attempts++;
     
-    const elapsedTime = Math.round((Date.now() - startTime) / 1000);
-    console.log(`Checking run status (attempt ${attempts}/${MAX_POLLING_ATTEMPTS}, elapsed: ${elapsedTime}s)...`);
+    console.log(`Checking run status (attempt ${attempts}/${MAX_POLLING_ATTEMPTS})...`);
     
     try {
-      const statusResponse = await fetch(
-        `${APIFY_BASE_URL}/actor-runs/${runId}?token=${APIFY_API_TOKEN}`,
-        {
-          headers: {
-            'Accept': 'application/json'
-          },
-          signal: AbortSignal.timeout(15000) // 15-second timeout for status checks
-        }
-      );
+      const statusResponse = await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}?token=${APIFY_API_TOKEN}`);
       
       if (!statusResponse.ok) {
-        const errorText = await statusResponse.text().catch(() => "Could not read error response");
-        console.error(`Error checking run status: ${statusResponse.status} - ${errorText}`);
-        
-        // If we're hitting rate limits (429), wait longer
-        if (statusResponse.status === 429) {
-          console.log("Rate limit hit, waiting longer before next attempt...");
-          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait an additional 5 seconds
-        }
-        
+        console.error(`Error checking run status: ${statusResponse.status}`);
         continue;
       }
       
       const statusData = await statusResponse.json() as ApifyStatusResponse;
       status = statusData?.data?.status || status;
       
-      console.log(`Run status: ${status} (attempt: ${attempts}/${MAX_POLLING_ATTEMPTS}, elapsed: ${elapsedTime}s)`);
+      console.log(`Run status: ${status}`);
       
       if (status === "FAILED") {
         return { 
           success: false, 
           status,
-          error: `Apify run failed. This could be due to the YouTube channel being unavailable or protected.` 
+          error: "Apify run failed" 
         };
       }
-      
-      // Early success detection - if succeeded, break out early
-      if (status === "SUCCEEDED") {
-        break;
-      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`Error polling run status: ${errorMessage}`);
+      console.error(`Error polling run status: ${error.message}`);
       // Continue polling despite errors
     }
   }
   
   if (status !== "SUCCEEDED") {
-    const elapsedTime = Math.round((Date.now() - startTime) / 1000);
     return { 
       success: false, 
       status,
-      error: `Timeout waiting for Apify run to complete after ${elapsedTime} seconds. Try a different URL format (e.g., @username instead of channel/ID) or try again later.` 
+      error: "Timeout waiting for Apify run to complete" 
     };
   }
   

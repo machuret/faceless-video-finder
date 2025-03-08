@@ -28,19 +28,6 @@ const MainNavbar = () => {
           <DesktopNav isActive={isActive} />
           
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex space-x-2">
-              <Link 
-                to="/keyword-research" 
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
-                  isActive('/keyword-research') 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                Keyword Research
-              </Link>
-            </div>
-            
             <button className="md:hidden text-gray-700" onClick={toggleMobileMenu} aria-label="Toggle menu">
               {mobileMenuOpen ? (
                 <X className="h-6 w-6" />

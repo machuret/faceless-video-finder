@@ -1,75 +1,140 @@
 
 import { ApifyChannelData } from "../types.ts";
-import { extractChannelId } from "./channelIdExtractor.ts";
-import { 
-  extractDescription, 
-  extractLocation, 
-  extractSubscriberCount, 
-  extractVideoCount, 
-  extractViewCount, 
-  extractJoinedDate 
-} from "./fieldExtractors.ts";
 
 /**
- * Processes the channel data from Apify YouTube Channel Scraper
+ * Processes the channel data from Apify Fast YouTube Channel Scraper
  */
 export function processChannelData(items: any[]): ApifyChannelData {
   console.log(`Processing ${items.length} items from Apify dataset`);
   
-  // YouTube Channel Scraper returns an array of videos, with channel info in each item
+  // The Fast YouTube Channel Scraper returns data in a specific format
+  // We need to extract the channel information which is present
   if (!items || items.length === 0) {
     throw new Error('Invalid data format returned from Apify - no items found');
   }
   
-  // Log the first item structure to help with debugging
-  console.log("First item structure:", Object.keys(items[0]));
+  // Log the first item to debug what's in the response
+  console.log("First item from Apify dataset:", JSON.stringify(items[0], null, 2));
   
-  // Extract channel information from the first item
+  // Try to extract channel information from the first item
   const firstItem = items[0];
   
-  // Channel info could be in different locations based on the scraper version
-  const channelInfo = firstItem.channelInfo || firstItem.channel || {};
-  const statistics = channelInfo.statistics || firstItem.statistics || {};
-  const snippet = channelInfo.snippet || firstItem.snippet || {};
+  // Extract channel page sections if available
+  const aboutPage = firstItem.aboutPage || {};
+  const snippet = firstItem.snippet || {};
+  const channelInfo = firstItem.channelInfo || {};
   
-  // Extract channel details from "about" page if available
-  const aboutPage = firstItem.aboutPage || firstItem.about || {};
+  // Try to find description from various possible locations
+  // We need to search more aggressively for this field
+  let description = "";
   
-  // Extract all the important fields
-  const description = extractDescription(firstItem, aboutPage, snippet, channelInfo);
-  const location = extractLocation(firstItem, aboutPage, snippet, channelInfo);
-  const subscriberCount = extractSubscriberCount(firstItem, statistics, channelInfo, aboutPage);
-  const videoCount = extractVideoCount(firstItem, statistics, channelInfo, aboutPage);
-  const viewCount = extractViewCount(firstItem, statistics, channelInfo, aboutPage);
-  const joinedDate = extractJoinedDate(firstItem, channelInfo, snippet, aboutPage);
+  // Check all possible description locations
+  const possibleDescriptionSources = [
+    aboutPage.channelDescription,
+    aboutPage.description,
+    snippet.description,
+    firstItem.channelDescription,
+    firstItem.description,
+    channelInfo?.description,
+    firstItem.about,
+    aboutPage.about,
+    // Check nested objects that might contain the description
+    firstItem.details?.description,
+    firstItem.channelDetails?.description,
+    aboutPage.details?.description
+  ];
   
-  // Determine the channel URL and name from various sources
-  const channelUrl = firstItem.channelUrl || channelInfo.url || firstItem.url || "";
-  const channelName = firstItem.channelName || channelInfo.title || snippet.title || firstItem.title || "";
+  // Find the first non-empty description
+  for (const source of possibleDescriptionSources) {
+    if (source && typeof source === 'string' && source.trim() !== "") {
+      description = source;
+      console.log("✅ Found description from source:", source.substring(0, 50) + "...");
+      break;
+    }
+  }
   
-  // Format to our expected data structure
-  const channelData: ApifyChannelData = {
-    channelName: channelName,
-    channelDescription: description,
-    numberOfSubscribers: subscriberCount !== null ? String(subscriberCount) : "",
-    channelTotalViews: viewCount,
-    channelTotalVideos: videoCount,
-    channelJoinedDate: joinedDate,
-    channelLocation: location,
-    channelUrl: channelUrl,
-    channelId: extractChannelId(channelUrl)
-  };
+  // Try to find country/location from various possible locations
+  let location = "";
+  const possibleLocationSources = [
+    aboutPage.channelLocation,
+    aboutPage.country,
+    snippet.country,
+    firstItem.channelLocation,
+    firstItem.country,
+    channelInfo?.country,
+    channelInfo?.location,
+    // Check nested objects that might contain the country
+    firstItem.details?.country,
+    firstItem.channelDetails?.country,
+    aboutPage.details?.country
+  ];
   
-  // Verify what data we were able to extract
-  console.log("Extracted channel data:", {
-    name: channelData.channelName,
-    subscribers: channelData.numberOfSubscribers,
-    videos: channelData.channelTotalVideos,
-    views: channelData.channelTotalViews,
-    joined: channelData.channelJoinedDate,
-    description: channelData.channelDescription ? "FOUND" : "MISSING",
-    location: channelData.channelLocation || "MISSING"
+  // Find the first non-empty location
+  for (const source of possibleLocationSources) {
+    if (source && typeof source === 'string' && source.trim() !== "") {
+      location = source;
+      console.log("✅ Found location from source:", location);
+      break;
+    }
+  }
+  
+  // Log extracted fields for debugging
+  console.log("Extracted channel data fields:", {
+    name: firstItem.channelName || firstItem.name || snippet.title,
+    description: description ? `FOUND (${description.length} chars)` : "MISSING",
+    subscribers: firstItem.numberOfSubscribers || firstItem.subscriberCount,
+    views: firstItem.channelTotalViews || firstItem.viewCount,
+    videoCount: firstItem.channelTotalVideos || firstItem.videoCount,
+    joinDate: firstItem.channelJoinedDate || firstItem.joinedDate,
+    location: location || "MISSING"
   });
   
+  // The format is different from the old scraper, so we need to map fields
+  // with fallbacks for different possible formats
+  const channelData: ApifyChannelData = {
+    channelName: firstItem.channelName || firstItem.name || snippet.title || "",
+    channelDescription: description,
+    numberOfSubscribers: firstItem.numberOfSubscribers || firstItem.subscriberCount || "0",
+    channelTotalViews: firstItem.channelTotalViews || firstItem.viewCount || "0",
+    channelTotalVideos: firstItem.channelTotalVideos || firstItem.videoCount || "0",
+    channelJoinedDate: firstItem.channelJoinedDate || firstItem.joinedDate || "",
+    channelLocation: location,
+    channelUrl: firstItem.channelUrl || firstItem.url || "",
+    channelId: extractChannelId(firstItem.channelUrl || firstItem.url || "")
+  };
+  
+  // Verify essential fields and provide detailed diagnostic info
+  console.log("Channel data verification from Apify:");
+  console.log(`- Channel Name: ${channelData.channelName || 'MISSING'}`);
+  console.log(`- Subscribers: ${channelData.numberOfSubscribers || 'MISSING'}`);
+  console.log(`- Total Views: ${channelData.channelTotalViews || 'MISSING'}`);
+  console.log(`- Total Videos: ${channelData.channelTotalVideos || 'MISSING'}`);
+  console.log(`- Join Date: ${channelData.channelJoinedDate || 'MISSING'}`);
+  console.log(`- Description: ${channelData.channelDescription ? 'PRESENT' : 'MISSING'}`);
+  console.log(`- Location: ${channelData.channelLocation || 'MISSING'}`);
+  console.log(`- Channel URL: ${channelData.channelUrl || 'MISSING'}`);
+  
   return channelData;
+}
+
+/**
+ * Helper function to extract channel ID from YouTube channel URL
+ */
+export function extractChannelId(url: string): string {
+  if (!url) return "";
+  
+  try {
+    // Handle different URL formats
+    if (url.includes('/channel/')) {
+      const matches = url.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+      return matches?.[1] || "";
+    } else if (url.includes('/c/') || url.includes('/@')) {
+      // For custom URLs, just return the handle part or full URL as ID
+      return url;
+    }
+    return "";
+  } catch (e) {
+    console.error("Error extracting channel ID:", e);
+    return "";
+  }
 }

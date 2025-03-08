@@ -1,99 +1,110 @@
 
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { channelTypes } from "@/components/youtube/channel-list/constants";
 
 interface TypeAIGeneratorProps {
   channelTitle: string;
-  channelDescription?: string;
-  onTypeDetected: (typeId: string) => void;
+  description: string;
+  onTypeGenerated: (type: string) => void;
 }
 
-export function TypeAIGenerator({ 
-  channelTitle, 
-  channelDescription = "", 
-  onTypeDetected 
-}: TypeAIGeneratorProps) {
-  const [loading, setLoading] = useState(false);
+const TypeAIGenerator = ({ channelTitle, description, onTypeGenerated }: TypeAIGeneratorProps) => {
+  const [isGenerating, setIsGenerating] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const isRequestInProgress = useRef(false);
 
   const generateChannelType = async () => {
     if (!channelTitle) {
-      toast.error("Channel title is required to generate a type");
+      toast.error('Please enter a channel title first');
       return;
     }
-
-    setLoading(true);
+    
+    // Prevent multiple simultaneous requests
+    if (isRequestInProgress.current) {
+      console.log("Request already in progress, skipping");
+      return;
+    }
+    
+    setIsGenerating(true);
+    isRequestInProgress.current = true;
+    
     try {
-      toast.info("Generating channel type with AI...");
+      // Clean up description (remove HTML) for better processing
+      const cleanDesc = description ? description.replace(/<\/?[^>]+(>|$)/g, "") : "";
       
-      // Log for debugging
-      console.log("Generating type for channel:", {
-        title: channelTitle,
-        description: channelDescription
+      console.log("Calling generate-channel-type function with:", { 
+        title: channelTitle, 
+        description: cleanDesc || '' 
       });
-
-      const { data, error } = await supabase.functions.invoke("generate-channel-type", {
-        body: {
-          channelTitle,
-          channelDescription
+      
+      const response = await supabase.functions.invoke('generate-channel-type', {
+        body: { 
+          title: channelTitle, 
+          description: cleanDesc || '' 
         }
       });
-
-      if (error) {
-        console.error("Error generating channel type:", error);
-        toast.error(`Failed to generate type: ${error.message}`);
-        
-        // Implement retry logic
-        if (retryCount < 1) {
-          toast.info(`Retrying channel type generation (attempt ${retryCount + 1}/1)...`);
-          setRetryCount(prev => prev + 1);
-          setTimeout(generateChannelType, 2000);
-        }
-        return;
-      }
-
-      if (!data?.type) {
-        console.error("No type returned from AI:", data);
-        toast.error("AI couldn't determine a type for this channel");
-        return;
-      }
-
-      console.log("AI generated type:", data.type);
       
-      // Verify the type exists in our channel types
-      const typeExists = channelTypes.some(type => type.id === data.type);
+      console.log("Edge function response:", response);
       
-      if (!typeExists) {
-        console.warn(`AI returned invalid type: ${data.type}. Defaulting to 'other'`);
-        toast.warning("AI suggested an unknown type, using 'other' instead");
-        onTypeDetected("other");
+      if (response.error) {
+        console.error('Edge Function error:', response.error);
+        throw new Error(`Edge function error: ${response.error.message || 'Unknown error'}`);
+      }
+      
+      const data = response.data;
+      console.log("AI channel type generation response:", data);
+      
+      if (data?.channelType) {
+        onTypeGenerated(data.channelType);
+        toast.success('Channel type generated successfully!');
+        // Reset retry count on success
+        setRetryCount(0);
       } else {
-        toast.success(`AI detected type: ${data.type}`);
-        onTypeDetected(data.type);
+        console.error('No channel type in response:', data);
+        throw new Error('No channel type was generated');
       }
-    } catch (err) {
-      console.error("Exception generating channel type:", err);
-      toast.error("Failed to generate channel type");
+    } catch (error) {
+      console.error('Error generating channel type:', error);
+      
+      // Error handling with retry logic - but limit retries appropriately
+      if (retryCount < 2) {
+        toast.error(`Retrying channel type generation (attempt ${retryCount + 1}/2)...`);
+        setRetryCount(prev => prev + 1);
+        // Set a timeout before retrying
+        setTimeout(() => {
+          isRequestInProgress.current = false; // Release the lock before retrying
+          generateChannelType();
+        }, 2000); // Retry after 2 seconds
+        return;
+      }
+      
+      toast.error('Failed to generate channel type: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setRetryCount(0);
     } finally {
-      setLoading(false);
+      // Only set generating to false if we're not about to retry
+      if (retryCount >= 2) {
+        setIsGenerating(false);
+        isRequestInProgress.current = false;
+      }
     }
   };
 
   return (
-    <Button
+    <Button 
+      type="button" 
+      size="sm" 
       variant="outline"
-      size="sm"
-      className="flex items-center gap-1"
       onClick={generateChannelType}
-      disabled={loading || !channelTitle}
-      title="Use AI to suggest a channel type based on the title and description"
+      disabled={isGenerating}
+      className="flex items-center gap-1 ml-2"
     >
-      <Wand2 className="h-3.5 w-3.5" />
-      {loading ? "Generating..." : "AI Detect"}
+      <Wand2 className="h-4 w-4" />
+      {isGenerating ? "Generating..." : "Generate Type"}
     </Button>
   );
-}
+};
+
+export default TypeAIGenerator;

@@ -1,8 +1,7 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { channelTypes } from "../../constants/channelTypes";
-import { ChannelType, DatabaseChannelType } from "@/types/youtube";
 
 interface SelectedChannel {
   id: string;
@@ -17,44 +16,13 @@ export function useBulkTypeGenerator() {
   const [successCount, setSuccessCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [failedChannels, setFailedChannels] = useState<Array<{channel: SelectedChannel, error: string}>>([]);
-
-  const validateChannelType = (type: string): ChannelType => {
-    const normalizedType = type.toLowerCase().replace(/\s+/g, '_');
-    
-    const validTypes = channelTypes.map(t => t.id);
-    
-    if (validTypes.includes(normalizedType as ChannelType)) {
-      return normalizedType as ChannelType;
-    }
-    
-    if (normalizedType === 'documentary_story') {
-      return 'documentary_story';
-    }
-    
-    const typeMap: Record<string, ChannelType> = {
-      'how_to': 'screen_recording_tutorial',
-      'educational': 'history_educational',
-      'gaming_channel': 'other',
-      'entertainment_channel': 'other',
-      'music_channel': 'music_curation',
-      'news_channel': 'news_aggregation',
-      'tech_review': 'other'
-    };
-    
-    if (typeMap[normalizedType]) {
-      return typeMap[normalizedType];
-    }
-    
-    console.warn(`Channel type "${type}" is not valid, defaulting to "other"`);
-    return "other";
-  };
 
   const generateTypeForChannel = async (channel: SelectedChannel): Promise<boolean> => {
     try {
       console.log(`Generating type for channel: ${channel.title}`);
       setCurrentChannel(channel.title);
       
+      // Get channel description for better type generation
       const { data: channelData, error: channelError } = await supabase
         .from('youtube_channels')
         .select('description')
@@ -63,15 +31,12 @@ export function useBulkTypeGenerator() {
       
       if (channelError) {
         console.error(`Error fetching description for ${channel.title}:`, channelError);
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: `Failed to fetch description: ${channelError.message}`
-        }]);
         return false;
       }
       
       const description = channelData?.description || "";
       
+      // Call the edge function to generate channel type
       console.log(`Calling edge function for ${channel.title} with:`, { 
         channelTitle: channel.title, 
         description: description 
@@ -86,10 +51,6 @@ export function useBulkTypeGenerator() {
 
       if (error) {
         console.error(`Error generating type for ${channel.title}:`, error);
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: `Generation API error: ${error.message}`
-        }]);
         return false;
       }
 
@@ -97,39 +58,24 @@ export function useBulkTypeGenerator() {
 
       if (!data || !data.channelType) {
         console.error(`Failed to generate type for ${channel.title}:`, data?.error || "Unknown error");
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: data?.error || "No type returned from AI"
-        }]);
         return false;
       }
 
-      const validChannelType = validateChannelType(data.channelType);
-      
-      const dbChannelType: DatabaseChannelType = "creator";
-      
+      // Update the channel with the new type
       const { error: updateError } = await supabase
         .from('youtube_channels')
-        .update({ channel_type: dbChannelType, metadata: { ui_channel_type: validChannelType } })
+        .update({ channel_type: data.channelType })
         .eq('id', channel.id);
 
       if (updateError) {
         console.error(`Error updating type for ${channel.title}:`, updateError);
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: `Database update error: ${updateError.message}`
-        }]);
         return false;
       }
       
-      console.log(`Successfully updated type for ${channel.title} to ${validChannelType}`);
+      console.log(`Successfully updated type for ${channel.title} to ${data.channelType}`);
       return true;
     } catch (error) {
       console.error(`Exception when generating type for ${channel.title}:`, error);
-      setFailedChannels(prev => [...prev, {
-        channel,
-        error: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`
-      }]);
       return false;
     }
   };
@@ -146,11 +92,11 @@ export function useBulkTypeGenerator() {
     setErrorCount(0);
     setTotalCount(channels.length);
     setCurrentChannel(null);
-    setFailedChannels([]);
 
     toast.info(`Starting type generation for ${channels.length} channels. This may take a while.`);
 
     try {
+      // Process channels in sequence to avoid overloading
       for (let i = 0; i < channels.length; i++) {
         const channel = channels[i];
         const success = await generateTypeForChannel(channel);
@@ -161,9 +107,11 @@ export function useBulkTypeGenerator() {
           setErrorCount(prev => prev + 1);
         }
         
+        // Update progress
         const newProgress = Math.floor(((i + 1) / channels.length) * 100);
         setProgress(newProgress);
         
+        // Add a small delay between requests to avoid rate limiting
         if (i < channels.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
@@ -185,17 +133,6 @@ export function useBulkTypeGenerator() {
     }
   };
 
-  const retryFailedChannels = async () => {
-    if (failedChannels.length === 0) {
-      toast.info("No failed channels to retry");
-      return;
-    }
-    
-    const channelsToRetry = failedChannels.map(item => item.channel);
-    setFailedChannels([]);
-    await generateTypesForChannels(channelsToRetry);
-  };
-
   return {
     generateTypesForChannels,
     isProcessing,
@@ -203,8 +140,6 @@ export function useBulkTypeGenerator() {
     currentChannel,
     successCount,
     errorCount,
-    totalCount,
-    failedChannels,
-    retryFailedChannels
+    totalCount
   };
 }

@@ -1,42 +1,59 @@
 
 import React from "react";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Info, CheckCircle2, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export const ErrorAlert = ({ error }: { error: string }) => (
-  <Alert variant="destructive">
-    <AlertCircle className="h-4 w-4" />
-    <AlertTitle>Error fetching stats</AlertTitle>
-    <AlertDescription>{error}</AlertDescription>
-  </Alert>
-);
+interface ErrorAlertProps {
+  error: string;
+}
 
-export const PartialDataAlert = ({ missingFields }: { missingFields: string[] }) => (
-  <Alert variant="default" className="border-orange-200 bg-orange-50">
-    <Info className="h-4 w-4 text-orange-600" />
-    <AlertTitle className="text-orange-800">Partial data received</AlertTitle>
-    <AlertDescription className="text-orange-700">
-      Some fields could not be fetched: {missingFields.join(', ')}
-    </AlertDescription>
-  </Alert>
-);
+export const ErrorAlert: React.FC<ErrorAlertProps> = ({ error }) => {
+  return (
+    <Alert variant="destructive" className="mt-2">
+      <AlertTitle>Error</AlertTitle>
+      <AlertDescription className="text-sm">{error}</AlertDescription>
+    </Alert>
+  );
+};
 
-export const SuccessAlert = () => (
-  <Alert variant="default" className="bg-green-50 border-green-200">
-    <CheckCircle2 className="h-4 w-4 text-green-600" />
-    <AlertTitle className="text-green-800">Success</AlertTitle>
-    <AlertDescription className="text-green-700">
-      Channel stats were successfully fetched and imported
-    </AlertDescription>
-  </Alert>
-);
+interface PartialDataAlertProps {
+  missingFields: string[];
+}
 
-export const MultipleAttemptsAlert = ({ attemptsCount }: { attemptsCount: number }) => (
-  <Alert variant="default" className="bg-blue-50 border-blue-200">
-    <RefreshCw className="h-4 w-4 text-blue-600" />
-    <AlertTitle className="text-blue-800">Multiple attempts detected</AlertTitle>
-    <AlertDescription className="text-blue-700">
-      {attemptsCount} fetch attempts so far. If fetching continues to fail, consider filling in data manually.
-    </AlertDescription>
-  </Alert>
-);
+export const PartialDataAlert: React.FC<PartialDataAlertProps> = ({ missingFields }) => {
+  return (
+    <Alert className="mt-2 border-yellow-500 bg-yellow-50">
+      <AlertTitle className="text-yellow-600">Incomplete Data</AlertTitle>
+      <AlertDescription className="text-sm">
+        Missing fields: {missingFields.join(', ')}. You'll need to fill these in manually.
+      </AlertDescription>
+    </Alert>
+  );
+};
+
+export const SuccessAlert: React.FC = () => {
+  return (
+    <Alert className="mt-2 border-green-500 bg-green-50">
+      <AlertTitle className="text-green-600">Complete Data Retrieved</AlertTitle>
+      <AlertDescription className="text-sm">
+        All channel data was successfully scraped using Apify's YouTube scraper.
+      </AlertDescription>
+    </Alert>
+  );
+};
+
+interface MultipleAttemptsAlertProps {
+  attemptsCount: number;
+}
+
+export const MultipleAttemptsAlert: React.FC<MultipleAttemptsAlertProps> = ({ attemptsCount }) => {
+  if (attemptsCount < 2) return null;
+  
+  return (
+    <Alert className="mt-2 border-blue-500 bg-blue-50">
+      <AlertTitle className="text-blue-600">Multiple Fetch Attempts</AlertTitle>
+      <AlertDescription className="text-sm">
+        Consider entering the missing data manually if automated fetching continues to fail.
+      </AlertDescription>
+    </Alert>
+  );
+};

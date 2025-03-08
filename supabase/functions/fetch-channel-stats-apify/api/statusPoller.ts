@@ -1,92 +1,62 @@
 
 import { ApifyError } from "../errors.ts";
 
-export interface PollResult {
-  lastStatus: string;
-  isFinished: boolean;
-}
-
 /**
- * Polls the Apify actor run status until it completes or fails
+ * Polls for actor run status until it's finished
  */
-export async function pollForActorStatus(runId: string, apiToken: string): Promise<PollResult> {
-  console.log(`Starting to poll for status of run ${runId}`);
+export async function pollForActorStatus(runId: string, apiToken: string): Promise<{ lastStatus: string }> {
+  // Poll for actor run status until it's finished
+  let isFinished = false;
+  let retries = 0;
+  const maxRetries = 30; // Allow up to 1 minute (checking every 2 seconds)
+  let lastStatus = '';
   
-  let attempts = 0;
-  const maxAttempts = 40; // Increased to 40 for longer running tasks
-  const pollInterval = 7500; // 7.5 seconds
+  console.log(`Starting to poll for actor run ${runId} status`);
   
-  while (attempts < maxAttempts) {
-    attempts++;
-    console.log(`Polling attempt ${attempts}/${maxAttempts}`);
+  while (!isFinished && retries < maxRetries) {
+    // Wait between status checks
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     try {
-      // Use a timeout for the fetch request
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      const response = await fetch(
-        `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal
-        }
+      const statusResponse = await fetch(
+        `https://api.apify.com/v2/actor-runs/${runId}?token=${apiToken}`
       );
       
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error response (${response.status}):`, errorText);
-        
-        // If we're hitting rate limits (429), wait longer before retrying
-        if (response.status === 429) {
-          console.log("Rate limit hit, waiting longer before next attempt...");
-          await new Promise(resolve => setTimeout(resolve, pollInterval * 3));
-          continue;
-        }
-        
-        throw new ApifyError(`Failed to check run status: ${response.status} ${response.statusText}`, response.status);
-      }
-
-      const data = await response.json();
-      const status = data?.data?.status;
-      console.log(`Run status: ${status} (attempt ${attempts}/${maxAttempts})`);
-
-      if (status === 'SUCCEEDED' || status === 'FINISHED') {
-        console.log(`Run ${runId} completed successfully`);
-        return { lastStatus: status, isFinished: true };
-      }
-
-      if (status === 'FAILED' || status === 'ABORTED' || status === 'TIMED-OUT') {
-        console.error(`Run ${runId} failed with status ${status}`);
-        throw new ApifyError(`Apify run failed with status: ${status}`);
-      }
-
-      // If still running, wait and check again
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    } catch (error) {
-      // Only re-throw errors that are not related to polling logic
-      if (error instanceof ApifyError) {
-        throw error;
-      }
-      
-      if (error.name === 'AbortError') {
-        console.error("Request timed out while polling for status");
-        // Continue polling despite timeout
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      if (!statusResponse.ok) {
+        retries++;
+        console.warn(`Error fetching run status (retry ${retries}): ${statusResponse.status}`);
         continue;
       }
       
-      console.error(`Error while polling: ${error instanceof Error ? error.message : String(error)}`);
+      const statusData = await statusResponse.json();
+      lastStatus = statusData.data?.status;
       
-      // Wait before retrying after a polling error
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      if (!lastStatus) {
+        retries++;
+        console.warn(`Invalid status response (retry ${retries}): ${JSON.stringify(statusData)}`);
+        continue;
+      }
+      
+      console.log(`Actor run status: ${lastStatus} (retry: ${retries}/${maxRetries})`);
+      
+      if (['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT'].includes(lastStatus)) {
+        isFinished = true;
+      } else {
+        retries++;
+      }
+    } catch (error) {
+      retries++;
+      console.error(`Error polling for status (retry ${retries}):`, error);
     }
   }
-
-  console.error(`Polling timed out after ${maxAttempts} attempts`);
-  throw new ApifyError(`Polling timed out after ${maxAttempts} attempts`);
+  
+  if (lastStatus !== 'SUCCEEDED') {
+    if (retries >= maxRetries) {
+      throw new ApifyError(`Apify actor run timed out. Last status: ${lastStatus} after ${maxRetries} retries`);
+    } else {
+      throw new ApifyError(`Apify actor run did not succeed. Last status: ${lastStatus}`);
+    }
+  }
+  
+  return { lastStatus };
 }

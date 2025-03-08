@@ -16,64 +16,33 @@ export function useBulkScreenshotGenerator() {
   const [successCount, setSuccessCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [failedChannels, setFailedChannels] = useState<Array<{channel: SelectedChannel, error: string}>>([]);
 
   const generateScreenshotForChannel = async (channel: SelectedChannel): Promise<boolean> => {
     try {
-      console.log(`Generating screenshot for channel: ${channel.title} (${channel.url})`);
+      console.log(`Taking screenshot for channel: ${channel.title} (${channel.url})`);
       setCurrentChannel(channel.title);
       
-      // Show an initial progress message for the current channel
-      toast.info(`Processing screenshot for ${channel.title}. This may take up to 3 minutes.`);
-      
-      // Call the edge function to generate screenshot
       const { data, error } = await supabase.functions.invoke<any>('take-channel-screenshot', {
         body: { 
-          channelUrl: channel.url,
-          channelId: channel.id
+          channelId: channel.id,
+          channelUrl: channel.url
         }
       });
 
       if (error) {
-        console.error(`Error generating screenshot for ${channel.title}:`, error);
-        const errorMessage = `API error: ${error.message}`;
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: errorMessage
-        }]);
-        toast.error(`Failed to generate screenshot for ${channel.title}: ${errorMessage}`);
+        console.error(`Error taking screenshot for ${channel.title}:`, error);
         return false;
       }
 
-      if (!data || !data.success) {
-        console.error(`Failed to generate screenshot for ${channel.title}:`, data?.error || "Unknown error");
-        
-        // Include more detailed error information
-        const errorMsg = data?.error || "Unknown error occurred";
-        const errorDetail = data?.message ? ` (${data.message})` : "";
-        const fullErrorMessage = `${errorMsg}${errorDetail}`;
-        
-        setFailedChannels(prev => [...prev, {
-          channel,
-          error: fullErrorMessage
-        }]);
-        
-        toast.error(`Failed to generate screenshot for ${channel.title}: ${fullErrorMessage}`);
+      if (!data || !data.success || !data.screenshotUrl) {
+        console.error(`Failed to take screenshot for ${channel.title}:`, data?.error || "Unknown error");
         return false;
       }
 
-      // If we got this far, we were successful
-      console.log(`Successfully generated screenshot for ${channel.title}`);
-      toast.success(`Screenshot generated for ${channel.title}`);
+      console.log(`Successfully took screenshot for ${channel.title}: ${data.screenshotUrl}`);
       return true;
     } catch (error) {
-      console.error(`Exception when generating screenshot for ${channel.title}:`, error);
-      const errorMessage = `Unexpected error: ${error instanceof Error ? error.message : String(error)}`;
-      setFailedChannels(prev => [...prev, {
-        channel,
-        error: errorMessage
-      }]);
-      toast.error(`Failed to generate screenshot for ${channel.title}: ${errorMessage}`);
+      console.error(`Exception when taking screenshot for ${channel.title}:`, error);
       return false;
     }
   };
@@ -90,9 +59,8 @@ export function useBulkScreenshotGenerator() {
     setErrorCount(0);
     setTotalCount(channels.length);
     setCurrentChannel(null);
-    setFailedChannels([]);
 
-    toast.info(`Starting screenshot generation for ${channels.length} channels. This may take a while.`);
+    toast.info(`Starting screenshots for ${channels.length} channels. This may take a while.`);
 
     try {
       // Process channels in sequence to avoid overloading
@@ -110,46 +78,26 @@ export function useBulkScreenshotGenerator() {
         const newProgress = Math.floor(((i + 1) / channels.length) * 100);
         setProgress(newProgress);
         
-        // Add a longer delay between requests to respect rate limits
-        // The Apify API has a rate limit of 30 requests per second per resource
+        // Add a small delay between requests to avoid overwhelming the API
         if (i < channels.length - 1) {
-          const delayMessage = "Waiting before processing next channel to respect API rate limits...";
-          console.log(delayMessage);
-          
-          if (channels.length > 2) {
-            toast.info(delayMessage);
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, 3000)); // Increased delay to 3s
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
       if (successCount === channels.length) {
-        toast.success(`Successfully generated screenshots for all ${channels.length} channels!`);
+        toast.success(`Successfully took screenshots for all ${channels.length} channels!`);
       } else {
         toast.warning(
-          `Screenshot generation completed: ${successCount} successful, ${channels.length - successCount} failed.`
+          `Screenshot process completed: ${successCount} successful, ${channels.length - successCount} failed.`
         );
       }
     } catch (error) {
-      console.error("Error in bulk screenshot generation process:", error);
-      toast.error("Screenshot generation process encountered an error");
+      console.error("Error in bulk screenshot process:", error);
+      toast.error("Screenshot process encountered an error");
     } finally {
       setIsProcessing(false);
       setCurrentChannel(null);
     }
-  };
-
-  const retryFailedChannels = async () => {
-    if (failedChannels.length === 0) {
-      toast.info("No failed channels to retry");
-      return;
-    }
-    
-    toast.info(`Retrying ${failedChannels.length} failed screenshot attempts...`);
-    const channelsToRetry = failedChannels.map(item => item.channel);
-    setFailedChannels([]);
-    await generateScreenshotsForChannels(channelsToRetry);
   };
 
   return {
@@ -159,8 +107,6 @@ export function useBulkScreenshotGenerator() {
     currentChannel,
     successCount,
     errorCount,
-    totalCount,
-    failedChannels,
-    retryFailedChannels
+    totalCount
   };
 }

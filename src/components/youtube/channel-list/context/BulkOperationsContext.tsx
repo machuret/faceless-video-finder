@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState } from "react";
+import { Channel } from "@/types/youtube";
 
 export type BulkOperationType = 'stats' | 'type' | 'keywords' | 'screenshot' | null;
 
