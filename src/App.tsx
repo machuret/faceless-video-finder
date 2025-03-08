@@ -1,4 +1,3 @@
-
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -21,6 +20,7 @@ import FacelessChannelIdeas from "@/pages/FacelessChannelIdeas";
 import FacelessIdeaDetails from "@/pages/FacelessIdeaDetails";
 import ChannelTypes from "@/pages/ChannelTypes";
 import ChannelTypeDetails from "@/pages/ChannelTypeDetails";
+import KeywordResearch from "@/pages/KeywordResearch";
 
 // Admin Pages
 import AdminLogin from "@/pages/Admin/AdminLogin";
@@ -47,6 +47,7 @@ function App() {
         <Route path="/channel-earnings" element={<ChannelEarnings />} />
         <Route path="/reach-calculator" element={<ReachCalculator />} />
         <Route path="/growth-calculator" element={<GrowthRateCalculator />} />
+        <Route path="/keyword-research" element={<KeywordResearch />} />
         
         {/* Legacy channel route - keep for backward compatibility */}
         <Route path="/channels/:channelId" element={<ChannelDetails />} />
