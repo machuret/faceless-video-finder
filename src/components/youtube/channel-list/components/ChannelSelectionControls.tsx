@@ -12,6 +12,7 @@ interface ChannelSelectionControlsProps {
   onBulkGenerateTypes: () => void;
   onBulkGenerateKeywords: () => void;
   onBulkTakeScreenshots: () => void;
+  onBulkDelete?: () => void;
   showSelectionControls: boolean;
   hasChannels: boolean;
   isProcessingStats?: boolean;
@@ -29,6 +30,7 @@ const ChannelSelectionControls: React.FC<ChannelSelectionControlsProps> = ({
   onBulkGenerateTypes,
   onBulkGenerateKeywords,
   onBulkTakeScreenshots,
+  onBulkDelete,
   showSelectionControls,
   hasChannels,
   isProcessingStats = false,
@@ -66,6 +68,7 @@ const ChannelSelectionControls: React.FC<ChannelSelectionControlsProps> = ({
             onGenerateTypes={onBulkGenerateTypes}
             onGenerateKeywords={onBulkGenerateKeywords}
             onGenerateScreenshots={onBulkTakeScreenshots}
+            onDeleteChannels={onBulkDelete}
             isProcessingStats={isProcessingStats}
             isProcessingTypes={isProcessingTypes}
             isProcessingKeywords={isProcessingKeywords}

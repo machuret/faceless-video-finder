@@ -1,14 +1,13 @@
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronDown, Database, Image, KeySquare, Loader2, Tag } from "lucide-react";
+import { BarChart, Tag, FileText, ImageIcon, ChevronDown, Trash2 } from "lucide-react";
 
 interface BulkActionsMenuProps {
   disabled: boolean;
@@ -16,6 +15,7 @@ interface BulkActionsMenuProps {
   onGenerateTypes: () => void;
   onGenerateKeywords: () => void;
   onGenerateScreenshots: () => void;
+  onDeleteChannels?: () => void;
   isProcessingStats?: boolean;
   isProcessingTypes?: boolean;
   isProcessingKeywords?: boolean;
@@ -28,103 +28,75 @@ const BulkActionsMenu: React.FC<BulkActionsMenuProps> = ({
   onGenerateTypes,
   onGenerateKeywords,
   onGenerateScreenshots,
+  onDeleteChannels,
   isProcessingStats = false,
   isProcessingTypes = false,
   isProcessingKeywords = false,
-  isProcessingScreenshots = false,
+  isProcessingScreenshots = false
 }) => {
-  const renderActionIcon = (Icon: React.ElementType, isProcessing: boolean) => {
-    return isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Icon className="w-4 h-4 mr-2" />;
-  };
-
+  const isAnyProcessing = isProcessingStats || isProcessingTypes || isProcessingKeywords || isProcessingScreenshots;
+  
   return (
-    <TooltipProvider>
-      <DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                disabled={disabled}
-                className="flex items-center gap-1"
-              >
-                Bulk Actions
-                <ChevronDown className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Perform actions on selected channels</p>
-          </TooltipContent>
-        </Tooltip>
-        <DropdownMenuContent align="end" className="w-56">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuItem 
-                onClick={onFetchStats} 
-                className="cursor-pointer"
-                disabled={isProcessingStats}
-              >
-                {renderActionIcon(Database, isProcessingStats)}
-                {isProcessingStats ? "Fetching Stats..." : "Fetch Stats"}
-              </DropdownMenuItem>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Update channel stats with latest data from YouTube</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuItem 
-                onClick={onGenerateTypes} 
-                className="cursor-pointer"
-                disabled={isProcessingTypes}
-              >
-                {renderActionIcon(Tag, isProcessingTypes)}
-                {isProcessingTypes ? "Generating Types..." : "Generate Types"}
-              </DropdownMenuItem>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Use AI to classify channel types based on content</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuItem 
-                onClick={onGenerateKeywords} 
-                className="cursor-pointer"
-                disabled={isProcessingKeywords}
-              >
-                {renderActionIcon(KeySquare, isProcessingKeywords)}
-                {isProcessingKeywords ? "Generating Keywords..." : "Generate Keywords"}
-              </DropdownMenuItem>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Use AI to generate relevant keywords for channels</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuItem 
-                onClick={onGenerateScreenshots} 
-                className="cursor-pointer"
-                disabled={isProcessingScreenshots}
-              >
-                {renderActionIcon(Image, isProcessingScreenshots)}
-                {isProcessingScreenshots ? "Taking Screenshots..." : "Take Screenshots"}
-              </DropdownMenuItem>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Automatically capture channel page screenshots</p>
-            </TooltipContent>
-          </Tooltip>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </TooltipProvider>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          disabled={disabled || isAnyProcessing}
+          className="flex items-center gap-1"
+        >
+          Bulk Actions
+          <ChevronDown className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem 
+          onClick={onFetchStats}
+          disabled={isProcessingStats}
+          className="flex items-center gap-2"
+        >
+          <BarChart className="h-4 w-4" />
+          Fetch Stats
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          onClick={onGenerateTypes}
+          disabled={isProcessingTypes}
+          className="flex items-center gap-2"
+        >
+          <FileText className="h-4 w-4" />
+          Generate Types
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          onClick={onGenerateKeywords}
+          disabled={isProcessingKeywords}
+          className="flex items-center gap-2"
+        >
+          <Tag className="h-4 w-4" />
+          Generate Keywords
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          onClick={onGenerateScreenshots}
+          disabled={isProcessingScreenshots}
+          className="flex items-center gap-2"
+        >
+          <ImageIcon className="h-4 w-4" />
+          Take Screenshots
+        </DropdownMenuItem>
+        
+        {onDeleteChannels && (
+          <DropdownMenuItem 
+            onClick={onDeleteChannels}
+            className="flex items-center gap-2 text-destructive hover:text-destructive-foreground hover:bg-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Channels
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

@@ -12,6 +12,7 @@ export function useChannelOperations() {
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set());
+  const [deletingChannels, setDeletingChannels] = useState(false);
 
   const fetchChannels = useCallback(async (offset?: number, limit?: number) => {
     try {
@@ -98,6 +99,59 @@ export function useChannelOperations() {
     }
   };
 
+  const bulkDeleteChannels = async () => {
+    if (selectedChannels.size === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete ${selectedChannels.size} channels? This action cannot be undone.`)) return;
+    
+    try {
+      setDeletingChannels(true);
+      const channelIds = Array.from(selectedChannels);
+      
+      // Delete channels in batches to prevent timeout issues
+      const batchSize = 10;
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (let i = 0; i < channelIds.length; i += batchSize) {
+        const batch = channelIds.slice(i, i + batchSize);
+        
+        // Process each channel in the batch
+        for (const channelId of batch) {
+          const { error } = await supabase
+            .from("youtube_channels")
+            .delete()
+            .eq("id", channelId);
+          
+          if (error) {
+            console.error(`Error deleting channel ${channelId}:`, error);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        }
+      }
+      
+      // Clear selection after deletion
+      setSelectedChannels(new Set());
+      
+      // Show appropriate toast
+      if (errorCount === 0) {
+        toast.success(`Successfully deleted ${successCount} channels`);
+      } else {
+        toast.warning(`Deleted ${successCount} channels, but failed to delete ${errorCount} channels`);
+      }
+      
+      // Refresh the channel list
+      fetchChannels();
+    } catch (error: any) {
+      console.error("Error in bulk delete:", error);
+      toast.error("An error occurred during bulk delete: " + error.message);
+    } finally {
+      setDeletingChannels(false);
+    }
+  };
+
   const toggleFeatured = async (channelId: string, currentStatus: boolean) => {
     try {
       // Update using the dedicated is_featured column
@@ -177,9 +231,11 @@ export function useChannelOperations() {
     error,
     totalCount,
     selectedChannels,
+    deletingChannels,
     fetchChannels,
     handleEdit,
     handleDelete,
+    bulkDeleteChannels,
     toggleFeatured,
     toggleChannelSelection,
     clearSelection,
