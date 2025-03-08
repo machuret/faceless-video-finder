@@ -2,18 +2,28 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ImageOff, FileText, BarChart } from "lucide-react";
+import { ImageOff, FileText, BarChart, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Channel } from "@/types/youtube";
+import { useBulkScreenshotGenerator } from "@/components/youtube/channel-list/components/hooks/useBulkScreenshotGenerator";
+import { useBulkStatsFetcher } from "@/components/youtube/channel-list/components/hooks/useBulkStatsFetcher";
+import { useBulkTypeGenerator } from "@/components/youtube/channel-list/components/hooks/useBulkTypeGenerator";
+import { useBulkKeywordsGenerator } from "@/components/youtube/channel-list/components/hooks/useBulkKeywordsGenerator";
 
 const ChannelsToImprove = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeTab, setActiveTab] = useState("no-screenshot");
+  
+  // Initialize bulk operation hooks
+  const screenshotGenerator = useBulkScreenshotGenerator();
+  const statsFetcher = useBulkStatsFetcher();
+  const typeGenerator = useBulkTypeGenerator();
+  const keywordsGenerator = useBulkKeywordsGenerator();
 
   const fetchChannelsWithNoScreenshot = async () => {
     setLoading(true);
@@ -96,6 +106,33 @@ const ChannelsToImprove = () => {
     }
   };
 
+  const fetchChannelsWithNoKeywords = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('youtube_channels')
+        .select('*')
+        .or('keywords.is.null,keywords.eq.{}')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Transform the data to make it compatible with Channel type
+      const typedChannels: Channel[] = (data || []).map(channel => ({
+        ...channel,
+        // Ensure metadata is properly typed
+        metadata: channel.metadata as Channel['metadata']
+      }));
+      
+      setChannels(typedChannels);
+    } catch (error) {
+      console.error("Error fetching channels with no keywords:", error);
+      toast.error("Failed to fetch channels with no keywords");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     switch (value) {
@@ -108,6 +145,9 @@ const ChannelsToImprove = () => {
       case "no-stats":
         fetchChannelsWithNoStats();
         break;
+      case "no-keywords":
+        fetchChannelsWithNoKeywords();
+        break;
     }
   };
 
@@ -117,6 +157,58 @@ const ChannelsToImprove = () => {
 
   const navigateToEdit = (channelId: string) => {
     navigate(`/admin/edit-channel/${channelId}`);
+  };
+
+  const generateScreenshot = (channel: Channel) => {
+    const selectedChannel = {
+      id: channel.id,
+      url: channel.channel_url,
+      title: channel.channel_title
+    };
+    
+    screenshotGenerator.generateScreenshotsForChannels([selectedChannel])
+      .then(() => {
+        fetchChannelsWithNoScreenshot();
+      });
+  };
+
+  const generateStats = (channel: Channel) => {
+    const selectedChannel = {
+      id: channel.id,
+      url: channel.channel_url,
+      title: channel.channel_title
+    };
+    
+    statsFetcher.fetchStatsForChannels([selectedChannel])
+      .then(() => {
+        fetchChannelsWithNoStats();
+      });
+  };
+
+  const generateType = (channel: Channel) => {
+    const selectedChannel = {
+      id: channel.id,
+      url: channel.channel_url,
+      title: channel.channel_title
+    };
+    
+    typeGenerator.generateTypesForChannels([selectedChannel])
+      .then(() => {
+        fetchChannelsWithNoType();
+      });
+  };
+
+  const generateKeywords = (channel: Channel) => {
+    const selectedChannel = {
+      id: channel.id,
+      url: channel.channel_url,
+      title: channel.channel_title
+    };
+    
+    keywordsGenerator.generateKeywordsForChannels([selectedChannel])
+      .then(() => {
+        fetchChannelsWithNoKeywords();
+      });
   };
 
   return (
@@ -137,24 +229,104 @@ const ChannelsToImprove = () => {
             <BarChart className="h-4 w-4" />
             No Stats
           </TabsTrigger>
+          <TabsTrigger value="no-keywords" className="flex items-center gap-2">
+            <Tag className="h-4 w-4" />
+            No Keywords
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="no-screenshot" className="mt-0">
-          {renderChannelList()}
+          {renderChannelList((channel) => (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => generateScreenshot(channel)}
+                disabled={screenshotGenerator.isProcessing}
+              >
+                {screenshotGenerator.currentChannel === channel.channel_title ? 'Processing...' : 'Generate Screenshot'}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigateToEdit(channel.id)}
+              >
+                Edit
+              </Button>
+            </div>
+          ))}
         </TabsContent>
         
         <TabsContent value="no-type" className="mt-0">
-          {renderChannelList()}
+          {renderChannelList((channel) => (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => generateType(channel)}
+                disabled={typeGenerator.isProcessing}
+              >
+                {typeGenerator.currentChannel === channel.channel_title ? 'Processing...' : 'Generate Type'}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigateToEdit(channel.id)}
+              >
+                Edit
+              </Button>
+            </div>
+          ))}
         </TabsContent>
         
         <TabsContent value="no-stats" className="mt-0">
-          {renderChannelList()}
+          {renderChannelList((channel) => (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => generateStats(channel)}
+                disabled={statsFetcher.isProcessing}
+              >
+                {statsFetcher.currentChannel === channel.channel_title ? 'Processing...' : 'Fetch Stats'}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigateToEdit(channel.id)}
+              >
+                Edit
+              </Button>
+            </div>
+          ))}
+        </TabsContent>
+        
+        <TabsContent value="no-keywords" className="mt-0">
+          {renderChannelList((channel) => (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => generateKeywords(channel)}
+                disabled={keywordsGenerator.isProcessing}
+              >
+                {keywordsGenerator.currentChannel === channel.channel_title ? 'Processing...' : 'Generate Keywords'}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigateToEdit(channel.id)}
+              >
+                Edit
+              </Button>
+            </div>
+          ))}
         </TabsContent>
       </Tabs>
     </Card>
   );
 
-  function renderChannelList() {
+  function renderChannelList(renderActions: (channel: Channel) => React.ReactNode) {
     if (loading) {
       return <div className="text-gray-500 py-4">Loading channels...</div>;
     }
@@ -170,17 +342,11 @@ const ChannelsToImprove = () => {
             key={channel.id} 
             className="p-4 border rounded-md flex justify-between items-center hover:bg-gray-50 transition-colors"
           >
-            <div className="truncate max-w-[80%]">
+            <div className="truncate max-w-[70%]">
               <p className="font-medium truncate">{channel.channel_title}</p>
               <p className="text-sm text-gray-500 truncate">{channel.channel_url}</p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => navigateToEdit(channel.id)}
-            >
-              Edit
-            </Button>
+            {renderActions(channel)}
           </div>
         ))}
       </div>
