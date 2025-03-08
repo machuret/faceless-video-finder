@@ -14,16 +14,18 @@ export const useMassScreenshotUpdate = () => {
   const [totalChannels, setTotalChannels] = useState(0);
   const [processedChannels, setProcessedChannels] = useState(0);
 
-  const fetchAllChannels = async () => {
+  const fetchChannelsWithoutScreenshots = async () => {
     try {
       const { data, error, count } = await supabase
         .from('youtube_channels')
-        .select('id, channel_url', { count: 'exact' });
+        .select('id, channel_url', { count: 'exact' })
+        .is('screenshot_url', null)
+        .or('screenshot_url.eq.');
       
       if (error) throw error;
       return { channels: data, count: count || 0 };
     } catch (error) {
-      console.error("Error fetching channels:", error);
+      console.error("Error fetching channels without screenshots:", error);
       toast.error("Failed to fetch channels");
       return { channels: [], count: 0 };
     }
@@ -63,16 +65,16 @@ export const useMassScreenshotUpdate = () => {
     setProcessedChannels(0);
     
     try {
-      const { channels, count } = await fetchAllChannels();
+      const { channels, count } = await fetchChannelsWithoutScreenshots();
       setTotalChannels(count);
       
       if (channels.length === 0) {
-        toast.error("No channels found to update");
+        toast.info("No channels found without screenshots");
         setIsProcessing(false);
         return;
       }
 
-      toast.info(`Starting screenshot update for ${channels.length} channels. This may take a while.`);
+      toast.info(`Starting screenshot update for ${channels.length} channels without screenshots. This may take a while.`);
       
       // Process channels in batches to avoid overloading the server
       const batchSize = 5;

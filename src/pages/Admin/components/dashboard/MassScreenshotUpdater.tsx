@@ -19,7 +19,7 @@ const MassScreenshotUpdater = () => {
     <Card className="p-6">
       <h2 className="text-xl font-semibold mb-4">Mass Screenshot Updater</h2>
       <p className="text-gray-600 mb-4">
-        Update screenshots for all YouTube channels in the database. This process may take several minutes.
+        Update screenshots for YouTube channels that don't have one. This process may take several minutes.
       </p>
       
       {isProcessing && (
@@ -43,7 +43,7 @@ const MassScreenshotUpdater = () => {
             Processing...
           </>
         ) : (
-          "Update All Channel Screenshots"
+          "Update Missing Channel Screenshots"
         )}
       </Button>
     </Card>
