@@ -52,22 +52,14 @@ export const mapResponseToFormData = (
   // Filter out empty fields for cleaner return data 
   const cleanStats: Partial<ChannelFormData> = {};
   
-  // Fix: Properly type and assign values to the cleanStats object
+  // Properly assign values to the cleanStats object
   Object.entries(stats).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       // We need to ensure TypeScript understands that this is a valid key-value pair for ChannelFormData
       const typedKey = key as keyof ChannelFormData;
       
-      // Use type assertions for different field types
-      if (typeof value === 'string') {
-        cleanStats[typedKey] = value;
-      } else if (Array.isArray(value)) {
-        // Handle array values (like keywords)
-        cleanStats[typedKey] = value as any;
-      } else if (typeof value === 'boolean') {
-        // Handle boolean values (like is_featured)
-        cleanStats[typedKey] = value as any;
-      }
+      // Create a properly typed assignment
+      cleanStats[typedKey] = value as any;
     }
   });
 
