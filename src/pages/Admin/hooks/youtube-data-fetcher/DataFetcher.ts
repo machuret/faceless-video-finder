@@ -1,56 +1,61 @@
+
+import { SetStateAction, Dispatch } from "react";
+import { ChannelFormData } from "@/types/forms";
+import { supabase } from "@/integrations/supabase/client";
+import { formatChannelUrl } from "../../components/channel-stats-fetcher/hooks/urlUtils";
+
 export class YouTubeDataFetcher {
-  private supabase;
-  private setLoading;
-  private setFormData;
+  private url: string;
+  private setLoading: Dispatch<SetStateAction<boolean>>;
+  private setFormData: Dispatch<SetStateAction<ChannelFormData>>;
+  private setLastError: Dispatch<SetStateAction<string | null>>;
+  private setLastResponse: Dispatch<SetStateAction<any>>;
+  private setAttempts: Dispatch<SetStateAction<number>>;
 
   constructor(
-    supabase: any,
-    setLoading: (loading: boolean) => void,
-    setFormData: (formData: any) => void
+    url: string,
+    setLoading: Dispatch<SetStateAction<boolean>>,
+    setFormData: Dispatch<SetStateAction<ChannelFormData>>,
+    setLastError: Dispatch<SetStateAction<string | null>>,
+    setLastResponse: Dispatch<SetStateAction<any>>,
+    setAttempts: Dispatch<SetStateAction<number>>
   ) {
-    this.supabase = supabase;
+    this.url = url;
     this.setLoading = setLoading;
     this.setFormData = setFormData;
+    this.setLastError = setLastError;
+    this.setLastResponse = setLastResponse;
+    this.setAttempts = setAttempts;
   }
 
-  async fetchChannelData(url: string) {
-    this.setLoading(true);
-    
-    // Preserve the original casing when fetching YouTube channels
-    // This is especially important for channel IDs which are case-sensitive
+  async fetchYoutubeData(useMockData = false): Promise<void> {
     try {
-      // Clean the URL but preserve casing for channel IDs
-      let processedUrl = url.trim();
+      this.setLoading(true);
+      this.setAttempts(prev => prev + 1);
       
-      // Add protocol if missing
-      if (!processedUrl.startsWith('http') && !processedUrl.startsWith('@')) {
-        processedUrl = `https://${processedUrl}`;
-      }
+      // Format the URL to ensure proper case sensitivity
+      const formattedUrl = formatChannelUrl(this.url);
       
-      // Ensure consistent format for the edge function
-      if (processedUrl.startsWith('@')) {
-        processedUrl = `https://www.youtube.com/${processedUrl}`;
-      }
-      
-      // Continue with the fetch using the properly formatted URL
-      const { data, error } = await this.supabase
-        .functions.invoke('fetch-youtube-data', {
-          body: { url: processedUrl }
-        });
+      // Call the Edge Function to fetch YouTube data
+      const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+        body: { 
+          url: formattedUrl,
+          useMockData 
+        }
+      });
 
       if (error) {
-        console.error("Error fetching YouTube data:", error);
-        throw new Error(`Failed to fetch YouTube data: ${error.message}`);
-      }
-
-      if (!data) {
-        throw new Error("No data returned from YouTube API");
+        this.setLastError(`Edge function error: ${error.message}`);
+        return;
       }
 
       if (data.error) {
-        console.error("YouTube API error:", data.error);
-        throw new Error(`YouTube API error: ${data.error}`);
+        this.setLastError(`API error: ${data.error}`);
+        return;
       }
+
+      this.setLastResponse(data);
+      this.setLastError(null);
 
       // Extract basic info from the response
       const basicInfo = data.basicInfo || {};
@@ -79,23 +84,10 @@ export class YouTubeDataFetcher {
 
       // Update the form with the fetched data
       this.setFormData(formattedData);
-      
-      return {
-        success: true,
-        data: formattedData,
-        debugInfo: {
-          basicInfo,
-          channelData,
-          rawResponse: data
-        }
-      };
     } catch (error) {
-      console.error("Error in fetchChannelData:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-        debugInfo: { error }
-      };
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.setLastError(`Error fetching data: ${errorMessage}`);
+      console.error("Error in fetchYoutubeData:", error);
     } finally {
       this.setLoading(false);
     }

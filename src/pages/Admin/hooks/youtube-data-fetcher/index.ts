@@ -3,8 +3,8 @@ import { useState, Dispatch, SetStateAction } from "react";
 import { ChannelFormData } from "@/types/forms";
 import { EdgeFunctionTester } from "./EdgeFunctionTester";
 import { TestSuiteRunner } from "./TestSuiteRunner";
-import { DataFetcher } from "./DataFetcher";
-import { YouTubeDataFetcherResult } from "./types";
+import { YouTubeDataFetcher } from "./DataFetcher";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Hook for fetching YouTube channel data from various URL formats
@@ -13,7 +13,7 @@ export const useYouTubeDataFetcher = (
   youtubeUrl: string,
   setLoading: Dispatch<SetStateAction<boolean>>,
   setFormData: Dispatch<SetStateAction<ChannelFormData>>
-): YouTubeDataFetcherResult => {
+) => {
   const [lastError, setLastError] = useState<string | null>(null);
   const [lastResponse, setLastResponse] = useState<any>(null);
   const [attempts, setAttempts] = useState(0);
@@ -31,7 +31,7 @@ export const useYouTubeDataFetcher = (
     setAttempts
   );
 
-  const dataFetcher = new DataFetcher(
+  const dataFetcher = new YouTubeDataFetcher(
     youtubeUrl,
     setLoading,
     setFormData,
