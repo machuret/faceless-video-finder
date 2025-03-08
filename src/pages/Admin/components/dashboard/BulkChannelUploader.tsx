@@ -7,6 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { Upload, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
+import { channelCategories } from "@/components/youtube/channel-list/constants/categories";
 
 const BulkChannelUploader = () => {
   const [urls, setUrls] = useState<string>("");
@@ -18,6 +20,23 @@ const BulkChannelUploader = () => {
   
   const handleUrlsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUrls(e.target.value);
+  };
+  
+  // Ensure the channel category is a valid enum value
+  const getValidChannelCategory = (category?: string): ChannelCategory => {
+    if (!category || !channelCategories.includes(category as ChannelCategory)) {
+      return "entertainment";
+    }
+    return category as ChannelCategory;
+  };
+  
+  // Ensure the channel type is a valid enum value
+  const getValidChannelType = (type?: string): DatabaseChannelType => {
+    const validTypes: DatabaseChannelType[] = ["creator", "brand", "media", "other"];
+    if (!type || !validTypes.includes(type as DatabaseChannelType)) {
+      return "creator";
+    }
+    return type as DatabaseChannelType;
   };
   
   const startBulkUpload = async () => {
@@ -73,7 +92,7 @@ const BulkChannelUploader = () => {
           const channelNameMatch = url.match(/\/@([^\/\?]+)/);
           const channelName = channelNameMatch ? channelNameMatch[1] : "Unknown Channel";
           
-          // Create minimal channel data
+          // Create minimal channel data with proper types
           const minimalData = {
             video_id: `manual-${Date.now()}-${i}`,
             channel_title: channelName,
@@ -84,9 +103,9 @@ const BulkChannelUploader = () => {
             start_date: new Date().toISOString().split('T')[0],
             video_count: 0,
             cpm: 4,
-            channel_type: "other",
+            channel_type: "other" as DatabaseChannelType,
             country: "US",
-            channel_category: "entertainment",
+            channel_category: "entertainment" as ChannelCategory,
             notes: `Added via bulk upload. Original URL: ${url}`,
             keywords: [],
             metadata: {
@@ -106,7 +125,7 @@ const BulkChannelUploader = () => {
           
           toast.success(`Saved minimal data for channel: ${channelName}`);
         } else {
-          // Format the Apify data for our database
+          // Format the Apify data for our database with proper types
           const formattedData = {
             video_id: channelData.channelId || `manual-${Date.now()}-${i}`,
             channel_title: channelData.channelName || "Unknown Channel",
@@ -119,9 +138,9 @@ const BulkChannelUploader = () => {
               new Date().toISOString().split('T')[0],
             video_count: parseInt(channelData.channelTotalVideos || "0"),
             cpm: 4,
-            channel_type: "creator",
+            channel_type: getValidChannelType("creator"),
             country: channelData.channelLocation || "US",
-            channel_category: "entertainment",
+            channel_category: getValidChannelCategory("entertainment"),
             notes: `Added via bulk upload. Original URL: ${url}`,
             keywords: [],
             metadata: {
