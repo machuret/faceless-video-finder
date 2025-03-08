@@ -73,11 +73,11 @@ const ChannelStatsSection = ({
     }
     
     // Last resort, use whatever URL we have
-    return formData.channel_url;
+    return formData.channel_url || "";
   };
 
   // Allow fetching data regardless of edit mode - just need a channel URL
-  const canFetchData = formData.channel_url || formData.channel_title;
+  const canFetchData = !!(formData.channel_url || formData.channel_title);
 
   return (
     <FormSectionWrapper 

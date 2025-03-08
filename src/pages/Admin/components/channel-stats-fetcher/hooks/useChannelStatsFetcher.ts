@@ -18,7 +18,7 @@ export function useChannelStatsFetcher({
   const [consecutiveAttempts, setConsecutiveAttempts] = useState(0);
 
   const fetchStats = async () => {
-    if (!channelUrl) {
+    if (!channelUrl || channelUrl.trim() === "") {
       toast.error("Please enter a channel URL or title first");
       return;
     }
@@ -77,7 +77,13 @@ export function useChannelStatsFetcher({
 
       // Send data to parent component
       console.log("Processed stats with all fields:", stats);
-      onStatsReceived(stats);
+      
+      // Ensure we call onStatsReceived even if some fields are empty
+      if (Object.keys(stats).length > 0) {
+        onStatsReceived(stats);
+      } else {
+        toast.error("No usable data was retrieved from the API");
+      }
     } catch (err) {
       console.error("Error in fetch stats flow:", err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -89,7 +95,7 @@ export function useChannelStatsFetcher({
   };
 
   const fetchMissingFields = async () => {
-    if (!channelUrl) {
+    if (!channelUrl || channelUrl.trim() === "") {
       toast.error("Please enter a channel URL or title first");
       return;
     }
