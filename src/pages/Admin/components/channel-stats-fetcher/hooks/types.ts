@@ -29,3 +29,8 @@ export interface UseChannelStatsFetcherResult {
 export interface UrlFormatOptions {
   preferredFormat?: 'channel' | 'username' | 'custom';
 }
+
+export interface RequiredFieldDefinition {
+  key: string;
+  label: string;
+}

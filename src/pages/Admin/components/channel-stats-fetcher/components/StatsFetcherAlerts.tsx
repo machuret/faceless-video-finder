@@ -12,17 +12,17 @@ export const ErrorAlert = ({ error }: { error: string }) => (
 );
 
 export const PartialDataAlert = ({ missingFields }: { missingFields: string[] }) => (
-  <Alert variant="warning">
-    <Info className="h-4 w-4" />
-    <AlertTitle>Partial data received</AlertTitle>
-    <AlertDescription>
+  <Alert variant="default" className="border-orange-200 bg-orange-50">
+    <Info className="h-4 w-4 text-orange-600" />
+    <AlertTitle className="text-orange-800">Partial data received</AlertTitle>
+    <AlertDescription className="text-orange-700">
       Some fields could not be fetched: {missingFields.join(', ')}
     </AlertDescription>
   </Alert>
 );
 
 export const SuccessAlert = () => (
-  <Alert variant="success" className="bg-green-50 border-green-200">
+  <Alert variant="default" className="bg-green-50 border-green-200">
     <CheckCircle2 className="h-4 w-4 text-green-600" />
     <AlertTitle className="text-green-800">Success</AlertTitle>
     <AlertDescription className="text-green-700">

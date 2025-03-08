@@ -1,5 +1,4 @@
 
-import { ChannelStatsResponse } from "supabase/functions/fetch-channel-stats-apify/types";
 import { RequiredFieldDefinition } from "./types";
 
 /**
@@ -17,7 +16,7 @@ export const REQUIRED_FIELDS: RequiredFieldDefinition[] = [
 /**
  * Verifies which required fields are missing from the data
  */
-export const verifyRequiredFields = (data: ChannelStatsResponse): string[] => {
+export const verifyRequiredFields = (data: any): string[] => {
   const missing = REQUIRED_FIELDS.filter(field => {
     const value = data[field.key];
     return !value || value === "0" || String(value).trim() === "";

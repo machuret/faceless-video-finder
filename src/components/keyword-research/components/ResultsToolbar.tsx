@@ -6,15 +6,19 @@ import { Download, Copy } from "lucide-react";
 interface ResultsToolbarProps {
   handleExport: (format: "csv" | "json") => void;
   copyToClipboard: () => void;
+  resultsCount?: number;
 }
 
 const ResultsToolbar: React.FC<ResultsToolbarProps> = ({
   handleExport,
   copyToClipboard,
+  resultsCount,
 }) => {
   return (
     <div className="flex justify-between items-center mb-4">
-      <h2 className="text-xl font-semibold">Search Results</h2>
+      <h2 className="text-xl font-semibold">
+        Search Results {resultsCount !== undefined && `(${resultsCount})`}
+      </h2>
       <div className="flex space-x-2">
         <Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
           <Download className="mr-2 h-4 w-4" />
