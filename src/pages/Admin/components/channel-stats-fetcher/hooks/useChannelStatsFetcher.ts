@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { ChannelFormData } from "@/types/forms";
@@ -26,17 +25,14 @@ export function useChannelStatsFetcher({
       return;
     }
 
-    // Reset states
     setLoading(true);
     setApiError(null);
     setDataSource(null);
     setPartialData(false);
     setMissingFields([]);
     
-    // Increment consecutive attempts
     setConsecutiveAttempts(prev => prev + 1);
     
-    // If too many consecutive attempts with failures
     if (consecutiveAttempts >= 2) {
       toast.warning("Multiple fetch attempts detected. Please try filling in data manually if fetching continues to fail.");
     } else {
@@ -53,10 +49,8 @@ export function useChannelStatsFetcher({
         return;
       }
 
-      // Process the data
       const { stats, missing, hasPartialData } = processChannelData(data);
       
-      // Update state with results
       setMissingFields(missing);
       setPartialData(hasPartialData);
       
@@ -64,24 +58,20 @@ export function useChannelStatsFetcher({
         console.warn("Partial data received. Missing fields:", missing);
         toast.warning(`Some channel data is missing: ${missing.join(', ')}`);
         
-        // Reset consecutive attempts if we got any data
         if (Object.keys(stats).length > 0) {
           setConsecutiveAttempts(0);
           console.log("Got some data, resetting consecutive attempts");
         }
       } else {
         toast.success(`Channel stats fetched successfully via ${data.source || "Apify"}`);
-        setConsecutiveAttempts(0); // Reset consecutive attempts on success
+        setConsecutiveAttempts(0);
       }
 
-      // Set data source
       const source = determineDataSource(data);
       setDataSource(source);
 
-      // Send data to parent component
       console.log("Processed stats with all fields:", stats);
       
-      // Ensure we call onStatsReceived even if some fields are empty
       if (Object.keys(stats).length > 0) {
         onStatsReceived(stats);
       } else {
@@ -119,16 +109,13 @@ export function useChannelStatsFetcher({
         return;
       }
       
-      // Log what we received to help with debugging
       console.log("📦 Received partial stats:", partialStats);
       console.log("✅ Successfully fetched fields:", successfulFields);
       console.log("❌ Failed to fetch fields:", failedFields);
       
-      // Only call onStatsReceived if we have at least one field
       if (Object.keys(partialStats).length > 0) {
         console.log("Sending partial stats with retrieved fields:", partialStats);
         
-        // Ensure the callback gets called with the updated data
         onStatsReceived(partialStats);
         
         if (successfulFields.length > 0) {
@@ -137,7 +124,6 @@ export function useChannelStatsFetcher({
           toast.warning("Fields were fetched but may be empty or invalid");
         }
         
-        // Update missing fields list
         const updatedMissingFields = missingFields.filter(field => 
           !successfulFields.some(success => field.toLowerCase().includes(success.toLowerCase()))
         );
@@ -168,18 +154,15 @@ export function useChannelStatsFetcher({
     toast.info("Testing connection to Apify...");
 
     try {
-      // Call the dedicated test connection function with a short timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      // Fix: Remove abortSignal property as it's not supported in FunctionInvokeOptions
       const { data, error } = await supabase.functions.invoke('test-apify-connection', {
-        body: { timestamp: Date.now() } // Add timestamp to prevent caching
+        body: { timestamp: Date.now() }
       });
 
       clearTimeout(timeoutId);
 
-      // Handle controller abort manually if needed
       if (controller.signal.aborted) {
         console.error("Connection test timed out");
         setApiError("Connection test timed out after 10 seconds");
@@ -205,24 +188,25 @@ export function useChannelStatsFetcher({
         return;
       }
 
-      // Successfully connected
-      toast.success(`Connection to Apify successful!`);
       console.log("Connection test result:", data);
+      toast.success(`Connection to Apify successful!`);
       
-      // If we have user info, that's good news!
       if (data.user) {
         toast.success(`Connected as: ${data.user.username} (${data.user.plan} plan)`);
       }
       
-      // Test fetching just the title to make sure we can get data
-      await testFetchChannelTitle();
-      
+      if (testingConnection) {
+        try {
+          await testFetchChannelTitle();
+        } finally {
+          setTestingConnection(false);
+        }
+      }
     } catch (err) {
       console.error("Error in connection test:", err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setApiError(`Connection test error: ${errorMessage}`);
       toast.error(`Connection test failed: ${errorMessage}`);
-    } finally {
       setTestingConnection(false);
     }
   };
@@ -236,8 +220,8 @@ export function useChannelStatsFetcher({
       const { data, error } = await supabase.functions.invoke('fetch-channel-stats-apify', {
         body: { 
           channelUrl: formattedUrl,
-          testMode: true,  // Special flag to just test connection
-          timestamp: Date.now() // Add timestamp to prevent caching
+          testMode: true,
+          timestamp: Date.now()
         }
       });
 
@@ -254,11 +238,9 @@ export function useChannelStatsFetcher({
         return;
       }
 
-      // If we got a title, that's good news!
       if (data.title) {
         toast.success(`Successfully retrieved channel title: ${data.title}`);
         
-        // Update the form with just the title
         onStatsReceived({ 
           channel_title: data.title 
         });

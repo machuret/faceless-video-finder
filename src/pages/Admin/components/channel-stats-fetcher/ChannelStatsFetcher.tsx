@@ -64,12 +64,12 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
           type="button"
           variant="outline"
           size="sm"
-          className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-800 hover:text-amber-900 border-amber-300"
-          onClick={testApifyConnection}
+          className={`flex items-center gap-1 ${testingConnection ? 'bg-amber-100' : 'bg-amber-50'} hover:bg-amber-100 text-amber-800 hover:text-amber-900 border-amber-300`}
+          onClick={testingConnection ? undefined : testApifyConnection}
           disabled={loading || fetchingMissing || testingConnection || !channelUrl}
         >
           {testingConnection ? <Loader2 className="h-4 w-4 animate-spin" /> : <TestTube2 className="h-4 w-4" />}
-          Test Connection
+          {testingConnection ? "Testing..." : "Test Connection"}
         </Button>
         
         <Button
@@ -78,6 +78,7 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
           size="sm"
           className="flex items-center gap-1"
           onClick={() => window.open(channelUrl, '_blank')}
+          disabled={!channelUrl}
         >
           View Channel
         </Button>
