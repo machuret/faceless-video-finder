@@ -8,20 +8,15 @@ export function createApifyInput(url: string) {
   // Create a more robust input that will work with the scraper
   return {
     startUrls: [{ url }],
-    maxResults: 1, // We only need basic channel info, not all videos
-    maxResultsShorts: 0,
-    maxResultStreams: 0,
-    includeComments: false,
-    includeShortsComments: false,
-    includeChannelInfo: true,  // Make sure we're requesting channel info
-    includeAbout: true,  // Explicitly request about page data
+    maxResults: 1, // We only need one video to get channel info
     proxyConfiguration: {
       useApifyProxy: true,
-      apifyProxyGroups: ["RESIDENTIAL", "DATACENTER"],  // Use both residential and datacenter proxies
-      useChrome: true // Use Chrome browser for better data extraction
+      apifyProxyGroups: ["RESIDENTIAL"]  // Use residential proxies for better results
     },
-    maxConcurrency: 1,  // Limit concurrency to prevent rate limiting
+    includeChannelInfo: true,  // Make sure we're requesting channel info
+    includeAbout: true,  // Explicitly request about page data
     debugLog: true,     // Enable debug logging in Apify
+    maxConcurrency: 1,  // Limit concurrency to prevent rate limiting
     // Force full page load to get all channel info
     extendOutputFunction: `async ({ page, data, customData, request }) => {
       // Wait longer for content to fully load
@@ -36,19 +31,6 @@ export function createApifyInput(url: string) {
         }
       } catch (e) {
         console.log('Error clicking about tab:', e);
-      }
-      
-      // Extract subscriber count directly from the page
-      try {
-        const subscriberElement = await page.$('[id="subscriber-count"]');
-        if (subscriberElement) {
-          const subscriberText = await page.evaluate(el => el.textContent, subscriberElement);
-          if (subscriberText) {
-            data.subscriberCountText = subscriberText.trim();
-          }
-        }
-      } catch (e) {
-        console.log('Error extracting subscriber count:', e);
       }
       
       return data;

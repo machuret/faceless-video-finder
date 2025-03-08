@@ -7,11 +7,11 @@ import { processChannelData } from "./api/dataProcessor.ts";
 import { createApifyInput } from "./api/apifyInputCreator.ts";
 
 /**
- * Fetches channel data using Apify's Fast YouTube Channel Scraper
- * This uses the streamers~youtube-channel-scraper Actor which is more reliable
+ * Fetches channel data using Apify's YouTube Channel Scraper
+ * This uses the streamers~youtube-scraper Actor which offers better results
  */
 export async function fetchChannelWithApifyAPI(url: string, apiToken: string): Promise<ApifyChannelData> {
-  console.log(`Calling Apify Fast YouTube Channel Scraper for URL: ${url}`);
+  console.log(`Calling Apify YouTube Channel Scraper for URL: ${url}`);
   
   try {
     // Create input for the Apify scraper
@@ -31,21 +31,26 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     // Log the first item to help with debugging
     if (items.length > 0) {
       console.log("First item data structure:", JSON.stringify(Object.keys(items[0])));
-      // Check for critical fields
-      const criticalFields = ["channelInfo", "statistics", "snippet", "aboutPage"];
-      criticalFields.forEach(field => {
-        if (items[0][field]) {
-          console.log(`${field} is present:`, JSON.stringify(items[0][field]).substring(0, 200) + "...");
-        } else {
-          console.log(`${field} is NOT present in response`);
-        }
-      });
+      
+      // Check for critical fields like channelInfo
+      if (items[0].channelInfo) {
+        console.log("channelInfo is present:", JSON.stringify(items[0].channelInfo).substring(0, 200) + "...");
+      } else {
+        console.log("channelInfo is NOT present in response");
+      }
+      
+      // Check for about page data which contains important stats
+      if (items[0].aboutPage) {
+        console.log("aboutPage is present:", JSON.stringify(items[0].aboutPage).substring(0, 200) + "...");
+      } else {
+        console.log("aboutPage is NOT present in response");
+      }
     }
     
     // Process the channel data
     return processChannelData(items);
   } catch (error) {
-    // Re-throw Apify errors as is
+    // Re-throw Apify errors
     if (error instanceof ApifyError) {
       console.error(`Apify error: ${error.message}`, error);
       throw error;

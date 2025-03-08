@@ -2,15 +2,15 @@
 import { RequiredFieldDefinition } from "./types";
 
 /**
- * Required fields that a channel should have
+ * Required fields for channel stats
  */
 export const REQUIRED_FIELDS: RequiredFieldDefinition[] = [
-  { key: 'subscriberCount', label: 'Total Subscribers' },
-  { key: 'viewCount', label: 'Total Views' },
+  { key: 'title', label: 'Channel Title' },
+  { key: 'subscriberCount', label: 'Subscriber Count' },
+  { key: 'viewCount', label: 'View Count' },
   { key: 'videoCount', label: 'Video Count' },
   { key: 'startDate', label: 'Start Date' },
-  { key: 'description', label: 'Description' },
-  { key: 'country', label: 'Country' }
+  { key: 'description', label: 'Description' }
 ];
 
 /**
