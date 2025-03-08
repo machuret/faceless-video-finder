@@ -1,3 +1,4 @@
+
 import { 
   APIFY_BASE_URL, 
   APIFY_ACTOR_ID, 
@@ -29,17 +30,18 @@ export async function startActorRun(url: string): Promise<{
         "enableSSL": true,
         "linkUrls": [url],
         "outputFormat": "jpeg",
-        "waitUntil": "networkidle0", // Wait until network is idle
-        "timeouT": 30, // Increase timeout for better loading
-        "maxRetries": 5, // More retries for reliability
-        "delayBeforeScreenshot": 3000, // Longer delay to ensure content loads
-        "scrollToBottom": true, // Scroll to bottom to load all content
-        "delayAfterScrolling": 1000, // Wait after scrolling
+        "waitUntil": "networkidle2", // Changed from networkidle0 to networkidle2 for faster completion
+        "timeouT": 45, // Increased timeout from 30 to 45 seconds
+        "maxRetries": 3, // Reduced from 5 to 3 for faster completion
+        "delayBeforeScreenshot": 2000, // Reduced from 3000 to 2000ms
+        "scrollToBottom": true, 
+        "delayAfterScrolling": 500, // Reduced from 1000 to 500ms
         "window_Width": 1920,
         "window_Height": 1080,
         "printBackground": true,
         "proxyConfig": {
-          "useApifyProxy": false
+          "useApifyProxy": true, // Set to true to use Apify proxy which can bypass some YouTube restrictions
+          "apifyProxyGroups": ["RESIDENTIAL"]
         }
       }),
     });
@@ -86,12 +88,14 @@ export async function pollForRunCompletion(runId: string): Promise<{
 }> {
   let status = "READY";
   let attempts = 0;
+  let startTime = Date.now();
   
   while (status !== "SUCCEEDED" && status !== "FAILED" && attempts < MAX_POLLING_ATTEMPTS) {
     await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS));
     attempts++;
     
-    console.log(`Checking run status (attempt ${attempts}/${MAX_POLLING_ATTEMPTS})...`);
+    const elapsedTime = Math.round((Date.now() - startTime) / 1000);
+    console.log(`Checking run status (attempt ${attempts}/${MAX_POLLING_ATTEMPTS}, elapsed: ${elapsedTime}s)...`);
     
     try {
       const statusResponse = await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}?token=${APIFY_API_TOKEN}`);
@@ -104,14 +108,19 @@ export async function pollForRunCompletion(runId: string): Promise<{
       const statusData = await statusResponse.json() as ApifyStatusResponse;
       status = statusData?.data?.status || status;
       
-      console.log(`Run status: ${status}`);
+      console.log(`Run status: ${status} (attempt: ${attempts}/${MAX_POLLING_ATTEMPTS}, elapsed: ${elapsedTime}s)`);
       
       if (status === "FAILED") {
         return { 
           success: false, 
           status,
-          error: "Apify run failed" 
+          error: `Apify run failed. This could be due to the YouTube channel being unavailable or protected.` 
         };
+      }
+      
+      // Early success detection - if succeeded, break out early
+      if (status === "SUCCEEDED") {
+        break;
       }
     } catch (error) {
       console.error(`Error polling run status: ${error.message}`);
@@ -120,10 +129,11 @@ export async function pollForRunCompletion(runId: string): Promise<{
   }
   
   if (status !== "SUCCEEDED") {
+    const elapsedTime = Math.round((Date.now() - startTime) / 1000);
     return { 
       success: false, 
       status,
-      error: "Timeout waiting for Apify run to complete" 
+      error: `Timeout waiting for Apify run to complete after ${elapsedTime} seconds. Try a different URL format (e.g., @username instead of channel/ID) or try again later.` 
     };
   }
   

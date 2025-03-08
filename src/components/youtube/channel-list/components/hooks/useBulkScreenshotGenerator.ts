@@ -23,11 +23,15 @@ export function useBulkScreenshotGenerator() {
       console.log(`Generating screenshot for channel: ${channel.title} (${channel.url})`);
       setCurrentChannel(channel.title);
       
-      // Call the edge function to generate screenshot
+      // Call the edge function to generate screenshot with a longer timeout
       const { data, error } = await supabase.functions.invoke<any>('take-channel-screenshot', {
         body: { 
           channelUrl: channel.url,
           channelId: channel.id
+        },
+        // Set a longer timeout for the function call
+        options: {
+          timeout: 180000 // 3 minutes
         }
       });
 
@@ -42,9 +46,14 @@ export function useBulkScreenshotGenerator() {
 
       if (!data || !data.success) {
         console.error(`Failed to generate screenshot for ${channel.title}:`, data?.error || "Unknown error");
+        
+        // Include more detailed error information
+        const errorMsg = data?.error || "Unknown error occurred";
+        const errorDetail = data?.message ? ` (${data.message})` : "";
+        
         setFailedChannels(prev => [...prev, {
           channel,
-          error: data?.error || "Unknown error occurred"
+          error: `${errorMsg}${errorDetail}`
         }]);
         return false;
       }
@@ -96,7 +105,7 @@ export function useBulkScreenshotGenerator() {
         
         // Add a small delay between requests to be nice to the API
         if (i < channels.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay to 1.5s
         }
       }
 
@@ -122,6 +131,7 @@ export function useBulkScreenshotGenerator() {
       return;
     }
     
+    toast.info(`Retrying ${failedChannels.length} failed screenshot attempts...`);
     const channelsToRetry = failedChannels.map(item => item.channel);
     setFailedChannels([]);
     await generateScreenshotsForChannels(channelsToRetry);

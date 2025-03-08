@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ImageOff, FileText, BarChart, Tag, AlertCircle, RefreshCw, Info } from "lucide-react";
+import { ImageOff, FileText, BarChart, Tag, AlertCircle, RefreshCw, Info, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -168,6 +168,11 @@ const ChannelsToImprove = () => {
     navigate(`/admin/edit-channel/${channelId}`);
   };
 
+  // Open channel in new tab
+  const openChannelInNewTab = (channelUrl: string) => {
+    window.open(channelUrl, '_blank');
+  };
+
   // Screenshot generation handler
   const generateScreenshot = (channel: Channel) => {
     const selectedChannel = {
@@ -175,6 +180,12 @@ const ChannelsToImprove = () => {
       url: channel.channel_url,
       title: channel.channel_title
     };
+    
+    // Show more informative toast
+    toast.info(
+      "Starting screenshot capture. This process may take up to 2 minutes. " +
+      "The screenshot is taken by connecting to YouTube and waiting for the page to load fully."
+    );
     
     screenshotGenerator.generateScreenshotsForChannels([selectedChannel])
       .then(() => {
@@ -329,13 +340,33 @@ const ChannelsToImprove = () => {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="p-2 text-sm bg-white rounded border mb-2">
-                    <p className="text-gray-500 mb-1">Channel URL:</p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-gray-500 mb-1">Channel URL:</p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 px-2 ml-2"
+                        onClick={() => openChannelInNewTab(item.channel.url)}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <p className="truncate">{item.channel.url}</p>
                   </div>
                   <div className="p-2 text-sm bg-white rounded border">
                     <p className="text-gray-500 mb-1">Error:</p>
                     <p className="text-red-600">{item.error}</p>
                   </div>
+                  {activeTab === "no-screenshot" && (
+                    <div className="mt-2 text-xs text-gray-600">
+                      <p className="font-medium mb-1">Possible solutions:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li>Try using a different URL format (e.g., @handle instead of /channel/ID)</li>
+                        <li>Check if the channel is public and accessible</li>
+                        <li>Try again later when YouTube or Apify servers are less busy</li>
+                      </ul>
+                    </div>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -414,6 +445,14 @@ const ChannelsToImprove = () => {
                 onClick={() => navigateToEdit(channel.id)}
               >
                 Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => openChannelInNewTab(channel.channel_url)}
+                title="Open channel in YouTube"
+              >
+                <ExternalLink className="h-4 w-4" />
               </Button>
             </div>
           ))}
