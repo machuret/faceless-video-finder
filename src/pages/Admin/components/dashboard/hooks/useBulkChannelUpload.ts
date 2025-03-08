@@ -33,27 +33,37 @@ export const useBulkChannelUpload = () => {
     
     initializeProgress(urlsToProcess.length);
     toast.info(`Starting bulk upload of ${urlsToProcess.length} channels. This may take a while.`);
+    console.log(`Processing ${urlsToProcess.length} URLs:`, urlsToProcess);
     
-    // Process each URL individually
-    for (let i = 0; i < urlsToProcess.length; i++) {
-      const url = urlsToProcess[i];
-      updateCurrentChannel(url);
-      
-      const success = await processChannelUrl(url, i, urlsToProcess.length);
-      
-      if (success) {
-        incrementSuccessCount();
-      } else {
-        incrementErrorCount();
+    // Process each URL individually with proper sequential processing
+    try {
+      for (let i = 0; i < urlsToProcess.length; i++) {
+        const url = urlsToProcess[i];
+        updateCurrentChannel(url);
+        console.log(`Processing URL ${i + 1}/${urlsToProcess.length}: ${url}`);
+        
+        // Process one URL at a time and wait for it to complete
+        const success = await processChannelUrl(url, i, urlsToProcess.length);
+        
+        if (success) {
+          incrementSuccessCount();
+        } else {
+          incrementErrorCount();
+        }
+        
+        updateProgress(i + 1, urlsToProcess.length);
+        
+        // Add a delay between requests to avoid overwhelming the API
+        if (i < urlsToProcess.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
-      
-      updateProgress(i + 1, urlsToProcess.length);
-      
-      // Add a small delay between requests to avoid overwhelming the API
-      await new Promise(resolve => setTimeout(resolve, 1500));
+    } catch (error) {
+      console.error("Error in bulk processing:", error);
+      toast.error("An error occurred during bulk processing");
+    } finally {
+      finishProcessing();
     }
-    
-    finishProcessing();
   };
 
   return {

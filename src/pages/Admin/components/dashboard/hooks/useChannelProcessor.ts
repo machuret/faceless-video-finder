@@ -14,11 +14,25 @@ export const useChannelProcessor = () => {
       // Step 1: Get channel data using the dedicated Edge Function
       const channelData = await fetchChannelData(url);
       
+      if (!channelData || !channelData.success) {
+        console.error(`Failed to fetch data for channel: ${url}`, channelData);
+        toast.error(`Failed to fetch data for channel: ${url}`);
+        return false;
+      }
+      
+      console.log(`Channel data received for ${url}:`, channelData);
+      
       // Step 2: Format the channel data
       const formattedData = formatChannelData(channelData, url, index);
       
       // Step 3: Save the channel data to the database
       const success = await saveChannelToDatabase(formattedData);
+      
+      if (success) {
+        console.log(`Successfully saved channel: ${channelData.title || url}`);
+      } else {
+        console.error(`Failed to save channel to database: ${url}`);
+      }
       
       return success;
     } catch (error) {
