@@ -23,14 +23,13 @@ export function useBulkScreenshotGenerator() {
       console.log(`Generating screenshot for channel: ${channel.title} (${channel.url})`);
       setCurrentChannel(channel.title);
       
-      // Call the edge function to generate screenshot with a longer timeout
+      // Call the edge function to generate screenshot without any additional options
+      // Only pass the required body parameter
       const { data, error } = await supabase.functions.invoke<any>('take-channel-screenshot', {
         body: { 
           channelUrl: channel.url,
           channelId: channel.id
-        },
-        // Remove the options property as it's not supported in the FunctionInvokeOptions type
-        abortSignal: new AbortController().signal
+        }
       });
 
       if (error) {
