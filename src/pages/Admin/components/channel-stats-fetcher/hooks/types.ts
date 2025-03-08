@@ -39,3 +39,9 @@ export interface ChannelStatsResult {
   }[];
   error?: string;
 }
+
+// Add the missing type definition
+export interface RequiredFieldDefinition {
+  key: string;
+  label: string;
+}
