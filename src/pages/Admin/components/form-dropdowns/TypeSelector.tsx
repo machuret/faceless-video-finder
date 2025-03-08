@@ -9,7 +9,7 @@ import {
 import { useState, useEffect } from "react";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
 import { ChannelType } from "@/types/youtube";
-import TypeAIGenerator from "./TypeAIGenerator";
+import { TypeAIGenerator } from "./TypeAIGenerator";
 
 interface TypeSelectorProps {
   selectedType: string | undefined;
@@ -44,8 +44,8 @@ const TypeSelector = ({ selectedType, onSelect, channelTitle = "", description =
           {channelTitle && (
             <TypeAIGenerator 
               channelTitle={channelTitle}
-              description={description}
-              onTypeGenerated={handleSelect}
+              channelDescription={description}
+              onTypeDetected={handleSelect}
             />
           )}
         </div>
