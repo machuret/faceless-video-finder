@@ -1,133 +1,98 @@
 
-import { ChannelFormData } from "@/types/forms";
 import { ChannelStatsResponse } from "supabase/functions/fetch-channel-stats-apify/types";
-import { FieldMapping, ProcessedChannelData } from "./types";
-import { verifyRequiredFields } from "./dataValidator";
+import { ProcessedChannelData } from "./types";
 
 /**
- * Maps API fields to form field names
+ * Maps API response to form data structure
  */
-export const FIELD_MAPPINGS: FieldMapping = {
-  description: 'description',
-  country: 'country',
-  subscriberCount: 'total_subscribers',
-  viewCount: 'total_views',
-  videoCount: 'video_count',
-  startDate: 'start_date',
-  title: 'channel_title'
-};
-
-/**
- * Maps API response data to form data format
- */
-export const mapResponseToFormData = (
-  data: ChannelStatsResponse
-): ProcessedChannelData => {
-  const missing = verifyRequiredFields(data);
+export const mapResponseToFormData = (response: ChannelStatsResponse): ProcessedChannelData => {
+  console.log("Mapping response to form data:", response);
+  
+  // Track which fields are missing
+  const missing: string[] = [];
+  
+  // Check each field that should be present
+  if (!response.title) missing.push('channel_title');
+  if (!response.subscriberCount) missing.push('total_subscribers');
+  if (!response.viewCount) missing.push('total_views');
+  if (!response.videoCount) missing.push('video_count');
+  if (!response.startDate) missing.push('start_date');
+  if (!response.description) missing.push('description');
+  if (!response.country) missing.push('country');
+  
+  // Determine if we have partial data
   const hasPartialData = missing.length > 0;
   
-  console.log("✅ Mapping API response to form data:", data);
-  console.log("🔍 Missing fields:", missing);
-  
-  // Make sure we attempt to provide fallback data for common missing fields
-  const fallbackData = {
-    country: data.country || 'US', // Use US as fallback
-    description: data.description || '',
-    start_date: data.startDate || (new Date().toISOString().split('T')[0]), // Today as fallback
+  // Map to our form data structure
+  const stats = {
+    channel_title: response.title || "",
+    total_subscribers: response.subscriberCount ? String(response.subscriberCount) : "",
+    total_views: response.viewCount ? String(response.viewCount) : "",
+    video_count: response.videoCount ? String(response.videoCount) : "",
+    start_date: response.startDate || "",
+    description: response.description || "",
+    country: response.country || ""
   };
   
-  // Transform API data to form data format with more explicit type handling
-  const stats: Partial<ChannelFormData> = {
-    total_subscribers: data.subscriberCount !== undefined ? String(data.subscriberCount) : "",
-    total_views: data.viewCount !== undefined ? String(data.viewCount) : "",
-    video_count: data.videoCount || "",
-    description: fallbackData.description,
-    channel_title: data.title || "",
-    start_date: fallbackData.start_date,
-    country: fallbackData.country
-  };
+  // Log what we're returning
+  console.log("Mapped form data:", stats);
+  console.log("Missing fields:", missing);
+  console.log("Has partial data:", hasPartialData);
   
-  console.log("✅ Mapped form data:", stats);
-
-  // Filter out empty fields for cleaner return data 
-  const cleanStats = {} as Partial<ChannelFormData>;
-  
-  // Properly assign values to the cleanStats object
-  Object.entries(stats).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      // Use a properly typed assignment with type assertion
-      (cleanStats as any)[key] = value;
-    }
-  });
-
-  return {
-    stats: cleanStats,
-    missing,
-    hasPartialData
-  };
+  return { stats, missing, hasPartialData };
 };
 
 /**
- * Maps partial API response data to form data
- * Specifically for missing fields fetch operation
+ * Maps partial response to form data for specific fields
  */
 export const mapPartialResponseToFormData = (
-  data: ChannelStatsResponse,
-  missingFields: string[]
-): { partialStats: Partial<ChannelFormData>; successfulFields: string[]; failedFields: string[] } => {
-  const partialStats: Partial<ChannelFormData> = {};
+  response: ChannelStatsResponse, 
+  requestedFields: string[]
+): { 
+  partialStats: Partial<any>; 
+  successfulFields: string[];
+  failedFields: string[];
+} => {
+  console.log("Mapping partial response for fields:", requestedFields, response);
+  
+  const partialStats: Partial<any> = {};
   const successfulFields: string[] = [];
   const failedFields: string[] = [];
   
-  console.log("🔄 Mapping partial API response to form data. Fields needed:", missingFields);
-  console.log("📝 API response data:", data);
-  
-  // Add default values for common fields that might be missing
-  if (missingFields.includes('Country') && !data.country) {
-    data.country = 'US'; // Default to US if country is missing
-    successfulFields.push('country');
-  }
-  
-  if (missingFields.includes('Start Date') && !data.startDate) {
-    data.startDate = new Date().toISOString().split('T')[0]; // Use today as default
-    successfulFields.push('startDate');
-  }
-  
-  // Check each field in the response and add to our stats object if present
-  Object.entries(FIELD_MAPPINGS).forEach(([apiField, formField]) => {
-    const responseField = apiField as keyof ChannelStatsResponse;
-    const fieldValue = data[responseField];
+  // Helper to check if a field was requested and is present in the response
+  const processField = (
+    fieldName: string, 
+    responseField: string, 
+    value: any
+  ) => {
+    // Check if this field was requested
+    const wasRequested = requestedFields.some(f => 
+      f.toLowerCase() === fieldName.toLowerCase() ||
+      f.toLowerCase().includes(fieldName.toLowerCase())
+    );
     
-    if (fieldValue !== undefined && 
-        fieldValue !== null && 
-        String(fieldValue).trim() !== "") {
-      
-      console.log(`✅ Field ${apiField} has value:`, fieldValue);
-      
-      // Use explicit typing to ensure proper assignment
-      const fieldName = formField as keyof ChannelFormData;
-      const fieldValueString = String(fieldValue);
-      
-      // Now assign with proper type casting for different field types
-      if (fieldName === 'total_subscribers' || fieldName === 'total_views' || fieldName === 'video_count') {
-        (partialStats as any)[fieldName] = fieldValueString;
-      } else if (fieldName === 'description' || fieldName === 'channel_title' || 
-                fieldName === 'start_date' || fieldName === 'country') {
-        (partialStats as any)[fieldName] = fieldValueString;
-      }
-      
-      successfulFields.push(apiField);
+    if (!wasRequested) return;
+    
+    if (value !== undefined && value !== null && value !== '') {
+      partialStats[fieldName] = value;
+      successfulFields.push(responseField);
     } else {
-      console.log(`❌ Field ${apiField} is missing or empty`);
-      if (missingFields.some(field => field.toLowerCase().includes(apiField.toLowerCase()))) {
-        failedFields.push(apiField);
-      }
+      failedFields.push(responseField);
     }
-  });
+  };
   
-  console.log("📊 Mapped partial stats:", partialStats);
-  console.log("✅ Successfully fetched fields:", successfulFields);
-  console.log("❌ Failed to fetch fields:", failedFields);
+  // Process each field that might be in the response
+  processField('channel_title', 'title', response.title);
+  processField('total_subscribers', 'subscriberCount', response.subscriberCount);
+  processField('total_views', 'viewCount', response.viewCount);
+  processField('video_count', 'videoCount', response.videoCount);
+  processField('start_date', 'startDate', response.startDate);
+  processField('description', 'description', response.description);
+  processField('country', 'country', response.country);
+  
+  console.log("Mapped partial stats:", partialStats);
+  console.log("Successfully retrieved fields:", successfulFields);
+  console.log("Failed to retrieve fields:", failedFields);
   
   return { partialStats, successfulFields, failedFields };
 };

@@ -28,6 +28,20 @@ export async function fetchChannelWithApifyAPI(url: string, apiToken: string): P
     const items = await fetchDataset(runId, apiToken);
     console.log(`Successfully fetched ${items.length} items from Apify dataset`);
     
+    // Log the first item to help with debugging
+    if (items.length > 0) {
+      console.log("First item data structure:", JSON.stringify(Object.keys(items[0])));
+      // Check for critical fields
+      const criticalFields = ["channelInfo", "statistics", "snippet", "aboutPage"];
+      criticalFields.forEach(field => {
+        if (items[0][field]) {
+          console.log(`${field} is present:`, JSON.stringify(items[0][field]).substring(0, 200) + "...");
+        } else {
+          console.log(`${field} is NOT present in response`);
+        }
+      });
+    }
+    
     // Process the channel data
     return processChannelData(items);
   } catch (error) {

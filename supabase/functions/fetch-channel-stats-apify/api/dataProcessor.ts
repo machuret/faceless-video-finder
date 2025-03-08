@@ -14,7 +14,7 @@ export function processChannelData(items: any[]): ApifyChannelData {
   }
   
   // Log the first item to debug what's in the response
-  console.log("First item from Apify dataset:", JSON.stringify(items[0], null, 2));
+  console.log("First item structure:", Object.keys(items[0]));
   
   // Try to extract channel information from the first item
   const firstItem = items[0];
@@ -141,11 +141,25 @@ function extractSubscriberCount(item: any): string {
     item.subscriberCount,
     item.statistics?.subscriberCount,
     item.channelInfo?.statistics?.subscriberCount,
-    item.snippet?.subscriberCount
+    item.snippet?.subscriberCount,
+    // Direct text from page that might be present
+    item.subscriberCountText
   ];
   
   for (const source of possibleSources) {
     if (source !== undefined && source !== null) {
+      if (typeof source === 'string' && source.includes('subscribers')) {
+        // Extract number from text like "1.2M subscribers"
+        const numMatch = source.match(/[\d,\.]+[KMB]?/);
+        if (numMatch) {
+          const numStr = numMatch[0];
+          // Convert K, M, B to actual numbers
+          if (numStr.includes('K')) return String(parseFloat(numStr) * 1000);
+          if (numStr.includes('M')) return String(parseFloat(numStr) * 1000000);
+          if (numStr.includes('B')) return String(parseFloat(numStr) * 1000000000);
+          return numStr.replace(/,/g, '');
+        }
+      }
       return String(source);
     }
   }
