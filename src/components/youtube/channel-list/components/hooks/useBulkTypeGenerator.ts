@@ -42,7 +42,7 @@ export function useBulkTypeGenerator() {
         description: description 
       });
       
-      const { data, error } = await supabase.functions.invoke<any>('generate-channel-type', {
+      const { data, error } = await supabase.functions.invoke('generate-channel-type', {
         body: { 
           channelTitle: channel.title,
           description: description
