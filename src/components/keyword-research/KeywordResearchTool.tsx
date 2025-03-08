@@ -8,11 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Search, Download, Copy, Info, Sparkles, ClipboardCheck } from "lucide-react";
+import { Search, Download, Copy, Info } from "lucide-react";
 import KeywordResults from "./KeywordResults";
 import countryList from "./utils/countries";
 import languageList from "./utils/languages";
-import ApiTokenManager from "./ApiTokenManager";
 import { supabase } from "@/integrations/supabase/client";
 
 interface KeywordResult {
@@ -28,7 +27,6 @@ const KeywordResearchTool = () => {
   const [removeDuplicates, setRemoveDuplicates] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<KeywordResult[]>([]);
-  const [apiToken, setApiToken] = useState("");
 
   const handleSearch = async () => {
     if (!keyword.trim()) {
@@ -114,106 +112,90 @@ const KeywordResearchTool = () => {
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <Tabs defaultValue="search">
-          <TabsList className="mb-4">
-            <TabsTrigger value="search">Search</TabsTrigger>
-            <TabsTrigger value="api">API Settings</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="search">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="keyword">Main Keyword</Label>
-                <Input
-                  id="keyword"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="Enter a keyword to research"
-                  className="mt-1"
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="country">Country</Label>
-                  <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger id="country" className="mt-1">
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countryList.map(item => (
-                        <SelectItem key={item.code} value={item.code}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="language">Language</Label>
-                  <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger id="language" className="mt-1">
-                      <SelectValue placeholder="Select language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {languageList.map(item => (
-                        <SelectItem key={item.code} value={item.code}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="searchHashtags"
-                    checked={searchHashtags}
-                    onCheckedChange={setSearchHashtags}
-                  />
-                  <Label htmlFor="searchHashtags">Search hashtags</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="removeDuplicates"
-                    checked={removeDuplicates}
-                    onCheckedChange={setRemoveDuplicates}
-                  />
-                  <Label htmlFor="removeDuplicates">Remove duplicates</Label>
-                </div>
-              </div>
-              
-              <Button 
-                onClick={handleSearch} 
-                disabled={isLoading || !keyword.trim()} 
-                className="w-full"
-              >
-                {isLoading ? (
-                  <>
-                    <Search className="mr-2 h-4 w-4 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="mr-2 h-4 w-4" />
-                    Search Keywords
-                  </>
-                )}
-              </Button>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="api">
-            <ApiTokenManager
-              apiToken={apiToken}
-              onChange={setApiToken}
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="keyword">Main Keyword</Label>
+            <Input
+              id="keyword"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Enter a keyword to research"
+              className="mt-1"
             />
-          </TabsContent>
-        </Tabs>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="country">Country</Label>
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger id="country" className="mt-1">
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countryList.map(item => (
+                    <SelectItem key={item.code} value={item.code}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="language">Language</Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger id="language" className="mt-1">
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {languageList.map(item => (
+                    <SelectItem key={item.code} value={item.code}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="searchHashtags"
+                checked={searchHashtags}
+                onCheckedChange={setSearchHashtags}
+              />
+              <Label htmlFor="searchHashtags">Search hashtags</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="removeDuplicates"
+                checked={removeDuplicates}
+                onCheckedChange={setRemoveDuplicates}
+              />
+              <Label htmlFor="removeDuplicates">Remove duplicates</Label>
+            </div>
+          </div>
+          
+          <Button 
+            onClick={handleSearch} 
+            disabled={isLoading || !keyword.trim()} 
+            className="w-full"
+          >
+            {isLoading ? (
+              <>
+                <Search className="mr-2 h-4 w-4 animate-spin" />
+                Searching...
+              </>
+            ) : (
+              <>
+                <Search className="mr-2 h-4 w-4" />
+                Search Keywords
+              </>
+            )}
+          </Button>
+        </div>
       </Card>
       
       {results.length > 0 && (

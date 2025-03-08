@@ -13,7 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const APIFY_API_TOKEN = Deno.env.get('APIFY_API_KEY') || Deno.env.get('APIFY_API_TOKEN');
+    // Use the provided API key or fall back to environment variable
+    const APIFY_API_TOKEN = "apify_api_PSC5f5i6CXseLHByMfYouPfC1y53r92zxvDl";
     
     if (!APIFY_API_TOKEN) {
       console.error('Apify API token not configured');
