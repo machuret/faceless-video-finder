@@ -6,8 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Upload, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useChannelFormSubmission } from "../../hooks/useChannelFormSubmission";
-import { useYouTubeDataFetcher } from "../../hooks/youtube-data-fetcher";
+import { supabase } from "@/integrations/supabase/client";
 
 const BulkChannelUploader = () => {
   const [urls, setUrls] = useState<string>("");
@@ -16,55 +15,9 @@ const BulkChannelUploader = () => {
   const [currentChannel, setCurrentChannel] = useState<string>("");
   const [processedCount, setProcessedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [fetchingData, setFetchingData] = useState(false);
   
   const handleUrlsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUrls(e.target.value);
-  };
-  
-  // Function to fetch YouTube data for a single URL
-  const fetchYouTubeDataForUrl = async (url: string) => {
-    // Create a minimal temporary form state to hold the data
-    const tempFormData = {
-      video_id: "",
-      channel_title: "",
-      channel_url: url,
-      description: "",
-      ai_description: "",
-      screenshot_url: "",
-      total_subscribers: "",
-      total_views: "",
-      start_date: "",
-      video_count: "",
-      cpm: "4",
-      channel_type: "",
-      country: "US",
-      channel_category: "entertainment",
-      notes: "",
-      keywords: []
-    };
-    
-    // Create a temporary state setter for the form data
-    let updatedFormData = { ...tempFormData };
-    const setTempFormData = (data: any) => {
-      if (typeof data === 'function') {
-        updatedFormData = data(updatedFormData);
-      } else {
-        updatedFormData = { ...updatedFormData, ...data };
-      }
-    };
-    
-    // Get the YouTube data fetcher from our hook
-    const { fetchYoutubeData } = useYouTubeDataFetcher(url, setFetchingData, setTempFormData);
-    
-    // Fetch the data
-    await fetchYoutubeData();
-    
-    // Wait a bit to ensure data is fetched
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Return the updated form data
-    return updatedFormData;
   };
   
   const startBulkUpload = async () => {
@@ -91,40 +44,130 @@ const BulkChannelUploader = () => {
     
     toast.info(`Starting bulk upload of ${urlsToProcess.length} channels. This may take a while.`);
     
+    // Process each URL individually using the Edge Function
     for (let i = 0; i < urlsToProcess.length; i++) {
       const url = urlsToProcess[i];
       setCurrentChannel(url);
       
       try {
-        // First, fetch the YouTube data using just the URL
-        toast.info(`Fetching data for ${url}...`);
-        const enhancedFormData = await fetchYouTubeDataForUrl(url);
+        console.log(`Processing channel ${i + 1}/${urlsToProcess.length}: ${url}`);
         
-        // Check if we got meaningful data
-        if (!enhancedFormData.channel_title || (!enhancedFormData.video_id && enhancedFormData.channel_title === "")) {
-          toast.warning(`Couldn't fetch complete data for ${url}. Treating as manual entry.`);
+        // Step 1: Get channel data using the dedicated Edge Function
+        const { data: channelData, error: fetchError } = await supabase.functions.invoke('fetch-channel-stats-apify', {
+          body: { channelUrl: url }
+        });
+        
+        if (fetchError) {
+          console.error(`Error fetching data for ${url}:`, fetchError);
+          toast.error(`Failed to fetch data for ${url}: ${fetchError.message}`);
+          continue;
+        }
+        
+        console.log("Channel data received:", channelData);
+        
+        if (!channelData || !channelData.channelName) {
+          console.warn(`Insufficient data received for ${url}`);
+          toast.warning(`Couldn't fetch complete data for ${url}. Saving with minimal info.`);
           
-          // Try to extract a channel name from the URL for a better user experience
+          // Extract a channel name from the URL for better UX
           const channelNameMatch = url.match(/\/@([^\/\?]+)/);
           const channelName = channelNameMatch ? channelNameMatch[1] : "Unknown Channel";
           
-          // Update with minimal data for manual processing
-          enhancedFormData.channel_title = channelName;
-          enhancedFormData.notes = `Automatically added via bulk upload. Original URL: ${url}`;
+          // Create minimal channel data
+          const minimalData = {
+            video_id: `manual-${Date.now()}-${i}`,
+            channel_title: channelName,
+            channel_url: url,
+            description: "",
+            total_subscribers: 0,
+            total_views: 0,
+            start_date: new Date().toISOString().split('T')[0],
+            video_count: 0,
+            cpm: 4,
+            channel_type: "other",
+            country: "US",
+            channel_category: "entertainment",
+            notes: `Added via bulk upload. Original URL: ${url}`,
+            keywords: [],
+            metadata: {
+              ui_channel_type: "other",
+              is_manual_entry: true
+            }
+          };
+          
+          // Insert the minimal channel
+          const { error: insertError } = await supabase
+            .from("youtube_channels")
+            .insert(minimalData);
+          
+          if (insertError) {
+            throw new Error(`Error saving channel: ${insertError.message}`);
+          }
+          
+          toast.success(`Saved minimal data for channel: ${channelName}`);
+        } else {
+          // Format the Apify data for our database
+          const formattedData = {
+            video_id: channelData.channelId || `manual-${Date.now()}-${i}`,
+            channel_title: channelData.channelName || "Unknown Channel",
+            channel_url: channelData.channelUrl || url,
+            description: channelData.channelDescription || "",
+            total_subscribers: parseInt(channelData.numberOfSubscribers || "0"),
+            total_views: parseInt(channelData.channelTotalViews || "0"),
+            start_date: channelData.channelJoinedDate ? 
+              new Date(channelData.channelJoinedDate).toISOString().split('T')[0] : 
+              new Date().toISOString().split('T')[0],
+            video_count: parseInt(channelData.channelTotalVideos || "0"),
+            cpm: 4,
+            channel_type: "creator",
+            country: channelData.channelLocation || "US",
+            channel_category: "entertainment",
+            notes: `Added via bulk upload. Original URL: ${url}`,
+            keywords: [],
+            metadata: {
+              ui_channel_type: "creator",
+              is_manual_entry: false
+            }
+          };
+          
+          // First check if channel already exists
+          const { data: existingChannel, error: queryError } = await supabase
+            .from("youtube_channels")
+            .select("id")
+            .eq("channel_url", formattedData.channel_url)
+            .maybeSingle();
+            
+          if (queryError) {
+            throw new Error(`Error checking existing channel: ${queryError.message}`);
+          }
+          
+          let result;
+          
+          if (existingChannel) {
+            // Update existing channel
+            result = await supabase
+              .from("youtube_channels")
+              .update(formattedData)
+              .eq("id", existingChannel.id);
+              
+            if (result.error) {
+              throw new Error(`Error updating channel: ${result.error.message}`);
+            }
+            
+            toast.success(`Updated channel: ${formattedData.channel_title}`);
+          } else {
+            // Insert new channel
+            result = await supabase
+              .from("youtube_channels")
+              .insert(formattedData);
+              
+            if (result.error) {
+              throw new Error(`Error creating channel: ${result.error.message}`);
+            }
+            
+            toast.success(`Added channel: ${formattedData.channel_title}`);
+          }
         }
-        
-        toast.info(`Saving channel: ${enhancedFormData.channel_title}`);
-        
-        // Dummy event for the handleSubmit function
-        const dummyEvent = {
-          preventDefault: () => {}
-        } as React.FormEvent;
-        
-        // Get the handleSubmit function from the hook
-        const { handleSubmit } = useChannelFormSubmission(enhancedFormData, setIsProcessing, false);
-        
-        // Process the channel submission (returnToList set to false)
-        await handleSubmit(dummyEvent, false);
         
         setProcessedCount(i + 1);
         setProgress(Math.floor(((i + 1) / urlsToProcess.length) * 100));
@@ -178,13 +221,13 @@ https://www.youtube.com/@another"
       
       <Button 
         onClick={startBulkUpload} 
-        disabled={isProcessing || fetchingData || !urls.trim()}
+        disabled={isProcessing || !urls.trim()}
         className="w-full"
       >
-        {isProcessing || fetchingData ? (
+        {isProcessing ? (
           <>
             <Upload className="h-4 w-4 mr-2 animate-spin" />
-            {fetchingData ? "Fetching data..." : "Processing..."}
+            Processing...
           </>
         ) : (
           "Bulk Upload Channels"
