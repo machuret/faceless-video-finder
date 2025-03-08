@@ -14,6 +14,10 @@ interface ChannelSelectionControlsProps {
   onBulkTakeScreenshots: () => void;
   showSelectionControls: boolean;
   hasChannels: boolean;
+  isProcessingStats?: boolean;
+  isProcessingTypes?: boolean;
+  isProcessingKeywords?: boolean;
+  isProcessingScreenshots?: boolean;
 }
 
 const ChannelSelectionControls: React.FC<ChannelSelectionControlsProps> = ({
@@ -26,7 +30,11 @@ const ChannelSelectionControls: React.FC<ChannelSelectionControlsProps> = ({
   onBulkGenerateKeywords,
   onBulkTakeScreenshots,
   showSelectionControls,
-  hasChannels
+  hasChannels,
+  isProcessingStats = false,
+  isProcessingTypes = false,
+  isProcessingKeywords = false,
+  isProcessingScreenshots = false
 }) => {
   return (
     <div className="flex gap-2">
@@ -58,6 +66,10 @@ const ChannelSelectionControls: React.FC<ChannelSelectionControlsProps> = ({
             onGenerateTypes={onBulkGenerateTypes}
             onGenerateKeywords={onBulkGenerateKeywords}
             onGenerateScreenshots={onBulkTakeScreenshots}
+            isProcessingStats={isProcessingStats}
+            isProcessingTypes={isProcessingTypes}
+            isProcessingKeywords={isProcessingKeywords}
+            isProcessingScreenshots={isProcessingScreenshots}
           />
         </div>
       )}

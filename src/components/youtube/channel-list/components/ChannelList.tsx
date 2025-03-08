@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -236,6 +235,10 @@ export const ChannelList: React.FC<ChannelListProps> = ({
                 onBulkTakeScreenshots={handleBulkTakeScreenshots}
                 showSelectionControls={showSelectionControls}
                 hasChannels={channels.length > 0}
+                isProcessingStats={isStatsProcessing}
+                isProcessingTypes={isTypeProcessing}
+                isProcessingKeywords={isKeywordsProcessing}
+                isProcessingScreenshots={isScreenshotProcessing}
               />
               <Button 
                 onClick={() => navigate("/admin/add-channel")} 
