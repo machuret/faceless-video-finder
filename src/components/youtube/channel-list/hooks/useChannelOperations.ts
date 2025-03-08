@@ -10,20 +10,40 @@ export function useChannelOperations() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const fetchChannels = useCallback(async (limit?: number) => {
+  const fetchChannels = useCallback(async (offset?: number, limit?: number) => {
     try {
-      console.log("fetchChannels called with limit:", limit);
+      console.log("fetchChannels called with offset:", offset, "limit:", limit);
       setLoading(true);
       setError(null);
       
+      // First fetch the total count of channels
+      const { count, error: countError } = await supabase
+        .from("youtube_channels")
+        .select("*", { count: 'exact', head: true });
+      
+      if (countError) {
+        console.error("Error fetching channel count:", countError);
+        throw countError;
+      }
+      
+      setTotalCount(count || 0);
+      console.log("Total channel count:", count);
+      
+      // Then fetch the actual data with pagination
       let query = supabase
         .from("youtube_channels")
         .select("*")
         .order("created_at", { ascending: false });
       
-      // Apply limit if provided
-      if (limit && typeof limit === 'number') {
+      // Apply pagination parameters if provided
+      if (typeof offset === 'number') {
+        console.log("Applying offset to query:", offset);
+        query = query.range(offset, (offset + (limit || 10)) - 1);
+      }
+      // Apply limit if provided but no offset (legacy behavior)
+      else if (limit && typeof limit === 'number') {
         console.log("Applying limit to query:", limit);
         query = query.limit(limit);
       }
@@ -109,6 +129,7 @@ export function useChannelOperations() {
     channels,
     loading,
     error,
+    totalCount,
     fetchChannels,
     handleEdit,
     handleDelete,
