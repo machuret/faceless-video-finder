@@ -57,6 +57,16 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
             Fetch Missing Fields
           </Button>
         )}
+        
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-1"
+          onClick={() => window.open(channelUrl, '_blank')}
+        >
+          View Channel
+        </Button>
       </div>
 
       {apiError && <ErrorAlert error={apiError} />}

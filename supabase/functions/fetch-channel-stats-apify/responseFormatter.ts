@@ -57,15 +57,31 @@ export function formatChannelStatsResponse(channelData: ApifyChannelData) {
   }
   
   // Extract all the data we can from the channel data
+  const extractedSubscribers = extractNumberFromString(channelData.numberOfSubscribers);
+  const extractedViews = extractNumberFromString(channelData.channelTotalViews);
+  const extractedVideoCount = channelData.channelTotalVideos?.toString() || '0';
+  const extractedStartDate = formatDate(channelData.channelJoinedDate);
+  const extractedDescription = channelData.channelDescription || '';
+  const extractedCountry = channelData.channelLocation || '';
+  
+  console.log("🔢 Extracted values:", {
+    subscriberCount: extractedSubscribers,
+    viewCount: extractedViews,
+    videoCount: extractedVideoCount,
+    startDate: extractedStartDate,
+    description: extractedDescription ? "PRESENT" : "MISSING",
+    country: extractedCountry || "MISSING"
+  });
+  
   return {
     success: true,
     title: channelData.channelName || '',
-    subscriberCount: extractNumberFromString(channelData.numberOfSubscribers),
-    viewCount: extractNumberFromString(channelData.channelTotalViews),
-    videoCount: channelData.channelTotalVideos?.toString() || '0',
-    startDate: formatDate(channelData.channelJoinedDate),
-    description: channelData.channelDescription || '',
-    country: channelData.channelLocation || '',
+    subscriberCount: extractedSubscribers,
+    viewCount: extractedViews,
+    videoCount: extractedVideoCount,
+    startDate: extractedStartDate,
+    description: extractedDescription,
+    country: extractedCountry,
     url: channelData.channelUrl || '',
     source: "apify"
   };

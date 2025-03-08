@@ -18,7 +18,7 @@ export const fetchChannelStats = async (channelUrl: string): Promise<{
   }
 
   const formattedUrl = formatChannelUrl(channelUrl);
-  console.log("Fetching stats for URL:", formattedUrl);
+  console.log("🌐 Fetching stats for URL:", formattedUrl);
   
   try {
     const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
@@ -26,20 +26,20 @@ export const fetchChannelStats = async (channelUrl: string): Promise<{
     });
 
     if (error) {
-      console.error("Error fetching channel stats:", error);
+      console.error("❌ Error fetching channel stats:", error);
       return { data: null, error: error.message };
     }
 
     if (!data || !data.success) {
       const errorMessage = data?.error || "Failed to fetch channel stats";
-      console.error(errorMessage);
+      console.error("❌ API error:", errorMessage);
       return { data: null, error: errorMessage };
     }
 
-    console.log("Stats received from Apify:", data);
+    console.log("✅ Stats received from Apify:", data);
     return { data, error: null };
   } catch (err) {
-    console.error("Error in fetch stats:", err);
+    console.error("❌ Exception in fetch stats:", err);
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     return { data: null, error: errorMessage };
   }
@@ -76,7 +76,8 @@ export const fetchMissingFieldsData = async (
   }
 
   const formattedUrl = formatChannelUrl(channelUrl);
-  console.log("Fetching missing fields for URL:", formattedUrl);
+  console.log("🔍 Fetching missing fields for URL:", formattedUrl);
+  console.log("📝 Missing fields:", missingFields);
   
   try {
     const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
@@ -87,7 +88,7 @@ export const fetchMissingFieldsData = async (
     });
 
     if (error) {
-      console.error("Error fetching missing fields:", error);
+      console.error("❌ Error fetching missing fields:", error);
       return { 
         partialStats: {}, 
         successfulFields: [], 
@@ -98,7 +99,7 @@ export const fetchMissingFieldsData = async (
 
     if (!data || !data.success) {
       const errorMessage = data?.error || "Failed to fetch missing fields";
-      console.error(errorMessage);
+      console.error("❌ API error for missing fields:", errorMessage);
       return { 
         partialStats: {}, 
         successfulFields: [], 
@@ -107,7 +108,7 @@ export const fetchMissingFieldsData = async (
       };
     }
 
-    console.log("Missing fields data received:", data);
+    console.log("✅ Missing fields data received:", data);
     
     const { partialStats, successfulFields, failedFields } = 
       mapPartialResponseToFormData(data, missingFields);
@@ -119,7 +120,7 @@ export const fetchMissingFieldsData = async (
       error: null
     };
   } catch (err) {
-    console.error("Error fetching missing fields:", err);
+    console.error("❌ Exception fetching missing fields:", err);
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     return { 
       partialStats: {}, 

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,9 +23,9 @@ const ChannelStatsSection = ({
 }: ChannelStatsSectionProps) => {
   
   const handleStatsReceived = (stats: Partial<ChannelFormData>) => {
-    console.log("Stats received in ChannelStatsSection:", stats);
+    console.log("🔄 Stats received in ChannelStatsSection:", stats);
     
-    // Update all fields that we received from the API
+    // Create a mapping of fields to check for updates
     const fieldsToUpdate = [
       { key: 'total_subscribers', value: stats.total_subscribers },
       { key: 'total_views', value: stats.total_views },
@@ -34,17 +35,28 @@ const ChannelStatsSection = ({
       { key: 'country', value: stats.country }
     ];
     
+    let updatedFieldCount = 0;
+    
+    // Process each field
     for (const field of fieldsToUpdate) {
+      // Only update if we have a valid value
       if (field.value !== undefined && field.value !== null && field.value !== '') {
-        console.log(`Updating ${field.key} to:`, field.value);
+        console.log(`🔄 Updating ${field.key} to:`, field.value);
         handleFieldChange(field.key, field.value);
+        updatedFieldCount++;
+      } else {
+        console.log(`⚠️ Field ${field.key} has no valid value to update`);
       }
     }
     
     // If we received a channel title and the current one is empty or generic, update it
-    if (stats.channel_title && (!formData.channel_title || formData.channel_title === "Channel")) {
+    if (stats.channel_title && (!formData.channel_title || formData.channel_title === "Channel" || formData.channel_title.includes("Unknown"))) {
+      console.log(`🔄 Updating channel_title to:`, stats.channel_title);
       handleFieldChange('channel_title', stats.channel_title);
+      updatedFieldCount++;
     }
+    
+    console.log(`✅ Updated ${updatedFieldCount} fields from received stats`);
   };
 
   // Determine what to use for fetching - channel URL, channel title, or a combination

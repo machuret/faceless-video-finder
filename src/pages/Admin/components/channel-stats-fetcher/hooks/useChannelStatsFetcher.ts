@@ -62,8 +62,9 @@ export function useChannelStatsFetcher({
         toast.warning(`Some channel data is missing: ${missing.join(', ')}`);
         
         // Reset consecutive attempts if we got any data
-        if (Object.keys(data).length > 2) { // success + source = 2 keys
+        if (Object.keys(stats).length > 0) {
           setConsecutiveAttempts(0);
+          console.log("Got some data, resetting consecutive attempts");
         }
       } else {
         toast.success(`Channel stats fetched successfully via ${data.source || "Apify"}`);
@@ -109,11 +110,21 @@ export function useChannelStatsFetcher({
         return;
       }
       
+      // Log what we received to help with debugging
+      console.log("📦 Received partial stats:", partialStats);
+      console.log("✅ Successfully fetched fields:", successfulFields);
+      console.log("❌ Failed to fetch fields:", failedFields);
+      
       // Only call onStatsReceived if we have at least one field
       if (Object.keys(partialStats).length > 0) {
         console.log("Sending partial stats with retrieved fields:", partialStats);
         onStatsReceived(partialStats);
-        toast.success(`Successfully fetched: ${successfulFields.join(', ')}`);
+        
+        if (successfulFields.length > 0) {
+          toast.success(`Successfully fetched: ${successfulFields.join(', ')}`);
+        } else {
+          toast.warning("Fields were fetched but may be empty or invalid");
+        }
         
         // Update missing fields list
         const updatedMissingFields = missingFields.filter(field => 
