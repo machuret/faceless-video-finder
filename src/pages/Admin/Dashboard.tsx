@@ -6,6 +6,7 @@ import FeaturedChannels from "./components/dashboard/FeaturedChannels";
 import AdminActionCards from "./components/dashboard/AdminActionCards";
 import { ChannelList } from "@/components/youtube/channel-list/components/ChannelList";
 import MassScreenshotUpdater from "./components/dashboard/MassScreenshotUpdater";
+import MassStatsUpdater from "./components/dashboard/MassStatsUpdater";
 import BulkChannelUploader from "./components/dashboard/BulkChannelUploader";
 
 const Dashboard = () => {
@@ -21,8 +22,9 @@ const Dashboard = () => {
           <div className="lg:col-span-2">
             <FeaturedChannels />
           </div>
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
             <MassScreenshotUpdater />
+            <MassStatsUpdater />
           </div>
         </div>
         
