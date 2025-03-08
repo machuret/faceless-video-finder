@@ -3,7 +3,7 @@ import React, { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { ChannelFormData } from "@/types/forms";
 import ChannelIdentitySection from "./form-sections/ChannelIdentitySection";
-import ChannelStatsSection from "./form-sections/ChannelStatsSection";
+import ChannelStatsSection from "./form-sections/channel-stats";
 import ChannelTypeCategories from "./form-sections/ChannelTypeCategories";
 import ChannelContentSection from "./form-sections/ChannelContentSection";
 import RevenueDetailsSection from "./form-sections/RevenueDetailsSection";
