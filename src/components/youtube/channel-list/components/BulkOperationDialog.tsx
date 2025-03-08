@@ -4,13 +4,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
-import { BulkOperation } from "../context/BulkOperationsContext";
+import { BulkOperationType } from "../context/BulkOperationsContext";
 
 interface BulkOperationDialogProps {
   showDialog: boolean;
   onClose: () => void;
   onDone: () => void;
-  currentOperation: BulkOperation | null;
+  currentOperation: BulkOperationType;
   isProcessing: boolean;
   progress: number;
   currentChannel: string | null;
@@ -19,14 +19,14 @@ interface BulkOperationDialogProps {
   totalCount: number;
 }
 
-const getOperationTitle = (operation: BulkOperation | null): string => {
+const getOperationTitle = (operation: BulkOperationType): string => {
   if (!operation) return "Bulk Operation";
   
   switch (operation) {
     case "stats": return "Bulk Update Channel Stats";
-    case "types": return "Bulk Generate Channel Types";
+    case "type": return "Bulk Generate Channel Types";
     case "keywords": return "Bulk Generate Keywords";
-    case "screenshots": return "Bulk Take Screenshots";
+    case "screenshot": return "Bulk Take Screenshots";
     default: return "Bulk Operation";
   }
 };
