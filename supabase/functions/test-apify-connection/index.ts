@@ -31,11 +31,12 @@ serve(async (req) => {
     }
     
     // Test API connection by getting user info
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout for API calls
-    
+    let userResponse;
     try {
-      const userResponse = await fetch(
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout for API calls
+      
+      userResponse = await fetch(
         `https://api.apify.com/v2/users/me?token=${APIFY_API_TOKEN}`,
         {
           headers: {
@@ -46,73 +47,8 @@ serve(async (req) => {
       );
       
       clearTimeout(timeout);
-      
-      if (!userResponse.ok) {
-        const errorText = await userResponse.text();
-        console.error(`Error response from Apify (${userResponse.status}):`, errorText);
-        
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: `Failed to connect to Apify API: ${userResponse.status} ${userResponse.statusText}` 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: userResponse.status }
-        );
-      }
-      
-      const userData = await userResponse.json();
-      
-      // Test access to the YouTube Channel Scraper actor (with a shorter timeout)
-      const actorTimeout = setTimeout(() => controller.abort(), 3000);
-      let actorData = null;
-      let actorAccessible = false;
-      
-      try {
-        const actorResponse = await fetch(
-          `https://api.apify.com/v2/acts/streamers~youtube-channel-scraper?token=${APIFY_API_TOKEN}`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            signal: controller.signal
-          }
-        );
-        
-        clearTimeout(actorTimeout);
-        
-        if (actorResponse.ok) {
-          actorData = await actorResponse.json();
-          actorAccessible = true;
-        } else {
-          console.error(`Cannot access YouTube Channel Scraper: ${actorResponse.status}`);
-        }
-      } catch (actorError) {
-        console.warn("Actor check timed out or failed, but that's okay:", actorError);
-        // We'll continue even if this fails
-      }
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          user: {
-            id: userData.data.id,
-            username: userData.data.username,
-            plan: userData.data.subscription?.plan?.name || 'Unknown'
-          },
-          actorAccessible,
-          actorInfo: actorAccessible ? {
-            id: actorData.data.id,
-            name: actorData.data.name,
-            version: actorData.data.version
-          } : null,
-          message: "Successfully connected to Apify API"
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    } catch (fetchError) {
-      clearTimeout(timeout);
-      
-      if (fetchError.name === 'AbortError') {
+    } catch (error) {
+      if (error.name === 'AbortError') {
         console.error('Apify API request timed out');
         return new Response(
           JSON.stringify({ 
@@ -123,8 +59,80 @@ serve(async (req) => {
         );
       }
       
-      throw fetchError; // Re-throw for the outer catch block
+      console.error('Error during Apify API request:', error);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Error connecting to Apify API: ${error.message || 'Unknown error'}` 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
+      
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      console.error(`Error response from Apify (${userResponse.status}):`, errorText);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Failed to connect to Apify API: ${userResponse.status} ${userResponse.statusText}` 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: userResponse.status }
+      );
+    }
+      
+    const userData = await userResponse.json();
+      
+    // Test access to the YouTube Channel Scraper actor
+    let actorData = null;
+    let actorAccessible = false;
+    
+    try {
+      const actorController = new AbortController();
+      const actorTimeout = setTimeout(() => actorController.abort(), 5000);
+      
+      const actorResponse = await fetch(
+        `https://api.apify.com/v2/acts/streamers~youtube-channel-scraper?token=${APIFY_API_TOKEN}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: actorController.signal
+        }
+      );
+      
+      clearTimeout(actorTimeout);
+      
+      if (actorResponse.ok) {
+        actorData = await actorResponse.json();
+        actorAccessible = true;
+      } else {
+        console.error(`Cannot access YouTube Channel Scraper: ${actorResponse.status}`);
+      }
+    } catch (actorError) {
+      console.warn("Actor check timed out or failed, but that's okay:", actorError);
+      // We'll continue even if this fails
+    }
+    
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        user: {
+          id: userData.data.id,
+          username: userData.data.username,
+          plan: userData.data.subscription?.plan?.name || 'Unknown'
+        },
+        actorAccessible,
+        actorInfo: actorAccessible ? {
+          id: actorData.data.id,
+          name: actorData.data.name,
+          version: actorData.data.version
+        } : null,
+        message: "Successfully connected to Apify API"
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+    );
   } catch (error) {
     console.error('Error testing Apify connection:', error);
     

@@ -36,27 +36,45 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant={loading ? "secondary" : "outline"}
           size="sm"
           className="flex items-center gap-1"
           onClick={fetchStats}
           disabled={loading || fetchingMissing || testingConnection || !channelUrl}
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Fetch Stats via Apify
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Fetching...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4" />
+              Fetch Stats via Apify
+            </>
+          )}
         </Button>
 
         {partialData && missingFields.length > 0 && (
           <Button
             type="button"
-            variant="outline"
+            variant={fetchingMissing ? "secondary" : "outline"}
             size="sm"
             className="flex items-center gap-1"
             onClick={fetchMissingFields}
             disabled={loading || fetchingMissing || testingConnection || !channelUrl}
           >
-            {fetchingMissing ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-            Fetch Missing Fields
+            {fetchingMissing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Fetching...
+              </>
+            ) : (
+              <>
+                <PlusCircle className="h-4 w-4" />
+                Fetch Missing Fields
+              </>
+            )}
           </Button>
         )}
         
@@ -68,8 +86,17 @@ const ChannelStatsFetcher = ({ channelUrl, onStatsReceived }: ChannelStatsFetche
           onClick={testingConnection ? undefined : testApifyConnection}
           disabled={loading || fetchingMissing || testingConnection || !channelUrl}
         >
-          {testingConnection ? <Loader2 className="h-4 w-4 animate-spin" /> : <TestTube2 className="h-4 w-4" />}
-          {testingConnection ? "Testing..." : "Test Connection"}
+          {testingConnection ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Testing...
+            </>
+          ) : (
+            <>
+              <TestTube2 className="h-4 w-4" />
+              Test Connection
+            </>
+          )}
         </Button>
         
         <Button

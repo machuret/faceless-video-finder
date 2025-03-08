@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { ChannelFormData } from "@/types/forms";
 import { UseChannelStatsFetcherProps, UseChannelStatsFetcherResult, DataSource } from "./types";
@@ -18,6 +19,22 @@ export function useChannelStatsFetcher({
   const [partialData, setPartialData] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [consecutiveAttempts, setConsecutiveAttempts] = useState(0);
+  
+  // Use refs to track active operations for better cleanup
+  const activeRequest = useRef<AbortController | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+
+  // Helper to clean up pending operations
+  const cleanupPendingOperations = () => {
+    if (activeRequest.current) {
+      activeRequest.current.abort();
+      activeRequest.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
 
   const fetchStats = async () => {
     if (!channelUrl || channelUrl.trim() === "") {
@@ -25,6 +42,9 @@ export function useChannelStatsFetcher({
       return;
     }
 
+    // Cancel any pending operations
+    cleanupPendingOperations();
+    
     setLoading(true);
     setApiError(null);
     setDataSource(null);
@@ -39,8 +59,35 @@ export function useChannelStatsFetcher({
       toast.info("Fetching channel stats via Apify...");
     }
 
+    // Create a controller for this request
+    activeRequest.current = new AbortController();
+    
+    // Create a timeout for the operation
+    const timeout = setTimeout(() => {
+      if (activeRequest.current) {
+        activeRequest.current.abort();
+        setApiError("Request timed out after 2 minutes. Apify may be experiencing issues or the channel might be unavailable.");
+        toast.error("Request timed out. Please try again later.");
+        setLoading(false);
+      }
+      timeoutRef.current = null;
+    }, 120000); // 2 minute timeout
+    
+    timeoutRef.current = timeout as unknown as number;
+
     try {
       const { data, error } = await fetchChannelStats(channelUrl);
+      
+      // Clear timeout since we got a response
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
+      // Check if the request was aborted
+      if (activeRequest.current?.signal.aborted) {
+        return;
+      }
       
       if (error || !data) {
         setApiError(error || "Unknown error occurred");
@@ -84,6 +131,7 @@ export function useChannelStatsFetcher({
       toast.error(`Failed to fetch stats: ${errorMessage}`);
     } finally {
       setLoading(false);
+      activeRequest.current = null;
     }
   };
 
@@ -93,14 +141,44 @@ export function useChannelStatsFetcher({
       return;
     }
 
+    // Cancel any pending operations
+    cleanupPendingOperations();
+    
     setFetchingMissing(true);
     setApiError(null);
     
     toast.info(`Attempting to fetch missing fields: ${missingFields.join(', ')}...`);
 
+    // Create a controller for this request
+    activeRequest.current = new AbortController();
+    
+    // Create a timeout for the operation
+    const timeout = setTimeout(() => {
+      if (activeRequest.current) {
+        activeRequest.current.abort();
+        setApiError("Request for missing fields timed out after 2 minutes");
+        toast.error("Request timed out. Please try again later.");
+        setFetchingMissing(false);
+      }
+      timeoutRef.current = null;
+    }, 120000); // 2 minute timeout
+    
+    timeoutRef.current = timeout as unknown as number;
+
     try {
       const { partialStats, successfulFields, failedFields, error } = 
         await fetchMissingFieldsData(channelUrl, missingFields);
+      
+      // Clear timeout since we got a response
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
+      // Check if the request was aborted
+      if (activeRequest.current?.signal.aborted) {
+        return;
+      }
       
       if (error) {
         setApiError(error);
@@ -139,6 +217,7 @@ export function useChannelStatsFetcher({
       toast.error(`Failed to fetch missing fields: ${errorMessage}`);
     } finally {
       setFetchingMissing(false);
+      activeRequest.current = null;
     }
   };
 
@@ -148,25 +227,43 @@ export function useChannelStatsFetcher({
       return;
     }
 
+    // Cancel any pending operations
+    cleanupPendingOperations();
+    
     setTestingConnection(true);
     setApiError(null);
     
     toast.info("Testing connection to Apify...");
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+    // Create a controller for this request
+    activeRequest.current = new AbortController();
+    
+    // Create a timeout for the operation
+    const timeout = setTimeout(() => {
+      if (activeRequest.current) {
+        activeRequest.current.abort();
+        setApiError("Connection test timed out after 10 seconds");
+        toast.error("Connection test timed out after 10 seconds");
+        setTestingConnection(false);
+      }
+      timeoutRef.current = null;
+    }, 10000); // 10 second timeout
+    
+    timeoutRef.current = timeout as unknown as number;
 
+    try {
       const { data, error } = await supabase.functions.invoke('test-apify-connection', {
         body: { timestamp: Date.now() }
       });
 
-      clearTimeout(timeoutId);
-
-      if (controller.signal.aborted) {
-        console.error("Connection test timed out");
-        setApiError("Connection test timed out after 10 seconds");
-        toast.error("Connection test timed out after 10 seconds");
+      // Clear timeout since we got a response
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
+      // Check if the request was aborted
+      if (activeRequest.current?.signal.aborted) {
         setTestingConnection(false);
         return;
       }
@@ -195,12 +292,12 @@ export function useChannelStatsFetcher({
         toast.success(`Connected as: ${data.user.username} (${data.user.plan} plan)`);
       }
       
-      if (testingConnection) {
-        try {
-          await testFetchChannelTitle();
-        } finally {
-          setTestingConnection(false);
-        }
+      if (data.actorAccessible) {
+        toast.success("YouTube Channel Scraper actor is accessible");
+        testFetchChannelTitle();
+      } else {
+        toast.warning("YouTube Channel Scraper actor is not accessible or not found");
+        setTestingConnection(false);
       }
     } catch (err) {
       console.error("Error in connection test:", err);
@@ -208,6 +305,7 @@ export function useChannelStatsFetcher({
       setApiError(`Connection test error: ${errorMessage}`);
       toast.error(`Connection test failed: ${errorMessage}`);
       setTestingConnection(false);
+      activeRequest.current = null;
     }
   };
 
@@ -228,6 +326,7 @@ export function useChannelStatsFetcher({
       if (error) {
         console.error("Error testing channel fetch:", error);
         toast.error(`Channel fetch test failed: ${error.message}`);
+        setTestingConnection(false);
         return;
       }
 
@@ -235,6 +334,7 @@ export function useChannelStatsFetcher({
         const errorMsg = data?.error || "Unknown error occurred";
         console.error("Failed channel fetch test:", errorMsg);
         toast.error(`Channel fetch test failed: ${errorMsg}`);
+        setTestingConnection(false);
         return;
       }
 
@@ -250,6 +350,9 @@ export function useChannelStatsFetcher({
     } catch (err) {
       console.error("Error in channel title test:", err);
       toast.error(`Channel title test failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setTestingConnection(false);
+      activeRequest.current = null;
     }
   };
 
