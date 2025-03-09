@@ -52,14 +52,31 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
       query = query.or(`channel_title.ilike.%${searchTerm}%,channel_url.ilike.%${searchTerm}%,video_id.eq.${searchTerm}`);
     } else {
       // For regular keyword searches (not URLs), do a more comprehensive search
-      query = query.or(
-        `channel_title.ilike.%${searchTerm}%,` +
-        `description.ilike.%${searchTerm}%,` +
-        `channel_category.ilike.%${searchTerm}%,` +
-        `niche.ilike.%${searchTerm}%,` +
-        `channel_type.ilike.%${searchTerm}%,` +
-        `keywords.ilike.%${searchTerm}%`
-      );
+      const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 1);
+      
+      if (searchWords.length > 1) {
+        // For multi-word searches, try to match them individually with OR
+        const searchConditions = searchWords.map(word => 
+          `channel_title.ilike.%${word}%,` +
+          `description.ilike.%${word}%,` +
+          `channel_category.ilike.%${word}%,` +
+          `niche.ilike.%${word}%,` +
+          `channel_type.ilike.%${word}%,` +
+          `keywords.ilike.%${word}%`
+        ).join(',');
+        
+        query = query.or(searchConditions);
+      } else {
+        // For single word searches
+        query = query.or(
+          `channel_title.ilike.%${searchTerm}%,` +
+          `description.ilike.%${searchTerm}%,` +
+          `channel_category.ilike.%${searchTerm}%,` +
+          `niche.ilike.%${searchTerm}%,` +
+          `channel_type.ilike.%${searchTerm}%,` +
+          `keywords.ilike.%${searchTerm}%`
+        );
+      }
     }
     
     const { data, error } = await query;

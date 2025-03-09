@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import MainNavbar from "@/components/MainNavbar";
 import { useNavigate } from "react-router-dom";
@@ -35,7 +36,10 @@ const HeroSection = () => {
     e.preventDefault();
     
     const trimmedQuery = searchQuery.trim();
-    if (!trimmedQuery) return;
+    if (!trimmedQuery) {
+      toast.info("Please enter a search term");
+      return;
+    }
     
     setIsSearching(true);
     
@@ -49,6 +53,16 @@ const HeroSection = () => {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Clear search input
+  const handleClearSearch = () => {
+    setSearchQuery("");
   };
 
   return (
@@ -73,12 +87,24 @@ const HeroSection = () => {
                 placeholder="Search for niches, channels, or keywords..." 
                 className="py-6 pr-12 pl-4 rounded-lg text-black border-2 border-white focus:border-yellow-300"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleInputChange}
+                aria-label="Search input"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute right-12 top-1/2 transform -translate-y-1/2 bg-transparent border-none p-0 cursor-pointer"
+                  aria-label="Clear search"
+                >
+                  <span className="text-gray-400 font-bold text-xl">&times;</span>
+                </button>
+              )}
               <button 
                 type="submit"
                 disabled={isSearching}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-transparent border-none p-0 cursor-pointer"
+                aria-label="Submit search"
               >
                 <Search className={`h-5 w-5 ${isSearching ? 'text-gray-300' : 'text-gray-400'}`} />
               </button>
