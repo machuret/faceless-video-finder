@@ -8,12 +8,14 @@ type AuthContextType = {
   user: User | null;
   isAdmin: boolean;
   loading: boolean;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAdmin: false,
   loading: true,
+  signOut: async () => {},
 });
 
 export const useAuth = () => {
@@ -30,29 +32,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      checkAdminStatus(session?.user?.id);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      checkAdminStatus(session?.user?.id);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const checkAdminStatus = async (userId: string | undefined) => {
+    console.log("Checking admin status for userId:", userId);
+    
     if (!userId) {
+      console.log("No userId provided, setting isAdmin to false");
       setIsAdmin(false);
-      setLoading(false);
-      return;
+      return false;
     }
 
     try {
@@ -60,18 +46,80 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user_id: userId
       });
 
-      if (error) throw error;
-      setIsAdmin(data);
+      if (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+        return false;
+      }
+      
+      console.log("Admin check result:", data);
+      setIsAdmin(!!data);
+      return !!data;
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error('Exception checking admin status:', error);
       setIsAdmin(false);
-    } finally {
-      setLoading(false);
+      return false;
     }
   };
 
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/admin/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  useEffect(() => {
+    console.log("AuthProvider: Initializing");
+    
+    // Check active session
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        console.log("Initial session check:", data?.session ? "Session exists" : "No session");
+        
+        if (data?.session?.user) {
+          setUser(data.session.user);
+          await checkAdminStatus(data.session.user.id);
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (session?.user) {
+            setUser(session.user);
+            await checkAdminStatus(session.user.id);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsAdmin(false);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      console.log("AuthProvider: Cleaning up subscription");
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
