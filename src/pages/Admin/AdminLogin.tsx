@@ -22,13 +22,14 @@ export default function AdminLogin() {
   // Check if user is already logged in and is admin
   useEffect(() => {
     console.log("AdminLogin auth state:", {
-      user: user ? "exists" : "null",
+      hasUser: !!user,
       isAdmin,
       authLoading
     });
     
     if (!authLoading && user && isAdmin) {
-      console.log("User is already logged in as admin, redirecting to dashboard");
+      console.log("User already logged in as admin, redirecting to dashboard");
+      toast.success("Already logged in as admin");
       navigate("/admin/dashboard");
     }
   }, [user, isAdmin, authLoading, navigate]);
@@ -55,42 +56,51 @@ export default function AdminLogin() {
       
       if (error) {
         console.error("Login error:", error.message);
-        setLoginError(error.message);
+        setLoginError(`Login failed: ${error.message}`);
         toast.error(error.message || "Login failed");
         return;
       }
       
       if (!data?.user) {
-        setLoginError("Login failed - no user returned");
+        const msg = "Login failed - no user returned";
+        console.error(msg);
+        setLoginError(msg);
         toast.error("Login failed");
         return;
       }
       
-      console.log("Login successful, user:", data.user.id);
+      const userId = data.user.id;
+      console.log("Login successful, user:", userId);
+      toast.success("Login successful, checking admin permissions...");
       
       // Step 2: Check if user is admin
       const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
-        user_id: data.user.id
+        user_id: userId
       });
       
       if (adminError) {
         console.error("Error checking admin status:", adminError);
-        setLoginError("Error verifying admin permissions: " + adminError.message);
+        setLoginError(`Admin verification failed: ${adminError.message}`);
         toast.error("Error verifying admin permissions");
         await supabase.auth.signOut();
         return;
       }
       
-      console.log("Admin check result:", adminData);
+      const isUserAdmin = !!adminData;
+      console.log("Admin check result:", isUserAdmin);
       
-      if (adminData === true) {
+      if (isUserAdmin) {
+        toast.success("Verified admin access! Redirecting to dashboard...");
         console.log("User confirmed as admin, redirecting to dashboard");
-        toast.success("Login successful");
-        navigate("/admin/dashboard");
+        
+        // Use timeout to ensure state has time to update
+        setTimeout(() => {
+          navigate("/admin/dashboard");
+        }, 500);
       } else {
-        console.log("User is not an admin");
-        setLoginError("You do not have admin permissions");
-        toast.error("You do not have admin permissions");
+        console.error("User is not an admin");
+        setLoginError("You don't have admin permissions");
+        toast.error("You don't have admin permissions");
         
         // Sign out non-admin users
         await supabase.auth.signOut();
@@ -115,8 +125,9 @@ export default function AdminLogin() {
             <h1 className="text-2xl font-bold mb-6 text-center">Admin Login</h1>
             
             {loginError && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm">
-                {loginError}
+              <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm border border-red-200">
+                <p className="font-semibold">Login Error:</p>
+                <p>{loginError}</p>
               </div>
             )}
             

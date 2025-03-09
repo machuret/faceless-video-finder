@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export const ProtectedRoute = ({
   children,
@@ -16,48 +17,51 @@ export const ProtectedRoute = ({
   const [isChecking, setIsChecking] = useState(true);
   const [timeoutReached, setTimeoutReached] = useState(false);
 
-  // Add a timeout to prevent infinite loading
+  // Add a short timeout to prevent infinite loading
   useEffect(() => {
     const timer = setTimeout(() => {
       if (loading || isChecking) {
         console.log("Auth check timeout reached, forcing completion");
         setTimeoutReached(true);
       }
-    }, 2000); // 2 second timeout (reduced from 3s)
+    }, 1500); // 1.5 second timeout (reduced from 2s)
 
     return () => clearTimeout(timer);
   }, [loading, isChecking]);
 
   useEffect(() => {
-    console.log("ProtectedRoute auth state:", { 
-      user: user ? "exists" : "null", 
+    const authState = { 
       userId: user?.id,
       isAdmin, 
       loading, 
       requireAdmin,
       timeoutReached
-    });
+    };
+    
+    console.log("ProtectedRoute checking auth:", authState);
 
-    // Only proceed if auth loading is complete or timeout reached
+    // Only proceed when auth loading is complete or timeout reached
     if (!loading || timeoutReached) {
-      // If no user, redirect to login
+      // No user = not authenticated
       if (!user) {
-        console.log("No user found, redirecting to login");
+        console.log("No authenticated user, redirecting to login");
+        toast.error("Please log in to access this page");
         navigate("/admin/login");
         setIsChecking(false);
         return;
       }
       
-      // If admin is required but user is not admin
+      // Admin check if required
       if (requireAdmin && !isAdmin) {
-        console.log("User is not admin, redirecting to login (requireAdmin: true, isAdmin: false)");
+        console.log("Admin access required but user is not admin");
+        toast.error("You don't have admin permissions");
         navigate("/admin/login");
         setIsChecking(false);
         return;
       }
       
       // Auth check passed
-      console.log("Auth check passed");
+      console.log("Authorization check passed");
       setIsChecking(false);
     }
   }, [user, isAdmin, loading, navigate, requireAdmin, timeoutReached]);
@@ -77,7 +81,7 @@ export const ProtectedRoute = ({
     );
   }
 
-  // Don't render children unless auth check passed
+  // Only render children if fully authorized
   if (!user || (requireAdmin && !isAdmin)) {
     return null;
   }
