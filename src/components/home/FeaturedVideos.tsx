@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoStats } from "@/types/youtube";
 import { Play } from "lucide-react";
-import LazyImage from "@/components/ui/lazy-image";
+import OptimizedImage from "@/components/ui/optimized-image";
 import { generateChannelSlug } from "@/pages/ChannelDetails";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState, useMemo, memo } from "react";
+import { memo, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 interface FeaturedVideosProps {
@@ -26,15 +26,25 @@ const VideoCardContent = memo(({
   channelTitle: string,
   priority: boolean 
 }) => {
+  const formattedViews = video.views 
+    ? parseInt(video.views.toString()).toLocaleString()
+    : '0';
+    
+  const formattedLikes = video.likes 
+    ? parseInt(video.likes.toString()).toLocaleString()
+    : '0';
+    
   return (
     <>
       <div className="aspect-video bg-gray-100 relative overflow-hidden">
         {video.thumbnail_url ? (
-          <LazyImage
+          <OptimizedImage
             src={video.thumbnail_url}
             alt={video.title || "Video thumbnail"}
             className="w-full h-full object-cover"
             priority={priority}
+            width={640}
+            height={360}
           />
         ) : (
           <div className="flex items-center justify-center h-full">
@@ -52,13 +62,13 @@ const VideoCardContent = memo(({
         <div className="flex items-center gap-x-4 text-sm text-gray-500">
           {video.views && (
             <div className="flex items-center">
-              <span className="font-medium">{parseInt(video.views.toString()).toLocaleString()}</span>
+              <span className="font-medium">{formattedViews}</span>
               <span className="ml-1">views</span>
             </div>
           )}
           {video.likes && (
             <div>
-              <span className="font-medium">{parseInt(video.likes.toString()).toLocaleString()}</span>
+              <span className="font-medium">{formattedLikes}</span>
               <span className="ml-1">likes</span>
             </div>
           )}
@@ -74,11 +84,12 @@ const VideoCardContent = memo(({
 VideoCardContent.displayName = "VideoCardContent";
 
 const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => {
-  // Use React Query to fetch channel titles
+  // Extract unique channel IDs for efficient querying
   const channelIds = useMemo(() => {
     return [...new Set(videos.filter(v => v.channel_id).map(v => v.channel_id))];
   }, [videos]);
   
+  // Use React Query to fetch channel titles efficiently
   const { data: channelTitles = {} } = useQuery({
     queryKey: ['channelTitles', channelIds],
     queryFn: async () => {
@@ -108,7 +119,7 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
     return null;
   }
 
-  // Only show top 6 videos
+  // Only show top 6 videos for performance
   const topVideos = videos.slice(0, 6);
 
   return (

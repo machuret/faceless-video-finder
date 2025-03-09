@@ -1,33 +1,34 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import MainNavbar from "@/components/MainNavbar";
 import SearchBar from "@/components/common/SearchBar";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const HeroSection = () => {
-  const [channelCount, setChannelCount] = useState<number>(0);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  // Fetch the total number of channels
-  useEffect(() => {
-    const fetchChannelCount = async () => {
+  // Use React Query to fetch and cache channel count
+  const { data: channelCount = 0 } = useQuery({
+    queryKey: ['channelCount'],
+    queryFn: async () => {
       try {
         const { count, error } = await supabase
           .from('youtube_channels')
           .select('*', { count: 'exact', head: true });
           
         if (error) throw error;
-        setChannelCount(count || 0);
+        return count || 0;
       } catch (err) {
         console.error('Error fetching channel count:', err);
+        return 0;
       }
-    };
-    
-    fetchChannelCount();
-  }, []);
+    },
+    staleTime: 60 * 60 * 1000, // Cache for 1 hour
+  });
 
   const handleSearch = (query: string) => {
     const trimmedQuery = query.trim();
@@ -39,7 +40,6 @@ const HeroSection = () => {
     setIsSearching(true);
     
     try {
-      console.log("Navigating to search results for:", trimmedQuery);
       // Navigate to the search page with the search query as a parameter
       navigate(`/channels?search=${encodeURIComponent(trimmedQuery)}`);
     } catch (err) {
@@ -49,6 +49,11 @@ const HeroSection = () => {
       setIsSearching(false);
     }
   };
+
+  // Memoize formatted count to avoid re-calculations
+  const formattedCount = useMemo(() => {
+    return channelCount.toLocaleString();
+  }, [channelCount]);
 
   return (
     <>
@@ -63,7 +68,7 @@ const HeroSection = () => {
             all in one place. Start your faceless YouTube journey today.
           </p>
           <p className="text-sm mb-8 text-blue-200">
-            So far {channelCount.toLocaleString()} YouTube Channels Indexed
+            So far {formattedCount} YouTube Channels Indexed
           </p>
           
           <div className="max-w-xl mx-auto">

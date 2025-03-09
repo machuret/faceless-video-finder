@@ -1,184 +1,281 @@
 
-import { RouteObject } from 'react-router-dom';
+import React, { lazy, Suspense } from 'react';
 import { Navigate } from 'react-router-dom';
-import Index from '@/pages/Index';
-import ChannelSearch from '@/pages/ChannelSearch';
-import ChannelDetails from '@/pages/ChannelDetails';
-import NotFound from '@/pages/NotFound';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import AboutUs from '@/pages/AboutUs';
-import HowItWorks from '@/pages/HowItWorks';
-import ContactUs from '@/pages/ContactUs';
-import Calculators from '@/pages/Calculators';
-import GrowthRateCalculator from '@/pages/GrowthRateCalculator';
-import ReachCalculator from '@/pages/ReachCalculator';
-import ChannelEarnings from '@/pages/ChannelEarnings';
-import FacelessIdeas from '@/pages/FacelessIdeas';
-import FacelessChannelIdeas from '@/pages/FacelessChannelIdeas';
-import FacelessIdeaDetails from '@/pages/FacelessIdeaDetails';
-import Training from '@/pages/Training';
-import ChannelTypes from '@/pages/ChannelTypes';
-import ChannelTypeDetails from '@/pages/ChannelTypeDetails';
-import Niches from '@/pages/Niches';
-import NicheDetails from '@/pages/NicheDetails';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Loader2 } from 'lucide-react';
 
-// Admin routes
-import AdminLogin from '@/pages/Admin/AdminLogin';
-import Dashboard from '@/pages/Admin/Dashboard';
-import AddChannel from '@/pages/Admin/AddChannel';
-import ManageNichesPage from '@/pages/Admin/ManageNichesPage';
-import ManageChannelTypes from '@/pages/Admin/ManageChannelTypes';
-import ManageFacelessIdeas from '@/pages/Admin/ManageFacelessIdeas';
-import ManageDidYouKnowFacts from '@/pages/Admin/ManageDidYouKnowFacts';
-import Calculator from '@/pages/Calculator';
+// Load common components eagerly (these are used frequently)
+import NotFound from './pages/NotFound';
+import MainLoader from './components/MainLoader';
 
-const routes: RouteObject[] = [
+// Create a proper loading component
+const PageLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen">
+    <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+    <p className="text-sm text-muted-foreground">Loading page...</p>
+  </div>
+);
+
+// Lazy load all page components
+const Index = lazy(() => import('./pages/Index'));
+const ChannelSearch = lazy(() => import('./pages/ChannelSearch'));
+const ChannelDetails = lazy(() => import('./pages/ChannelDetails'));
+const Calculators = lazy(() => import('./pages/Calculators'));
+const Calculator = lazy(() => import('./pages/Calculator'));
+const GrowthRateCalculator = lazy(() => import('./pages/GrowthRateCalculator'));
+const ReachCalculator = lazy(() => import('./pages/ReachCalculator'));
+const ChannelEarnings = lazy(() => import('./pages/ChannelEarnings'));
+const Training = lazy(() => import('./pages/Training'));
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const ContactUs = lazy(() => import('./pages/ContactUs'));
+const HowItWorks = lazy(() => import('./pages/HowItWorks'));
+const ChannelTypes = lazy(() => import('./pages/ChannelTypes'));
+const ChannelTypeDetails = lazy(() => import('./pages/ChannelTypeDetails'));
+const Niches = lazy(() => import('./pages/Niches'));
+const NicheDetails = lazy(() => import('./pages/NicheDetails'));
+const FacelessIdeas = lazy(() => import('./pages/FacelessIdeas'));
+const FacelessIdeaDetails = lazy(() => import('./pages/FacelessIdeaDetails'));
+const FacelessChannelIdeas = lazy(() => import('./pages/FacelessChannelIdeas'));
+
+// Lazy load admin pages separately (most users don't need these)
+const AdminLogin = lazy(() => import('./pages/Admin/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
+const AddChannel = lazy(() => import('./pages/Admin/AddChannel'));
+const ManageNiches = lazy(() => import('./pages/Admin/ManageNiches'));
+const ManageChannelTypes = lazy(() => import('./pages/Admin/ManageChannelTypes'));
+const ManageFacelessIdeas = lazy(() => import('./pages/Admin/ManageFacelessIdeas'));
+const ManageDidYouKnowFacts = lazy(() => import('./pages/Admin/ManageDidYouKnowFacts'));
+
+// Wrap with suspense for better loading experience
+const routes = [
   {
-    path: '/',
-    element: <Index />,
-  },
-  {
-    path: '/channels',
-    element: <ChannelSearch />,
-  },
-  {
-    path: '/channel/:slug',
-    element: <ChannelDetails />,
-  },
-  {
-    path: '/about',
-    element: <AboutUs />,
-  },
-  {
-    path: '/how-it-works',
-    element: <HowItWorks />,
-  },
-  {
-    path: '/contact',
-    element: <ContactUs />,
-  },
-  {
-    path: '/calculators',
-    element: <Calculators />,
-  },
-  {
-    path: '/calculator',
-    element: <Calculator />,
-  },
-  {
-    path: '/calculators/growth-rate',
-    element: <GrowthRateCalculator />,
-  },
-  {
-    path: '/calculators/reach',
-    element: <ReachCalculator />,
-  },
-  {
-    path: '/calculators/earnings',
-    element: <ChannelEarnings />,
-  },
-  {
-    path: '/faceless-ideas',
-    element: <FacelessIdeas />,
-  },
-  {
-    path: '/faceless-channel-ideas',
-    element: <FacelessChannelIdeas />,
-  },
-  {
-    path: '/faceless-idea/:id',
-    element: <FacelessIdeaDetails />,
-  },
-  {
-    path: '/training',
-    element: <Training />,
-  },
-  {
-    path: '/channel-types',
-    element: <ChannelTypes />,
-  },
-  {
-    path: '/channel-type/:slug',
-    element: <ChannelTypeDetails />,
-  },
-  {
-    path: '/niches',
-    element: <Niches />,
-  },
-  {
-    path: '/niches/:slug',
-    element: <NicheDetails />,
-  },
-  {
-    path: '/admin',
-    element: <Navigate to="/admin/dashboard" replace />,
-  },
-  {
-    path: '/admin/',
-    element: <Navigate to="/admin/dashboard" replace />,
-  },
-  {
-    path: '/admin/login',
-    element: <AdminLogin />,
-  },
-  {
-    path: '/admin/dashboard',
+    path: "/",
     element: (
-      <ProtectedRoute requireAdmin>
-        <Dashboard />
+      <Suspense fallback={<PageLoader />}>
+        <Index />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/channels",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ChannelSearch />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/channel/:slug",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ChannelDetails />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/calculators",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <Calculators />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/calculator",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <Calculator />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/growth-rate-calculator",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <GrowthRateCalculator />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/reach-calculator",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ReachCalculator />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/channel-earnings",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ChannelEarnings />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/training",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <Training />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/about",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <AboutUs />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/contact",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ContactUs />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/how-it-works",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <HowItWorks />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/channel-types",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ChannelTypes />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/channel-type/:id",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ChannelTypeDetails />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/niches",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <Niches />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/niche/:id",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <NicheDetails />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/faceless-ideas",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <FacelessIdeas />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/faceless-idea/:id",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <FacelessIdeaDetails />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/faceless-channel-ideas",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <FacelessChannelIdeas />
+      </Suspense>
+    ),
+  },
+  // Admin routes with protected route wrappers
+  {
+    path: "/admin/login",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <AdminLogin />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/admin",
+    element: (
+      <ProtectedRoute requireAdmin={true}>
+        <Suspense fallback={<PageLoader />}>
+          <AdminDashboard />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
   {
-    path: '/admin/add-channel',
+    path: "/admin/dashboard",
+    element: <Navigate to="/admin" replace />,
+  },
+  {
+    path: "/admin/add-channel",
     element: (
-      <ProtectedRoute requireAdmin>
-        <AddChannel />
+      <ProtectedRoute requireAdmin={true}>
+        <Suspense fallback={<PageLoader />}>
+          <AddChannel />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
   {
-    path: '/admin/edit-channel/:channelId',
+    path: "/admin/manage-niches",
     element: (
-      <ProtectedRoute requireAdmin>
-        <AddChannel />
+      <ProtectedRoute requireAdmin={true}>
+        <Suspense fallback={<PageLoader />}>
+          <ManageNiches />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
   {
-    path: '/admin/manage-niches',
+    path: "/admin/manage-channel-types",
     element: (
-      <ProtectedRoute requireAdmin>
-        <ManageNichesPage />
+      <ProtectedRoute requireAdmin={true}>
+        <Suspense fallback={<PageLoader />}>
+          <ManageChannelTypes />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
   {
-    path: '/admin/manage-channel-types',
+    path: "/admin/manage-faceless-ideas",
     element: (
-      <ProtectedRoute requireAdmin>
-        <ManageChannelTypes />
+      <ProtectedRoute requireAdmin={true}>
+        <Suspense fallback={<PageLoader />}>
+          <ManageFacelessIdeas />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
   {
-    path: '/admin/manage-faceless-ideas',
+    path: "/admin/manage-did-you-know-facts",
     element: (
-      <ProtectedRoute requireAdmin>
-        <ManageFacelessIdeas />
+      <ProtectedRoute requireAdmin={true}>
+        <Suspense fallback={<PageLoader />}>
+          <ManageDidYouKnowFacts />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
+  // 404 route
   {
-    path: '/admin/manage-did-you-know-facts',
-    element: (
-      <ProtectedRoute requireAdmin>
-        <ManageDidYouKnowFacts />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '*',
+    path: "*",
     element: <NotFound />,
   },
 ];

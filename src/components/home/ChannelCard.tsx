@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
-import LazyImage from "@/components/ui/lazy-image";
+import OptimizedImage from "@/components/ui/optimized-image";
 import { generateChannelSlug } from "@/pages/ChannelDetails";
 import { memo } from "react";
 import { Channel } from "@/types/youtube";
@@ -20,6 +20,15 @@ const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => 
   // Check if this is a featured card for priority loading
   const isPriority = isFeatured || channel.is_featured;
   
+  // Format subscriber and view counts for better performance
+  const formattedSubscribers = channel.total_subscribers 
+    ? parseInt(channel.total_subscribers.toString()).toLocaleString()
+    : '0';
+    
+  const formattedViews = channel.total_views 
+    ? parseInt(channel.total_views.toString()).toLocaleString()
+    : '0';
+  
   return (
     <Card 
       className={`hover:shadow-lg transition-shadow overflow-hidden ${isFeatured ? 'border-yellow-400 border-2' : ''}`}
@@ -27,11 +36,13 @@ const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => 
       <Link to={seoUrl}>
         <div className="aspect-video bg-gray-200 relative overflow-hidden">
           {channel.screenshot_url ? (
-            <LazyImage 
+            <OptimizedImage 
               src={channel.screenshot_url} 
               alt={channel.channel_title || "Channel screenshot"} 
               className="w-full h-full object-cover"
               priority={isPriority}
+              width={640}
+              height={360}
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-gray-100">
@@ -49,11 +60,11 @@ const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => 
           <h3 className="font-crimson text-lg font-semibold mb-2 line-clamp-1">{channel.channel_title}</h3>
           <div className="flex items-center gap-x-4 text-sm text-gray-500 mb-3 font-montserrat">
             <div className="flex items-center">
-              <span className="font-medium">{channel.total_subscribers ? parseInt(channel.total_subscribers.toString()).toLocaleString() : '0'}</span>
+              <span className="font-medium">{formattedSubscribers}</span>
               <span className="ml-1">subscribers</span>
             </div>
             <div>
-              <span className="font-medium">{channel.total_views ? parseInt(channel.total_views.toString()).toLocaleString() : '0'}</span>
+              <span className="font-medium">{formattedViews}</span>
               <span className="ml-1">views</span>
             </div>
           </div>

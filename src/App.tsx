@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 import routes from './routes';
 import { initializeStorage } from './integrations/supabase/initStorage';
 import { AuthProvider } from './context/AuthContext';
+import MainLoader from './components/MainLoader';
 
 function App() {
   useEffect(() => {
@@ -26,10 +27,12 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <AuthProvider>
-        <RouterProvider router={router} />
-        <Toaster />
-      </AuthProvider>
+      <Suspense fallback={<MainLoader />}>
+        <AuthProvider>
+          <RouterProvider router={router} />
+          <Toaster />
+        </AuthProvider>
+      </Suspense>
     </ThemeProvider>
   );
 }

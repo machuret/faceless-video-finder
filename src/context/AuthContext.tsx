@@ -30,13 +30,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [authInitialized, setAuthInitialized] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   
-  // Memoized function to check admin status - optimized with caching
+  // Create a client-side cache for admin status to prevent repeated checks
+  const adminCache = useMemo(() => new Map<string, boolean>(), []);
+  
+  // Optimized function to check admin status with caching
   const checkAdminStatus = useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setIsAdmin(false);
       return false;
+    }
+
+    // Check cache first
+    if (adminCache.has(userId)) {
+      const cachedValue = adminCache.get(userId);
+      setIsAdmin(!!cachedValue);
+      return cachedValue;
     }
 
     try {
@@ -50,11 +60,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
       
-      // Only log in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Admin check result:", data);
-      }
-      
+      // Cache the result
+      adminCache.set(userId, !!data);
       setIsAdmin(!!data);
       return !!data;
     } catch (error) {
@@ -62,7 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(false);
       return false;
     }
-  }, []);
+  }, [adminCache]);
 
   const signOut = async () => {
     try {
@@ -81,94 +88,79 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Initialize auth - optimized to run only once
+  // Initialize auth once
   useEffect(() => {
-    if (authInitialized) return;
-    
     let isMounted = true;
     const controller = new AbortController();
-    const signal = controller.signal;
     
     const initializeAuth = async () => {
       try {
-        // If canceled, don't proceed
-        if (signal.aborted) return;
-        
         setLoading(true);
         
         // Check current session
         const { data: sessionData, error } = await supabase.auth.getSession();
         
-        if (signal.aborted) return;
-        
         if (error) {
           console.error("Error getting session:", error);
-          setLoading(false);
+          if (isMounted) {
+            setLoading(false);
+            setAuthChecked(true);
+          }
           return;
         }
         
         if (sessionData?.session?.user) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log("Found existing user session:", sessionData.session.user.email);
+          if (isMounted) {
+            setUser(sessionData.session.user);
+            await checkAdminStatus(sessionData.session.user.id);
           }
-          
-          setUser(sessionData.session.user);
-          await checkAdminStatus(sessionData.session.user.id);
         }
         
-        setAuthInitialized(true);
+        if (isMounted) {
+          setLoading(false);
+          setAuthChecked(true);
+        }
       } catch (error) {
         console.error("Error checking session:", error);
-      } finally {
-        if (isMounted && !signal.aborted) {
+        if (isMounted) {
           setLoading(false);
+          setAuthChecked(true);
         }
       }
     };
     
     initializeAuth();
     
-    // Clean up function
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [authInitialized, checkAdminStatus]);
-  
-  // Set up auth state change listener - separate from initialization
-  useEffect(() => {
-    // Set up auth state change listener
-    if (process.env.NODE_ENV === 'development') {
-      console.log("Setting up auth state change listener");
-    }
-    
+    // Auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("Auth state changed:", event, session?.user?.email);
-        }
+        if (controller.signal.aborted) return;
         
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setLoading(true);
-          
-          if (session?.user) {
-            setUser(session.user);
-            await checkAdminStatus(session.user.id);
+        if (isMounted) {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            setLoading(true);
+            
+            if (session?.user) {
+              setUser(session.user);
+              await checkAdminStatus(session.user.id);
+            }
+            
+            setLoading(false);
+          } else if (event === 'SIGNED_OUT') {
+            setUser(null);
+            setIsAdmin(false);
           }
-          
-          setLoading(false);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setIsAdmin(false);
         }
       }
     );
     
-    // Clean up subscription on unmount
+    // Clean up function
     return () => {
+      isMounted = false;
+      controller.abort();
       subscription.unsubscribe();
     };
-  }, [checkAdminStatus]); 
+  }, [checkAdminStatus]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
