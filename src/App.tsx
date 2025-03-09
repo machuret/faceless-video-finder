@@ -14,10 +14,14 @@ function App() {
       .then(result => {
         if (result.success) {
           console.log("Storage buckets initialized successfully");
+        } else if (result.warning) {
+          console.warn("Storage initialization warning:", result.warning);
+        } else if (result.error) {
+          console.error("Failed to initialize storage buckets:", result.error);
         }
       })
       .catch(error => {
-        console.error("Failed to initialize storage buckets:", error);
+        console.error("Unexpected error initializing storage buckets:", error);
       });
   }, []);
 

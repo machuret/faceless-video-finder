@@ -33,12 +33,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const checkAdminStatus = async (userId: string | undefined) => {
+  const checkAdminStatus = async (userId: string) => {
     if (!userId) {
       console.log("No user ID to check admin status");
       setIsAdmin(false);
-      setLoading(false);
-      return;
+      return false;
     }
 
     try {
@@ -53,56 +52,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       console.log("Admin check result:", data);
-      setIsAdmin(!!data); // Ensure boolean value
+      setIsAdmin(!!data);
+      return !!data;
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);
-    } finally {
-      console.log("Admin status check complete, setting loading to false");
-      setLoading(false);
+      return false;
     }
   };
 
   useEffect(() => {
-    // Check active session
-    const getSession = async () => {
+    // Get initial session
+    const initAuth = async () => {
       try {
-        console.log("Getting session...");
+        console.log("Initializing auth...");
         setLoading(true);
+        
         const { data: { session } } = await supabase.auth.getSession();
-        
         console.log("Session retrieved:", session ? "Yes" : "No");
-        setUser(session?.user ?? null);
         
-        if (session?.user?.id) {
-          console.log("Session has user, checking admin status");
+        if (session?.user) {
+          setUser(session.user);
           await checkAdminStatus(session.user.id);
         } else {
-          console.log("No user in session, setting loading to false");
-          setLoading(false);
+          setUser(null);
+          setIsAdmin(false);
         }
       } catch (error) {
         console.error("Error getting session:", error);
+        setUser(null);
+        setIsAdmin(false);
+      } finally {
         setLoading(false);
       }
     };
 
-    getSession();
+    initAuth();
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log("Auth state changed:", _event, session ? "Session exists" : "No session");
-      setUser(session?.user ?? null);
       
-      if (session?.user?.id) {
-        console.log("Auth state change has user, checking admin status");
+      if (session?.user) {
+        setUser(session.user);
         await checkAdminStatus(session.user.id);
       } else {
-        console.log("No user in auth state change, setting loading to false");
-        setLoading(false);
+        setUser(null);
+        setIsAdmin(false);
       }
+      
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
