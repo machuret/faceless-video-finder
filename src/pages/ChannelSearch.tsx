@@ -8,9 +8,10 @@ import PageFooter from '@/components/home/PageFooter';
 import { Channel } from '@/types/youtube';
 import { toast } from "sonner";
 import LoadingState from '@/components/home/LoadingState';
+import SearchBar from '@/components/common/SearchBar';
 
 const ChannelSearch = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
   
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -47,6 +48,10 @@ const ChannelSearch = () => {
     performSearch();
   }, [searchQuery]);
 
+  const handleSearch = (query: string) => {
+    setSearchParams({ search: query });
+  };
+
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -60,6 +65,16 @@ const ChannelSearch = () => {
         <h1 className="text-3xl font-bold mb-6">
           {loading ? 'Searching...' : `Search Results: ${searchQuery}`}
         </h1>
+        
+        <div className="mb-6">
+          <SearchBar
+            initialQuery={searchQuery}
+            onSearch={handleSearch}
+            placeholder="Search for channels, niches, or keywords..."
+            autoSubmit={false}
+            className="max-w-xl mx-auto"
+          />
+        </div>
         
         {loading ? (
           <LoadingState />
