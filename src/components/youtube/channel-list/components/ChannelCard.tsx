@@ -78,7 +78,7 @@ export const ChannelCard: React.FC<ChannelCardProps> = ({
         <CardTitle className="text-lg truncate flex items-center">
           {channel_title}
           {is_editor_verified && (
-            <CheckCircle className="ml-1 h-4 w-4 text-blue-500" title="Editor Verified" />
+            <CheckCircle className="ml-1 h-4 w-4 text-blue-500" aria-label="Editor Verified" />
           )}
         </CardTitle>
         <CardDescription className="flex flex-col">

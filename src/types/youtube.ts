@@ -1,3 +1,4 @@
+
 // Channel Types
 export type ChannelCategory = "entertainment" | "education" | "gaming" | "music" | "news" | "sports" | "technology" | "other";
 
@@ -78,6 +79,7 @@ export interface Channel {
   niche?: string;
   keywords?: string[];
   is_featured?: boolean;
+  is_editor_verified?: boolean;
   upload_frequency?: string;
   revenue_per_month?: number;
   // Add missing properties that are used in the codebase
