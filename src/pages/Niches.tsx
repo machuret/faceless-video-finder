@@ -18,7 +18,10 @@ const Niches = () => {
   const { data: niches, isLoading, error } = useQuery({
     queryKey: ["niches"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("niches").select("*");
+      const { data, error } = await supabase
+        .from("niches")
+        .select("*");
+      
       if (error) throw error;
       return data as Niche[];
     }

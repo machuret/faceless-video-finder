@@ -1,79 +1,52 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import * as fs from "https://deno.land/std@0.168.0/fs/mod.ts";
-import * as path from "https://deno.land/std@0.168.0/path/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { supabaseClient } from "../_shared/supabaseClient.ts";
 
 serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Parse request body
     const { niche } = await req.json();
-    
-    if (!niche || typeof niche !== 'string') {
-      throw new Error("Invalid niche provided");
+
+    if (!niche || typeof niche !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Invalid or missing niche name" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    const supabase = supabaseClient(req);
     
-    // Read current niches file
-    const nichesFilePath = path.join(Deno.cwd(), "../_shared/niches.ts");
-    const content = await Deno.readTextFile(nichesFilePath);
+    // Insert into the niches table
+    const { data, error } = await supabase
+      .from('niches')
+      .insert({ name: niche })
+      .select()
+      .single();
     
-    // Extract the niches array from content
-    const nichesMatch = content.match(/export const niches = \[([\s\S]*?)\]\.sort\(\);/);
-    if (!nichesMatch || !nichesMatch[1]) {
-      throw new Error("Could not parse niches file");
+    if (error) {
+      throw error;
     }
-    
-    let nichesContent = nichesMatch[1];
-    
-    // Check if niche already exists (case-insensitive)
-    const currentNiches = nichesContent
-      .split(',')
-      .map(n => n.trim())
-      .filter(n => n.startsWith('"') || n.startsWith("'"))
-      .map(n => n.replace(/['"]/g, '').trim());
-    
-    if (currentNiches.some(n => n.toLowerCase() === niche.toLowerCase())) {
-      throw new Error("Niche already exists");
-    }
-    
-    // Add new niche
-    const updatedNichesContent = nichesContent + `  "${niche}",\n`;
-    
-    // Create new file content
-    const updatedContent = content.replace(
-      /export const niches = \[([\s\S]*?)\]\.sort\(\);/,
-      `export const niches = [\n${updatedNichesContent}].sort();`
-    );
-    
-    // Write back to file
-    await Deno.writeTextFile(nichesFilePath, updatedContent);
-    
+
     return new Response(
-      JSON.stringify({ success: true }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-        status: 200,
-      }
+      JSON.stringify({ success: true, message: `Niche "${niche}" added successfully`, niche: data }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    console.error("Error adding niche:", error);
+    
     return new Response(
-      JSON.stringify({
-        error: error.message,
+      JSON.stringify({ 
+        error: error.message || "An error occurred while adding the niche",
       }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-        status: 400,
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );
   }

@@ -6,9 +6,21 @@ import { supabase } from "@/integrations/supabase/client";
 import MainNavbar from "@/components/MainNavbar";
 import { Card } from "@/components/ui/card";
 import PageFooter from "@/components/home/PageFooter";
-import { ChannelCard } from "@/components/youtube/channel-list";
+import { ChannelCard } from "@/components/youtube/channel-list/components/ChannelCard";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
+
+interface Niche {
+  id: string;
+  name: string;
+  description?: string | null;
+}
+
+interface NicheDetail {
+  id: string;
+  niche_id: string;
+  content: string | null;
+}
 
 const NicheDetails = () => {
   const { nicheId } = useParams<{ nicheId: string }>();
@@ -23,7 +35,7 @@ const NicheDetails = () => {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as Niche;
     },
     enabled: !!nicheId,
   });
@@ -38,18 +50,20 @@ const NicheDetails = () => {
         .single();
       
       if (error && error.code !== "PGRST116") throw error; // Ignore not found error
-      return data;
+      return data as NicheDetail;
     },
     enabled: !!nicheId,
   });
 
   const { data: channels, isLoading: isChannelsLoading } = useQuery({
-    queryKey: ["niche-channels", nicheId],
+    queryKey: ["niche-channels", nicheId, niche?.name],
     queryFn: async () => {
+      if (!niche?.name) return [];
+      
       const { data, error } = await supabase
         .from("youtube_channels")
         .select("*")
-        .eq("niche", niche?.name)
+        .eq("niche", niche.name)
         .order("total_subscribers", { ascending: false });
       
       if (error) throw error;
