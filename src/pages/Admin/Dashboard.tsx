@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import AdminHeader from "./components/AdminHeader";
 import DashboardHeader from "./components/dashboard/DashboardHeader";
 import FeaturedChannels from "./components/dashboard/FeaturedChannels";
@@ -15,10 +15,36 @@ import { Link } from "react-router-dom";
 import { Database, Layers, BookOpen, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
+// Using memo to prevent unnecessary re-renders
+const AdminLinks = React.memo(() => (
+  <Card className="p-6">
+    <h3 className="text-xl font-semibold mb-4">Content Management</h3>
+    <div className="space-y-2">
+      <Link to="/admin/manage-niches" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+        <Database className="h-5 w-5 mr-2 text-blue-600" />
+        <span>Manage Niches</span>
+      </Link>
+      <Link to="/admin/manage-channel-types" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+        <Layers className="h-5 w-5 mr-2 text-purple-600" />
+        <span>Manage Channel Types</span>
+      </Link>
+      <Link to="/admin/manage-faceless-ideas" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+        <Sparkles className="h-5 w-5 mr-2 text-orange-600" />
+        <span>Manage Faceless Ideas</span>
+      </Link>
+      <Link to="/admin/manage-did-you-know-facts" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+        <BookOpen className="h-5 w-5 mr-2 text-green-600" />
+        <span>Manage Did You Know Facts</span>
+      </Link>
+    </div>
+  </Card>
+));
+
+// Main Dashboard component optimized
 const Dashboard = () => {
-  // Check for any in-progress operations on mount
+  // Check for any in-progress operations on mount, using useEffect for side effects only
   useEffect(() => {
-    // Check for in-progress stats updates
+    // Only check once on mount
     try {
       const savedStatsProgress = localStorage.getItem("mass_stats_update_progress");
       if (savedStatsProgress) {
@@ -45,28 +71,7 @@ const Dashboard = () => {
             <FeaturedChannels />
           </div>
           <div className="lg:col-span-1 space-y-6">
-            {/* Admin page shortcuts */}
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold mb-4">Content Management</h3>
-              <div className="space-y-2">
-                <Link to="/admin/manage-niches" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
-                  <Database className="h-5 w-5 mr-2 text-blue-600" />
-                  <span>Manage Niches</span>
-                </Link>
-                <Link to="/admin/manage-channel-types" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
-                  <Layers className="h-5 w-5 mr-2 text-purple-600" />
-                  <span>Manage Channel Types</span>
-                </Link>
-                <Link to="/admin/manage-faceless-ideas" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
-                  <Sparkles className="h-5 w-5 mr-2 text-orange-600" />
-                  <span>Manage Faceless Ideas</span>
-                </Link>
-                <Link to="/admin/manage-did-you-know-facts" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
-                  <BookOpen className="h-5 w-5 mr-2 text-green-600" />
-                  <span>Manage Did You Know Facts</span>
-                </Link>
-              </div>
-            </Card>
+            <AdminLinks />
           </div>
         </div>
         
@@ -80,22 +85,16 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-3">
-            <BulkChannelUploader />
-          </div>
+        <div className="grid grid-cols-1 gap-6 mb-8">
+          <BulkChannelUploader />
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-3">
-            <CsvChannelUploader />
-          </div>
+        <div className="grid grid-cols-1 gap-6 mb-8">
+          <CsvChannelUploader />
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-3">
-            <ChannelsToImprove />
-          </div>
+        <div className="grid grid-cols-1 gap-6 mb-8">
+          <ChannelsToImprove />
         </div>
         
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
@@ -107,4 +106,5 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+// Export a memoized version to prevent unnecessary re-renders
+export default React.memo(Dashboard);
