@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { TrendingUp, Calendar, Info } from 'lucide-react';
 import { calculateGrowthRate } from '@/utils/growthCalculations';
 import { useToast } from '@/components/ui/use-toast';
+import PageFooter from '@/components/home/PageFooter';
 
 const GrowthRateCalculator = () => {
   const [startSubscribers, setStartSubscribers] = useState<string>('');
@@ -66,10 +67,10 @@ const GrowthRateCalculator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <MainNavbar />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-6">YouTube Growth Rate Calculator</h1>
           
@@ -202,6 +203,7 @@ const GrowthRateCalculator = () => {
           </Card>
         </div>
       </main>
+      <PageFooter />
     </div>
   );
 };

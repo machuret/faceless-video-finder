@@ -5,6 +5,8 @@ import { SearchForm } from "@/components/channel-earnings/SearchForm";
 import { ChannelResults } from "@/components/channel-earnings/ChannelResults";
 import { NoResults } from "@/components/channel-earnings/NoResults";
 import { searchChannel, formatNumber, calculateEarnings } from "@/utils/channelSearch";
+import MainNavbar from "@/components/MainNavbar";
+import PageFooter from "@/components/home/PageFooter";
 
 export default function ChannelEarnings() {
   const { toast } = useToast();
@@ -80,8 +82,9 @@ export default function ChannelEarnings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen flex flex-col">
+      <MainNavbar />
+      <div className="container mx-auto px-4 py-16 flex-1">
         <h1 className="text-3xl font-bold mb-8 text-center">YouTube Channel Earnings Estimator</h1>
         
         <div className="max-w-4xl mx-auto">
@@ -106,6 +109,7 @@ export default function ChannelEarnings() {
           {channelFound === false && <NoResults />}
         </div>
       </div>
+      <PageFooter />
     </div>
   );
 }

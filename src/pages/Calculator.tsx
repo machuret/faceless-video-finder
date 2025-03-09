@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Calculator as CalculatorIcon } from "lucide-react";
 import MainNavbar from "@/components/MainNavbar";
 import { useToast } from "@/components/ui/use-toast";
+import PageFooter from "@/components/home/PageFooter";
 
 export default function Calculator() {
   const { toast } = useToast();
@@ -64,9 +65,9 @@ export default function Calculator() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col">
       <MainNavbar />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <div className="flex items-center gap-2 mb-6">
           <CalculatorIcon className="h-8 w-8 text-blue-600" />
           <h1 className="text-3xl font-bold font-crimson">YouTube Shorts Calculator</h1>
@@ -193,6 +194,7 @@ export default function Calculator() {
           </Card>
         </div>
       </div>
+      <PageFooter />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Calculator, DollarSign, Eye, ThumbsUp, MessageSquare, Share2 } from "lucide-react";
 import { ReachStatCard } from "@/components/reach-calculator/ReachStatCard";
 import { calculateReachValue } from "@/utils/reachCalculations";
+import PageFooter from "@/components/home/PageFooter";
 
 export default function ReachCalculator() {
   const { toast } = useToast();
@@ -61,9 +62,9 @@ export default function ReachCalculator() {
   }, [views, likes, dislikes, comments, shares]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col">
       <MainNavbar />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <div className="flex items-center gap-2 mb-6">
           <Calculator className="h-8 w-8 text-blue-600" />
           <h1 className="text-3xl font-bold font-crimson">YouTube Reach Calculator</h1>
@@ -233,6 +234,7 @@ export default function ReachCalculator() {
           </CardContent>
         </Card>
       </div>
+      <PageFooter />
     </div>
   );
 }
