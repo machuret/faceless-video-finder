@@ -99,9 +99,11 @@ const ChannelTypeSelector = ({ value, onChange }: ChannelTypeSelectorProps) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     retry: 2,
-    onError: (err: Error) => {
-      console.error("Failed to fetch channel types:", err);
-      toast.error("Could not load channel types. Using default list.");
+    meta: {
+      onError: (err: Error) => {
+        console.error("Failed to fetch channel types:", err);
+        toast.error("Could not load channel types. Using default list.");
+      }
     }
   });
   

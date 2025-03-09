@@ -75,15 +75,17 @@ const NicheSelector = ({ value, onChange }: NicheSelectorProps) => {
   // Ensure we have a string value to avoid React warnings
   const safeValue = value || "";
   
-  const { data: nichesData, isLoading, isError, error } = useQuery({
+  const { data: nichesData, isLoading, isError } = useQuery({
     queryKey: ['niches-selector'],
     queryFn: fetchNichesForSelector,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     retry: 2,
-    onError: (err: Error) => {
-      console.error("Failed to fetch niches:", err);
-      toast.error("Could not load niches. Using default list.");
+    meta: {
+      onError: (err: Error) => {
+        console.error("Failed to fetch niches:", err);
+        toast.error("Could not load niches. Using default list.");
+      }
     }
   });
   
