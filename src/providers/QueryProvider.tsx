@@ -47,7 +47,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       {process.env.NODE_ENV !== 'production' && 
         <ReactQueryDevtools 
           initialIsOpen={false}
-          position="bottom-right"
+          position="bottom"
         />
       }
     </QueryClientProvider>
