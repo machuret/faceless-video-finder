@@ -1,3 +1,4 @@
+
 import { RouteObject } from 'react-router-dom';
 import Index from '@/pages/Index';
 import ChannelSearch from '@/pages/ChannelSearch';
@@ -30,8 +31,15 @@ import Calculator from '@/pages/Calculator';
 
 // Create a reusable admin dashboard route element
 const DashboardElement = (
-  <ProtectedRoute>
+  <ProtectedRoute requireAdmin={true}>
     <Dashboard />
+  </ProtectedRoute>
+);
+
+// Helper function to create protected admin routes
+const createProtectedAdminRoute = (Component: React.ComponentType) => (
+  <ProtectedRoute requireAdmin={true}>
+    <Component />
   </ProtectedRoute>
 );
 
@@ -122,75 +130,39 @@ const routes: RouteObject[] = [
   },
   {
     path: '/admin/add-channel',
-    element: (
-      <ProtectedRoute>
-        <AddChannel />
-      </ProtectedRoute>
-    ),
+    element: createProtectedAdminRoute(AddChannel),
   },
   {
     path: '/admin/niches',
-    element: (
-      <ProtectedRoute>
-        <ManageNichesPage />
-      </ProtectedRoute>
-    ),
+    element: createProtectedAdminRoute(ManageNichesPage),
   },
   {
     path: '/admin/manage-niches',
-    element: (
-      <ProtectedRoute>
-        <ManageNichesPage />
-      </ProtectedRoute>
-    ),
+    element: createProtectedAdminRoute(ManageNichesPage),
   },
   {
     path: '/admin/channel-types',
-    element: (
-      <ProtectedRoute>
-        <ManageChannelTypes />
-      </ProtectedRoute>
-    ),
+    element: createProtectedAdminRoute(ManageChannelTypes),
   },
   {
     path: '/admin/manage-channel-types',
-    element: (
-      <ProtectedRoute>
-        <ManageChannelTypes />
-      </ProtectedRoute>
-    ),
+    element: createProtectedAdminRoute(ManageChannelTypes),
   },
   {
     path: '/admin/faceless-ideas',
-    element: (
-      <ProtectedRoute>
-        <ManageFacelessIdeas />
-      </ProtectedRoute>
-    ),
+    element: createProtectedAdminRoute(ManageFacelessIdeas),
   },
   {
     path: '/admin/manage-faceless-ideas',
-    element: (
-      <ProtectedRoute>
-        <ManageFacelessIdeas />
-      </ProtectedRoute>
-    ),
+    element: createProtectedAdminRoute(ManageFacelessIdeas),
   },
   {
     path: '/admin/did-you-know',
-    element: (
-      <ProtectedRoute>
-        <ManageDidYouKnowFacts />
-      </ProtectedRoute>
-    ),
+    element: createProtectedAdminRoute(ManageDidYouKnowFacts),
   },
   {
     path: '/admin/manage-did-you-know-facts',
-    element: (
-      <ProtectedRoute>
-        <ManageDidYouKnowFacts />
-      </ProtectedRoute>
-    ),
+    element: createProtectedAdminRoute(ManageDidYouKnowFacts),
   },
   {
     path: '*',

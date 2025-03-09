@@ -1,39 +1,54 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
-import { supabaseClient } from "../_shared/supabaseClient.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { ensureStorageBucketsExist } from "../_shared/createStorageBuckets.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
-
+  
   try {
-    const supabase = supabaseClient(req);
+    // Create a Supabase client with the Auth context of the function
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     
-    // Ensure storage buckets exist using the imported function
-    await ensureStorageBucketsExist(supabase);
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    }
     
-    // Return success response
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Ensure storage buckets exist
+    const result = await ensureStorageBucketsExist(supabase);
+    
+    // Return the result
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Storage buckets initialized successfully"
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify(result),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+        status: result.success ? 200 : 500,
+      }
     );
   } catch (error) {
-    console.error("Error initializing storage:", error);
+    console.error("Error in initialize-storage function:", error);
     
     return new Response(
-      JSON.stringify({ 
-        error: error.message || "An error occurred while initializing storage",
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+        status: 500,
       }
     );
   }

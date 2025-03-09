@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+
+import React from "react";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import AdminHeader from "./components/AdminHeader";
 import DashboardHeader from "./components/dashboard/DashboardHeader";
 import FeaturedChannels from "./components/dashboard/FeaturedChannels";
@@ -12,40 +13,11 @@ import ChannelsToImprove from "./components/dashboard/ChannelsToImprove";
 import CsvChannelUploader from "./components/dashboard/components/CsvChannelUploader";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Database, Layers, BookOpen, Sparkles, Loader2 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { Database, Layers, BookOpen, Sparkles } from "lucide-react";
 
 const Dashboard = () => {
-  const { user, isAdmin, loading } = useAuth();
-  const navigate = useNavigate();
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        console.log("Dashboard: No user found, redirecting to login");
-        navigate("/admin/login");
-      } else if (!isAdmin) {
-        console.log("Dashboard: User is not admin, redirecting to home");
-        navigate("/");
-      } else {
-        console.log("Dashboard: User is authenticated and is admin");
-        setIsReady(true);
-      }
-    }
-  }, [user, isAdmin, loading, navigate]);
-
-  if (loading || !isReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
+  console.log("Rendering Dashboard component");
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader title="Admin Dashboard" />

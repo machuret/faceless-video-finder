@@ -1,18 +1,14 @@
 
-import React, { useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import routes from './routes';
 import { initializeStorage } from './integrations/supabase/initStorage';
-import { useAuth } from './context/AuthContext';
 
 function App() {
-  const navigate = useNavigate();
-  const { user, loading } = useAuth();
-
-  useEffect(() => {
+  React.useEffect(() => {
     // Initialize storage buckets on app startup
     initializeStorage()
       .then(result => {
@@ -33,8 +29,8 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <Routes>
-        {routes.map((route) => (
-          <Route key={route.path} path={route.path} element={route.element} />
+        {routes.map((route, index) => (
+          <Route key={`${route.path}-${index}`} path={route.path} element={route.element} />
         ))}
       </Routes>
       <Toaster />
