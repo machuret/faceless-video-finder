@@ -16,13 +16,14 @@ interface CategorySelectorProps {
 }
 
 const CategorySelector = ({ value, onChange }: CategorySelectorProps) => {
-  console.log("CategorySelector - Current selected category:", value);
+  // Ensure we have a valid default value
+  const safeValue = value || "other";
   
   return (
     <div className="space-y-2">
       <Label htmlFor="channel_category">Category</Label>
       <Select 
-        value={value || "other"} 
+        value={safeValue}
         onValueChange={onChange}
       >
         <SelectTrigger className="w-full">

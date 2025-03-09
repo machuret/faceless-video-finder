@@ -16,13 +16,14 @@ interface TypeSelectorProps {
 }
 
 const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
-  console.log("TypeSelector - Current selected type:", value);
+  // Ensure we have a string value to avoid React warnings
+  const safeValue = value || "";
   
   return (
     <div className="space-y-2">
       <Label htmlFor="channel_type">Channel Type</Label>
       <Select 
-        value={value || ""} 
+        value={safeValue}
         onValueChange={onChange}
       >
         <SelectTrigger className="w-full">

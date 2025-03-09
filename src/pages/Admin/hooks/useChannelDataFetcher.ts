@@ -51,7 +51,7 @@ export const useChannelDataFetcher = (
         }
       }
       
-      // Map database data to form data
+      // Map database data to form data with safe defaults for all fields
       const formattedData: ChannelFormData = {
         id: data.id || "",
         video_id: data.video_id || "",
@@ -68,9 +68,10 @@ export const useChannelDataFetcher = (
         country: data.country || "US",
         channel_category: data.channel_category || "entertainment",
         notes: data.notes || "",
-        keywords: data.keywords || [],
+        keywords: Array.isArray(data.keywords) ? data.keywords : [],
         niche: data.niche || "",
-        is_editor_verified: data.is_editor_verified || false
+        is_editor_verified: Boolean(data.is_editor_verified),
+        ai_description: data.ai_description || ""
       };
       
       setFormData(formattedData);

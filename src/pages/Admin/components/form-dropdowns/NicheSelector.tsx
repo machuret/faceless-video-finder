@@ -16,13 +16,14 @@ interface NicheSelectorProps {
 }
 
 const NicheSelector = ({ value, onChange }: NicheSelectorProps) => {
-  console.log("NicheSelector - Current selected niche:", value);
+  // Ensure we have a string value to avoid React warnings
+  const safeValue = value || "";
   
   return (
     <div className="space-y-2">
       <Label htmlFor="niche">Niche</Label>
       <Select 
-        value={value || ""} 
+        value={safeValue} 
         onValueChange={onChange}
       >
         <SelectTrigger className="w-full">
