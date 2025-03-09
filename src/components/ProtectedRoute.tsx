@@ -1,5 +1,5 @@
 
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
@@ -13,6 +13,7 @@ export const ProtectedRoute = ({
 }) => {
   const { user, isAdmin, loading } = useAuth();
   const [showLoader, setShowLoader] = useState(false);
+  const location = useLocation();
 
   // Use useEffect to handle the delayed loader display
   useEffect(() => {
