@@ -77,8 +77,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setIsAdmin(false);
       
-      window.location.href = '/admin/login';
       toast.success("Logged out successfully");
+      return;
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error("Error signing out");

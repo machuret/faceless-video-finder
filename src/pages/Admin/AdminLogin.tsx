@@ -21,18 +21,18 @@ export default function AdminLogin() {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin } = useAuth();
   
   // Get the intended destination from the URL or default to dashboard
   const from = location.state?.from?.pathname || "/admin/dashboard";
 
   // Redirect if already logged in as admin
   useEffect(() => {
-    if (!authLoading && user && isAdmin) {
-      console.log("Already logged in as admin, redirecting to destination");
-      navigate(from, { replace: true });
+    if (user && isAdmin) {
+      console.log("Already logged in as admin, redirecting to dashboard");
+      navigate("/admin/dashboard", { replace: true });
     }
-  }, [user, isAdmin, authLoading, navigate, from]);
+  }, [user, isAdmin, navigate]);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -84,10 +84,9 @@ export default function AdminLogin() {
         }
 
         if (adminData) {
-          console.log("User is admin, redirecting to destination");
+          console.log("User is admin, redirecting to dashboard");
           toast.success("Logged in successfully");
-          // Using window.location.href for a full page reload to clear any stale states
-          window.location.href = from;
+          navigate("/admin/dashboard", { replace: true });
         } else {
           console.log("User is not an admin, signing out");
           toast.error("You don't have admin access");
@@ -100,6 +99,9 @@ export default function AdminLogin() {
       console.error("Login process failed:", error);
       setErrorMessage(error.message || "An unexpected error occurred");
       toast.error(error.message || "Login failed");
+      setIsLoading(false);
+    } finally {
+      // Ensure loading state is always reset
       setIsLoading(false);
     }
   };
