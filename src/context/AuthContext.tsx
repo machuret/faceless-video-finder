@@ -33,10 +33,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   
   const checkAdminStatus = async (userId: string | undefined) => {
-    console.log("Checking admin status for userId:", userId);
-    
     if (!userId) {
-      console.log("No userId provided, setting isAdmin to false");
       setIsAdmin(false);
       return false;
     }
@@ -64,65 +61,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      setLoading(true);
       await supabase.auth.signOut();
       setUser(null);
       setIsAdmin(false);
       navigate('/admin/login');
     } catch (error) {
       console.error('Error signing out:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     const initializeAuth = async () => {
-      console.log("AuthProvider: Initializing");
-      setLoading(true);
+      // Only set loading if component is still mounted
+      if (mounted) setLoading(true);
       
       try {
         // Check current session
         const { data: sessionData } = await supabase.auth.getSession();
-        console.log("Initial session check:", sessionData?.session ? "Session exists" : "No session");
         
-        if (sessionData?.session?.user) {
+        if (mounted && sessionData?.session?.user) {
           setUser(sessionData.session.user);
           await checkAdminStatus(sessionData.session.user.id);
         }
       } catch (error) {
         console.error("Error checking session:", error);
       } finally {
-        setLoading(false);
+        // Only update loading state if component is still mounted
+        if (mounted) setLoading(false);
       }
-      
-      // Set up auth state change listener
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          console.log("Auth state changed:", event, session?.user?.id);
-          
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            setLoading(true);
-            if (session?.user) {
-              setUser(session.user);
-              await checkAdminStatus(session.user.id);
-            }
-            setLoading(false);
-          } else if (event === 'SIGNED_OUT') {
-            setUser(null);
-            setIsAdmin(false);
-          }
-        }
-      );
-      
-      // Clean up subscription on unmount
-      return () => {
-        console.log("AuthProvider: Cleaning up subscription");
-        subscription.unsubscribe();
-      };
     };
     
     initializeAuth();
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
+        
+        if (!mounted) return;
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setLoading(true);
+          if (session?.user) {
+            setUser(session.user);
+            await checkAdminStatus(session.user.id);
+          }
+          setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsAdmin(false);
+        }
+      }
+    );
+    
+    // Clean up subscription and mounted flag on unmount
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   return (
