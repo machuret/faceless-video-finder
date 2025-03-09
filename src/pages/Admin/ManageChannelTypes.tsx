@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MainNavbar from "@/components/MainNavbar";
 import { ChannelTypesList } from "./components/channelTypes/ChannelTypesList";
-import ChannelTypeForm from "./components/channelTypes/ChannelTypeForm";
+import { ChannelTypeForm } from "./components/channelTypes/ChannelTypeForm";
 import { useChannelTypes } from "./components/channelTypes/hooks/useChannelTypes";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";

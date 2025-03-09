@@ -1,5 +1,5 @@
 
-import { RouteObject } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, RouteObject } from 'react-router-dom';
 import Index from '@/pages/Index';
 import ChannelSearch from '@/pages/ChannelSearch';
 import ChannelDetails from '@/pages/ChannelDetails';
@@ -29,22 +29,7 @@ import ManageFacelessIdeas from '@/pages/Admin/ManageFacelessIdeas';
 import ManageDidYouKnowFacts from '@/pages/Admin/ManageDidYouKnowFacts';
 import Calculator from '@/pages/Calculator';
 
-// Create a reusable admin dashboard route element
-const DashboardElement = (
-  <ProtectedRoute requireAdmin={true}>
-    <Dashboard />
-  </ProtectedRoute>
-);
-
-// Helper function to create protected admin routes
-const createProtectedAdminRoute = (Component: React.ComponentType) => (
-  <ProtectedRoute requireAdmin={true}>
-    <Component />
-  </ProtectedRoute>
-);
-
 const routes: RouteObject[] = [
-  // Public routes
   {
     path: '/',
     element: <Index />,
@@ -113,56 +98,58 @@ const routes: RouteObject[] = [
     path: '/channel-type/:slug',
     element: <ChannelTypeDetails />,
   },
-  
   // Admin routes
   {
     path: '/admin/login',
     element: <AdminLogin />,
   },
-  // Use the same Dashboard component for both /admin and /admin/dashboard
-  {
-    path: '/admin',
-    element: DashboardElement,
-  },
   {
     path: '/admin/dashboard',
-    element: DashboardElement,
+    element: (
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/admin/add-channel',
-    element: createProtectedAdminRoute(AddChannel),
-  },
-  {
-    path: '/admin/niches',
-    element: createProtectedAdminRoute(ManageNichesPage),
+    element: (
+      <ProtectedRoute>
+        <AddChannel />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/admin/manage-niches',
-    element: createProtectedAdminRoute(ManageNichesPage),
-  },
-  {
-    path: '/admin/channel-types',
-    element: createProtectedAdminRoute(ManageChannelTypes),
+    element: (
+      <ProtectedRoute>
+        <ManageNichesPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/admin/manage-channel-types',
-    element: createProtectedAdminRoute(ManageChannelTypes),
-  },
-  {
-    path: '/admin/faceless-ideas',
-    element: createProtectedAdminRoute(ManageFacelessIdeas),
+    element: (
+      <ProtectedRoute>
+        <ManageChannelTypes />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/admin/manage-faceless-ideas',
-    element: createProtectedAdminRoute(ManageFacelessIdeas),
-  },
-  {
-    path: '/admin/did-you-know',
-    element: createProtectedAdminRoute(ManageDidYouKnowFacts),
+    element: (
+      <ProtectedRoute>
+        <ManageFacelessIdeas />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/admin/manage-did-you-know-facts',
-    element: createProtectedAdminRoute(ManageDidYouKnowFacts),
+    element: (
+      <ProtectedRoute>
+        <ManageDidYouKnowFacts />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '*',
@@ -170,4 +157,8 @@ const routes: RouteObject[] = [
   },
 ];
 
-export default routes;
+const router = createBrowserRouter(routes);
+
+export default function Router() {
+  return <RouterProvider router={router} />;
+}
