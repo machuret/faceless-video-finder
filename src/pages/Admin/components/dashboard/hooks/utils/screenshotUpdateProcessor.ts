@@ -1,19 +1,18 @@
 
-import { useState, useRef, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ProgressState, useProgressState } from "./screenshotUpdateProgress";
+import { supabase } from "@/integrations/supabase/client";
+import { useProgressState } from "./screenshotUpdateProgress";
+import { useRef, useEffect } from "react";
 
-export interface ScreenshotUpdateResult {
-  success: boolean;
-  message: string;
+interface ChannelForScreenshot {
+  id: string;
+  channel_url: string;
+  channel_title: string | null;
 }
 
 export const useScreenshotUpdateProcessor = () => {
-  // Use the progress state hook for tracking progress
   const {
     state,
-    resetProgress,
     updateProgress,
     incrementSuccess,
     incrementError,
@@ -36,13 +35,12 @@ export const useScreenshotUpdateProcessor = () => {
     };
   }, []);
 
-  const fetchChannelsWithoutScreenshots = async () => {
+  const fetchChannelsWithoutScreenshots = async (): Promise<{ channels: ChannelForScreenshot[], count: number }> => {
     try {
-      // Improved query to detect channels without screenshots
       const { data, error, count } = await supabase
         .from('youtube_channels')
         .select('id, channel_url, channel_title', { count: 'exact' })
-        .or('screenshot_url.is.null,screenshot_url.eq.')
+        .is('screenshot_url', null)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -51,55 +49,66 @@ export const useScreenshotUpdateProcessor = () => {
       return { channels: data || [], count: count || 0 };
     } catch (error) {
       console.error("Error fetching channels without screenshots:", error);
-      toast.error("Failed to fetch channels");
       return { channels: [], count: 0 };
     }
   };
 
-  const updateScreenshot = async (channelId: string, channelUrl: string, channelTitle: string): Promise<ScreenshotUpdateResult> => {
+  const updateScreenshot = async (channel: ChannelForScreenshot): Promise<{ success: boolean; message: string }> => {
     try {
-      console.log(`Updating screenshot for channel ${channelId}: ${channelUrl} (${channelTitle})`);
-      setCurrentChannel(channelTitle || channelUrl);
+      console.log(`Processing channel ${channel.id}: ${channel.channel_title}`);
+      console.log(`Updating screenshot for channel ${channel.id}: ${channel.channel_url} (${channel.channel_title})`);
       
-      const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
-        body: {
-          channelUrl,
-          channelId
-        }
-      });
+      // Add timeout for the fetch operation to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for screenshots
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
+          body: { channelId: channel.id, channelUrl: channel.channel_url },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
 
-      if (error) throw error;
-      
-      if (data?.success) {
-        console.log(`Successfully updated screenshot for channel ${channelId}`);
-        return { success: true, message: `Updated screenshot for channel ${channelTitle || channelId}` };
-      } else {
-        console.error(`Failed to update screenshot for channel ${channelId}:`, data?.error);
-        return { 
-          success: false, 
-          message: data?.error || `Screenshot update failed for ${channelTitle || channelId}`
-        };
+        if (error) {
+          console.error(`Error updating screenshot for channel ${channel.id}:`, error);
+          return { success: false, message: error.message };
+        }
+
+        if (!data?.success) {
+          console.error(`Failed to update screenshot for channel ${channel.id}:`, data?.error || "Unknown error");
+          return { success: false, message: data?.error || "Unknown error" };
+        }
+
+        console.log(`Successfully updated screenshot for channel ${channel.id}`);
+        return { success: true, message: `Updated screenshot for ${channel.channel_title || "channel"}` };
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError; // Re-throw to be caught by the outer catch
       }
     } catch (error) {
-      console.error(`Error updating screenshot for channel ${channelId}:`, error);
-      return { 
-        success: false, 
-        message: `Error updating screenshot for ${channelTitle || channelId}: ${error instanceof Error ? error.message : "Unknown error"}`
-      };
+      // Check if this is an abort error (timeout)
+      if (error.name === 'AbortError') {
+        const message = `Timeout waiting for Apify run to complete`;
+        console.error(`Failed to update screenshot for channel ${channel.id}:`, message);
+        return { success: false, message };
+      }
+      
+      console.error(`Error updating screenshot for channel ${channel.id}:`, error);
+      return { success: false, message: error instanceof Error ? error.message : String(error) };
     }
   };
 
   const startMassUpdate = async () => {
     // Prevent multiple simultaneous runs
     if (processingRef.current) {
-      toast.info("Update already in progress");
+      toast.info("Screenshot update already in progress");
       return;
     }
     
     updateProgress({
       isProcessing: true,
       progress: 0,
-      totalChannels: 0,
       processedChannels: 0,
       successCount: 0,
       errorCount: 0,
@@ -124,67 +133,62 @@ export const useScreenshotUpdateProcessor = () => {
         return;
       }
 
-      toast.info(`Starting screenshot update for ${channels.length} channels without screenshots. This may take a while.`);
-      
-      // Process channels in smaller batches to avoid memory issues and timeouts
-      const batchSize = 1; // Process one at a time to prevent overwhelming the server
-      const newErrors: string[] = [];
-      
-      for (let i = 0; i < channels.length; i += batchSize) {
+      toast.info(`Starting screenshot update for ${channels.length} channels. This may take a while.`);
+
+      // Process one channel at a time
+      for (let i = 0; i < channels.length; i++) {
         // Check if operation was cancelled
         if (signal.aborted) {
           console.log("Screenshot update process was cancelled");
           break;
         }
         
-        const batch = channels.slice(i, i + batchSize);
+        const channel = channels[i];
+        const channelTitle = channel.channel_title || `Channel ${i+1}`;
         
-        // Process this batch sequentially to avoid overwhelming the service
-        for (const channel of batch) {
-          // Check if operation was cancelled
-          if (signal.aborted) break;
+        try {
+          setCurrentChannel(channelTitle);
           
+          // Wrap in try/catch to prevent a single channel failure from stopping the process
+          let result;
           try {
-            const channelTitle = channel.channel_title || `Channel ${i + batch.indexOf(channel) + 1}`;
-            console.log(`Processing channel ${channel.id}: ${channelTitle}`);
-            
-            const result = await updateScreenshot(channel.id, channel.channel_url, channelTitle);
-            
-            if (result.success) {
-              incrementSuccess();
-            } else {
-              incrementError();
-              addError(result.message);
-              console.warn(result.message);
-            }
-            
-            // Update progress after each channel
-            const newProcessedCount = i + batch.indexOf(channel) + 1;
-            updateProcessedCount(newProcessedCount);
-            
-            // Show intermediate progress notifications
-            if (newProcessedCount % 10 === 0 || newProcessedCount === channels.length) {
-              toast.info(`Progress: ${newProcessedCount}/${channels.length} channels processed`);
-            }
-            
-            // Longer delay between each channel to avoid rate limiting
-            if (!signal.aborted) {
-              await new Promise(resolve => setTimeout(resolve, 5000));
-            }
-          } catch (error) {
-            // Catch any unexpected errors at the channel level to prevent the entire process from failing
-            console.error(`Unexpected error processing channel ${channel.id}:`, error);
-            addError(`Channel ${channel.channel_title || channel.channel_url}: Unexpected error`);
-            
-            // Still update progress
-            const newProcessedCount = i + batch.indexOf(channel) + 1;
-            updateProcessedCount(newProcessedCount);
+            result = await updateScreenshot(channel);
+          } catch (updateError) {
+            console.error(`Error processing screenshot for ${channelTitle}:`, updateError);
+            result = {
+              success: false,
+              message: `Error processing screenshot for ${channelTitle}: ${updateError instanceof Error ? updateError.message : String(updateError)}`
+            };
           }
+          
+          if (result.success) {
+            incrementSuccess();
+          } else {
+            incrementError();
+            console.warn(result.message);
+            addError(result.message);
+          }
+          
+          // Update processed count
+          updateProcessedCount(i + 1);
+          
+          // Show periodic progress updates (reduced frequency to avoid toast flooding)
+          if (((i + 1) % 10 === 0) || (i + 1 === channels.length)) {
+            toast.info(`Progress: ${i + 1}/${channels.length} screenshots processed`);
+          }
+        } catch (error) {
+          // Catch any unexpected errors to prevent the entire process from failing
+          console.error(`Unexpected error processing channel:`, error);
+          incrementError();
+          addError(`Channel ${channelTitle}: ${error instanceof Error ? error.message : String(error)}`);
+          
+          // Still update progress
+          updateProcessedCount(i + 1);
         }
         
-        // Longer delay between batches to allow system resources to recover
-        if (i + batchSize < channels.length && !signal.aborted) {
-          await new Promise(resolve => setTimeout(resolve, 8000));
+        // Add delay between processing channels
+        if (i < channels.length - 1 && !signal.aborted) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
         }
       }
       
@@ -201,6 +205,7 @@ export const useScreenshotUpdateProcessor = () => {
     } catch (error) {
       console.error("Error in mass screenshot update:", error);
       toast.error("Screenshot update process encountered an error");
+      // Don't reset processing state here, let the finally block handle it
     } finally {
       // Only if this specific process is still the active one
       if (processingRef.current) {
@@ -215,34 +220,15 @@ export const useScreenshotUpdateProcessor = () => {
   const cancelUpdate = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
-      toast.info("Update process cancelled");
+      toast.info("Screenshot update process cancelled");
       updateProgress({ isProcessing: false });
       processingRef.current = false;
       setCurrentChannel(null);
     }
   };
 
-  // Destructure the state for easier access by the consumer
-  const { 
-    isProcessing, 
-    progress, 
-    totalChannels, 
-    processedChannels, 
-    successCount, 
-    errorCount, 
-    currentChannel, 
-    errors 
-  } = state;
-
   return {
-    isProcessing,
-    progress,
-    totalChannels,
-    processedChannels,
-    successCount,
-    errorCount,
-    currentChannel,
-    errors,
+    ...state,
     startMassUpdate,
     cancelUpdate
   };

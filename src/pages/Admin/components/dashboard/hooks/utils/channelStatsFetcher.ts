@@ -39,68 +39,89 @@ export const updateStatsForChannel = async (
   try {
     console.log(`Fetching stats for channel: ${channelTitle} (${channelUrl})`);
     
-    const { data, error } = await supabase.functions.invoke<any>('fetch-channel-stats-apify', {
-      body: { channelUrl }
-    });
-
-    if (error) {
-      console.error(`Error fetching stats for ${channelTitle}:`, error);
-      return { 
-        success: false, 
-        message: `Failed to fetch stats for ${channelTitle}: ${error.message}`
-      };
-    }
-
-    if (!data || !data.success) {
-      console.error(`Failed to fetch stats for ${channelTitle}:`, data?.error || "Unknown error");
-      return { 
-        success: false, 
-        message: `Failed to fetch stats for ${channelTitle}: ${data?.error || "Unknown error"}`
-      };
-    }
-
-    console.log(`Received stats for ${channelTitle}:`, data);
-
-    // Prepare data for update
-    const updateData: Record<string, any> = {};
+    // Add timeout for the fetch operation to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
-    if (data.title) updateData.channel_title = data.title;
-    if (data.subscriberCount !== undefined) updateData.total_subscribers = data.subscriberCount;
-    if (data.viewCount !== undefined) updateData.total_views = data.viewCount;
-    if (data.videoCount !== undefined) updateData.video_count = data.videoCount;
-    if (data.startDate) updateData.start_date = data.startDate;
-    if (data.description) updateData.description = data.description;
-    if (data.country) updateData.country = data.country;
-    
-    console.log(`Update data prepared for ${channelTitle}:`, updateData);
-    
-    // Only update if we have data to update
-    if (Object.keys(updateData).length > 0) {
-      const { error: updateError } = await supabase
-        .from('youtube_channels')
-        .update(updateData)
-        .eq('id', channelId);
+    try {
+      const { data, error } = await supabase.functions.invoke<any>('fetch-channel-stats-apify', {
+        body: { channelUrl },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
 
-      if (updateError) {
-        console.error(`Error updating stats for ${channelTitle}:`, updateError);
+      if (error) {
+        console.error(`Error fetching stats for ${channelTitle}:`, error);
         return { 
           success: false, 
-          message: `Error updating stats for ${channelTitle}: ${updateError.message}`
+          message: `Failed to fetch stats for ${channelTitle}: ${error.message}`
+        };
+      }
+
+      if (!data || !data.success) {
+        console.error(`Failed to fetch stats for ${channelTitle}:`, data?.error || "Unknown error");
+        return { 
+          success: false, 
+          message: `Failed to fetch stats for ${channelTitle}: ${data?.error || "Unknown error"}`
+        };
+      }
+
+      console.log(`Received stats for ${channelTitle}:`, data);
+
+      // Prepare data for update
+      const updateData: Record<string, any> = {};
+      
+      if (data.title) updateData.channel_title = data.title;
+      if (data.subscriberCount !== undefined) updateData.total_subscribers = data.subscriberCount;
+      if (data.viewCount !== undefined) updateData.total_views = data.viewCount;
+      if (data.videoCount !== undefined) updateData.video_count = data.videoCount;
+      if (data.startDate) updateData.start_date = data.startDate;
+      if (data.description) updateData.description = data.description;
+      if (data.country) updateData.country = data.country;
+      
+      console.log(`Update data prepared for ${channelTitle}:`, updateData);
+      
+      // Only update if we have data to update
+      if (Object.keys(updateData).length > 0) {
+        const { error: updateError } = await supabase
+          .from('youtube_channels')
+          .update(updateData)
+          .eq('id', channelId);
+
+        if (updateError) {
+          console.error(`Error updating stats for ${channelTitle}:`, updateError);
+          return { 
+            success: false, 
+            message: `Error updating stats for ${channelTitle}: ${updateError.message}`
+          };
+        }
+        
+        console.log(`Successfully updated stats for ${channelTitle}`);
+        return { 
+          success: true, 
+          message: `Successfully updated stats for ${channelTitle}`
         };
       }
       
-      console.log(`Successfully updated stats for ${channelTitle}`);
       return { 
-        success: true, 
-        message: `Successfully updated stats for ${channelTitle}`
+        success: false, 
+        message: `No valid data received for ${channelTitle}`
+      };
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      throw fetchError; // Re-throw to be caught by the outer catch
+    }
+  } catch (error) {
+    // Check if this is an abort error (timeout)
+    if (error.name === 'AbortError') {
+      console.error(`Timeout when updating stats for ${channelTitle}`);
+      return { 
+        success: false, 
+        message: `Timeout when updating stats for ${channelTitle}`
       };
     }
     
-    return { 
-      success: false, 
-      message: `No valid data received for ${channelTitle}`
-    };
-  } catch (error) {
     console.error(`Exception when updating stats for ${channelTitle}:`, error);
     return { 
       success: false, 

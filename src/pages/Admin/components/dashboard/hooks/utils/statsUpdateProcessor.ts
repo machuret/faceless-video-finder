@@ -89,11 +89,21 @@ export const useStatsUpdateProcessor = () => {
             const channelTitle = channel.channel_title || `Channel ${i+1}`;
             setCurrentChannel(channelTitle);
             
-            const result = await updateStatsForChannel(
-              channel.id, 
-              channel.channel_url,
-              channelTitle
-            );
+            // Wrap the update in a try/catch to prevent the whole process from failing on a single channel error
+            let result;
+            try {
+              result = await updateStatsForChannel(
+                channel.id, 
+                channel.channel_url,
+                channelTitle
+              );
+            } catch (updateError) {
+              console.error(`Error processing channel ${channelTitle}:`, updateError);
+              result = { 
+                success: false, 
+                message: `Error processing ${channelTitle}: ${updateError instanceof Error ? updateError.message : String(updateError)}`
+              };
+            }
             
             if (result.success) {
               incrementSuccess();
@@ -108,8 +118,8 @@ export const useStatsUpdateProcessor = () => {
             const newProcessedCount = i + batch.indexOf(channel) + 1;
             updateProcessedCount(newProcessedCount);
             
-            // Show periodic progress updates
-            if ((newProcessedCount % 5 === 0) || newProcessedCount === channels.length) {
+            // Show periodic progress updates (reduced frequency to avoid toast flooding)
+            if ((newProcessedCount % 10 === 0) || newProcessedCount === channels.length) {
               toast.info(`Progress: ${newProcessedCount}/${channels.length} channels processed`);
             }
             
@@ -150,6 +160,7 @@ export const useStatsUpdateProcessor = () => {
     } catch (error) {
       console.error("Error in mass stats update:", error);
       toast.error("Stats update process encountered an error");
+      // Don't reset processing state here, let the finally block handle it
     } finally {
       // Only if this specific process is still the active one
       if (processingRef.current) {
