@@ -5,6 +5,7 @@ import { RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useMassScreenshotUpdate } from "./hooks/useMassScreenshotUpdate";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const MassScreenshotUpdater = () => {
   const {
@@ -12,6 +13,7 @@ const MassScreenshotUpdater = () => {
     progress,
     totalChannels,
     processedChannels,
+    errors,
     startMassUpdate
   } = useMassScreenshotUpdate();
 
@@ -28,7 +30,26 @@ const MassScreenshotUpdater = () => {
             <span>Progress: {processedChannels} of {totalChannels} channels</span>
             <span>{progress}%</span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-2 mb-4" />
+          
+          {errors.length > 0 && (
+            <Accordion type="single" collapsible className="mt-4">
+              <AccordionItem value="errors">
+                <AccordionTrigger>
+                  <span className="text-red-500">Errors ({errors.length})</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="max-h-40 overflow-y-auto">
+                    <ul className="text-sm text-red-500 list-disc pl-5">
+                      {errors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
         </div>
       )}
       

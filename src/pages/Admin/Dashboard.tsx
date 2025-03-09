@@ -29,6 +29,16 @@ const Dashboard = () => {
           </div>
         </div>
         
+        {/* Mass updaters moved together in the same row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="lg:col-span-1">
+            <MassScreenshotUpdater />
+          </div>
+          <div className="lg:col-span-1">
+            <MassStatsUpdater />
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-3">
             <BulkChannelUploader />
@@ -38,16 +48,6 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-3">
             <CsvChannelUploader />
-          </div>
-        </div>
-        
-        {/* New placement for mass updaters - after AdminActionCards, in the same row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="lg:col-span-1">
-            <MassScreenshotUpdater />
-          </div>
-          <div className="lg:col-span-1">
-            <MassStatsUpdater />
           </div>
         </div>
         

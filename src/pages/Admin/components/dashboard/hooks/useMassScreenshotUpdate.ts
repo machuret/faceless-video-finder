@@ -13,11 +13,11 @@ export const useMassScreenshotUpdate = () => {
   const [progress, setProgress] = useState(0);
   const [totalChannels, setTotalChannels] = useState(0);
   const [processedChannels, setProcessedChannels] = useState(0);
+  const [errors, setErrors] = useState<string[]>([]);
 
   const fetchChannelsWithoutScreenshots = async () => {
     try {
-      // Modified query to properly detect channels without screenshots
-      // The OR condition now checks for null, empty string, or non-existent screenshot_url
+      // Improved query to detect channels without screenshots
       const { data, error, count } = await supabase
         .from('youtube_channels')
         .select('id, channel_url, channel_title', { count: 'exact' })
@@ -27,7 +27,7 @@ export const useMassScreenshotUpdate = () => {
       if (error) throw error;
       console.log(`Found ${count || 0} channels without screenshots`);
       console.log("Sample channels:", data?.slice(0, 3));
-      return { channels: data, count: count || 0 };
+      return { channels: data || [], count: count || 0 };
     } catch (error) {
       console.error("Error fetching channels without screenshots:", error);
       toast.error("Failed to fetch channels");
@@ -71,6 +71,7 @@ export const useMassScreenshotUpdate = () => {
     setIsProcessing(true);
     setProgress(0);
     setProcessedChannels(0);
+    setErrors([]);
     
     try {
       const { channels, count } = await fetchChannelsWithoutScreenshots();
@@ -84,38 +85,61 @@ export const useMassScreenshotUpdate = () => {
 
       toast.info(`Starting screenshot update for ${channels.length} channels without screenshots. This may take a while.`);
       
-      // Process channels in batches to avoid overloading the server
-      const batchSize = 3; // Reduced from 5 to 3 to avoid rate limiting
+      // Process channels in smaller batches to avoid memory issues and timeouts
+      const batchSize = 2; // Reduced to 2 to be very conservative
       const results = { success: 0, failed: 0 };
+      const newErrors: string[] = [];
       
       for (let i = 0; i < channels.length; i += batchSize) {
         const batch = channels.slice(i, i + batchSize);
         
-        // Process this batch sequentially to avoid overwhelming the screenshot service
+        // Process this batch sequentially to avoid overwhelming the service
         for (const channel of batch) {
-          console.log(`Processing channel ${channel.id}: ${channel.channel_title || channel.channel_url}`);
-          
-          const result = await updateScreenshot(channel.id, channel.channel_url);
-          
-          if (result.success) {
-            results.success++;
-          } else {
+          try {
+            console.log(`Processing channel ${channel.id}: ${channel.channel_title || channel.channel_url}`);
+            
+            const result = await updateScreenshot(channel.id, channel.channel_url);
+            
+            if (result.success) {
+              results.success++;
+            } else {
+              results.failed++;
+              const errorMsg = `Channel ${channel.channel_title || channel.channel_url}: ${result.message}`;
+              console.warn(errorMsg);
+              newErrors.push(errorMsg);
+            }
+            
+            // Update progress after each channel
+            const newProcessedCount = i + batch.indexOf(channel) + 1;
+            setProcessedChannels(newProcessedCount);
+            setProgress(Math.floor((newProcessedCount / channels.length) * 100));
+            
+            // Show intermediate progress notifications
+            if (newProcessedCount % 10 === 0 || newProcessedCount === channels.length) {
+              toast.info(`Progress: ${newProcessedCount}/${channels.length} channels processed`);
+            }
+            
+            // Small delay between each channel to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          } catch (error) {
+            // Catch any unexpected errors at the channel level to prevent the entire process from failing
+            console.error(`Unexpected error processing channel ${channel.id}:`, error);
             results.failed++;
-            console.warn(result.message);
+            newErrors.push(`Channel ${channel.channel_title || channel.channel_url}: Unexpected error`);
+            
+            // Still update progress
+            setProcessedChannels(prev => prev + 1);
+            setProgress(Math.floor(((i + batch.indexOf(channel) + 1) / channels.length) * 100));
           }
-          
-          // Update progress after each channel
-          setProcessedChannels(prev => prev + 1);
-          setProgress(Math.floor(((i + batch.indexOf(channel) + 1) / channels.length) * 100));
-          
-          // Small delay between each channel to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
-        // Longer delay between batches
+        // Longer delay between batches to allow system resources to recover
         if (i + batchSize < channels.length) {
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          await new Promise(resolve => setTimeout(resolve, 5000));
         }
+        
+        // Update errors state
+        setErrors(newErrors);
       }
       
       // Show final results
@@ -139,6 +163,7 @@ export const useMassScreenshotUpdate = () => {
     progress,
     totalChannels,
     processedChannels,
+    errors,
     startMassUpdate
   };
 };
