@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Simplified and more reliable admin check function
+  // Improved admin check function with better error handling
   const checkAdminStatus = async (userId: string) => {
     if (!userId) return false;
 
@@ -47,18 +47,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) {
         console.error('Error checking admin status:', error);
+        toast.error('Error verifying admin permissions');
         return false;
       }
       
-      console.log(`Admin check result: ${!!data}`);
-      return !!data;
+      const isUserAdmin = !!data;
+      console.log(`Admin check result: ${isUserAdmin}`);
+      
+      return isUserAdmin;
     } catch (error) {
       console.error('Error in admin check:', error);
+      toast.error('Error verifying permissions');
       return false;
     }
   };
 
-  // Reliable auth initialization function with clear state management
+  // Improved auth initialization function with better error handling
   const initializeAuth = async () => {
     try {
       setLoading(true);
@@ -88,7 +92,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Check admin status and update state accordingly
       const adminStatus = await checkAdminStatus(session.user.id);
-      console.log(`Setting admin status to: ${adminStatus}`);
       setIsAdmin(adminStatus);
       
     } catch (error) {
@@ -139,6 +142,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setLoading(true);
       await supabase.auth.signOut();
+      setUser(null);
+      setIsAdmin(false);
       navigate("/admin/login");
       toast.success("Logged out successfully");
     } catch (error) {
