@@ -23,84 +23,64 @@ export const ProtectedRoute = ({
         console.log("Auth check timeout reached, forcing completion");
         setTimeoutReached(true);
       }
-    }, 5000); // 5 second timeout
+    }, 3000); // 3 second timeout
 
     return () => clearTimeout(timer);
   }, [loading, isChecking]);
 
   useEffect(() => {
-    // More detailed logging to debug the auth state
     console.log("ProtectedRoute auth state:", { 
       user: user ? "exists" : "null", 
       userId: user?.id,
       isAdmin, 
       loading, 
       requireAdmin,
-      isChecking,
       timeoutReached
     });
 
-    const checkAuth = () => {
+    // Only proceed if auth loading is complete or timeout reached
+    if (!loading || timeoutReached) {
+      // If no user, redirect to login
       if (!user) {
         console.log("No user found, redirecting to login");
         navigate("/admin/login");
-        return false;
-      } 
+        setIsChecking(false);
+        return;
+      }
       
+      // If admin is required but user is not admin
       if (requireAdmin && !isAdmin) {
         console.log("User is not admin, redirecting to home");
         navigate("/");
-        return false;
+        setIsChecking(false);
+        return;
       }
       
       // Auth check passed
       console.log("Auth check passed");
-      return true;
-    };
-
-    // If loading is done or timeout reached, check auth status
-    if (!loading || timeoutReached) {
-      const authPassed = checkAuth();
       setIsChecking(false);
-      
-      if (timeoutReached && !authPassed) {
-        console.log("Timeout forced auth check completion");
-      }
     }
   }, [user, isAdmin, loading, navigate, requireAdmin, timeoutReached]);
 
   // Show loading state
-  if (loading && !timeoutReached) {
-    console.log("ProtectedRoute: Still loading auth state");
+  if ((loading || isChecking) && !timeoutReached) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-gray-600">Verifying authorization...</p>
           <p className="text-sm text-gray-500 mt-2">
-            Loading authentication data...
+            {loading ? "Loading authentication data..." : "Checking permissions..."}
           </p>
         </div>
       </div>
     );
   }
 
-  // Show checking state with more info
-  if (isChecking && !timeoutReached) {
-    console.log("ProtectedRoute: Checking permissions");
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-gray-600">Verifying authorization...</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Checking permissions...
-          </p>
-        </div>
-      </div>
-    );
+  // Don't render children unless auth check passed
+  if (!user || (requireAdmin && !isAdmin)) {
+    return null;
   }
 
-  console.log("ProtectedRoute: Rendering children");
   return <>{children}</>;
 };
