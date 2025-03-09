@@ -16,16 +16,22 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
-  const { user } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Check if user is already logged in
+  // Check if user is already logged in and is admin
   useEffect(() => {
-    if (user) {
-      console.log("User already logged in, redirecting to dashboard");
+    console.log("AdminLogin auth state:", {
+      user: user ? "exists" : "null",
+      isAdmin,
+      authLoading
+    });
+    
+    if (!authLoading && user && isAdmin) {
+      console.log("User is already logged in as admin, redirecting to dashboard");
       navigate("/admin/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, isAdmin, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +47,7 @@ export default function AdminLogin() {
       setLoading(true);
       console.log(`Attempting to login with email: ${email}`);
       
+      // Step 1: Sign in with email and password
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -53,37 +60,47 @@ export default function AdminLogin() {
         return;
       }
       
-      if (data?.user) {
-        console.log("Login successful, user:", data.user.id);
+      if (!data?.user) {
+        setLoginError("Login failed - no user returned");
+        toast.error("Login failed");
+        return;
+      }
+      
+      console.log("Login successful, user:", data.user.id);
+      
+      // Step 2: Check if user is admin
+      const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
+        user_id: data.user.id
+      });
+      
+      if (adminError) {
+        console.error("Error checking admin status:", adminError);
+        setLoginError("Error verifying admin permissions: " + adminError.message);
+        toast.error("Error verifying admin permissions");
+        await supabase.auth.signOut();
+        return;
+      }
+      
+      console.log("Admin check result:", adminData);
+      
+      if (adminData === true) {
+        console.log("User confirmed as admin, redirecting to dashboard");
         toast.success("Login successful");
+        navigate("/admin/dashboard");
+      } else {
+        console.log("User is not an admin");
+        setLoginError("You do not have admin permissions");
+        toast.error("You do not have admin permissions");
         
-        // Check if user is admin before redirecting to dashboard
-        const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
-          user_id: data.user.id
-        });
-        
-        if (adminError) {
-          console.error("Error checking admin status:", adminError);
-          toast.error("Error verifying admin permissions");
-          return;
-        }
-        
-        if (adminData === true) {
-          console.log("User confirmed as admin, redirecting to dashboard");
-          navigate("/admin/dashboard");
-        } else {
-          console.log("User is not an admin");
-          setLoginError("You do not have admin permissions");
-          toast.error("You do not have admin permissions");
-          
-          // Sign out non-admin users
-          await supabase.auth.signOut();
-        }
+        // Sign out non-admin users
+        await supabase.auth.signOut();
       }
     } catch (error: any) {
       console.error("Unexpected login error:", error);
       setLoginError(error.message || "An unexpected error occurred");
       toast.error(error.message || "Login failed");
+      // Make sure to sign out if there's an error
+      await supabase.auth.signOut();
     } finally {
       setLoading(false);
     }
@@ -132,7 +149,7 @@ export default function AdminLogin() {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={loading}
+                disabled={loading || authLoading}
               >
                 {loading ? (
                   <>

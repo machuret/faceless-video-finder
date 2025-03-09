@@ -23,7 +23,7 @@ export const ProtectedRoute = ({
         console.log("Auth check timeout reached, forcing completion");
         setTimeoutReached(true);
       }
-    }, 3000); // 3 second timeout
+    }, 2000); // 2 second timeout (reduced from 3s)
 
     return () => clearTimeout(timer);
   }, [loading, isChecking]);
@@ -50,8 +50,8 @@ export const ProtectedRoute = ({
       
       // If admin is required but user is not admin
       if (requireAdmin && !isAdmin) {
-        console.log("User is not admin, redirecting to home");
-        navigate("/");
+        console.log("User is not admin, redirecting to login (requireAdmin: true, isAdmin: false)");
+        navigate("/admin/login");
         setIsChecking(false);
         return;
       }

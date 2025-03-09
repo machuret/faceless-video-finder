@@ -62,51 +62,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // This function ensures both admin status and session are loaded
+  const initializeAuth = async () => {
+    try {
+      console.log("Initializing auth...");
+      setLoading(true);
+      
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Error getting session:", error);
+        setUser(null);
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+      
+      console.log("Session retrieved:", session ? "Yes" : "No");
+      
+      if (session?.user) {
+        setUser(session.user);
+        if (session.user.id) {
+          const isUserAdmin = await checkAdminStatus(session.user.id);
+          console.log("User admin status:", isUserAdmin);
+        }
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error("Error getting session:", error);
+      setUser(null);
+      setIsAdmin(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     
-    // Get initial session
-    const initAuth = async () => {
-      try {
-        console.log("Initializing auth...");
-        if (mounted) setLoading(true);
-        
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error getting session:", error);
-          if (mounted) {
-            setUser(null);
-            setIsAdmin(false);
-          }
-          return;
-        }
-        
-        console.log("Session retrieved:", session ? "Yes" : "No");
-        
-        if (session?.user) {
-          if (mounted) setUser(session.user);
-          if (mounted && session.user.id) {
-            await checkAdminStatus(session.user.id);
-          }
-        } else {
-          if (mounted) {
-            setUser(null);
-            setIsAdmin(false);
-          }
-        }
-      } catch (error) {
-        console.error("Error getting session:", error);
-        if (mounted) {
-          setUser(null);
-          setIsAdmin(false);
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    initAuth();
+    // Initialize auth on component mount
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -115,7 +112,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (mounted) {
         if (session?.user) {
           setUser(session.user);
-          await checkAdminStatus(session.user.id);
+          if (session.user.id) {
+            await checkAdminStatus(session.user.id);
+          }
         } else {
           setUser(null);
           setIsAdmin(false);
