@@ -10,7 +10,7 @@ serve(async (req) => {
   }
 
   try {
-    const { niche, description, example } = await req.json();
+    const { niche, description, example, image_url } = await req.json();
 
     if (!niche || typeof niche !== "string") {
       return new Response(
@@ -21,7 +21,7 @@ serve(async (req) => {
 
     const supabase = supabaseClient(req);
     
-    // Find the niche by name
+    // Find niche by name
     const { data: nicheData, error: findError } = await supabase
       .from('niches')
       .select('id')
@@ -29,85 +29,55 @@ serve(async (req) => {
       .single();
     
     if (findError) {
-      // If niche doesn't exist, create it
-      const { data: newNiche, error: createError } = await supabase
-        .from('niches')
-        .insert({ name: niche, description })
-        .select()
-        .single();
-      
-      if (createError) {
-        throw createError;
-      }
-      
-      // Create the niche_details record
-      if (example) {
-        const { error: createDetailError } = await supabase
-          .from('niche_details')
-          .insert({ 
-            niche_id: newNiche.id, 
-            content: example 
-          });
-        
-        if (createDetailError) {
-          throw createDetailError;
-        }
-      }
-      
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `Niche "${niche}" created with details` 
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: `Niche "${niche}" not found` }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    // Update the niche description
-    const { error: updateError } = await supabase
+    // First update the niche's image_url
+    const { error: updateImageError } = await supabase
       .from('niches')
-      .update({ description })
+      .update({ 
+        description: description, 
+        image_url: image_url
+      })
       .eq('id', nicheData.id);
     
-    if (updateError) {
-      throw updateError;
+    if (updateImageError) {
+      throw updateImageError;
     }
     
-    // Check if niche_details exists
-    const { data: existingDetails, error: checkError } = await supabase
+    // Now update or insert the niche description details
+    const { data: nicheDetailsData, error: detailsError } = await supabase
       .from('niche_details')
-      .select('id')
+      .select()
       .eq('niche_id', nicheData.id)
-      .single();
+      .maybeSingle();
     
-    if (!existingDetails) {
-      // Create niche_details if it doesn't exist
-      const { error: createDetailError } = await supabase
+    let updateResult;
+    
+    if (nicheDetailsData) {
+      // Update existing record
+      updateResult = await supabase
         .from('niche_details')
-        .insert({ 
-          niche_id: nicheData.id, 
-          content: example 
-        });
-      
-      if (createDetailError) {
-        throw createDetailError;
-      }
-    } else {
-      // Update existing niche_details
-      const { error: updateDetailError } = await supabase
+        .update({ content: example || null })
+        .eq('id', nicheDetailsData.id);
+    } else if (example) {
+      // Insert new record
+      updateResult = await supabase
         .from('niche_details')
-        .update({ content: example })
-        .eq('id', existingDetails.id);
-      
-      if (updateDetailError) {
-        throw updateDetailError;
-      }
+        .insert({ niche_id: nicheData.id, content: example });
+    }
+    
+    if (updateResult?.error) {
+      throw updateResult.error;
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Niche "${niche}" details updated successfully` 
+        message: `Updated details for "${niche}"` 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

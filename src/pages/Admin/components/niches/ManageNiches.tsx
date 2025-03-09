@@ -13,6 +13,7 @@ interface NicheDetails {
   name: string;
   description: string | null;
   example: string | null;
+  image_url: string | null;
 }
 
 const ManageNiches = () => {
@@ -28,11 +29,14 @@ const ManageNiches = () => {
     isEditing,
     formData,
     submitting,
+    uploading,
     handleInputChange,
     handleRichTextChange,
     setEditingNiche,
     cancelEditing,
-    saveNicheDetails
+    saveNicheDetails,
+    handleImageUpload,
+    handleDeleteImage
   } = useNicheForm();
 
   useEffect(() => {
@@ -132,8 +136,18 @@ const ManageNiches = () => {
   };
   
   const handleEditNiche = (niche: string) => {
-    const details = nicheDetails[niche] || { name: niche, description: null, example: null };
-    setEditingNiche(details.name, details.description, details.example);
+    const details = nicheDetails[niche] || { 
+      name: niche, 
+      description: null, 
+      example: null,
+      image_url: null 
+    };
+    setEditingNiche(
+      details.name, 
+      details.description, 
+      details.example,
+      details.image_url
+    );
     setActiveTab("edit");
   };
   
@@ -179,30 +193,40 @@ const ManageNiches = () => {
               <p className="text-gray-500">Loading niches...</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {niches.sort().map((niche) => (
-                  <div key={niche} className="flex items-center justify-between p-2 border rounded">
-                    <span>{niche}</span>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditNiche(niche)}
-                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteNiche(niche)}
-                        disabled={isDeleting}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        Delete
-                      </Button>
+                {niches.sort().map((niche) => {
+                  const details = nicheDetails[niche];
+                  return (
+                    <div key={niche} className="flex items-center p-2 border rounded">
+                      {details?.image_url && (
+                        <img 
+                          src={details.image_url} 
+                          alt={niche}
+                          className="w-10 h-10 rounded object-cover mr-2" 
+                        />
+                      )}
+                      <span className="flex-grow truncate">{niche}</span>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditNiche(niche)}
+                          className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteNiche(niche)}
+                          disabled={isDeleting}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -214,10 +238,13 @@ const ManageNiches = () => {
               formData={formData}
               isEditing={isEditing}
               submitting={submitting}
+              uploading={uploading}
               onInputChange={handleInputChange}
               onRichTextChange={handleRichTextChange}
               onCancel={handleCancelEdit}
               onSubmit={handleSaveNicheDetails}
+              onImageUpload={handleImageUpload}
+              onDeleteImage={handleDeleteImage}
             />
           )}
         </TabsContent>

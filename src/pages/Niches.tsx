@@ -5,13 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import MainNavbar from "@/components/MainNavbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Separator } from "@/components/ui/separator";
 import PageFooter from "@/components/home/PageFooter";
 
 interface Niche {
   id: string;
   name: string;
   description?: string | null;
+  image_url?: string | null;
 }
 
 const Niches = () => {
@@ -32,7 +32,7 @@ const Niches = () => {
     <div className="min-h-screen flex flex-col">
       <MainNavbar />
       <div className="container px-4 py-16 flex-1">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">YouTube Channel Niches</h1>
           <p className="text-gray-600 mb-8">
             Explore various niches for YouTube channels to find opportunities for your faceless channel.
@@ -52,16 +52,28 @@ const Niches = () => {
           )}
 
           {niches && niches.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {niches.map((niche) => (
-                <Card key={niche.id} className="hover:shadow-md transition-shadow">
+                <Card key={niche.id} className="hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                  {niche.image_url && (
+                    <div className="w-full h-48 overflow-hidden">
+                      <img 
+                        src={niche.image_url} 
+                        alt={niche.name}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                      />
+                    </div>
+                  )}
                   <CardHeader>
                     <CardTitle className="text-xl">{niche.name}</CardTitle>
                     {niche.description && (
-                      <CardDescription>{niche.description}</CardDescription>
+                      <CardDescription 
+                        dangerouslySetInnerHTML={{ __html: niche.description }}
+                        className="line-clamp-2"
+                      />
                     )}
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="mt-auto">
                     <Link 
                       to={`/niches/${niche.id}`} 
                       className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"

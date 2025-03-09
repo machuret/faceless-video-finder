@@ -1,11 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import { niches as defaultNiches } from "../_shared/niches.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+import { supabaseClient } from "../_shared/supabaseClient.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -14,65 +10,67 @@ serve(async (req) => {
   }
 
   try {
-    // Create a Supabase client
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = supabaseClient(req);
     
     // Get all niches from the database
     const { data: nichesData, error: nichesError } = await supabase
-      .from("niches")
-      .select("*");
-      
+      .from('niches')
+      .select('id, name, description, image_url')
+      .order('name');
+    
     if (nichesError) {
       throw nichesError;
     }
     
-    // Get all niche details from the database
-    const { data: nicheDetailsRecords, error: detailsError } = await supabase
-      .from("niche_details")
-      .select("*");
-      
+    // Get niche details
+    const { data: nicheDetailsData, error: detailsError } = await supabase
+      .from('niche_details')
+      .select('niche_id, content');
+    
     if (detailsError) {
       throw detailsError;
     }
     
-    // Check if we have niches in the database
-    const niches = nichesData.length > 0 
-      ? nichesData.map(niche => niche.name) 
-      : defaultNiches;
+    // Create a map of niche IDs to details
+    const nicheDetailsMap = {};
     
-    // Convert array of niche details to a record for easier access
-    const nicheDetails = nicheDetailsRecords.reduce((acc, detail) => {
-      // Find the corresponding niche for this detail
-      const niche = nichesData.find(n => n.id === detail.niche_id);
-      
-      if (niche) {
-        acc[niche.name] = {
-          name: niche.name,
-          description: niche.description,
-          example: detail.content
-        };
+    nicheDetailsData?.forEach(detail => {
+      if (detail.niche_id) {
+        nicheDetailsMap[detail.niche_id] = detail.content;
       }
-      return acc;
-    }, {});
+    });
+    
+    // Create an array of niche names and a map of name to details
+    const niches = nichesData?.map(niche => niche.name) || [];
+    const nicheDetails = {};
+    
+    nichesData?.forEach(niche => {
+      nicheDetails[niche.name] = {
+        name: niche.name,
+        description: niche.description,
+        example: nicheDetailsMap[niche.id] || null,
+        image_url: niche.image_url
+      };
+    });
 
     return new Response(
       JSON.stringify({ 
-        niches: niches,
+        niches,
         nicheDetails
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error fetching niches:", error);
+    console.error("Error getting niches:", error);
     
-    // Return the default niches list if there's an error
     return new Response(
       JSON.stringify({ 
-        niches: defaultNiches,
-        nicheDetails: {},
-        error: error.message
+        error: error.message || "An error occurred while fetching niches",
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      }
     );
   }
 });

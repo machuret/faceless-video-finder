@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
 import { FacelessIdeaInfo } from "@/services/facelessIdeas";
-import { Sparkles, Image as ImageIcon } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -31,7 +32,6 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
 }) => {
   const [enhancing, setEnhancing] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleEnhanceClick = async () => {
     if (!formData.id || !formData.label) {
@@ -53,6 +53,7 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
 
     try {
       setUploading(true);
+      toast.info("Uploading image...");
 
       const file = e.target.files[0];
       const fileExt = file.name.split('.').pop();
@@ -85,6 +86,43 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!formData.image_url) return;
+
+    try {
+      setUploading(true);
+      
+      // Extract file name from URL
+      const fileName = formData.image_url.split('/').pop();
+      
+      if (fileName) {
+        // Delete file from storage
+        const { error } = await supabase.storage
+          .from('faceless-images')
+          .remove([fileName]);
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+      }
+      
+      // Update form data
+      onInputChange({
+        target: {
+          name: 'image_url',
+          value: ''
+        }
+      } as React.ChangeEvent<HTMLInputElement>);
+      
+      toast.success("Image removed successfully");
+    } catch (error) {
+      console.error("Error removing image:", error);
+      toast.error(`Failed to remove image: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
@@ -131,49 +169,12 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
           <label htmlFor="image" className="block text-sm font-medium">
             Featured Image
           </label>
-          <div className="flex flex-col space-y-3">
-            {formData.image_url && (
-              <div className="relative w-full max-w-xs">
-                <img 
-                  src={formData.image_url} 
-                  alt={formData.label}
-                  className="rounded-md object-cover h-48 w-full" 
-                />
-              </div>
-            )}
-            <div className="flex items-center space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="flex items-center gap-1"
-              >
-                <ImageIcon className="h-4 w-4" />
-                {uploading ? "Uploading..." : formData.image_url ? "Change Image" : "Upload Image"}
-              </Button>
-              {formData.image_url && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => onInputChange({
-                    target: { name: 'image_url', value: '' }
-                  } as React.ChangeEvent<HTMLInputElement>)}
-                >
-                  Remove
-                </Button>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </div>
-          </div>
+          <ImageUploader
+            imageUrl={formData.image_url}
+            uploading={uploading}
+            onUpload={handleImageUpload}
+            onDelete={handleDeleteImage}
+          />
         </div>
         
         <div className="space-y-2">
@@ -237,13 +238,13 @@ export const FacelessIdeaForm: React.FC<FacelessIdeaFormProps> = ({
           type="button" 
           variant="outline" 
           onClick={onCancel}
-          disabled={submitting}
+          disabled={submitting || uploading}
         >
           Cancel
         </Button>
         <Button 
           type="submit" 
-          disabled={submitting}
+          disabled={submitting || uploading}
         >
           {submitting ? "Saving..." : selectedIdea ? "Update" : "Create"}
         </Button>

@@ -10,6 +10,7 @@ interface ChannelTypeHeaderProps {
     description?: string;
     production?: string;
     example?: string;
+    image_url?: string | null;
   };
 }
 
@@ -26,8 +27,24 @@ const ChannelTypeHeader = ({ typeInfo }: ChannelTypeHeaderProps) => {
         <ArrowLeft className="mr-2 h-4 w-4" /> Back
       </Button>
       
-      <Card className="p-6 mb-6">
-        <h1 className="font-crimson text-2xl font-bold mb-2">{typeInfo.label}</h1>
+      <Card className="p-6 mb-6 overflow-hidden">
+        {typeInfo.image_url && (
+          <div className="w-full h-64 -m-6 mb-6 relative">
+            <img 
+              src={typeInfo.image_url} 
+              alt={typeInfo.label}
+              className="w-full h-full object-cover" 
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
+              <h1 className="font-crimson text-3xl font-bold text-white">{typeInfo.label}</h1>
+            </div>
+          </div>
+        )}
+        
+        {!typeInfo.image_url && (
+          <h1 className="font-crimson text-2xl font-bold mb-2">{typeInfo.label}</h1>
+        )}
+        
         <div 
           className="font-lato text-gray-700 mb-6 prose max-w-none"
           dangerouslySetInnerHTML={{ __html: typeInfo.description || '' }}
