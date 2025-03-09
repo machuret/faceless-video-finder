@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useMassScreenshotUpdate } from "./hooks/useMassScreenshotUpdate";
@@ -14,7 +14,8 @@ const MassScreenshotUpdater = () => {
     totalChannels,
     processedChannels,
     errors,
-    startMassUpdate
+    startMassUpdate,
+    cancelUpdate
   } = useMassScreenshotUpdate();
 
   return (
@@ -53,20 +54,32 @@ const MassScreenshotUpdater = () => {
         </div>
       )}
       
-      <Button 
-        onClick={startMassUpdate} 
-        disabled={isProcessing}
-        className="w-full"
-      >
-        {isProcessing ? (
-          <>
-            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          "Update Missing Channel Screenshots"
+      <div className="flex gap-2">
+        <Button 
+          onClick={startMassUpdate} 
+          disabled={isProcessing}
+          className="flex-1"
+        >
+          {isProcessing ? (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            "Update Missing Screenshots"
+          )}
+        </Button>
+        
+        {isProcessing && (
+          <Button 
+            onClick={cancelUpdate} 
+            variant="destructive"
+            size="icon"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         )}
-      </Button>
+      </div>
     </Card>
   );
 };

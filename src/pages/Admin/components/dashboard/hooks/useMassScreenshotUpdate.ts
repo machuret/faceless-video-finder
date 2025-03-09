@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -14,6 +14,10 @@ export const useMassScreenshotUpdate = () => {
   const [totalChannels, setTotalChannels] = useState(0);
   const [processedChannels, setProcessedChannels] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
+  
+  // Use refs to track state that shouldn't trigger re-renders
+  const processingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchChannelsWithoutScreenshots = async () => {
     try {
@@ -68,10 +72,21 @@ export const useMassScreenshotUpdate = () => {
   };
 
   const startMassUpdate = async () => {
+    // Prevent multiple simultaneous runs
+    if (processingRef.current) {
+      toast.info("Update already in progress");
+      return;
+    }
+    
     setIsProcessing(true);
+    processingRef.current = true;
     setProgress(0);
     setProcessedChannels(0);
     setErrors([]);
+    
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
     
     try {
       const { channels, count } = await fetchChannelsWithoutScreenshots();
@@ -80,6 +95,7 @@ export const useMassScreenshotUpdate = () => {
       if (channels.length === 0) {
         toast.info("No channels found without screenshots");
         setIsProcessing(false);
+        processingRef.current = false;
         return;
       }
 
@@ -91,10 +107,19 @@ export const useMassScreenshotUpdate = () => {
       const newErrors: string[] = [];
       
       for (let i = 0; i < channels.length; i += batchSize) {
+        // Check if operation was cancelled
+        if (signal.aborted) {
+          console.log("Screenshot update process was cancelled");
+          break;
+        }
+        
         const batch = channels.slice(i, i + batchSize);
         
         // Process this batch sequentially to avoid overwhelming the service
         for (const channel of batch) {
+          // Check if operation was cancelled
+          if (signal.aborted) break;
+          
           try {
             console.log(`Processing channel ${channel.id}: ${channel.channel_title || channel.channel_url}`);
             
@@ -120,7 +145,9 @@ export const useMassScreenshotUpdate = () => {
             }
             
             // Small delay between each channel to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            if (!signal.aborted) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
           } catch (error) {
             // Catch any unexpected errors at the channel level to prevent the entire process from failing
             console.error(`Unexpected error processing channel ${channel.id}:`, error);
@@ -133,28 +160,44 @@ export const useMassScreenshotUpdate = () => {
           }
         }
         
-        // Longer delay between batches to allow system resources to recover
-        if (i + batchSize < channels.length) {
-          await new Promise(resolve => setTimeout(resolve, 5000));
-        }
-        
         // Update errors state
         setErrors(newErrors);
+        
+        // Longer delay between batches to allow system resources to recover
+        if (i + batchSize < channels.length && !signal.aborted) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
       }
       
-      // Show final results
-      if (results.failed > 0) {
-        toast.warning(
-          `Screenshot update completed: ${results.success} successful, ${results.failed} failed. Check console for details.`
-        );
-      } else {
-        toast.success(`Successfully updated screenshots for all ${results.success} channels!`);
+      // Show final results only if not aborted
+      if (!signal.aborted) {
+        if (results.failed > 0) {
+          toast.warning(
+            `Screenshot update completed: ${results.success} successful, ${results.failed} failed. Check errors for details.`
+          );
+        } else {
+          toast.success(`Successfully updated screenshots for all ${results.success} channels!`);
+        }
       }
     } catch (error) {
       console.error("Error in mass screenshot update:", error);
       toast.error("Screenshot update process encountered an error");
     } finally {
+      // Only if this specific process is still the active one
+      if (processingRef.current) {
+        setIsProcessing(false);
+        processingRef.current = false;
+        abortControllerRef.current = null;
+      }
+    }
+  };
+
+  const cancelUpdate = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      toast.info("Update process cancelled");
       setIsProcessing(false);
+      processingRef.current = false;
     }
   };
 
@@ -164,6 +207,7 @@ export const useMassScreenshotUpdate = () => {
     totalChannels,
     processedChannels,
     errors,
-    startMassUpdate
+    startMassUpdate,
+    cancelUpdate
   };
 };

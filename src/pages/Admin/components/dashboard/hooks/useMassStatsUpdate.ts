@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -16,6 +16,10 @@ export const useMassStatsUpdate = () => {
   const [successCount, setSuccessCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [currentChannel, setCurrentChannel] = useState<string | null>(null);
+  
+  // Use refs to track state that shouldn't trigger re-renders
+  const processingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchChannelsForStatsUpdate = async () => {
     try {
@@ -113,12 +117,23 @@ export const useMassStatsUpdate = () => {
   };
 
   const startMassUpdate = async () => {
+    // Prevent multiple simultaneous runs
+    if (processingRef.current) {
+      toast.info("Update already in progress");
+      return;
+    }
+    
     setIsProcessing(true);
+    processingRef.current = true;
     setProgress(0);
     setProcessedChannels(0);
     setSuccessCount(0);
     setErrorCount(0);
     setCurrentChannel(null);
+    
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
     
     try {
       const { channels, count } = await fetchChannelsForStatsUpdate();
@@ -127,6 +142,7 @@ export const useMassStatsUpdate = () => {
       if (channels.length === 0) {
         toast.info("No channels found missing stats");
         setIsProcessing(false);
+        processingRef.current = false;
         return;
       }
 
@@ -134,6 +150,12 @@ export const useMassStatsUpdate = () => {
       
       // Process channels one at a time to avoid API rate limits
       for (let i = 0; i < channels.length; i++) {
+        // Check if operation was cancelled
+        if (signal.aborted) {
+          console.log("Stats update process was cancelled");
+          break;
+        }
+        
         const channel = channels[i];
         
         const result = await updateStatsForChannel(
@@ -153,25 +175,47 @@ export const useMassStatsUpdate = () => {
         setProcessedChannels(i + 1);
         setProgress(Math.floor(((i + 1) / channels.length) * 100));
         
+        // Show periodic progress updates
+        if ((i + 1) % 5 === 0 || i === channels.length - 1) {
+          toast.info(`Progress: ${i + 1}/${channels.length} channels processed`);
+        }
+        
         // Delay between each channel to avoid API rate limits
-        if (i + 1 < channels.length) {
+        if (i + 1 < channels.length && !signal.aborted) {
           await new Promise(resolve => setTimeout(resolve, 3000));
         }
       }
       
-      // Show final results
-      if (errorCount > 0) {
-        toast.warning(
-          `Stats update completed: ${successCount} successful, ${errorCount} failed. Check console for details.`
-        );
-      } else {
-        toast.success(`Successfully updated stats for all ${successCount} channels!`);
+      // Show final results only if not aborted
+      if (!signal.aborted) {
+        if (errorCount > 0) {
+          toast.warning(
+            `Stats update completed: ${successCount} successful, ${errorCount} failed. Check console for details.`
+          );
+        } else {
+          toast.success(`Successfully updated stats for all ${successCount} channels!`);
+        }
       }
     } catch (error) {
       console.error("Error in mass stats update:", error);
       toast.error("Stats update process encountered an error");
     } finally {
+      // Only if this specific process is still the active one
+      if (processingRef.current) {
+        setIsProcessing(false);
+        processingRef.current = false;
+        setCurrentChannel(null);
+        abortControllerRef.current = null;
+      }
+    }
+  };
+
+  const cancelUpdate = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      toast.info("Update process cancelled");
       setIsProcessing(false);
+      processingRef.current = false;
       setCurrentChannel(null);
     }
   };
@@ -184,6 +228,7 @@ export const useMassStatsUpdate = () => {
     successCount,
     errorCount,
     currentChannel,
-    startMassUpdate
+    startMassUpdate,
+    cancelUpdate
   };
 };
