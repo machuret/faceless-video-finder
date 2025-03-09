@@ -9,6 +9,7 @@ import PageFooter from "@/components/home/PageFooter";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Channel, ChannelMetadata } from "@/types/youtube";
+import ChannelCard from "@/components/home/ChannelCard";
 
 interface Niche {
   id: string;
