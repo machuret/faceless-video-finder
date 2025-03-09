@@ -30,7 +30,7 @@ export const useImageHandling = (
       console.log("Bucket:", 'niche-images');
 
       // Upload file to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      let { data: uploadData, error: uploadError } = await supabase.storage
         .from('niche-images')
         .upload(fileName, file, {
           cacheControl: '3600',
