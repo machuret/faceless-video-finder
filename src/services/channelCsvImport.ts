@@ -2,6 +2,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Papa from 'papaparse';
+import { ChannelCategory, DatabaseChannelType } from "@/types/youtube";
+import { channelCategories } from "@/components/youtube/channel-list/constants/categories";
 
 interface ChannelCsvRow {
   channel_name: string;
@@ -89,17 +91,34 @@ const validateRow = (row: ChannelCsvRow, rowIndex: number): { valid: boolean; er
 };
 
 /**
+ * Validate and convert a string to a valid ChannelCategory
+ * Defaults to "other" if not valid
+ */
+const validateChannelCategory = (category: string): ChannelCategory => {
+  const normalizedCategory = category.toLowerCase().trim();
+  return channelCategories.includes(normalizedCategory as ChannelCategory) 
+    ? normalizedCategory as ChannelCategory 
+    : "other";
+};
+
+/**
  * Convert CSV row to database format
  */
 const rowToChannelData = (row: ChannelCsvRow) => {
+  // Default to "other" for channel category, or validate if niche can be mapped to a category
+  const channelCategory: ChannelCategory = validateChannelCategory(row.niche);
+  
+  // Use proper types for database fields
+  const channelType: DatabaseChannelType = "creator";
+  
   return {
     channel_title: row.channel_name.trim(),
     channel_url: normalizeChannelUrl(row.channel_url),
     start_date: row.starting_date || null,
     niche: row.niche?.trim() || null,
     video_id: `csv-import-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-    channel_type: "creator",
-    channel_category: "entertainment",
+    channel_type: channelType,
+    channel_category: channelCategory,
     metadata: {
       ui_channel_type: "creator",
       is_manual_entry: true,
