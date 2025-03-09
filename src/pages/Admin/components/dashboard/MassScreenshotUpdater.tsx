@@ -8,6 +8,7 @@ import { useMassScreenshotUpdate } from "./hooks/useMassScreenshotUpdate";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const MassScreenshotUpdater = () => {
+  // Use the refactored hook
   const {
     isProcessing,
     progress,
