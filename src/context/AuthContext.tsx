@@ -49,6 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
+      console.log("Checking admin status for user:", userId);
       const { data, error } = await supabase.rpc('check_is_admin', {
         user_id: userId
       });
@@ -58,6 +59,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsAdmin(false);
         return false;
       }
+      
+      console.log("Admin status check result:", data);
       
       // Cache the result
       adminCache.set(userId, !!data);
@@ -96,6 +99,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         if (!isMounted) return;
         
+        setLoading(true);
+        
         // Check current session
         const { data: sessionData, error } = await supabase.auth.getSession();
         
@@ -109,9 +114,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (sessionData?.session?.user) {
           if (isMounted) {
+            console.log("Session found, setting user and checking admin status");
             setUser(sessionData.session.user);
             await checkAdminStatus(sessionData.session.user.id);
           }
+        } else {
+          console.log("No active session found");
         }
         
         if (isMounted) {
@@ -139,6 +147,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           if (session?.user) {
             if (isMounted) {
+              console.log("User signed in, setting user and checking admin status");
               setUser(session.user);
               await checkAdminStatus(session.user.id);
             }
@@ -147,6 +156,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (isMounted) setLoading(false);
         } else if (event === 'SIGNED_OUT') {
           if (isMounted) {
+            console.log("User signed out, clearing user and admin status");
             setUser(null);
             setIsAdmin(false);
           }

@@ -48,14 +48,17 @@ export const ProtectedRoute = ({
 
   // Redirect to login if not authenticated
   if (!user) {
+    console.log("User not authenticated, redirecting to login");
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
   
   // Redirect to home if user is not an admin but the route requires admin
   if (requireAdmin && !isAdmin) {
+    console.log("User is not admin, redirecting to home");
     return <Navigate to="/" replace />;
   }
   
   // Return children if authenticated and authorized
+  console.log("User is authenticated and authorized, rendering protected content");
   return <>{children}</>;
 };

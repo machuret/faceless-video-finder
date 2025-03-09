@@ -23,9 +23,6 @@ export default function AdminLogin() {
   const location = useLocation();
   const { user, isAdmin } = useAuth();
   
-  // Get the intended destination from the URL or default to dashboard
-  const from = location.state?.from?.pathname || "/admin/dashboard";
-
   // Redirect if already logged in as admin
   useEffect(() => {
     if (user && isAdmin) {
@@ -62,6 +59,9 @@ export default function AdminLogin() {
       setIsLoading(true);
       setErrorMessage("");
       
+      // Log the attempt for debugging
+      console.log("Attempting login with email:", email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -73,6 +73,8 @@ export default function AdminLogin() {
       }
       
       if (data?.user) {
+        console.log("User logged in successfully, checking admin status");
+        
         // Check if user is an admin
         const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
           user_id: data.user.id
@@ -83,10 +85,13 @@ export default function AdminLogin() {
           throw adminError;
         }
 
+        console.log("Admin check result:", adminData);
+
         if (adminData) {
           console.log("User is admin, redirecting to dashboard");
           toast.success("Logged in successfully");
-          navigate("/admin/dashboard", { replace: true });
+          // Force a complete page reload to ensure all context is refreshed
+          window.location.href = "/admin/dashboard";
         } else {
           console.log("User is not an admin, signing out");
           toast.error("You don't have admin access");
@@ -99,9 +104,6 @@ export default function AdminLogin() {
       console.error("Login process failed:", error);
       setErrorMessage(error.message || "An unexpected error occurred");
       toast.error(error.message || "Login failed");
-      setIsLoading(false);
-    } finally {
-      // Ensure loading state is always reset
       setIsLoading(false);
     }
   };
