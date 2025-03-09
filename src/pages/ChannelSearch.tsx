@@ -15,7 +15,7 @@ const ChannelSearch = () => {
   const searchQuery = searchParams.get('search') || '';
   
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const channelsPerPage = 18;
@@ -35,7 +35,12 @@ const ChannelSearch = () => {
         console.log("Searching for:", searchQuery);
         const results = await searchChannel(searchQuery);
         console.log("Search results:", results);
-        setChannels(results);
+        
+        if (results && Array.isArray(results)) {
+          setChannels(results);
+        } else {
+          throw new Error("Invalid search results format");
+        }
       } catch (err) {
         console.error('Search error:', err);
         setError('Failed to perform search. Please try again.');
@@ -50,11 +55,19 @@ const ChannelSearch = () => {
 
   const handleSearch = (query: string) => {
     setSearchParams({ search: query });
+    setCurrentPage(1); // Reset to first page on new search
   };
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Get paginated channels
+  const getPaginatedChannels = () => {
+    const startIndex = (currentPage - 1) * channelsPerPage;
+    const endIndex = startIndex + channelsPerPage;
+    return channels.slice(startIndex, endIndex);
   };
 
   return (
@@ -63,7 +76,7 @@ const ChannelSearch = () => {
       
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">
-          {loading ? 'Searching...' : `Search Results: ${searchQuery}`}
+          {loading ? 'Searching...' : searchQuery ? `Search Results: ${searchQuery}` : 'Search Channels'}
         </h1>
         
         <div className="mb-6">
@@ -86,7 +99,7 @@ const ChannelSearch = () => {
               </div>
             )}
             
-            {!error && channels.length === 0 && (
+            {!error && channels.length === 0 && searchQuery && (
               <div className="bg-gray-50 border border-gray-200 text-gray-700 px-4 py-8 rounded mb-6 text-center">
                 <p className="text-lg font-semibold">No channels found for "{searchQuery}"</p>
                 <p className="mt-2">Try using different keywords or check the spelling.</p>
@@ -95,7 +108,7 @@ const ChannelSearch = () => {
             
             {channels.length > 0 && (
               <ChannelSection 
-                channels={channels}
+                channels={getPaginatedChannels()}
                 featuredChannels={[]}
                 loading={false}
                 error={null}

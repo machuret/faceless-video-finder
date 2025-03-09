@@ -79,17 +79,22 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
       }
     }
     
-    const { data, error } = await query;
+    const { data, error } = await query.limit(100);
 
     if (error) {
       console.error("Search error:", error);
-      throw error;
+      throw new Error(`Database search error: ${error.message}`);
     }
 
     console.log(`Search for "${searchTerm}" returned ${data?.length || 0} results`);
     
+    if (!data || !Array.isArray(data)) {
+      console.error("Invalid data format returned from query:", data);
+      return [];
+    }
+    
     // Convert the data to the correct Channel type
-    const channels: Channel[] = data?.map(item => {
+    const channels: Channel[] = data.map(item => {
       // Ensure metadata is properly typed
       let typedMetadata: ChannelMetadata | undefined;
       if (item.metadata) {
@@ -101,8 +106,10 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
             : item.metadata as unknown as ChannelMetadata;
         } catch (e) {
           console.error("Error parsing metadata:", e);
-          typedMetadata = { }; // Fallback to empty object
+          typedMetadata = {}; // Fallback to empty object
         }
+      } else {
+        typedMetadata = {};
       }
       
       return {
@@ -111,15 +118,15 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
         // Ensure numeric fields are numbers
         total_subscribers: typeof item.total_subscribers === 'string' 
           ? parseInt(item.total_subscribers) 
-          : item.total_subscribers,
+          : item.total_subscribers || 0,
         total_views: typeof item.total_views === 'string' 
           ? parseInt(item.total_views) 
-          : item.total_views,
+          : item.total_views || 0,
         video_count: typeof item.video_count === 'string' 
           ? parseInt(item.video_count) 
-          : item.video_count,
+          : item.video_count || 0,
       } as Channel;
-    }) || [];
+    });
     
     return channels;
   } catch (err) {

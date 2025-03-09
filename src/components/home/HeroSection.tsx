@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import MainNavbar from "@/components/MainNavbar";
@@ -12,7 +12,7 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   // Fetch the total number of channels
-  useState(() => {
+  useEffect(() => {
     const fetchChannelCount = async () => {
       try {
         const { count, error } = await supabase
@@ -27,7 +27,7 @@ const HeroSection = () => {
     };
     
     fetchChannelCount();
-  });
+  }, []);
 
   const handleSearch = (query: string) => {
     const trimmedQuery = query.trim();
