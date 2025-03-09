@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -18,12 +18,17 @@ interface NicheSelectorProps {
   onChange: (value: string) => void;
 }
 
+/**
+ * Fetches niches with optimized memory usage and error handling
+ */
 const fetchNichesForSelector = async (): Promise<string[]> => {
   try {
-    // First try the edge function with timeout
+    console.log("Fetching niches for selector");
+    
+    // First try the edge function with proper timeout
     const fetchPromise = supabase.functions.invoke("get-niches");
     const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error("Edge function timeout")), 5000)
+      setTimeout(() => reject(new Error("Edge function timeout")), 4000)
     );
     
     try {
@@ -48,7 +53,7 @@ const fetchNichesForSelector = async (): Promise<string[]> => {
       .order('name');
       
     const queryTimeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error("Database query timeout")), 5000)
+      setTimeout(() => reject(new Error("Database query timeout")), 4000)
     );
     
     const { data: nichesData, error: nichesError } = await Promise.race([queryPromise, queryTimeoutPromise]) as any;
