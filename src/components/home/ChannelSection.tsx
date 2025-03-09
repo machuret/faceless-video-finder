@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ChannelGrid from "./ChannelGrid";
 import ChannelPagination from "./ChannelPagination";
 import { ChannelCategory } from "@/types/youtube";
@@ -36,22 +36,26 @@ const ChannelSection = ({
     setSortAlphabetically(false);
   };
 
-  // Apply sorting if needed
-  const sortedChannels = [...channels].sort((a, b) => {
-    if (sortAlphabetically) {
-      return (a.channel_title || "").localeCompare(b.channel_title || "");
-    }
-    return 0; // Keep original order if not sorting alphabetically
-  });
+  // Apply sorting if needed - use useMemo to avoid unnecessary re-sorting
+  const sortedChannels = useMemo(() => {
+    if (!sortAlphabetically) return channels;
+    
+    return [...channels].sort((a, b) => 
+      (a.channel_title || "").localeCompare(b.channel_title || "")
+    );
+  }, [channels, sortAlphabetically]);
 
   // Toggle alphabetical sorting
   const toggleAlphabeticalSort = () => {
-    setSortAlphabetically(!sortAlphabetically);
+    setSortAlphabetically(prev => !prev);
   };
+
+  // Only show featured channels if they exist and showFeatured is true
+  const shouldShowFeatured = featuredChannels.length > 0 && showFeatured && !loading;
 
   return (
     <div className="container mx-auto px-4 py-16">
-      {featuredChannels.length > 0 && showFeatured && (
+      {shouldShowFeatured && (
         <div className="mb-16">
           <h2 className="font-crimson text-3xl font-bold text-gray-800 mb-6">
             Featured Channels
@@ -90,12 +94,14 @@ const ChannelSection = ({
         isFeatured={false}
       />
       
-      <ChannelPagination 
-        currentPage={currentPage}
-        totalChannels={totalChannels}
-        channelsPerPage={channelsPerPage}
-        setCurrentPage={setCurrentPage}
-      />
+      {!loading && totalChannels > channelsPerPage && (
+        <ChannelPagination 
+          currentPage={currentPage}
+          totalChannels={totalChannels}
+          channelsPerPage={channelsPerPage}
+          setCurrentPage={setCurrentPage}
+        />
+      )}
     </div>
   );
 };

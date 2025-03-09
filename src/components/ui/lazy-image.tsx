@@ -22,27 +22,46 @@ const LazyImage = ({
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => {
-      setImgSrc(src);
-      setIsLoaded(true);
-      setError(false);
-    };
-    img.onerror = () => {
+    // Reset states when src changes
+    setIsLoaded(false);
+    setError(false);
+    
+    if (!src) {
       setError(true);
-      if (fallback) {
-        setImgSrc(fallback);
-        setIsLoaded(true);
+      setImgSrc(fallback);
+      setIsLoaded(true);
+      return;
+    }
+
+    // Use browser's IntersectionObserver to load image only when in viewport
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+          setImgSrc(src);
+          setIsLoaded(true);
+          setError(false);
+        };
+        img.onerror = () => {
+          setError(true);
+          if (fallback) {
+            setImgSrc(fallback);
+            setIsLoaded(true);
+          }
+          if (onError) {
+            onError();
+          }
+        };
+        observer.disconnect();
       }
-      if (onError) {
-        onError();
-      }
-    };
+    }, { rootMargin: '200px' }); // Load images when they're 200px from viewport
+
+    const container = document.createElement('div');
+    observer.observe(container);
 
     return () => {
-      img.onload = null;
-      img.onerror = null;
+      observer.disconnect();
     };
   }, [src, fallback, onError]);
 
@@ -50,7 +69,7 @@ const LazyImage = ({
     <div className={cn('relative', className)}>
       {!isLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-md">
-          <div className="w-8 h-8 border-t-2 border-b-2 border-primary rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-t-2 border-b-2 border-primary rounded-full animate-spin"></div>
         </div>
       )}
       {imgSrc && (
@@ -70,6 +89,7 @@ const LazyImage = ({
               onError();
             }
           }}
+          loading="lazy"
         />
       )}
     </div>

@@ -4,6 +4,7 @@ import ChannelCard from "./ChannelCard";
 import FeaturedVideos from "./FeaturedVideos";
 import LoadingState from "./LoadingState";
 import EmptyState from "./EmptyState";
+import React, { useMemo } from "react";
 
 interface ChannelGridProps {
   channels: Channel[];
@@ -12,22 +13,25 @@ interface ChannelGridProps {
   isFeatured?: boolean;
 }
 
-const ChannelGrid = ({ channels, loading, resetFilters, isFeatured = false }: ChannelGridProps) => {
+const ChannelGrid = React.memo(({ channels, loading, resetFilters, isFeatured = false }: ChannelGridProps) => {
+  // Early return for loading state
   if (loading) {
     return <LoadingState />;
   }
 
+  // Early return for empty state
   if (channels.length === 0) {
     return <EmptyState resetFilters={resetFilters} isFeatured={isFeatured} />;
   }
 
-  // Get all videos from all channels
-  const allVideos = channels
-    .flatMap(channel => channel.videoStats || [])
-    .filter((video): video is VideoStats => !!video)
-    .sort((a, b) => (b.views || 0) - (a.views || 0)); // Sort by views, most viewed first
-
-  console.log('ChannelGrid rendering with channels:', channels.map(c => c.channel_title));
+  // Get all videos from all channels - only compute when channels change
+  const allVideos = useMemo(() => {
+    return channels
+      .flatMap(channel => channel.videoStats || [])
+      .filter((video): video is VideoStats => !!video)
+      .sort((a, b) => (b.views || 0) - (a.views || 0)) // Sort by views, most viewed first
+      .slice(0, 10); // Limit to top 10 videos for performance
+  }, [channels]);
 
   return (
     <div>
@@ -43,9 +47,14 @@ const ChannelGrid = ({ channels, loading, resetFilters, isFeatured = false }: Ch
       </div>
 
       {/* Featured Videos Section */}
-      <FeaturedVideos videos={allVideos} isFeatured={isFeatured} />
+      {allVideos.length > 0 && (
+        <FeaturedVideos videos={allVideos} isFeatured={isFeatured} />
+      )}
     </div>
   );
-};
+});
+
+// Add display name for debugging
+ChannelGrid.displayName = "ChannelGrid";
 
 export default ChannelGrid;

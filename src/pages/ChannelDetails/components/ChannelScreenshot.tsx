@@ -1,7 +1,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import LazyImage from "@/components/ui/lazy-image";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 interface ChannelScreenshotProps {
   screenshotUrl: string;
@@ -11,13 +11,17 @@ interface ChannelScreenshotProps {
 const ChannelScreenshot = ({ screenshotUrl, channelTitle }: ChannelScreenshotProps) => {
   const [imageError, setImageError] = useState(false);
   
-  if (!screenshotUrl || imageError) return null;
+  // Clean up URL once, not on every render
+  const cleanedUrl = useMemo(() => {
+    if (!screenshotUrl) return '';
+    
+    return screenshotUrl
+      .replace(/\?disableRedirect=true/i, '')
+      .replace(/\?token=[^&]+/i, '')
+      .replace(/(\?|&)_=\d+/g, ''); // Remove cache busting parameters
+  }, [screenshotUrl]);
   
-  // Clean up URL if it's from Apify - remove the disableRedirect parameter if present
-  // or other common query parameters that might cause issues
-  const cleanedUrl = screenshotUrl
-    .replace(/\?disableRedirect=true/i, '')
-    .replace(/\?token=[^&]+/i, '');
+  if (!screenshotUrl || imageError) return null;
   
   return (
     <div className="mb-6">
@@ -29,6 +33,7 @@ const ChannelScreenshot = ({ screenshotUrl, channelTitle }: ChannelScreenshotPro
               alt={`${channelTitle} screenshot`}
               className="w-full h-auto rounded-md"
               onError={() => setImageError(true)}
+              fallback="/placeholder.svg"
             />
           </div>
         </CardContent>

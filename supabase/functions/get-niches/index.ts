@@ -14,20 +14,27 @@ serve(async (req) => {
     console.log("get-niches function called");
     const supabase = supabaseClient(req);
     
-    // Get all niches from the database with a longer timeout
+    // Use a cache-control header for better caching
+    const responseHeaders = {
+      ...corsHeaders, 
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=300" // Cache for 5 minutes
+    };
+    
+    // Get all niches from the database with a shorter timeout (5 seconds)
     const { data: nichesData, error: nichesError } = await Promise.race([
       supabase
         .from('niches')
         .select('id, name, description, image_url')
         .order('name'),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Niches query timeout")), 10000)
+        setTimeout(() => reject(new Error("Niches query timeout")), 5000)
       )
     ]) as any;
     
     if (nichesError) {
       console.error("Error fetching niches:", nichesError);
-      // Fall back to default niches array if database query fails
+      // Return default niches with error info
       return new Response(
         JSON.stringify({ 
           niches: defaultNiches,
@@ -35,7 +42,7 @@ serve(async (req) => {
           source: "default",
           error: nichesError.message
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: responseHeaders }
       );
     }
     
@@ -48,31 +55,38 @@ serve(async (req) => {
           source: "default",
           message: "No niches found in database"
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: responseHeaders }
       );
     }
     
     console.log(`Found ${nichesData.length} niches in database`);
     
-    // Get niche details with a timeout
-    const { data: nicheDetailsData, error: detailsError } = await Promise.race([
-      supabase
-        .from('niche_details')
-        .select('niche_id, content'),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Niche details query timeout")), 10000)
-      )
-    ]) as any;
-    
-    if (detailsError) {
-      console.error("Error fetching niche details:", detailsError);
-      // Continue with niches but without details
+    // Get niche details with a shorter timeout (3 seconds)
+    let nicheDetailsData = [];
+    try {
+      const { data: details, error: detailsError } = await Promise.race([
+        supabase
+          .from('niche_details')
+          .select('niche_id, content'),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Niche details query timeout")), 3000)
+        )
+      ]) as any;
+      
+      if (!detailsError && details) {
+        nicheDetailsData = details;
+      } else {
+        console.warn("Error fetching niche details:", detailsError);
+      }
+    } catch (detailsError) {
+      console.warn("Failed to fetch niche details:", detailsError);
+      // Continue without details
     }
     
     // Create a map of niche IDs to details
     const nicheDetailsMap = {};
     
-    if (nicheDetailsData) {
+    if (nicheDetailsData.length > 0) {
       nicheDetailsData.forEach(detail => {
         if (detail.niche_id) {
           nicheDetailsMap[detail.niche_id] = detail.content;
@@ -102,12 +116,12 @@ serve(async (req) => {
         source: "database",
         count: niches.length
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: responseHeaders }
     );
   } catch (error) {
     console.error("Exception getting niches:", error);
     
-    // Fall back to default niches if there's an exception
+    // Return default niches with error info and cache for less time
     return new Response(
       JSON.stringify({ 
         niches: defaultNiches,
@@ -117,7 +131,11 @@ serve(async (req) => {
       }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=60" // Cache errors for only 1 minute
+        } 
       }
     );
   }
