@@ -1,8 +1,8 @@
 
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Channel, VideoStats } from '@/types/youtube';
-import { toast } from "sonner";
+import { useMemo } from 'react';
 
 export function useHomePageData(page: number, channelsPerPage: number) {
   // Fetch regular channels with pagination

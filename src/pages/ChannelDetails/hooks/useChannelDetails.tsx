@@ -55,23 +55,23 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
       try {
         // Add timeout protection
         const fetchPromise = fetchChannelDetails(idToLoad);
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error("Channel details request timeout")), 10000)
         );
         
         // Fetch basic channel data and video stats with timeout protection
-        const { channel, videoStats } = await Promise.race([fetchPromise, timeoutPromise]);
+        const result = await Promise.race([fetchPromise, timeoutPromise]);
         
         if (isMounted) {
           setState(prev => ({
             ...prev,
-            channel,
-            videoStats,
+            channel: result.channel,
+            videoStats: result.videoStats,
             loading: false
           }));
           
           // After basic channel data is loaded, fetch top performing videos if possible
-          const youtubeChannelId = extractYouTubeChannelId(channel.channel_url);
+          const youtubeChannelId = extractYouTubeChannelId(result.channel.channel_url);
           if (youtubeChannelId) {
             loadTopPerformingVideos(youtubeChannelId);
           } else {
@@ -105,17 +105,17 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
       try {
         // Add timeout protection
         const fetchPromise = fetchTopPerformingVideos(youtubeChannelId);
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error("Top videos request timeout")), 8000)
         );
         
-        const { mostViewedVideo, mostEngagingVideo } = await Promise.race([fetchPromise, timeoutPromise]);
+        const result = await Promise.race([fetchPromise, timeoutPromise]);
         
         if (isMounted) {
           setState(prev => ({
             ...prev,
-            mostViewedVideo,
-            mostEngagingVideo,
+            mostViewedVideo: result.mostViewedVideo,
+            mostEngagingVideo: result.mostEngagingVideo,
             topVideosLoading: false,
             topVideosError: false
           }));

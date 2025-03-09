@@ -77,9 +77,11 @@ const NicheSelector = ({ value, onChange }: NicheSelectorProps) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     retry: 2,
-    onError: (err) => {
-      console.error("Failed to fetch niches:", err);
-      toast.error("Could not load niches. Using default list.");
+    meta: {
+      onError: (err: Error) => {
+        console.error("Failed to fetch niches:", err);
+        toast.error("Could not load niches. Using default list.");
+      }
     }
   });
   
