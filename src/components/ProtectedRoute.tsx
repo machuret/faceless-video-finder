@@ -12,35 +12,30 @@ export const ProtectedRoute = ({
   requireAdmin?: boolean;
 }) => {
   const { user, isAdmin, loading } = useAuth();
-  const [showLoader, setShowLoader] = useState(loading);
-  const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showLoader, setShowLoader] = useState(false);
 
+  // Use useEffect to handle the delayed loader display
   useEffect(() => {
-    // Clear any existing timer when loading state changes
-    if (loadingTimer) {
-      clearTimeout(loadingTimer);
-    }
-
-    // Only set timer if loading is true and showLoader is false
-    if (loading && !showLoader) {
-      const timer = setTimeout(() => setShowLoader(true), 300);
-      setLoadingTimer(timer);
-    }
-
-    // Reset showLoader when loading is complete
-    if (!loading) {
+    let timer: NodeJS.Timeout | null = null;
+    
+    if (loading) {
+      // Set a timeout to show the loader after a short delay
+      timer = setTimeout(() => {
+        setShowLoader(true);
+      }, 300);
+    } else {
       setShowLoader(false);
     }
-
-    // Cleanup
+    
+    // Cleanup function
     return () => {
-      if (loadingTimer) {
-        clearTimeout(loadingTimer);
+      if (timer) {
+        clearTimeout(timer);
       }
     };
-  }, [loading, showLoader, loadingTimer]);
+  }, [loading]);
   
-  // Show loading spinner only if actually waiting for auth
+  // Show loading spinner only if actually waiting for auth and showLoader is true
   if (loading && showLoader) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -50,13 +45,16 @@ export const ProtectedRoute = ({
     );
   }
 
+  // Redirect to login if not authenticated
   if (!user) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
   
+  // Redirect to home if user is not an admin but the route requires admin
   if (requireAdmin && !isAdmin) {
     return <Navigate to="/" replace />;
   }
   
+  // Return children if authenticated and authorized
   return <>{children}</>;
 };

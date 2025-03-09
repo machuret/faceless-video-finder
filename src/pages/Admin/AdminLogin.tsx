@@ -104,19 +104,20 @@ export default function AdminLogin() {
         if (adminData) {
           console.log("User is admin, redirecting to destination");
           toast.success("Logged in successfully");
-          navigate(from, { replace: true });
+          // Using window.location.href to force a full page reload and clear any stale states
+          window.location.href = from;
         } else {
           console.log("User is not an admin, signing out");
           toast.error("You don't have admin access");
           // Sign out non-admin users
           await supabase.auth.signOut();
+          setIsLoading(false);
         }
       }
     } catch (error: any) {
       console.error("Login process failed:", error);
       setErrorMessage(error.message || "An unexpected error occurred");
       toast.error(error.message || "Login failed");
-    } finally {
       setIsLoading(false);
     }
   };
