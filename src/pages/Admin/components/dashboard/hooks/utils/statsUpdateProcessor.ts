@@ -1,9 +1,8 @@
 
 import { toast } from "sonner";
-import { updateStatsForChannel, fetchChannelsForStatsUpdate, type ChannelForUpdate } from "./channelStatsFetcher";
-import { useProgressState, type ProgressState } from "./statsUpdateProgress";
+import { updateStatsForChannel, fetchChannelsForStatsUpdate } from "./channelStatsFetcher";
+import { useProgressState } from "./statsUpdateProgress";
 import { useRef, useEffect } from "react";
-import { calculateProgress } from "./progressUtils";
 
 export const useStatsUpdateProcessor = () => {
   const {
@@ -38,6 +37,7 @@ export const useStatsUpdateProcessor = () => {
       return;
     }
     
+    // Reset progress state
     updateProgress({
       isProcessing: true,
       progress: 0,
@@ -55,7 +55,10 @@ export const useStatsUpdateProcessor = () => {
     const signal = abortControllerRef.current.signal;
     
     try {
+      console.log("Starting mass stats update process");
       const { channels, count } = await fetchChannelsForStatsUpdate();
+      console.log(`Found ${count} channels to update`);
+      
       updateProgress({ totalChannels: count });
       
       if (channels.length === 0) {
@@ -67,8 +70,8 @@ export const useStatsUpdateProcessor = () => {
 
       toast.info(`Starting stats update for ${channels.length} channels with missing stats. This may take a while.`);
       
-      // Process channels in small batches to avoid timeouts
-      const batchSize = 1; // Process one at a time to avoid overwhelming the server
+      // Process channels sequentially with error handling for each
+      const batchSize = 1; // Process one at a time
       const newErrors: string[] = [];
 
       for (let i = 0; i < channels.length; i += batchSize) {
@@ -82,68 +85,56 @@ export const useStatsUpdateProcessor = () => {
         
         // Process this batch sequentially
         for (const channel of batch) {
-          // Check if operation was cancelled
+          // Check if operation was cancelled again
           if (signal.aborted) break;
           
+          const channelTitle = channel.channel_title || `Channel ${i+1}`;
+          console.log(`Processing channel ${i+1}/${channels.length}: ${channelTitle}`);
+          setCurrentChannel(channelTitle);
+          
           try {
-            const channelTitle = channel.channel_title || `Channel ${i+1}`;
-            setCurrentChannel(channelTitle);
-            
-            // Wrap the update in a try/catch to prevent the whole process from failing on a single channel error
-            let result;
-            try {
-              result = await updateStatsForChannel(
-                channel.id, 
-                channel.channel_url,
-                channelTitle
-              );
-            } catch (updateError) {
-              console.error(`Error processing channel ${channelTitle}:`, updateError);
-              result = { 
-                success: false, 
-                message: `Error processing ${channelTitle}: ${updateError instanceof Error ? updateError.message : String(updateError)}`
-              };
-            }
+            // Wrap the update in a try/catch to prevent the whole process from failing
+            const result = await updateStatsForChannel(
+              channel.id, 
+              channel.channel_url,
+              channelTitle
+            );
             
             if (result.success) {
               incrementSuccess();
+              console.log(`Successfully updated stats for ${channelTitle}`);
             } else {
               incrementError();
               newErrors.push(result.message);
-              console.warn(result.message);
+              console.warn(`Failed to update stats for ${channelTitle}: ${result.message}`);
               addError(result.message);
             }
-            
-            // Update processed count
-            const newProcessedCount = i + batch.indexOf(channel) + 1;
-            updateProcessedCount(newProcessedCount);
-            
-            // Show periodic progress updates (reduced frequency to avoid toast flooding)
-            if ((newProcessedCount % 10 === 0) || newProcessedCount === channels.length) {
-              toast.info(`Progress: ${newProcessedCount}/${channels.length} channels processed`);
-            }
-            
-            // Delay between each channel to avoid API rate limits
-            if (!signal.aborted && i + 1 < channels.length) {
-              await new Promise(resolve => setTimeout(resolve, 3000));
-            }
           } catch (error) {
-            // Catch any unexpected errors to prevent the entire process from failing
-            console.error(`Unexpected error processing channel:`, error);
+            // Catch any unexpected errors
+            console.error(`Exception when processing ${channelTitle}:`, error);
             incrementError();
-            const errorMessage = `Channel ${channel.channel_title || channel.id}: Unexpected error`;
+            const errorMessage = `Channel ${channelTitle}: ${error instanceof Error ? error.message : String(error)}`;
             newErrors.push(errorMessage);
             addError(errorMessage);
-            
-            // Still update progress
-            const newProcessedCount = i + batch.indexOf(channel) + 1;
-            updateProcessedCount(newProcessedCount);
           }
-        }
-        
-        // Longer delay between batches
-        if (i + batchSize < channels.length && !signal.aborted) {
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          
+          // Update processed count regardless of success or failure
+          const newProcessedCount = i + batch.indexOf(channel) + 1;
+          updateProcessedCount(newProcessedCount);
+          
+          // Calculate and update progress
+          const newProgress = Math.floor((newProcessedCount / channels.length) * 100);
+          updateProgress({ progress: newProgress });
+          
+          // Show periodic progress updates (reduced frequency to avoid toast flooding)
+          if ((newProcessedCount % 10 === 0) || newProcessedCount === channels.length) {
+            toast.info(`Progress: ${newProcessedCount}/${channels.length} channels processed`);
+          }
+          
+          // Delay between each channel to avoid API rate limits
+          if (!signal.aborted && i + batch.indexOf(channel) + 1 < channels.length) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
         }
       }
       
@@ -160,9 +151,8 @@ export const useStatsUpdateProcessor = () => {
     } catch (error) {
       console.error("Error in mass stats update:", error);
       toast.error("Stats update process encountered an error");
-      // Don't reset processing state here, let the finally block handle it
     } finally {
-      // Only if this specific process is still the active one
+      // Always clean up, even if there was an error
       if (processingRef.current) {
         updateProgress({ isProcessing: false });
         processingRef.current = false;

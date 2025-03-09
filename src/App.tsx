@@ -8,7 +8,6 @@ import { Navigate } from "react-router-dom";
 // Pages
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
-import AboutUs from "@/pages/AboutUs";
 import ContactUs from "@/pages/ContactUs";
 import HowItWorks from "@/pages/HowItWorks";
 import Training from "@/pages/Training";
@@ -25,6 +24,8 @@ import ChannelTypes from "@/pages/ChannelTypes";
 import ChannelTypeDetails from "@/pages/ChannelTypeDetails";
 import ManageNichesPage from "@/pages/Admin/ManageNichesPage";
 import ChannelSearch from "@/pages/ChannelSearch";
+import Niches from "@/pages/Niches";
+import NicheDetails from "@/pages/NicheDetails";
 
 // Admin Pages
 import AdminLogin from "@/pages/Admin/AdminLogin";
@@ -43,7 +44,6 @@ const App = () => {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/training" element={<Training />} />
@@ -68,6 +68,10 @@ const App = () => {
           <Route path="/faceless-ideas/:ideaId" element={<FacelessIdeaDetails />} />
           <Route path="/channel-types" element={<ChannelTypes />} />
           <Route path="/channel-types/:typeId" element={<ChannelTypeDetails />} />
+          
+          {/* Add the niches routes */}
+          <Route path="/niches" element={<Niches />} />
+          <Route path="/niches/:nicheId" element={<NicheDetails />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
