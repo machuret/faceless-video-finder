@@ -1,11 +1,12 @@
 
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import routes from './routes';
 import { initializeStorage } from './integrations/supabase/initStorage';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   useEffect(() => {
@@ -21,14 +22,14 @@ function App() {
       });
   }, []);
 
+  const router = createBrowserRouter(routes);
+
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <Routes>
-        {Array.isArray(routes) ? routes.map((route) => (
-          <Route key={route.path} path={route.path} element={route.element} />
-        )) : null}
-      </Routes>
-      <Toaster />
+      <AuthProvider>
+        <RouterProvider router={router} />
+        <Toaster />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

@@ -1,5 +1,5 @@
 
-import { createBrowserRouter, RouterProvider, RouteObject } from 'react-router-dom';
+import { RouteObject } from 'react-router-dom';
 import Index from '@/pages/Index';
 import ChannelSearch from '@/pages/ChannelSearch';
 import ChannelDetails from '@/pages/ChannelDetails';
@@ -106,7 +106,7 @@ const routes: RouteObject[] = [
   {
     path: '/admin/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requireAdmin>
         <Dashboard />
       </ProtectedRoute>
     ),
@@ -114,7 +114,7 @@ const routes: RouteObject[] = [
   {
     path: '/admin/add-channel',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requireAdmin>
         <AddChannel />
       </ProtectedRoute>
     ),
@@ -122,7 +122,7 @@ const routes: RouteObject[] = [
   {
     path: '/admin/manage-niches',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requireAdmin>
         <ManageNichesPage />
       </ProtectedRoute>
     ),
@@ -130,7 +130,7 @@ const routes: RouteObject[] = [
   {
     path: '/admin/manage-channel-types',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requireAdmin>
         <ManageChannelTypes />
       </ProtectedRoute>
     ),
@@ -138,7 +138,7 @@ const routes: RouteObject[] = [
   {
     path: '/admin/manage-faceless-ideas',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requireAdmin>
         <ManageFacelessIdeas />
       </ProtectedRoute>
     ),
@@ -146,7 +146,7 @@ const routes: RouteObject[] = [
   {
     path: '/admin/manage-did-you-know-facts',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requireAdmin>
         <ManageDidYouKnowFacts />
       </ProtectedRoute>
     ),
@@ -157,8 +157,4 @@ const routes: RouteObject[] = [
   },
 ];
 
-const router = createBrowserRouter(routes);
-
-export default function Router() {
-  return <RouterProvider router={router} />;
-}
+export default routes;

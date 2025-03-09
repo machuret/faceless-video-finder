@@ -22,7 +22,9 @@ export default function AdminLogin() {
 
   // Redirect if already logged in as admin
   useEffect(() => {
+    console.log("AdminLogin - Auth state:", { user, isAdmin, authLoading });
     if (!authLoading && user && isAdmin) {
+      console.log("Already logged in as admin, redirecting to dashboard");
       navigate("/admin/dashboard");
     }
   }, [user, isAdmin, authLoading, navigate]);

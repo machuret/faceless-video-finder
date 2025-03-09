@@ -30,8 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
+  
   const checkAdminStatus = async (userId: string | undefined) => {
     console.log("Checking admin status for userId:", userId);
     
@@ -65,7 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      navigate('/admin/login');
+      window.location.href = '/admin/login';
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -116,7 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("AuthProvider: Cleaning up subscription");
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isAdmin, loading, signOut }}>
