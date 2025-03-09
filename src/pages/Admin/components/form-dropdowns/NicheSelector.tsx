@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { niches } from "@/components/youtube/channel-list/constants/niches";
+import { niches } from "@/data/niches";
 
 interface NicheSelectorProps {
   value: string;

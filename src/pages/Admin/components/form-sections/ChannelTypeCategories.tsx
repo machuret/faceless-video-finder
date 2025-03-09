@@ -23,22 +23,20 @@ const ChannelTypeCategories = ({
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <TypeSelector 
-          selectedType={formData.channel_type} 
-          onSelect={(typeId) => handleFieldChange('channel_type', typeId)} 
-          channelTitle={formData.channel_title}
-          description={formData.description}
+          value={formData.channel_type || ""} 
+          onChange={(typeId) => handleFieldChange('channel_type', typeId)} 
         />
         
         <CategorySelector 
-          selectedCategory={formData.channel_category} 
-          onSelect={(category) => handleFieldChange('channel_category', category)} 
+          value={formData.channel_category || "other"} 
+          onChange={(category) => handleFieldChange('channel_category', category)} 
         />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <NicheSelector
-          selectedNiche={formData.niche}
-          onSelect={(niche) => handleFieldChange('niche', niche)}
+          value={formData.niche || ""}
+          onChange={(niche) => handleFieldChange('niche', niche)}
         />
         
         <CountrySelector 

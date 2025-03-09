@@ -31,7 +31,7 @@ const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
         <SelectContent>
           <SelectItem value="">-- Select Type --</SelectItem>
           {channelTypes.map((type) => (
-            <SelectItem key={type.value} value={type.value}>
+            <SelectItem key={type.id} value={type.id}>
               {type.label}
             </SelectItem>
           ))}
