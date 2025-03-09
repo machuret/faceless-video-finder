@@ -4,7 +4,7 @@ import Index from '@/pages/Index';
 import ChannelSearch from '@/pages/ChannelSearch';
 import ChannelDetails from '@/pages/ChannelDetails';
 import NotFound from '@/pages/NotFound';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import AboutUs from '@/pages/AboutUs';
 import HowItWorks from '@/pages/HowItWorks';
 import ContactUs from '@/pages/ContactUs';
