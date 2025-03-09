@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
@@ -8,6 +8,7 @@ import PageFooter from "@/components/home/PageFooter";
 import { fetchFacelessIdeas } from "@/services/facelessIdeas";
 import { FacelessIdeaInfo } from "@/services/facelessIdeas/types";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 // Array of background images for random selection
 const backgroundImages = [
@@ -17,47 +18,27 @@ const backgroundImages = [
 ];
 
 const FacelessChannelIdeas = () => {
-  const [ideas, setIdeas] = useState<FacelessIdeaInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [backgroundImage, setBackgroundImage] = useState("");
-  const [retryCount, setRetryCount] = useState(0);
 
-  // Function to load ideas with retry logic
-  const loadIdeas = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log("Fetching faceless channel ideas...");
-      const data = await fetchFacelessIdeas();
-      console.log(`Fetched ${data.length} faceless ideas`);
-      setIdeas(data);
-    } catch (error) {
-      console.error("Error loading faceless channel ideas:", error);
-      setError("Failed to load faceless channel ideas. Please try again.");
-      toast.error("Failed to load faceless channel ideas");
-      
-      // Auto-retry once after a short delay if we haven't already retried
-      if (retryCount < 1) {
-        toast.info("Attempting to reload faceless ideas...");
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => {
-          loadIdeas();
-        }, 2000);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Select a random background image
   useEffect(() => {
-    // Select a random background image
     const randomIndex = Math.floor(Math.random() * backgroundImages.length);
     setBackgroundImage(backgroundImages[randomIndex]);
-
-    // Load faceless ideas
-    loadIdeas();
   }, []);
+
+  // Use React Query for data fetching with caching
+  const { data: ideas, isLoading, error, refetch } = useQuery({
+    queryKey: ['faceless-ideas'], 
+    queryFn: fetchFacelessIdeas,
+    staleTime: 10 * 60 * 1000, // Cache data for 10 minutes
+    retry: 2,
+    refetchOnWindowFocus: false,
+  });
+
+  // Memoize to prevent rerenders
+  const sortedIdeas = useMemo(() => {
+    return ideas ? [...ideas].sort((a, b) => a.label.localeCompare(b.label)) : [];
+  }, [ideas]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -78,28 +59,34 @@ const FacelessChannelIdeas = () => {
       </div>
       
       <div className="container mx-auto px-4 py-8">
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center py-16">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : error ? (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
             <p className="font-medium">Error</p>
-            <p>{error}</p>
+            <p>{error instanceof Error ? error.message : "Failed to load faceless channel ideas"}</p>
             <button 
-              onClick={() => { setRetryCount(0); loadIdeas(); }}
+              onClick={() => refetch()}
               className="mt-2 px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
             >
               Try Again
             </button>
           </div>
-        ) : ideas.length === 0 ? (
+        ) : !sortedIdeas || sortedIdeas.length === 0 ? (
           <Card className="p-6 text-center">
             <p className="text-gray-500">No faceless channel ideas found.</p>
+            <button 
+              onClick={() => refetch()}
+              className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+            >
+              Refresh
+            </button>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ideas.map((idea) => (
+            {sortedIdeas.map((idea) => (
               <Card key={idea.id} className="hover:shadow-lg transition-shadow h-full overflow-hidden">
                 {idea.image_url ? (
                   <div className="w-full h-48 overflow-hidden bg-gray-100">

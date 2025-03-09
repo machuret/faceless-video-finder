@@ -1,3 +1,4 @@
+
 import { RouteObject } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import Index from '@/pages/Index';
@@ -18,6 +19,8 @@ import FacelessIdeaDetails from '@/pages/FacelessIdeaDetails';
 import Training from '@/pages/Training';
 import ChannelTypes from '@/pages/ChannelTypes';
 import ChannelTypeDetails from '@/pages/ChannelTypeDetails';
+import Niches from '@/pages/Niches';
+import NicheDetails from '@/pages/NicheDetails';
 
 // Admin routes
 import AdminLogin from '@/pages/Admin/AdminLogin';
@@ -97,6 +100,14 @@ const routes: RouteObject[] = [
   {
     path: '/channel-type/:slug',
     element: <ChannelTypeDetails />,
+  },
+  {
+    path: '/niches',
+    element: <Niches />,
+  },
+  {
+    path: '/niches/:slug',
+    element: <NicheDetails />,
   },
   {
     path: '/admin',

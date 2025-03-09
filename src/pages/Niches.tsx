@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
@@ -8,6 +8,7 @@ import PageFooter from "@/components/home/PageFooter";
 import { niches as defaultNiches } from "@/data/niches";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 const backgroundImages = [
   "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80",
@@ -22,64 +23,91 @@ interface NicheData {
   example: string | null;
 }
 
+const fetchNiches = async () => {
+  console.log("Fetching niches for Niches page...");
+  try {
+    const { data, error } = await supabase.functions.invoke("get-niches");
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+    
+    console.log("Niches response:", data);
+    
+    if (data && data.niches && Array.isArray(data.niches) && data.niches.length > 0) {
+      return {
+        niches: data.niches,
+        nicheDetails: data.nicheDetails || {}
+      };
+    }
+    
+    // Fallback to direct database query
+    console.warn("Edge function returned empty niches array, trying direct DB query");
+    
+    const { data: nichesData, error: nichesError } = await supabase
+      .from('niches')
+      .select('id, name, description, image_url')
+      .order('name');
+      
+    if (nichesError) {
+      throw new Error(nichesError.message);
+    }
+    
+    if (nichesData && nichesData.length > 0) {
+      const niches = nichesData.map(niche => niche.name);
+      const nicheDetails = {};
+      
+      nichesData.forEach(niche => {
+        nicheDetails[niche.name] = {
+          name: niche.name,
+          description: niche.description,
+          example: null,
+          image_url: niche.image_url
+        };
+      });
+      
+      return { niches, nicheDetails };
+    }
+    
+    // Fallback to default niches
+    return {
+      niches: defaultNiches,
+      nicheDetails: {}
+    };
+  } catch (error) {
+    console.error("Error fetching niches:", error);
+    // Fallback to default niches
+    return {
+      niches: defaultNiches,
+      nicheDetails: {}
+    };
+  }
+};
+
 const Niches = () => {
   const [backgroundImage, setBackgroundImage] = useState("");
-  const [niches, setNiches] = useState<string[]>([]);
-  const [nicheDetails, setNicheDetails] = useState<Record<string, NicheData>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['niches-page'],
+    queryFn: fetchNiches,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+  
+  const niches = useMemo(() => data?.niches || defaultNiches, [data]);
+  const nicheDetails = useMemo(() => data?.nicheDetails || {}, [data]);
 
+  // Select a random background image on component mount
   useEffect(() => {
-    // Select a random background image
     const randomIndex = Math.floor(Math.random() * backgroundImages.length);
     setBackgroundImage(backgroundImages[randomIndex]);
-    
-    // Fetch niches
-    fetchNiches();
   }, []);
   
-  const fetchNiches = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log("Fetching niches for Niches page...");
-      const { data, error } = await supabase.functions.invoke("get-niches");
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      console.log("Niches response:", data);
-      
-      if (data && data.niches && Array.isArray(data.niches) && data.niches.length > 0) {
-        setNiches(data.niches);
-        setNicheDetails(data.nicheDetails || {});
-      } else {
-        console.warn("No niches found, using default list");
-        setNiches(defaultNiches);
-        setNicheDetails({});
-      }
-    } catch (error) {
-      console.error("Error fetching niches:", error);
-      setError("Failed to load niches. Using default list.");
-      toast.error("Failed to load niches");
-      
-      // Fallback to default niches
-      setNiches(defaultNiches);
-      setNicheDetails({});
-    } finally {
-      setLoading(false);
-    }
+  // Handle retry
+  const handleRetry = () => {
+    window.location.reload();
   };
-
-  // Handle empty niches list with retry
-  useEffect(() => {
-    if (!loading && niches.length === 0) {
-      console.warn("No niches found after loading, attempting to use default list");
-      setNiches(defaultNiches);
-    }
-  }, [loading, niches]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,17 +127,30 @@ const Niches = () => {
       </div>
       
       <div className="container mx-auto px-4 py-8">
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center py-16">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : error ? (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-            <p>{error}</p>
+            <p className="font-medium">Error loading niches</p>
+            <p>{error instanceof Error ? error.message : "An unexpected error occurred"}</p>
+            <button 
+              onClick={handleRetry}
+              className="mt-2 px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         ) : niches.length === 0 ? (
           <Card className="p-6 text-center">
             <p className="text-gray-500">No niches found. Please try refreshing the page.</p>
+            <button 
+              onClick={handleRetry}
+              className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+            >
+              Refresh
+            </button>
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -117,7 +158,20 @@ const Niches = () => {
               const details = nicheDetails[niche] || { name: niche, description: null, image_url: null, example: null };
               
               return (
-                <Card key={niche} className="hover:shadow-lg transition-shadow">
+                <Card key={niche} className="hover:shadow-lg transition-shadow h-full">
+                  {details.image_url && (
+                    <div className="w-full h-40 overflow-hidden">
+                      <img 
+                        src={details.image_url} 
+                        alt={niche}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                   <CardContent className="p-6">
                     <h3 className="font-crimson text-xl font-semibold mb-2">{niche}</h3>
                     
@@ -130,7 +184,7 @@ const Niches = () => {
                     
                     <Link 
                       to={`/niches/${encodeURIComponent(niche)}`} 
-                      className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-medium font-montserrat"
+                      className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-medium font-montserrat mt-4"
                     >
                       View details <ArrowRight className="ml-1 h-4 w-4" />
                     </Link>

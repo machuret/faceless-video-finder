@@ -14,11 +14,16 @@ serve(async (req) => {
     console.log("get-niches function called");
     const supabase = supabaseClient(req);
     
-    // Get all niches from the database
-    const { data: nichesData, error: nichesError } = await supabase
-      .from('niches')
-      .select('id, name, description, image_url')
-      .order('name');
+    // Get all niches from the database with a longer timeout
+    const { data: nichesData, error: nichesError } = await Promise.race([
+      supabase
+        .from('niches')
+        .select('id, name, description, image_url')
+        .order('name'),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Niches query timeout")), 10000)
+      )
+    ]) as any;
     
     if (nichesError) {
       console.error("Error fetching niches:", nichesError);
@@ -49,10 +54,15 @@ serve(async (req) => {
     
     console.log(`Found ${nichesData.length} niches in database`);
     
-    // Get niche details
-    const { data: nicheDetailsData, error: detailsError } = await supabase
-      .from('niche_details')
-      .select('niche_id, content');
+    // Get niche details with a timeout
+    const { data: nicheDetailsData, error: detailsError } = await Promise.race([
+      supabase
+        .from('niche_details')
+        .select('niche_id, content'),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Niche details query timeout")), 10000)
+      )
+    ]) as any;
     
     if (detailsError) {
       console.error("Error fetching niche details:", detailsError);
@@ -83,6 +93,8 @@ serve(async (req) => {
       };
     });
 
+    console.log(`Returning ${niches.length} niches with details`);
+    
     return new Response(
       JSON.stringify({ 
         niches,

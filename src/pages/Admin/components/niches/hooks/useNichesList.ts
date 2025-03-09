@@ -36,8 +36,37 @@ const fetchNiches = async (): Promise<NichesData> => {
       };
     }
     
-    // Fallback to default niches if API returns empty array
-    console.warn("Empty niches array returned, using default list");
+    // Fallback to direct database query if the function returns empty array
+    console.warn("Edge function returned empty niches array, trying direct DB query");
+    
+    const { data: nichesData, error: nichesError } = await supabase
+      .from('niches')
+      .select('id, name, description, image_url')
+      .order('name');
+      
+    if (nichesError) {
+      console.error("Error fetching niches from DB:", nichesError);
+      throw new Error(nichesError.message);
+    }
+    
+    if (nichesData && nichesData.length > 0) {
+      const niches = nichesData.map(niche => niche.name);
+      const nicheDetails = {};
+      
+      nichesData.forEach(niche => {
+        nicheDetails[niche.name] = {
+          name: niche.name,
+          description: niche.description,
+          example: null,
+          image_url: niche.image_url
+        };
+      });
+      
+      return { niches, nicheDetails };
+    }
+    
+    // Fallback to default niches if both approaches fail
+    console.warn("No niches found in database, using default list");
     return {
       niches: defaultNiches,
       nicheDetails: {}
@@ -60,6 +89,7 @@ export const useNichesList = () => {
     queryFn: fetchNiches,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     refetchOnWindowFocus: false,
-    retry: 1, // Only retry once to avoid excessive failures
+    retry: 2, // Retry twice
+    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000), // Exponential backoff
   });
 };
