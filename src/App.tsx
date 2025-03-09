@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
