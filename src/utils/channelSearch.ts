@@ -48,40 +48,39 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
       // For channel IDs, search in channel_url
       query = query.ilike("channel_url", `%${searchTerm}%`);
     } else if (isUrlSearch) {
-      // For other URL searches, use OR and case-insensitive search
+      // For other URL searches, use OR with only text fields
       query = query.or(`channel_title.ilike.%${searchTerm}%,channel_url.ilike.%${searchTerm}%,video_id.eq.${searchTerm}`);
     } else {
-      // For regular keyword searches (not URLs), do a more comprehensive search
+      // For regular keyword searches (not URLs), focus on text fields only
       const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 1);
       
       if (searchWords.length > 1) {
-        // For multi-word searches, try to match them individually with OR
+        // For multi-word searches, build a simpler query with text fields only
         const searchConditions = searchWords.map(word => 
           `channel_title.ilike.%${word}%,` +
           `description.ilike.%${word}%,` +
-          `channel_category.ilike.%${word}%,` +
-          `niche.ilike.%${word}%,` +
-          `channel_type.ilike.%${word}%,` +
-          `keywords.ilike.%${word}%`
+          `niche.ilike.%${word}%`
         ).join(',');
         
         query = query.or(searchConditions);
       } else {
-        // For single word searches
+        // For single word searches, focus on the most important text fields
         query = query.or(
           `channel_title.ilike.%${searchTerm}%,` +
           `description.ilike.%${searchTerm}%,` +
-          `niche.ilike.%${searchTerm}%,` +
-          `channel_type.ilike.%${searchTerm}%`
+          `niche.ilike.%${searchTerm}%`
         );
       }
     }
+    
+    // Add additional debug logging
+    console.log("Executing search query for term:", searchTerm);
     
     // Limit the number of results to avoid performance issues
     const { data, error } = await query.limit(100);
 
     if (error) {
-      console.error("Search error:", error);
+      console.error("Search error details:", error);
       throw new Error(`Database search error: ${error.message}`);
     }
 

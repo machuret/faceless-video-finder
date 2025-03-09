@@ -9,6 +9,8 @@ import { Channel } from '@/types/youtube';
 import { toast } from "sonner";
 import LoadingState from '@/components/home/LoadingState';
 import SearchBar from '@/components/common/SearchBar';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const ChannelSearch = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,6 +40,10 @@ const ChannelSearch = () => {
         
         if (results && Array.isArray(results)) {
           setChannels(results);
+          if (results.length === 0) {
+            // Not an error, just no results
+            console.log("No results found for:", searchQuery);
+          }
         } else {
           throw new Error("Invalid search results format");
         }
@@ -102,9 +108,11 @@ const ChannelSearch = () => {
         ) : (
           <>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-                <p>{error}</p>
-              </div>
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
             
             {!error && channels.length === 0 && searchQuery && (
