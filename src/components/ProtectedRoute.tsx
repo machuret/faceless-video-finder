@@ -1,7 +1,7 @@
 
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export const ProtectedRoute = ({
@@ -13,12 +13,32 @@ export const ProtectedRoute = ({
 }) => {
   const { user, isAdmin, loading } = useAuth();
   const [showLoader, setShowLoader] = useState(loading);
+  const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
 
-  // Briefly delay showing the loader to prevent flashing for quick auth checks
-  if (loading && !showLoader) {
-    const timer = setTimeout(() => setShowLoader(true), 300);
-    return () => clearTimeout(timer);
-  }
+  useEffect(() => {
+    // Clear any existing timer when loading state changes
+    if (loadingTimer) {
+      clearTimeout(loadingTimer);
+    }
+
+    // Only set timer if loading is true and showLoader is false
+    if (loading && !showLoader) {
+      const timer = setTimeout(() => setShowLoader(true), 300);
+      setLoadingTimer(timer);
+    }
+
+    // Reset showLoader when loading is complete
+    if (!loading) {
+      setShowLoader(false);
+    }
+
+    // Cleanup
+    return () => {
+      if (loadingTimer) {
+        clearTimeout(loadingTimer);
+      }
+    };
+  }, [loading, showLoader, loadingTimer]);
   
   // Show loading spinner only if actually waiting for auth
   if (loading && showLoader) {
@@ -38,5 +58,5 @@ export const ProtectedRoute = ({
     return <Navigate to="/" replace />;
   }
   
-  return children;
+  return <>{children}</>;
 };
