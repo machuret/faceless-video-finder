@@ -167,7 +167,7 @@ const ManageNiches = () => {
   const handleSaveNicheDetails = async () => {
     const success = await saveNicheDetails();
     if (success) {
-      refetch(); // Refresh the data after saving
+      await refetch(); // Refresh the data after saving
       setActiveTab("list");
     }
   };

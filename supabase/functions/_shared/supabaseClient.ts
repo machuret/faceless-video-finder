@@ -1,6 +1,6 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { ensureStorageBuckets } from "./createStorageBuckets.ts";
+import { ensureStorageBucketsExist } from "./createStorageBuckets.ts";
 
 export function supabaseClient(req: Request) {
   // Get Supabase URL and service role key from env
@@ -11,7 +11,7 @@ export function supabaseClient(req: Request) {
   const supabase = createClient(supabaseUrl, supabaseKey);
   
   // Ensure all required storage buckets exist (this runs async but doesn't await)
-  ensureStorageBuckets(supabase);
+  ensureStorageBucketsExist(supabase);
   
   return supabase;
 }

@@ -1,5 +1,4 @@
 
-# This is a single-line comment
 project_id = "sportholic"
 
 [api]
@@ -51,4 +50,19 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.fetch-channel-stats-apify]
+verify_jwt = false
+
+[functions.get-niches]
+verify_jwt = false
+
+[functions.add-niche]
+verify_jwt = false
+
+[functions.delete-niche]
+verify_jwt = false
+
+[functions.update-niche-details]
+verify_jwt = false
+
+[functions.initialize-storage]
 verify_jwt = false
