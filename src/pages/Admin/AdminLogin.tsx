@@ -197,7 +197,7 @@ export default function AdminLogin() {
                       value={email}
                       onChange={handleEmailChange}
                       required
-                      disabled={isLoading || authLoading}
+                      disabled={isLoading}
                     />
                   </div>
                   
@@ -210,7 +210,7 @@ export default function AdminLogin() {
                         value={password}
                         onChange={handlePasswordChange}
                         required
-                        disabled={isLoading || authLoading}
+                        disabled={isLoading}
                       />
                       <button
                         type="button"
@@ -230,7 +230,7 @@ export default function AdminLogin() {
                   <Button 
                     type="submit" 
                     className="w-full"
-                    disabled={isLoading || authLoading}
+                    disabled={isLoading}
                   >
                     {isLoading ? (
                       <>
