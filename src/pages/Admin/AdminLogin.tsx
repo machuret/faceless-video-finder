@@ -12,15 +12,20 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AdminLogin() {
+  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loginError, setLoginError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  
+  // UI state
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  
+  // Auth context and navigation
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Check if user is already logged in and is admin
+  // Redirect if already logged in as admin
   useEffect(() => {
     console.log("AdminLogin auth state:", {
       hasUser: !!user,
@@ -35,29 +40,32 @@ export default function AdminLogin() {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  const handleSubmit = async (e) => {
+  // Handle form submission
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
+    // Validate form
     if (!email || !password) {
-      setLoginError("Please enter both email and password");
+      setErrorMessage("Please enter both email and password");
       toast.error("Please enter both email and password");
       return;
     }
     
     try {
-      setLoading(true);
-      setLoginError("");
+      setIsLoading(true);
+      setErrorMessage("");
+      
       console.log(`Attempting to login with email: ${email}`);
       
-      // Step 1: Sign in with email and password
+      // Sign in with email and password
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
       
       if (error) {
         console.error("Login error:", error.message);
-        setLoginError(`Login failed: ${error.message}`);
+        setErrorMessage(`Login failed: ${error.message}`);
         toast.error(error.message || "Login failed");
         return;
       }
@@ -65,7 +73,7 @@ export default function AdminLogin() {
       if (!data?.user) {
         const msg = "Login failed - no user returned";
         console.error(msg);
-        setLoginError(msg);
+        setErrorMessage(msg);
         toast.error("Login failed");
         return;
       }
@@ -74,14 +82,14 @@ export default function AdminLogin() {
       console.log("Login successful, user:", userId);
       toast.success("Login successful, checking admin permissions...");
       
-      // Step 2: Check if user is admin
+      // Check if user is admin
       const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
         user_id: userId
       });
       
       if (adminError) {
         console.error("Error checking admin status:", adminError);
-        setLoginError(`Admin verification failed: ${adminError.message}`);
+        setErrorMessage(`Admin verification failed: ${adminError.message}`);
         toast.error("Error verifying admin permissions");
         await supabase.auth.signOut();
         return;
@@ -93,27 +101,24 @@ export default function AdminLogin() {
       if (isUserAdmin) {
         toast.success("Verified admin access! Redirecting to dashboard...");
         console.log("User confirmed as admin, redirecting to dashboard");
-        
-        // Use timeout to ensure state has time to update
-        setTimeout(() => {
-          navigate("/admin/dashboard");
-        }, 1000);
+        navigate("/admin/dashboard");
       } else {
         console.error("User is not an admin");
-        setLoginError("You don't have admin permissions");
+        setErrorMessage("You don't have admin permissions");
         toast.error("You don't have admin permissions");
         
         // Sign out non-admin users
         await supabase.auth.signOut();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected login error:", error);
-      setLoginError(error.message || "An unexpected error occurred");
+      setErrorMessage(error.message || "An unexpected error occurred");
       toast.error(error.message || "Login failed");
-      // Make sure to sign out if there's an error
+      
+      // Sign out on error
       await supabase.auth.signOut();
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -129,14 +134,14 @@ export default function AdminLogin() {
           <Card className="p-6">
             <h1 className="text-2xl font-bold mb-6 text-center">Admin Login</h1>
             
-            {loginError && (
+            {errorMessage && (
               <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm border border-red-200">
                 <p className="font-semibold">Login Error:</p>
-                <p>{loginError}</p>
+                <p>{errorMessage}</p>
               </div>
             )}
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -146,7 +151,7 @@ export default function AdminLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  disabled={loading}
+                  disabled={isLoading}
                 />
               </div>
               
@@ -159,7 +164,7 @@ export default function AdminLogin() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    disabled={loading}
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
@@ -179,9 +184,9 @@ export default function AdminLogin() {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={loading || authLoading}
+                disabled={isLoading || authLoading}
               >
-                {loading ? (
+                {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Logging in...

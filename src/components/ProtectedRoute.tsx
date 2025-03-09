@@ -17,53 +17,58 @@ export const ProtectedRoute = ({
   const [isChecking, setIsChecking] = useState(true);
   const [timeoutReached, setTimeoutReached] = useState(false);
 
-  // Add a short timeout to prevent infinite loading
+  // Set a timeout to prevent infinite loading state
   useEffect(() => {
     const timer = setTimeout(() => {
       if (loading || isChecking) {
         console.log("Auth check timeout reached, forcing completion");
         setTimeoutReached(true);
       }
-    }, 1000); // 1 second timeout
+    }, 800); // 800ms timeout (reduced from 1000ms)
 
     return () => clearTimeout(timer);
   }, [loading, isChecking]);
 
+  // Check authentication and authorization
   useEffect(() => {
-    const authState = { 
-      userId: user?.id,
-      isAdmin, 
-      loading, 
-      requireAdmin,
-      timeoutReached
-    };
-    
-    console.log("ProtectedRoute checking auth:", authState);
+    const checkAuth = async () => {
+      const authState = { 
+        userId: user?.id,
+        isAdmin, 
+        loading, 
+        requireAdmin,
+        timeoutReached
+      };
+      
+      console.log("ProtectedRoute checking auth:", authState);
 
-    // Only proceed when auth loading is complete or timeout reached
-    if (!loading || timeoutReached) {
-      // No user = not authenticated
-      if (!user) {
-        console.log("No authenticated user, redirecting to login");
-        toast.error("Please log in to access this page");
-        navigate("/admin/login");
+      // Only proceed when auth loading is complete or timeout reached
+      if (!loading || timeoutReached) {
+        // Not authenticated
+        if (!user) {
+          console.log("No authenticated user, redirecting to login");
+          toast.error("Please log in to access this page");
+          navigate("/admin/login");
+          setIsChecking(false);
+          return;
+        }
+        
+        // Admin check if required
+        if (requireAdmin && !isAdmin) {
+          console.log("Admin access required but user is not admin");
+          toast.error("You don't have admin permissions");
+          navigate("/admin/login");
+          setIsChecking(false);
+          return;
+        }
+        
+        // Auth check passed
+        console.log("Authorization check passed");
         setIsChecking(false);
-        return;
       }
-      
-      // Admin check if required
-      if (requireAdmin && !isAdmin) {
-        console.log("Admin access required but user is not admin");
-        toast.error("You don't have admin permissions");
-        navigate("/admin/login");
-        setIsChecking(false);
-        return;
-      }
-      
-      // Auth check passed
-      console.log("Authorization check passed");
-      setIsChecking(false);
-    }
+    };
+
+    checkAuth();
   }, [user, isAdmin, loading, navigate, requireAdmin, timeoutReached]);
 
   // Show loading state

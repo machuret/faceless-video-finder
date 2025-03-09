@@ -33,21 +33,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Improved admin check function with better error handling
+  // Check if a user is an admin
   const checkAdminStatus = async (userId: string) => {
     if (!userId) return false;
 
     try {
       console.log(`Checking admin status for user: ${userId}`);
       
-      // Direct query using RPC to check admin status
+      // Call the RPC function to check admin status
       const { data, error } = await supabase.rpc('check_is_admin', {
         user_id: userId
       });
 
       if (error) {
         console.error('Error checking admin status:', error);
-        toast.error('Error verifying admin permissions');
         return false;
       }
       
@@ -57,17 +56,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return isUserAdmin;
     } catch (error) {
       console.error('Error in admin check:', error);
-      toast.error('Error verifying permissions');
       return false;
     }
   };
 
-  // Improved auth initialization function with better error handling
+  // Initialize auth state
   const initializeAuth = async () => {
     try {
       setLoading(true);
       console.log("Initializing auth session...");
       
+      // Get current session
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -90,7 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log(`Session found for user: ${session.user.id}`);
       setUser(session.user);
       
-      // Check admin status and update state accordingly
+      // Check admin status
       const adminStatus = await checkAdminStatus(session.user.id);
       setIsAdmin(adminStatus);
       
@@ -103,28 +102,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Initialize auth on mount and set up auth state change listener
+  // Initialize auth on mount
   useEffect(() => {
-    // Initialize auth on component mount
     initializeAuth();
 
-    // Listen for auth changes
+    // Setup auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`Auth state changed: ${event}`);
         
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          if (session?.user) {
-            console.log(`User signed in: ${session.user.id}`);
-            setUser(session.user);
-            
-            // Set admin status
+        if (session?.user) {
+          console.log(`User session updated: ${session.user.id}`);
+          setUser(session.user);
+          
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            // Update admin status when signed in or token refreshed
             const adminStatus = await checkAdminStatus(session.user.id);
-            console.log(`Updated admin status: ${adminStatus}`);
             setIsAdmin(adminStatus);
           }
-        } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
+        } else {
+          // No session means signed out
+          console.log('No user session');
           setUser(null);
           setIsAdmin(false);
         }
@@ -138,6 +136,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
+  // Sign out function
   const signOut = async () => {
     try {
       setLoading(true);
