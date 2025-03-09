@@ -1,17 +1,23 @@
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { ensureStorageBuckets } from "./createStorageBuckets.ts";
+import { ensureStorageBucketsExist } from "./createStorageBuckets.ts";
+import { corsHeaders } from "./cors.ts";
 
-export function supabaseClient(req: Request) {
-  // Get Supabase URL and service role key from env
+// Create a Supabase client with the Auth context of the function
+export const supabaseClient = (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   
-  // Create Supabase client
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  // Get Auth token from the request headers
+  const authHeader = req.headers.get('Authorization');
   
-  // Ensure all required storage buckets exist (this runs async but doesn't await)
-  ensureStorageBuckets(supabase);
+  if (authHeader) {
+    // If Auth token is provided, create a client with that token
+    const token = authHeader.replace('Bearer ', '');
+    return createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+  }
   
-  return supabase;
-}
+  // Otherwise create an anonymous client
+  return createClient(supabaseUrl, supabaseKey);
+};

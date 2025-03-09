@@ -104,6 +104,14 @@ const routes: RouteObject[] = [
     element: <AdminLogin />,
   },
   {
+    path: '/admin',
+    element: (
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/dashboard',
     element: (
       <ProtectedRoute>
@@ -120,10 +128,26 @@ const routes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/niches',
+    element: (
+      <ProtectedRoute>
+        <ManageNichesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/manage-niches',
     element: (
       <ProtectedRoute>
         <ManageNichesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/channel-types',
+    element: (
+      <ProtectedRoute>
+        <ManageChannelTypes />
       </ProtectedRoute>
     ),
   },
@@ -136,10 +160,26 @@ const routes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/faceless-ideas',
+    element: (
+      <ProtectedRoute>
+        <ManageFacelessIdeas />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/manage-faceless-ideas',
     element: (
       <ProtectedRoute>
         <ManageFacelessIdeas />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/did-you-know',
+    element: (
+      <ProtectedRoute>
+        <ManageDidYouKnowFacts />
       </ProtectedRoute>
     ),
   },
@@ -157,8 +197,4 @@ const routes: RouteObject[] = [
   },
 ];
 
-const router = createBrowserRouter(routes);
-
-export default function Router() {
-  return <RouterProvider router={router} />;
-}
+export default routes;
