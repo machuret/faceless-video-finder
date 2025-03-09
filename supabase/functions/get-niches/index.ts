@@ -11,6 +11,7 @@ serve(async (req) => {
   }
 
   try {
+    console.log("get-niches function called");
     const supabase = supabaseClient(req);
     
     // Get all niches from the database
@@ -32,6 +33,21 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    if (!nichesData || nichesData.length === 0) {
+      console.log("No niches found in database, returning default list");
+      return new Response(
+        JSON.stringify({ 
+          niches: defaultNiches,
+          nicheDetails: {},
+          source: "default",
+          message: "No niches found in database"
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    console.log(`Found ${nichesData.length} niches in database`);
     
     // Get niche details
     const { data: nicheDetailsData, error: detailsError } = await supabase
@@ -55,19 +71,17 @@ serve(async (req) => {
     }
     
     // Create an array of niche names and a map of name to details
-    const niches = nichesData?.map(niche => niche.name) || [];
+    const niches = nichesData.map(niche => niche.name);
     const nicheDetails = {};
     
-    if (nichesData) {
-      nichesData.forEach(niche => {
-        nicheDetails[niche.name] = {
-          name: niche.name,
-          description: niche.description,
-          example: nicheDetailsMap[niche.id] || null,
-          image_url: niche.image_url
-        };
-      });
-    }
+    nichesData.forEach(niche => {
+      nicheDetails[niche.name] = {
+        name: niche.name,
+        description: niche.description,
+        example: nicheDetailsMap[niche.id] || null,
+        image_url: niche.image_url
+      };
+    });
 
     return new Response(
       JSON.stringify({ 

@@ -1,101 +1,147 @@
 
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import MainNavbar from "@/components/MainNavbar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight } from "lucide-react";
+import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
+import { niches as defaultNiches } from "@/data/niches";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-interface Niche {
-  id: string;
+const backgroundImages = [
+  "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80",
+];
+
+interface NicheData {
   name: string;
-  description?: string | null;
-  image_url?: string | null;
+  description: string | null;
+  image_url: string | null;
+  example: string | null;
 }
 
 const Niches = () => {
-  const { data: niches, isLoading, error } = useQuery({
-    queryKey: ["niches"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("niches")
-        .select("*")
-        .order('name');
+  const [backgroundImage, setBackgroundImage] = useState("");
+  const [niches, setNiches] = useState<string[]>([]);
+  const [nicheDetails, setNicheDetails] = useState<Record<string, NicheData>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Select a random background image
+    const randomIndex = Math.floor(Math.random() * backgroundImages.length);
+    setBackgroundImage(backgroundImages[randomIndex]);
+    
+    // Fetch niches
+    fetchNiches();
+  }, []);
+  
+  const fetchNiches = async () => {
+    try {
+      setLoading(true);
+      setError(null);
       
-      if (error) throw error;
-      return data as Niche[];
+      console.log("Fetching niches for Niches page...");
+      const { data, error } = await supabase.functions.invoke("get-niches");
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      console.log("Niches response:", data);
+      
+      if (data && data.niches && Array.isArray(data.niches) && data.niches.length > 0) {
+        setNiches(data.niches);
+        setNicheDetails(data.nicheDetails || {});
+      } else {
+        console.warn("No niches found, using default list");
+        setNiches(defaultNiches);
+        setNicheDetails({});
+      }
+    } catch (error) {
+      console.error("Error fetching niches:", error);
+      setError("Failed to load niches. Using default list.");
+      toast.error("Failed to load niches");
+      
+      // Fallback to default niches
+      setNiches(defaultNiches);
+      setNicheDetails({});
+    } finally {
+      setLoading(false);
     }
-  });
+  };
+
+  // Handle empty niches list with retry
+  useEffect(() => {
+    if (!loading && niches.length === 0) {
+      console.warn("No niches found after loading, attempting to use default list");
+      setNiches(defaultNiches);
+    }
+  }, [loading, niches]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <MainNavbar />
-      <div className="container px-4 py-16 flex-1">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">YouTube Channel Niches</h1>
-          <p className="text-gray-600 mb-8">
-            Explore various niches for YouTube channels to find opportunities for your faceless channel.
+      
+      <div 
+        className="bg-cover bg-center h-64 flex items-center justify-center mb-8"
+        style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${backgroundImage})` }}
+      >
+        <div className="text-center text-white max-w-3xl mx-auto px-4">
+          <h1 className="font-crimson text-4xl font-bold mb-4 text-center">YouTube Niches</h1>
+          <p className="font-lato text-lg text-center">
+            Explore different YouTube niches to find the perfect category for your content.
+            Find inspiration, examples, and growth opportunities.
           </p>
-
-          {isLoading && (
-            <div className="py-12 text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-              <p className="mt-4 text-gray-600">Loading niches...</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="py-12 text-center">
-              <p className="text-red-500">Failed to load niches. Please try again later.</p>
-            </div>
-          )}
-
-          {niches && niches.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {niches.map((niche) => (
-                <Card key={niche.id} className="hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-                  {niche.image_url && (
-                    <div className="w-full h-48 overflow-hidden">
-                      <img 
-                        src={niche.image_url} 
-                        alt={niche.name}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
-                      />
-                    </div>
-                  )}
-                  <CardHeader>
-                    <CardTitle className="text-xl">{niche.name}</CardTitle>
-                    {niche.description && (
-                      <CardDescription 
-                        dangerouslySetInnerHTML={{ __html: niche.description }}
-                        className="line-clamp-2"
-                      />
+        </div>
+      </div>
+      
+      <div className="container mx-auto px-4 py-8">
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+            <p>{error}</p>
+          </div>
+        ) : niches.length === 0 ? (
+          <Card className="p-6 text-center">
+            <p className="text-gray-500">No niches found. Please try refreshing the page.</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {niches.sort().map((niche) => {
+              const details = nicheDetails[niche] || { name: niche, description: null, image_url: null, example: null };
+              
+              return (
+                <Card key={niche} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <h3 className="font-crimson text-xl font-semibold mb-2">{niche}</h3>
+                    
+                    {details.description && (
+                      <p className="font-lato text-sm text-gray-600 mb-4 line-clamp-3">
+                        {details.description.substring(0, 100)}
+                        {details.description.length > 100 ? "..." : ""}
+                      </p>
                     )}
-                  </CardHeader>
-                  <CardContent className="mt-auto">
+                    
                     <Link 
-                      to={`/niches/${niche.id}`} 
-                      className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
+                      to={`/niches/${encodeURIComponent(niche)}`} 
+                      className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-medium font-montserrat"
                     >
-                      Explore Channels
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                      View details <ArrowRight className="ml-1 h-4 w-4" />
                     </Link>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
-
-          {niches && niches.length === 0 && (
-            <div className="py-12 text-center">
-              <p className="text-gray-600">No niches found. Check back later for updates.</p>
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+      
       <PageFooter />
     </div>
   );
