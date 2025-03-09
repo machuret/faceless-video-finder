@@ -28,11 +28,16 @@ serve(async (req) => {
 
     console.log(`Fetching top videos for channel ID: ${channelId}`);
 
+    // Ensure correct case for YouTube channel ID (start with UC)
+    const formattedChannelId = channelId.startsWith('uc') 
+      ? 'UC' + channelId.substring(2) 
+      : channelId;
+      
     // Check if channelId is a YouTube channel ID
-    const youtubeChannelIdPattern = /^UC[\w-]{21}[AQgw]$/;
-    if (!youtubeChannelIdPattern.test(channelId)) {
-      // If not a YouTube channel ID, try to get it from our database channel title
-      // For now, just return a meaningful error
+    const youtubeChannelIdPattern = /^UC[\w-]{21}[AQgw]$/i;
+    if (!youtubeChannelIdPattern.test(formattedChannelId)) {
+      // If not a YouTube channel ID, return a meaningful error
+      console.error(`Invalid YouTube channel ID format: ${formattedChannelId}`);
       return new Response(JSON.stringify({
         error: "Not a valid YouTube channel ID. Please use the YouTube channel ID that starts with 'UC'."
       }), {
@@ -43,10 +48,15 @@ serve(async (req) => {
     
     // Fetch videos sorted by view count (most viewed)
     const mostViewedVideosResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=5&order=viewCount&type=video&key=${YOUTUBE_API_KEY}`
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${formattedChannelId}&maxResults=5&order=viewCount&type=video&key=${YOUTUBE_API_KEY}`
     );
     
     const mostViewedVideosData = await mostViewedVideosResponse.json();
+    
+    if (mostViewedVideosData.error) {
+      console.error("YouTube API error:", mostViewedVideosData.error);
+      throw new Error(`YouTube API error: ${mostViewedVideosData.error.message || JSON.stringify(mostViewedVideosData.error)}`);
+    }
     
     if (!mostViewedVideosData.items || mostViewedVideosData.items.length === 0) {
       throw new Error('No videos found for this channel');
@@ -61,6 +71,11 @@ serve(async (req) => {
     );
     
     const videoStatsData = await videoStatsResponse.json();
+    
+    if (videoStatsData.error) {
+      console.error("YouTube API error fetching stats:", videoStatsData.error);
+      throw new Error(`YouTube API error fetching stats: ${videoStatsData.error.message || JSON.stringify(videoStatsData.error)}`);
+    }
     
     // Process and combine the data
     const topVideos = videoStatsData.items.map(video => ({

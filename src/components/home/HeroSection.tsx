@@ -53,7 +53,7 @@ const HeroSection = () => {
         }
       }
       
-      // Fix: Use correct route for search results
+      // Fix: Navigate to the proper channels search route
       navigate(`/channels?search=${encodeURIComponent(searchQuery.trim())}`);
     } finally {
       setIsSearching(false);

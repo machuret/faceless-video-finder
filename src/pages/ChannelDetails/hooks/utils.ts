@@ -31,8 +31,11 @@ export const extractYouTubeChannelId = (url: string): string | null => {
   const channelMatch = url.match(channelPattern);
   
   if (channelMatch && channelMatch[1]) {
-    console.log("Extracted YouTube channel ID from URL:", channelMatch[1]);
-    return channelMatch[1];
+    const id = channelMatch[1];
+    // Ensure the ID starts with uppercase UC
+    const formattedId = id.startsWith('uc') ? 'UC' + id.substring(2) : id;
+    console.log("Extracted YouTube channel ID from URL:", formattedId);
+    return formattedId;
   }
   
   // Pattern for user URLs like: https://www.youtube.com/user/username

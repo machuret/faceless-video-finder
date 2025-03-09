@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,13 +31,23 @@ const TopVideosPreview: React.FC<TopVideosPreviewProps> = ({ channelId, youtubeC
   const [topVideos, setTopVideos] = useState<TopVideosData | null>(null);
 
   const extractYoutubeChannelId = (url: string) => {
+    if (!url) return null;
+    
     // Try to extract channel ID from URL patterns like /channel/UC...
-    const channelMatch = url.match(/\/channel\/(UC[\w-]{22})/);
-    if (channelMatch) return channelMatch[1];
+    // Match both case variations in channel URLs
+    const channelMatch = url.match(/\/channel\/(UC[\w-]{22})/i);
+    if (channelMatch) {
+      // Return the ID, ensuring it's properly capitalized (UC at the start)
+      const id = channelMatch[1];
+      return id.startsWith('uc') ? 'UC' + id.substring(2) : id;
+    }
     
     // Try to match just a raw UC... ID
-    const rawIdMatch = url.match(/(UC[\w-]{22})/);
-    if (rawIdMatch) return rawIdMatch[1];
+    const rawIdMatch = url.match(/(UC[\w-]{22})/i);
+    if (rawIdMatch) {
+      const id = rawIdMatch[1];
+      return id.startsWith('uc') ? 'UC' + id.substring(2) : id;
+    }
     
     return null;
   };
@@ -51,8 +62,12 @@ const TopVideosPreview: React.FC<TopVideosPreviewProps> = ({ channelId, youtubeC
     toast.info("Fetching top videos...");
 
     try {
+      // Ensure the ID is properly formatted with uppercase UC prefix
+      const formattedId = id.startsWith('uc') ? 'UC' + id.substring(2) : id;
+      console.log(`Using YouTube channel ID for top videos fetch: ${formattedId}`);
+
       const { data, error } = await supabase.functions.invoke('fetch-top-videos', {
-        body: { channelId: id }
+        body: { channelId: formattedId }
       });
 
       if (error) {
@@ -90,12 +105,14 @@ const TopVideosPreview: React.FC<TopVideosPreviewProps> = ({ channelId, youtubeC
       
       if (error) throw error;
       
+      console.log(`Channel URL from database: ${data.channel_url}`);
       const extractedId = extractYoutubeChannelId(data.channel_url);
       if (!extractedId) {
-        toast.error("Could not extract YouTube channel ID from URL");
+        toast.error("Could not extract YouTube channel ID from URL. The URL should contain a valid YouTube channel ID starting with 'UC'.");
         return;
       }
       
+      console.log(`Extracted YouTube channel ID: ${extractedId}`);
       await fetchTopVideos(extractedId);
     } catch (error) {
       console.error("Error getting channel URL:", error);
