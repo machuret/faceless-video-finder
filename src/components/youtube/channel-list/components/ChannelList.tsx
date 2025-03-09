@@ -1,19 +1,17 @@
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect } from "react";
 import { useChannelOperations } from "../hooks/useChannelOperations";
+import { useChannelListControls } from "../hooks/useChannelListControls";
+import { useBulkOperations } from "../hooks/useBulkOperations";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { EmptyState } from "./EmptyState";
-import { useBulkStatsFetcher } from "./hooks/useBulkStatsFetcher";
-import { useBulkTypeGenerator } from "./hooks/useBulkTypeGenerator";
-import { useBulkKeywordsGenerator } from "./hooks/useBulkKeywordsGenerator";
-import { useBulkScreenshotGenerator } from "./hooks/useBulkScreenshotGenerator";
 import ChannelGrid from "./ChannelGrid";
 import ChannelListHeader from "./ChannelListHeader";
 import ChannelListFooter from "./ChannelListFooter";
 import BulkOperationsHandler from "./BulkOperationsHandler";
 import { BulkOperationsProvider } from "../context/BulkOperationsContext";
-import { Button } from "@/components/ui/button";
-import { ArrowUpDown } from "lucide-react";
+import SortButton from "./SortButton";
 
 interface ChannelListProps {
   isAdmin: boolean;
@@ -26,9 +24,6 @@ export const ChannelList: React.FC<ChannelListProps> = ({
   limit,
   showAll = false
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showSelectionControls, setShowSelectionControls] = useState(false);
-  const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const pageSize = 12;
   
   const { 
@@ -49,44 +44,45 @@ export const ChannelList: React.FC<ChannelListProps> = ({
   } = useChannelOperations();
 
   const {
-    fetchStatsForChannels,
-    isProcessing: isStatsProcessing,
-    progress: statsProgress,
-    currentChannel: statsCurrentChannel,
-    successCount: statsSuccessCount,
-    errorCount: statsErrorCount,
-    totalCount: statsTotalCount
-  } = useBulkStatsFetcher();
-  
+    currentPage,
+    setCurrentPage,
+    showSelectionControls,
+    toggleSelectionMode,
+    sortAlphabetically,
+    toggleAlphabeticalSort,
+    sortedChannels
+  } = useChannelListControls(channels);
+
   const {
-    generateTypesForChannels,
-    isProcessing: isTypeProcessing,
-    progress: typeProgress,
-    currentChannel: typeCurrentChannel,
-    successCount: typeSuccessCount,
-    errorCount: typeErrorCount,
-    totalCount: typeTotalCount
-  } = useBulkTypeGenerator();
-  
-  const {
-    generateKeywordsForChannels,
-    isProcessing: isKeywordsProcessing,
-    progress: keywordsProgress,
-    currentChannel: keywordsCurrentChannel,
-    successCount: keywordsSuccessCount,
-    errorCount: keywordsErrorCount,
-    totalCount: keywordsTotalCount
-  } = useBulkKeywordsGenerator();
-  
-  const {
-    generateScreenshotsForChannels,
-    isProcessing: isScreenshotProcessing,
-    progress: screenshotProgress,
-    currentChannel: screenshotCurrentChannel,
-    successCount: screenshotSuccessCount,
-    errorCount: screenshotErrorCount,
-    totalCount: screenshotTotalCount
-  } = useBulkScreenshotGenerator();
+    handleBulkFetchStats,
+    handleBulkGenerateTypes,
+    handleBulkGenerateKeywords,
+    handleBulkTakeScreenshots,
+    isStatsProcessing,
+    isTypeProcessing,
+    isKeywordsProcessing,
+    isScreenshotProcessing,
+    statsProgress,
+    typeProgress,
+    keywordsProgress,
+    screenshotProgress,
+    statsCurrentChannel,
+    typeCurrentChannel,
+    keywordsCurrentChannel,
+    screenshotCurrentChannel,
+    statsSuccessCount,
+    typeSuccessCount,
+    keywordsSuccessCount,
+    screenshotSuccessCount,
+    statsErrorCount,
+    typeErrorCount,
+    keywordsErrorCount,
+    screenshotErrorCount,
+    statsTotalCount,
+    typeTotalCount,
+    keywordsTotalCount,
+    screenshotTotalCount
+  } = useBulkOperations(getSelectedChannels);
 
   useEffect(() => {
     console.log("ChannelList useEffect running, fetching channels with limit:", showAll ? undefined : limit);
@@ -97,41 +93,6 @@ export const ChannelList: React.FC<ChannelListProps> = ({
       fetchChannels(0, effectiveLimit);
     }
   }, [isAdmin, limit, showAll, fetchChannels, currentPage, pageSize]);
-
-  const sortedChannels = sortAlphabetically && channels ? 
-    [...channels].sort((a, b) => (a.channel_title || "").localeCompare(b.channel_title || "")) : 
-    channels;
-
-  const toggleAlphabeticalSort = () => {
-    setSortAlphabetically(!sortAlphabetically);
-  };
-
-  const handleBulkFetchStats = async () => {
-    const selectedChannels = getSelectedChannels();
-    await fetchStatsForChannels(selectedChannels);
-  };
-  
-  const handleBulkGenerateTypes = async () => {
-    const selectedChannels = getSelectedChannels();
-    await generateTypesForChannels(selectedChannels);
-  };
-  
-  const handleBulkGenerateKeywords = async () => {
-    const selectedChannels = getSelectedChannels();
-    await generateKeywordsForChannels(selectedChannels);
-  };
-  
-  const handleBulkTakeScreenshots = async () => {
-    const selectedChannels = getSelectedChannels();
-    await generateScreenshotsForChannels(selectedChannels);
-  };
-
-  const toggleSelectionMode = () => {
-    setShowSelectionControls(!showSelectionControls);
-    if (showSelectionControls) {
-      clearSelection();
-    }
-  };
 
   if (loading) {
     return <LoadingState />;
@@ -200,14 +161,10 @@ export const ChannelList: React.FC<ChannelListProps> = ({
           />
           
           {isAdmin && (
-            <Button 
-              variant="outline" 
-              onClick={toggleAlphabeticalSort}
-              className="flex items-center gap-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-              {sortAlphabetically ? "Original Order" : "Sort A-Z"}
-            </Button>
+            <SortButton 
+              sortAlphabetically={sortAlphabetically}
+              toggleAlphabeticalSort={toggleAlphabeticalSort}
+            />
           )}
         </div>
         
