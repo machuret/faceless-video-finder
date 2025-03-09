@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,14 +19,16 @@ export const useMassStatsUpdate = () => {
 
   const fetchChannelsForStatsUpdate = async () => {
     try {
-      // Find channels missing any of the important stats
+      // Improved query to find channels missing any of the important stats
       const { data, error, count } = await supabase
         .from('youtube_channels')
         .select('id, channel_url, channel_title', { count: 'exact' })
-        .or('total_subscribers.is.null,total_views.is.null,video_count.is.null,description.is.null');
+        .or('total_subscribers.is.null,total_views.is.null,video_count.is.null,description.is.null')
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       console.log(`Found ${count || 0} channels missing stats`);
+      console.log("Sample channels with missing stats:", data?.slice(0, 3));
       return { channels: data, count: count || 0 };
     } catch (error) {
       console.error("Error fetching channels for stats update:", error);
@@ -59,16 +62,20 @@ export const useMassStatsUpdate = () => {
         };
       }
 
+      console.log(`Received stats for ${channelTitle}:`, data);
+
       // Prepare data for update
       const updateData: Record<string, any> = {};
       
       if (data.title) updateData.channel_title = data.title;
-      if (data.subscriberCount) updateData.total_subscribers = data.subscriberCount;
-      if (data.viewCount) updateData.total_views = data.viewCount;
-      if (data.videoCount) updateData.video_count = data.videoCount;
+      if (data.subscriberCount !== undefined) updateData.total_subscribers = data.subscriberCount;
+      if (data.viewCount !== undefined) updateData.total_views = data.viewCount;
+      if (data.videoCount !== undefined) updateData.video_count = data.videoCount;
       if (data.startDate) updateData.start_date = data.startDate;
       if (data.description) updateData.description = data.description;
       if (data.country) updateData.country = data.country;
+      
+      console.log(`Update data prepared for ${channelTitle}:`, updateData);
       
       // Only update if we have data to update
       if (Object.keys(updateData).length > 0) {
@@ -125,34 +132,29 @@ export const useMassStatsUpdate = () => {
 
       toast.info(`Starting stats update for ${channels.length} channels with missing stats. This may take a while.`);
       
-      // Process channels in batches to avoid overloading the server
-      const batchSize = 3;
-      
-      for (let i = 0; i < channels.length; i += batchSize) {
-        const batch = channels.slice(i, i + batchSize);
+      // Process channels one at a time to avoid API rate limits
+      for (let i = 0; i < channels.length; i++) {
+        const channel = channels[i];
         
-        // Update stats for this batch in sequence (not parallel to avoid rate limits)
-        for (const channel of batch) {
-          const result = await updateStatsForChannel(
-            channel.id, 
-            channel.channel_url,
-            channel.channel_title || `Channel ${i+1}`
-          );
-          
-          if (result.success) {
-            setSuccessCount(prev => prev + 1);
-          } else {
-            setErrorCount(prev => prev + 1);
-            console.warn(result.message);
-          }
-          
-          // Update processed count
-          setProcessedChannels(prev => prev + 1);
-          setProgress(Math.floor(((i + 1) / channels.length) * 100));
+        const result = await updateStatsForChannel(
+          channel.id, 
+          channel.channel_url,
+          channel.channel_title || `Channel ${i+1}`
+        );
+        
+        if (result.success) {
+          setSuccessCount(prev => prev + 1);
+        } else {
+          setErrorCount(prev => prev + 1);
+          console.warn(result.message);
         }
         
-        // Small delay between batches to avoid rate limiting
-        if (i + batchSize < channels.length) {
+        // Update processed count
+        setProcessedChannels(i + 1);
+        setProgress(Math.floor(((i + 1) / channels.length) * 100));
+        
+        // Delay between each channel to avoid API rate limits
+        if (i + 1 < channels.length) {
           await new Promise(resolve => setTimeout(resolve, 3000));
         }
       }

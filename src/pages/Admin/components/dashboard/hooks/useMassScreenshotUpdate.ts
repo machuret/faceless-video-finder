@@ -16,13 +16,17 @@ export const useMassScreenshotUpdate = () => {
 
   const fetchChannelsWithoutScreenshots = async () => {
     try {
+      // Modified query to properly detect channels without screenshots
+      // The OR condition now checks for null, empty string, or non-existent screenshot_url
       const { data, error, count } = await supabase
         .from('youtube_channels')
         .select('id, channel_url, channel_title', { count: 'exact' })
-        .or('screenshot_url.is.null,screenshot_url.eq.');
+        .or('screenshot_url.is.null,screenshot_url.eq.')
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       console.log(`Found ${count || 0} channels without screenshots`);
+      console.log("Sample channels:", data?.slice(0, 3));
       return { channels: data, count: count || 0 };
     } catch (error) {
       console.error("Error fetching channels without screenshots:", error);
@@ -33,6 +37,8 @@ export const useMassScreenshotUpdate = () => {
 
   const updateScreenshot = async (channelId: string, channelUrl: string): Promise<ScreenshotUpdateResult> => {
     try {
+      console.log(`Updating screenshot for channel ${channelId}: ${channelUrl}`);
+      
       const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: {
           channelUrl,
@@ -43,8 +49,10 @@ export const useMassScreenshotUpdate = () => {
       if (error) throw error;
       
       if (data?.success) {
+        console.log(`Successfully updated screenshot for channel ${channelId}`);
         return { success: true, message: `Updated screenshot for channel ${channelId}` };
       } else {
+        console.error(`Failed to update screenshot for channel ${channelId}:`, data?.error);
         return { 
           success: false, 
           message: data?.error || "Screenshot update failed without specific error"
@@ -77,37 +85,36 @@ export const useMassScreenshotUpdate = () => {
       toast.info(`Starting screenshot update for ${channels.length} channels without screenshots. This may take a while.`);
       
       // Process channels in batches to avoid overloading the server
-      const batchSize = 5;
+      const batchSize = 3; // Reduced from 5 to 3 to avoid rate limiting
       const results = { success: 0, failed: 0 };
       
       for (let i = 0; i < channels.length; i += batchSize) {
         const batch = channels.slice(i, i + batchSize);
         
-        // Update screenshots for this batch in parallel
-        const batchPromises = batch.map(channel => 
-          updateScreenshot(channel.id, channel.channel_url)
-        );
-        
-        const batchResults = await Promise.all(batchPromises);
-        
-        // Count successes and failures
-        batchResults.forEach(result => {
+        // Process this batch sequentially to avoid overwhelming the screenshot service
+        for (const channel of batch) {
+          console.log(`Processing channel ${channel.id}: ${channel.channel_title || channel.channel_url}`);
+          
+          const result = await updateScreenshot(channel.id, channel.channel_url);
+          
           if (result.success) {
             results.success++;
           } else {
             results.failed++;
             console.warn(result.message);
           }
-        });
+          
+          // Update progress after each channel
+          setProcessedChannels(prev => prev + 1);
+          setProgress(Math.floor(((i + batch.indexOf(channel) + 1) / channels.length) * 100));
+          
+          // Small delay between each channel to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
         
-        // Update progress
-        const processed = Math.min(i + batchSize, channels.length);
-        setProcessedChannels(processed);
-        setProgress(Math.floor((processed / channels.length) * 100));
-        
-        // Small delay between batches to avoid rate limiting
+        // Longer delay between batches
         if (i + batchSize < channels.length) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
         }
       }
       

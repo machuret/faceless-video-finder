@@ -25,6 +25,35 @@ const ChannelBasicFields = ({
 }: ChannelBasicFieldsProps) => {
   const [refreshingVideos, setRefreshingVideos] = React.useState(false);
 
+  const extractYoutubeChannelId = (url: string) => {
+    if (!url) return null;
+    
+    // Comprehensive set of patterns to match YouTube channel IDs
+    const patterns = [
+      /youtube\.com\/channel\/(UC[\w-]{22})/i,         // youtube.com/channel/UC...
+      /youtube\.com\/c\/(UC[\w-]{22})/i,               // youtube.com/c/UC...
+      /youtube\.com\/@[\w-]+\/(UC[\w-]{22})/i,         // youtube.com/@username/UC...
+      /youtube\.com\/(UC[\w-]{22})/i,                  // youtube.com/UC...
+      /(UC[\w-]{22})/i                                 // Any UC... pattern
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        const id = match[1];
+        // Ensure proper capitalization (UC at the start)
+        return id.startsWith('uc') ? 'UC' + id.substring(2) : id;
+      }
+    }
+    
+    // Special case for @username URLs - we need to fetch the channel ID
+    if (url.includes('@') || url.includes('/c/')) {
+      return 'fetch-needed';
+    }
+    
+    return null;
+  };
+
   const handleRefreshTopVideos = async () => {
     if (!channelUrl) {
       toast.error("Please provide a channel URL first");
@@ -32,17 +61,36 @@ const ChannelBasicFields = ({
     }
 
     setRefreshingVideos(true);
-    toast.info("Refreshing top performing videos...");
+    toast.info("Analyzing channel URL to find YouTube ID...");
 
     try {
-      // Extract YouTube channel ID from URL
-      const urlPattern = /(?:youtube\.com\/(?:channel\/|c\/|@))([\w-]+)/;
-      const urlMatch = channelUrl.match(urlPattern);
-      const youtubeChannelId = urlMatch ? urlMatch[1] : null;
-
+      // First try to extract YouTube channel ID directly from URL
+      let youtubeChannelId = extractYoutubeChannelId(channelUrl);
+      
+      // If we couldn't extract an ID but the URL looks like a channel
+      if (youtubeChannelId === 'fetch-needed') {
+        toast.info("Looking up channel ID from username...");
+        
+        // Call the API to convert username to channel ID
+        const { data, error } = await supabase.functions.invoke('fetch-youtube-data', {
+          body: { url: channelUrl }
+        });
+        
+        if (error) throw error;
+        
+        if (data?.basicInfo?.channelId) {
+          youtubeChannelId = data.basicInfo.channelId;
+          console.log("Got channel ID from API:", youtubeChannelId);
+        } else {
+          throw new Error("Could not find channel ID from username");
+        }
+      }
+      
       if (!youtubeChannelId) {
         throw new Error("Could not extract YouTube channel ID from URL");
       }
+
+      toast.info(`Using channel ID: ${youtubeChannelId}`);
 
       const { data, error } = await supabase.functions.invoke('fetch-top-videos', {
         body: { channelId: youtubeChannelId }

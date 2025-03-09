@@ -26,7 +26,7 @@ export const mapResponseToFormData = (
   const missing = verifyRequiredFields(data);
   const hasPartialData = missing.length > 0;
   
-  // Transform API data to form data format
+  // Transform API data to form data format with proper type handling
   const stats: Partial<ChannelFormData> = {
     total_subscribers: data.subscriberCount?.toString() || "",
     total_views: data.viewCount?.toString() || "",
@@ -36,6 +36,10 @@ export const mapResponseToFormData = (
     start_date: data.startDate || "",
     country: data.country || ""
   };
+
+  // Log what we're returning to help with debugging
+  console.log("Mapped stats:", stats);
+  console.log("Missing fields:", missing);
 
   return {
     stats,
@@ -56,15 +60,24 @@ export const mapPartialResponseToFormData = (
   const successfulFields: string[] = [];
   const failedFields: string[] = [];
   
+  // Log the received data to help with debugging
+  console.log("Processing partial response data:", data);
+  
   // Check each field in the response and add to our stats object if present
   Object.entries(FIELD_MAPPINGS).forEach(([apiField, formField]) => {
     const responseField = apiField as keyof ChannelStatsResponse;
+    
+    // Log each field we're checking
+    console.log(`Checking field ${apiField} => ${formField}:`, data[responseField]);
+    
     if (data[responseField] !== undefined && 
         data[responseField] !== null && 
         String(data[responseField]).trim() !== "") {
       // Use explicit typing to ensure proper assignment
       const fieldName = formField as keyof ChannelFormData;
       const fieldValue = String(data[responseField]);
+      
+      console.log(`Found valid value for ${fieldName}:`, fieldValue);
       
       // Now assign with proper type casting for different field types
       if (fieldName === 'total_subscribers' || fieldName === 'total_views' || fieldName === 'video_count') {
@@ -79,6 +92,10 @@ export const mapPartialResponseToFormData = (
       failedFields.push(apiField);
     }
   });
+  
+  console.log("Partial stats result:", partialStats);
+  console.log("Successful fields:", successfulFields);
+  console.log("Failed fields:", failedFields);
   
   return { partialStats, successfulFields, failedFields };
 };

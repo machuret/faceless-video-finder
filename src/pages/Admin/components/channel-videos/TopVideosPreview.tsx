@@ -33,20 +33,22 @@ const TopVideosPreview: React.FC<TopVideosPreviewProps> = ({ channelId, youtubeC
   const extractYoutubeChannelId = (url: string) => {
     if (!url) return null;
     
-    // Try to extract channel ID from URL patterns like /channel/UC...
-    // Match both case variations in channel URLs
-    const channelMatch = url.match(/\/channel\/(UC[\w-]{22})/i);
-    if (channelMatch) {
-      // Return the ID, ensuring it's properly capitalized (UC at the start)
-      const id = channelMatch[1];
-      return id.startsWith('uc') ? 'UC' + id.substring(2) : id;
-    }
+    // Try to extract channel ID from URL patterns
+    const patterns = [
+      /youtube\.com\/channel\/(UC[\w-]{22})/i,         // youtube.com/channel/UC...
+      /youtube\.com\/c\/(UC[\w-]{22})/i,               // youtube.com/c/UC...
+      /youtube\.com\/@[\w-]+\/(UC[\w-]{22})/i,         // youtube.com/@username/UC...
+      /youtube\.com\/(UC[\w-]{22})/i,                  // youtube.com/UC...
+      /(UC[\w-]{22})/i                                 // Any UC... pattern
+    ];
     
-    // Try to match just a raw UC... ID
-    const rawIdMatch = url.match(/(UC[\w-]{22})/i);
-    if (rawIdMatch) {
-      const id = rawIdMatch[1];
-      return id.startsWith('uc') ? 'UC' + id.substring(2) : id;
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        const id = match[1];
+        // Ensure proper capitalization (UC at the start)
+        return id.startsWith('uc') ? 'UC' + id.substring(2) : id;
+      }
     }
     
     return null;
@@ -108,7 +110,7 @@ const TopVideosPreview: React.FC<TopVideosPreviewProps> = ({ channelId, youtubeC
       console.log(`Channel URL from database: ${data.channel_url}`);
       const extractedId = extractYoutubeChannelId(data.channel_url);
       if (!extractedId) {
-        toast.error("Could not extract YouTube channel ID from URL. The URL should contain a valid YouTube channel ID starting with 'UC'.");
+        toast.error("Could not extract YouTube channel ID from URL. The URL format should be like 'youtube.com/channel/UCxxxxxxxx' or similar.");
         return;
       }
       

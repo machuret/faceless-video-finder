@@ -25,8 +25,7 @@ const Dashboard = () => {
             <FeaturedChannels />
           </div>
           <div className="lg:col-span-1 space-y-6">
-            <MassScreenshotUpdater />
-            <MassStatsUpdater />
+            {/* Removed the mass updaters from here */}
           </div>
         </div>
         
@@ -39,6 +38,16 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-3">
             <CsvChannelUploader />
+          </div>
+        </div>
+        
+        {/* New placement for mass updaters - after AdminActionCards, in the same row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="lg:col-span-1">
+            <MassScreenshotUpdater />
+          </div>
+          <div className="lg:col-span-1">
+            <MassStatsUpdater />
           </div>
         </div>
         
