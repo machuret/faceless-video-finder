@@ -41,7 +41,7 @@ export default function AdminLogin() {
   }, [user, isAdmin, authLoading, navigate]);
 
   // Handle form submission
-  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     
     // Validate form
@@ -110,7 +110,7 @@ export default function AdminLogin() {
         // Sign out non-admin users
         await supabase.auth.signOut();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Unexpected login error:", error);
       setErrorMessage(error.message || "An unexpected error occurred");
       toast.error(error.message || "Login failed");
@@ -141,7 +141,7 @@ export default function AdminLogin() {
               </div>
             )}
             
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -183,7 +183,7 @@ export default function AdminLogin() {
               
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full"
                 disabled={isLoading || authLoading}
               >
                 {isLoading ? (
