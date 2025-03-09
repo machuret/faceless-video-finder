@@ -2,7 +2,7 @@
 import React, { useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { niches } from "supabase/functions/_shared/niches";
+import { niches } from "../../../../../../../supabase/functions/_shared/niches";
 
 interface NicheSelectorProps {
   selectedNiche: string | undefined;
