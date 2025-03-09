@@ -45,22 +45,23 @@ const normalizeChannelUrl = (url: string): string => {
 
 /**
  * Check if a channel with the given URL already exists in the database
+ * and return the channel data if found
  */
-const checkDuplicateUrl = async (channelUrl: string): Promise<boolean> => {
+const checkExistingChannel = async (channelUrl: string): Promise<{ exists: boolean; data: any | null }> => {
   const normalizedUrl = normalizeChannelUrl(channelUrl);
   
   const { data, error } = await supabase
     .from("youtube_channels")
-    .select("id")
+    .select("*")
     .eq("channel_url", normalizedUrl)
     .maybeSingle();
   
   if (error) {
-    console.error("Error checking for duplicate URL:", error);
+    console.error("Error checking for existing channel:", error);
     throw error;
   }
   
-  return !!data;
+  return { exists: !!data, data };
 };
 
 /**
@@ -160,27 +161,63 @@ export const processCsvImport = async (csvContent: string): Promise<ImportResult
               continue;
             }
             
-            // Check for duplicates
-            const isDuplicate = await checkDuplicateUrl(row.channel_url);
-            if (isDuplicate) {
+            // Check for existing channel
+            const { exists, data: existingChannel } = await checkExistingChannel(row.channel_url);
+            
+            // Convert row to channel data
+            const newChannelData = rowToChannelData(row);
+            
+            if (exists && existingChannel) {
               result.duplicates++;
-              console.log(`Skipping duplicate channel URL: ${row.channel_url}`);
-              continue;
-            }
-            
-            // Convert row to channel data and insert
-            const channelData = rowToChannelData(row);
-            
-            const { error } = await supabase
-              .from("youtube_channels")
-              .insert(channelData);
-            
-            if (error) {
-              console.error(`Error inserting row ${rowNum}:`, error);
-              result.errors.push(`Row ${rowNum}: Database error - ${error.message}`);
-              result.failed++;
+              console.log(`Updating existing channel with URL: ${row.channel_url}`);
+              
+              // Merge data: only update fields that are provided in the CSV and not null
+              const updatedData: Record<string, any> = {};
+              
+              // Only update fields that have values in the CSV
+              if (row.channel_name && row.channel_name.trim() !== '') {
+                updatedData.channel_title = row.channel_name.trim();
+              }
+              
+              if (row.starting_date && row.starting_date.trim() !== '') {
+                updatedData.start_date = row.starting_date.trim();
+              }
+              
+              if (row.niche && row.niche.trim() !== '') {
+                updatedData.niche = row.niche.trim();
+              }
+              
+              // Only update if we have data to update
+              if (Object.keys(updatedData).length > 0) {
+                const { error } = await supabase
+                  .from("youtube_channels")
+                  .update(updatedData)
+                  .eq("id", existingChannel.id);
+                
+                if (error) {
+                  console.error(`Error updating row ${rowNum}:`, error);
+                  result.errors.push(`Row ${rowNum}: Update error - ${error.message}`);
+                  result.failed++;
+                } else {
+                  result.success++;
+                }
+              } else {
+                console.log(`No new data to update for channel: ${row.channel_url}`);
+                result.success++;
+              }
             } else {
-              result.success++;
+              // Insert new channel
+              const { error } = await supabase
+                .from("youtube_channels")
+                .insert(newChannelData);
+              
+              if (error) {
+                console.error(`Error inserting row ${rowNum}:`, error);
+                result.errors.push(`Row ${rowNum}: Database error - ${error.message}`);
+                result.failed++;
+              } else {
+                result.success++;
+              }
             }
           } catch (error) {
             console.error(`Error processing row ${rowNum}:`, error);

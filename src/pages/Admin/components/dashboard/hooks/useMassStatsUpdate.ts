@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,11 +18,14 @@ export const useMassStatsUpdate = () => {
 
   const fetchChannelsForStatsUpdate = async () => {
     try {
+      // Find channels missing any of the important stats
       const { data, error, count } = await supabase
         .from('youtube_channels')
-        .select('id, channel_url, channel_title', { count: 'exact' });
+        .select('id, channel_url, channel_title', { count: 'exact' })
+        .or('total_subscribers.is.null,total_views.is.null,video_count.is.null,description.is.null');
       
       if (error) throw error;
+      console.log(`Found ${count || 0} channels missing stats`);
       return { channels: data, count: count || 0 };
     } catch (error) {
       console.error("Error fetching channels for stats update:", error);
@@ -116,12 +118,12 @@ export const useMassStatsUpdate = () => {
       setTotalChannels(count);
       
       if (channels.length === 0) {
-        toast.info("No channels found to update");
+        toast.info("No channels found missing stats");
         setIsProcessing(false);
         return;
       }
 
-      toast.info(`Starting stats update for ${channels.length} channels. This may take a while.`);
+      toast.info(`Starting stats update for ${channels.length} channels with missing stats. This may take a while.`);
       
       // Process channels in batches to avoid overloading the server
       const batchSize = 3;

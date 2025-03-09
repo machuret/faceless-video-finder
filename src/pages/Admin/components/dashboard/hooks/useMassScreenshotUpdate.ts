@@ -18,11 +18,11 @@ export const useMassScreenshotUpdate = () => {
     try {
       const { data, error, count } = await supabase
         .from('youtube_channels')
-        .select('id, channel_url', { count: 'exact' })
-        .is('screenshot_url', null)
-        .or('screenshot_url.eq.');
+        .select('id, channel_url, channel_title', { count: 'exact' })
+        .or('screenshot_url.is.null,screenshot_url.eq.');
       
       if (error) throw error;
+      console.log(`Found ${count || 0} channels without screenshots`);
       return { channels: data, count: count || 0 };
     } catch (error) {
       console.error("Error fetching channels without screenshots:", error);
