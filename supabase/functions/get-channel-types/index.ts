@@ -2,6 +2,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
+// Cache control settings for better performance
+const CACHE_CONTROL = 'public, max-age=300, s-maxage=600';
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -9,6 +12,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log("Edge function called: get-channel-types");
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -18,25 +23,38 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch channel types from the database
-    const { data: channelTypes, error } = await supabase
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database query timeout')), 3000)
+    );
+    
+    // Make efficient query with only needed fields
+    const queryPromise = supabase
       .from('channel_types')
       .select('id, label, description')
       .order('label');
+
+    const { data: channelTypes, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     if (error) {
       console.error('Error fetching channel types:', error);
       throw error;
     }
 
-    // Return the channel types
+    console.log(`Retrieved ${channelTypes?.length || 0} channel types from database`);
+
+    // Return the channel types with cache headers
     const response = {
       channelTypes: channelTypes || [],
       success: true,
     };
 
     return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'Cache-Control': CACHE_CONTROL
+      },
     });
   } catch (error) {
     console.error('Error in get-channel-types function:', error);

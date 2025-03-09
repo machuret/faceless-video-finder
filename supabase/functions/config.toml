@@ -51,3 +51,8 @@ version = 1
 name = "get-niches"
 verify_jwt = false
 version = 1
+
+[[functions]]
+name = "update-niche-details"
+verify_jwt = false
+version = 1

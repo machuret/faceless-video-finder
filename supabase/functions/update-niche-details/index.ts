@@ -1,97 +1,90 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
-import { supabaseClient } from "../_shared/supabaseClient.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
+import { corsHeaders } from '../_shared/cors.ts';
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { niche, description, example, image_url } = await req.json();
+    console.log("Edge function called: update-niche-details");
+    
+    // Parse the request body
+    const requestData = await req.json();
+    const { niche, description, example, image_url } = requestData;
+    
+    if (!niche) {
+      throw new Error('Niche name is required');
+    }
+    
+    console.log(`Updating details for niche: ${niche}`);
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!niche || typeof niche !== "string") {
-      return new Response(
-        JSON.stringify({ error: "Invalid or missing niche name" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing Supabase environment variables');
     }
 
-    const supabase = supabaseClient(req);
-    
-    // Find niche by name
-    const { data: nicheData, error: findError } = await supabase
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // First, check if niche exists
+    const { data: existingNiche, error: queryError } = await supabase
       .from('niches')
       .select('id')
       .eq('name', niche)
-      .single();
-    
-    if (findError) {
-      return new Response(
-        JSON.stringify({ error: `Niche "${niche}" not found` }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    
-    // First update the niche's image_url
-    const { error: updateImageError } = await supabase
-      .from('niches')
-      .update({ 
-        description: description, 
-        image_url: image_url
-      })
-      .eq('id', nicheData.id);
-    
-    if (updateImageError) {
-      throw updateImageError;
-    }
-    
-    // Now update or insert the niche description details
-    const { data: nicheDetailsData, error: detailsError } = await supabase
-      .from('niche_details')
-      .select()
-      .eq('niche_id', nicheData.id)
       .maybeSingle();
-    
-    let updateResult;
-    
-    if (nicheDetailsData) {
-      // Update existing record
-      updateResult = await supabase
-        .from('niche_details')
-        .update({ content: example || null })
-        .eq('id', nicheDetailsData.id);
-    } else if (example) {
-      // Insert new record
-      updateResult = await supabase
-        .from('niche_details')
-        .insert({ niche_id: nicheData.id, content: example });
+      
+    if (queryError) {
+      console.error('Error checking niche existence:', queryError);
+      throw new Error(`Database error: ${queryError.message}`);
     }
     
-    if (updateResult?.error) {
-      throw updateResult.error;
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Updated details for "${niche}"` 
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error updating niche details:", error);
-    
-    return new Response(
-      JSON.stringify({ 
-        error: error.message || "An error occurred while updating the niche details",
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    if (existingNiche) {
+      // Update existing niche
+      const { error: updateError } = await supabase
+        .from('niches')
+        .update({
+          description,
+          image_url
+        })
+        .eq('name', niche);
+        
+      if (updateError) {
+        throw new Error(`Error updating niche: ${updateError.message}`);
       }
-    );
+    } else {
+      // Create new niche
+      const { error: insertError } = await supabase
+        .from('niches')
+        .insert({
+          name: niche,
+          description,
+          image_url
+        });
+        
+      if (insertError) {
+        throw new Error(`Error creating niche: ${insertError.message}`);
+      }
+    }
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: `Successfully updated details for "${niche}"`
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error in update-niche-details function:', error);
+    
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message,
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

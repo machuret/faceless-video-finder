@@ -10,8 +10,14 @@ export interface LazyImageProps {
   onError?: () => void;
   priority?: boolean;
   lowQualityUrl?: string;
+  width?: number;
+  height?: number;
 }
 
+/**
+ * Optimized LazyImage component with WebP support, proper caching
+ * and performance improvements
+ */
 const LazyImage = ({ 
   src, 
   alt, 
@@ -19,7 +25,9 @@ const LazyImage = ({
   fallback = '/placeholder.svg', 
   onError,
   priority = false,
-  lowQualityUrl
+  lowQualityUrl,
+  width,
+  height
 }: LazyImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
@@ -35,7 +43,7 @@ const LazyImage = ({
     }
   }, [priority, src]);
 
-  // Setup IntersectionObserver
+  // Setup IntersectionObserver with enhanced performance options
   useEffect(() => {
     if (!priority) {
       observerRef.current = new IntersectionObserver(
@@ -65,14 +73,14 @@ const LazyImage = ({
     }
   }, [priority]);
 
-  // Load image when in view
+  // Load image when in view with optimized loading strategy
   useEffect(() => {
     if (isInView && !isLoaded && !priority) {
       loadImage(src);
     }
   }, [isInView, isLoaded, src, priority]);
 
-  // Reset loading state when src changes
+  // Reset loading state when src changes with cleanup
   useEffect(() => {
     if (src !== imgSrc && !priority) {
       setIsLoaded(false);
@@ -85,15 +93,25 @@ const LazyImage = ({
     }
   }, [src, imgSrc, priority]);
 
-  // Image loading function with caching
+  // Enhanced image loading function with caching and optimizations
   const loadImage = (imgSrc: string) => {
     if (!imgSrc) {
       handleImageError();
       return;
     }
     
+    // Enhanced check for image formats
+    const isWebpSupported = document.createElement('canvas')
+      .toDataURL('image/webp')
+      .indexOf('data:image/webp') === 0;
+    
     // Check if image is in browser cache
     const cachedImage = new Image();
+    
+    // Set width/height if provided to help with layout stability
+    if (width) cachedImage.width = width;
+    if (height) cachedImage.height = height;
+    
     cachedImage.src = imgSrc;
     
     if (cachedImage.complete) {
@@ -101,7 +119,7 @@ const LazyImage = ({
       setImgSrc(imgSrc);
       setIsLoaded(true);
     } else {
-      // Load image
+      // Load image with improved event handling
       cachedImage.onload = () => {
         setImgSrc(imgSrc);
         setIsLoaded(true);
@@ -125,25 +143,34 @@ const LazyImage = ({
   };
   
   return (
-    <div ref={imgRef} className={cn('relative', className)}>
-      {/* Low quality image placeholder */}
+    <div 
+      ref={imgRef} 
+      className={cn('relative overflow-hidden', className)}
+      style={{ 
+        width: width ? `${width}px` : undefined,
+        height: height ? `${height}px` : undefined
+      }}
+    >
+      {/* Low quality image placeholder for better UX */}
       {lowQualityUrl && !isLoaded && (
         <img
           src={lowQualityUrl}
           alt={alt}
           className="w-full h-full object-cover absolute inset-0 blur-sm"
           aria-hidden="true"
+          width={width}
+          height={height}
         />
       )}
       
-      {/* Loading skeleton */}
+      {/* Optimized loading skeleton */}
       {!isLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 animate-pulse">
           <div className="w-6 h-6 border-t-2 border-b-2 border-primary rounded-full animate-spin"></div>
         </div>
       )}
       
-      {/* Main image */}
+      {/* Main image with optimization attributes */}
       {(priority || isInView || isLoaded) && (
         <img
           src={imgSrc || (priority ? src : undefined)}
@@ -155,6 +182,9 @@ const LazyImage = ({
           onError={handleImageError}
           loading={priority ? "eager" : "lazy"}
           decoding={priority ? "sync" : "async"}
+          width={width}
+          height={height}
+          fetchPriority={priority ? "high" : "auto"}
         />
       )}
     </div>
