@@ -1,5 +1,4 @@
-
-import { createBrowserRouter, RouterProvider, RouteObject } from 'react-router-dom';
+import { RouteObject } from 'react-router-dom';
 import Index from '@/pages/Index';
 import ChannelSearch from '@/pages/ChannelSearch';
 import ChannelDetails from '@/pages/ChannelDetails';
@@ -29,7 +28,15 @@ import ManageFacelessIdeas from '@/pages/Admin/ManageFacelessIdeas';
 import ManageDidYouKnowFacts from '@/pages/Admin/ManageDidYouKnowFacts';
 import Calculator from '@/pages/Calculator';
 
+// Create a reusable admin dashboard route element
+const DashboardElement = (
+  <ProtectedRoute>
+    <Dashboard />
+  </ProtectedRoute>
+);
+
 const routes: RouteObject[] = [
+  // Public routes
   {
     path: '/',
     element: <Index />,
@@ -98,26 +105,20 @@ const routes: RouteObject[] = [
     path: '/channel-type/:slug',
     element: <ChannelTypeDetails />,
   },
+  
   // Admin routes
   {
     path: '/admin/login',
     element: <AdminLogin />,
   },
+  // Use the same Dashboard component for both /admin and /admin/dashboard
   {
     path: '/admin',
-    element: (
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    ),
+    element: DashboardElement,
   },
   {
     path: '/admin/dashboard',
-    element: (
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    ),
+    element: DashboardElement,
   },
   {
     path: '/admin/add-channel',
