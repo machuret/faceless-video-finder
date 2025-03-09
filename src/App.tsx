@@ -1,8 +1,9 @@
+
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { QueryProvider } from "@/components/QueryProvider";
-import { AuthProvider } from "@/components/AuthProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
+import { AuthProvider } from "@/context/AuthContext";
 import { BrowserRouter } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 
@@ -24,7 +25,7 @@ import FacelessChannelIdeas from "@/pages/FacelessChannelIdeas";
 import FacelessIdeaDetails from "@/pages/FacelessIdeaDetails";
 import ChannelTypes from "@/pages/ChannelTypes";
 import ChannelTypeDetails from "@/pages/ChannelTypeDetails";
-import ManageNichesPage from "@/pages/ManageNichesPage";
+import ManageNichesPage from "@/pages/Admin/ManageNichesPage";
 
 // Admin Pages
 import AdminLogin from "@/pages/Admin/AdminLogin";
