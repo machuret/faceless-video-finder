@@ -1,6 +1,8 @@
-import { supabase } from "@/integrations/supabase/client";
 
-export const searchChannel = async (channelInput: string) => {
+import { supabase } from "@/integrations/supabase/client";
+import { Channel, ChannelMetadata } from "@/types/youtube";
+
+export const searchChannel = async (channelInput: string): Promise<Channel[]> => {
   if (!channelInput || !channelInput.trim()) {
     return [];
   }
@@ -68,7 +70,41 @@ export const searchChannel = async (channelInput: string) => {
     }
 
     console.log(`Search for "${searchTerm}" returned ${data?.length || 0} results`);
-    return data || [];
+    
+    // Convert the data to the correct Channel type
+    const channels: Channel[] = data?.map(item => {
+      // Ensure metadata is properly typed
+      let typedMetadata: ChannelMetadata | undefined;
+      if (item.metadata) {
+        try {
+          // If metadata is already an object, use it directly
+          // If it's a string, parse it
+          typedMetadata = typeof item.metadata === 'string' 
+            ? JSON.parse(item.metadata) as ChannelMetadata 
+            : item.metadata as unknown as ChannelMetadata;
+        } catch (e) {
+          console.error("Error parsing metadata:", e);
+          typedMetadata = { }; // Fallback to empty object
+        }
+      }
+      
+      return {
+        ...item,
+        metadata: typedMetadata,
+        // Ensure numeric fields are numbers
+        total_subscribers: typeof item.total_subscribers === 'string' 
+          ? parseInt(item.total_subscribers) 
+          : item.total_subscribers,
+        total_views: typeof item.total_views === 'string' 
+          ? parseInt(item.total_views) 
+          : item.total_views,
+        video_count: typeof item.video_count === 'string' 
+          ? parseInt(item.video_count) 
+          : item.video_count,
+      } as Channel;
+    }) || [];
+    
+    return channels;
   } catch (err) {
     console.error("Search execution error:", err);
     throw err;

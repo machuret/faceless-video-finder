@@ -34,7 +34,7 @@ const ChannelSearch = () => {
         console.log("Searching for:", searchQuery);
         const results = await searchChannel(searchQuery);
         console.log("Search results:", results);
-        setChannels(results || []);
+        setChannels(results);
       } catch (err) {
         console.error('Search error:', err);
         setError('Failed to perform search. Please try again.');
