@@ -6,9 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import MainNavbar from "@/components/MainNavbar";
 import { Card } from "@/components/ui/card";
 import PageFooter from "@/components/home/PageFooter";
-import { ChannelCard } from "@/components/youtube/channel-list/components/ChannelCard";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
+import { Channel, ChannelMetadata } from "@/types/youtube";
 
 interface Niche {
   id: string;
@@ -67,7 +67,39 @@ const NicheDetails = () => {
         .order("total_subscribers", { ascending: false });
       
       if (error) throw error;
-      return data;
+      
+      // Transform the data to ensure metadata is properly typed
+      return (data || []).map(channel => {
+        // Convert metadata to the correct ChannelMetadata type
+        let typedMetadata: ChannelMetadata | undefined;
+        if (channel.metadata) {
+          try {
+            // If metadata is already an object, use it directly
+            // If it's a string, parse it
+            typedMetadata = typeof channel.metadata === 'string' 
+              ? JSON.parse(channel.metadata) as ChannelMetadata 
+              : channel.metadata as unknown as ChannelMetadata;
+          } catch (e) {
+            console.error("Error parsing metadata:", e);
+            typedMetadata = {}; // Fallback to empty object
+          }
+        }
+        
+        return {
+          ...channel,
+          metadata: typedMetadata,
+          // Convert numeric string values to numbers if needed
+          total_subscribers: typeof channel.total_subscribers === 'string' 
+            ? parseInt(channel.total_subscribers) 
+            : channel.total_subscribers,
+          total_views: typeof channel.total_views === 'string' 
+            ? parseInt(channel.total_views) 
+            : channel.total_views,
+          video_count: typeof channel.video_count === 'string' 
+            ? parseInt(channel.video_count) 
+            : channel.video_count
+        } as Channel;
+      });
     },
     enabled: !!niche?.name,
   });
