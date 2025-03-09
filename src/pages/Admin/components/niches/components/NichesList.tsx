@@ -7,7 +7,7 @@ import { NichesData } from "../hooks/useNichesList";
 interface NichesListProps {
   isLoading: boolean;
   nichesData: NichesData | undefined;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void>;
   onEdit: (niche: string) => void;
   onDelete: (niche: string) => Promise<void>;
   isDeleting: boolean;

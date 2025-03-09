@@ -61,7 +61,7 @@ const ManageNiches = () => {
   const handleSaveNicheDetails = async () => {
     try {
       await saveNicheDetails();
-      await refetch(); // Refresh the data after saving
+      await refetch();
       setActiveTab("list");
     } catch (error) {
       console.error("Error saving niche details:", error);
@@ -81,13 +81,13 @@ const ManageNiches = () => {
         <TabsContent value="list">
           <AddNicheForm 
             niches={nichesData?.niches || []} 
-            onNicheAdded={refetch}
+            onNicheAdded={async () => { await refetch(); }}
           />
 
           <NichesList
             isLoading={isLoading}
             nichesData={nichesData}
-            onRefresh={refetch}
+            onRefresh={async () => { await refetch(); }}
             onEdit={handleEditNiche}
             onDelete={handleDeleteNiche}
             isDeleting={isDeleting}
