@@ -79,7 +79,9 @@ export class YouTubeDataFetcher {
         country: snippet.country || "US",
         channel_category: "entertainment",
         notes: `Extracted via YouTube API. Channel ID: ${basicInfo.channelId}`,
-        keywords: []
+        keywords: [],
+        niche: "",
+        is_editor_verified: false
       };
 
       // Update the form with the fetched data

@@ -20,8 +20,13 @@ export const useChannelForm = () => {
     setFormData
   } = useChannelFormState();
 
-  const { handleChange, handleFieldChange, handleScreenshotChange, handleKeywordsChange } = 
-    useChannelFormHandlers(formData, setFormData);
+  const { 
+    handleChange, 
+    handleFieldChange, 
+    handleScreenshotChange, 
+    handleKeywordsChange,
+    handleBooleanFieldChange 
+  } = useChannelFormHandlers(formData, setFormData);
   
   const { fetchYoutubeData, debugInfo } = 
     useYouTubeDataFetcher(youtubeUrl, setLoading, setFormData);
@@ -70,7 +75,9 @@ export const useChannelForm = () => {
         country: "US", // Default to US
         channel_category: "entertainment", // Default to entertainment
         notes: "",
-        keywords: []
+        keywords: [],
+        niche: "",
+        is_editor_verified: false
       });
       hasInitialized.current = true;
     }
@@ -88,6 +95,7 @@ export const useChannelForm = () => {
     handleChange,
     handleScreenshotChange,
     handleFieldChange,
-    handleKeywordsChange
+    handleKeywordsChange,
+    handleBooleanFieldChange
   };
 };

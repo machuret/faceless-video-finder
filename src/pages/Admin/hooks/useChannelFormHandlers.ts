@@ -43,6 +43,16 @@ export const useChannelFormHandlers = (
     }));
   };
 
+  // Boolean field update handler (for switches and checkboxes)
+  const handleBooleanFieldChange = (name: string, value: boolean) => {
+    console.log(`Boolean field change - ${name}: ${value}`);
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   // Keywords handler
   const handleKeywordsChange = (keywords: string[]) => {
     console.log("Keywords change:", keywords);
@@ -70,6 +80,7 @@ export const useChannelFormHandlers = (
   return {
     handleChange,
     handleFieldChange,
+    handleBooleanFieldChange,
     handleKeywordsChange,
     handleScreenshotChange
   };

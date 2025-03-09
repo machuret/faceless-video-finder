@@ -18,4 +18,6 @@ export interface ChannelFormData {
   notes?: string;
   keywords?: string[];
   is_featured?: boolean;
+  niche?: string;
+  is_editor_verified?: boolean;
 }

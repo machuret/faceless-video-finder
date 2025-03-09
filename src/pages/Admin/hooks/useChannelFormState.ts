@@ -23,7 +23,9 @@ export const useChannelFormState = () => {
     country: "US", // Default to US as requested
     channel_category: "entertainment", // Default to entertainment as requested
     notes: "",
-    keywords: []
+    keywords: [],
+    niche: "",
+    is_editor_verified: false
   });
 
   return {

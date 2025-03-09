@@ -21,6 +21,7 @@ export interface ChannelFormProps {
   handleScreenshotChange: (url: string) => void;
   handleFieldChange: (field: string, value: any) => void;
   handleKeywordsChange: (keywords: string[]) => void;
+  handleBooleanFieldChange?: (field: string, value: boolean) => void;
 }
 
 const ChannelForm: React.FC<ChannelFormProps> = ({ 
@@ -31,7 +32,8 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   handleChange,
   handleScreenshotChange,
   handleFieldChange,
-  handleKeywordsChange
+  handleKeywordsChange,
+  handleBooleanFieldChange
 }) => {
   const navigate = useNavigate();
 
@@ -54,6 +56,7 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
       <ChannelTypeCategories 
         formData={formData}
         handleFieldChange={handleFieldChange}
+        handleBooleanFieldChange={handleBooleanFieldChange}
       />
       
       <KeywordsSection

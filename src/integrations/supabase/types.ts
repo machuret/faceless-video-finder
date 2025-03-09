@@ -134,6 +134,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          is_editor_verified: boolean | null
           is_featured: boolean | null
           keywords: string[] | null
           metadata: Json | null
@@ -164,6 +165,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_editor_verified?: boolean | null
           is_featured?: boolean | null
           keywords?: string[] | null
           metadata?: Json | null
@@ -194,6 +196,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_editor_verified?: boolean | null
           is_featured?: boolean | null
           keywords?: string[] | null
           metadata?: Json | null

@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Star } from "lucide-react";
+import { Edit, Trash2, Star, CheckCircle } from "lucide-react";
 import { Channel } from "@/types/youtube";
 import LazyImage from "@/components/ui/lazy-image";
 import { Switch } from "@/components/ui/switch";
@@ -29,7 +29,7 @@ export const ChannelCard: React.FC<ChannelCardProps> = ({
   onDelete,
   onToggleFeatured
 }) => {
-  const { id, channel_title, total_subscribers, screenshot_url, is_featured } = channel;
+  const { id, channel_title, total_subscribers, screenshot_url, is_featured, is_editor_verified, niche } = channel;
 
   // Format subscriber count (e.g., 1,500,000 -> 1.5M)
   const formatSubscriberCount = (count?: number | null) => {
@@ -75,9 +75,15 @@ export const ChannelCard: React.FC<ChannelCardProps> = ({
         </div>
       </div>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg truncate">{channel_title}</CardTitle>
-        <CardDescription>
-          {formatSubscriberCount(Number(total_subscribers))} subscribers
+        <CardTitle className="text-lg truncate flex items-center">
+          {channel_title}
+          {is_editor_verified && (
+            <CheckCircle className="ml-1 h-4 w-4 text-blue-500" title="Editor Verified" />
+          )}
+        </CardTitle>
+        <CardDescription className="flex flex-col">
+          <span>{formatSubscriberCount(Number(total_subscribers))} subscribers</span>
+          {niche && <span className="text-xs mt-1 bg-gray-100 px-2 py-0.5 rounded-full inline-block w-fit">{niche}</span>}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
