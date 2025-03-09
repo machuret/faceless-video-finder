@@ -1,82 +1,42 @@
 
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { Label } from "@/components/ui/label";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useState, useEffect } from "react";
-import { channelTypes } from "@/components/youtube/channel-list/constants";
-import { ChannelType } from "@/types/youtube";
-import TypeAIGenerator from "./TypeAIGenerator";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { channelTypes } from "@/components/youtube/channel-list/constants/channelTypes";
 
 interface TypeSelectorProps {
-  selectedType: string | undefined;
-  onSelect: (typeId: string) => void;
-  channelTitle?: string;
-  description?: string;
+  value: string;
+  onChange: (value: string) => void;
 }
 
-const TypeSelector = ({ selectedType, onSelect, channelTitle = "", description = "" }: TypeSelectorProps) => {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    console.log("TypeSelector - Current selected type:", selectedType);
-  }, [selectedType]);
-
-  const handleSelect = (typeId: string) => {
-    console.log("TypeSelector - Selecting type:", typeId);
-    onSelect(typeId);
-    setOpen(false);
-  };
-
-  // Find the selected type for display
-  const selectedTypeInfo = channelTypes.find(type => type.id === selectedType);
-  const displayValue = selectedTypeInfo ? selectedTypeInfo.label : "Select Type";
+const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
+  console.log("TypeSelector - Current selected type:", value);
   
   return (
-    <div className="mb-6">
-      <h3 className="text-lg font-medium mb-3">Channel Type</h3>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium">Type</label>
-          {channelTitle && (
-            <TypeAIGenerator 
-              channelTitle={channelTitle}
-              description={description}
-              onTypeGenerated={handleSelect}
-            />
-          )}
-        </div>
-        <DropdownMenu open={open} onOpenChange={setOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full justify-between bg-white border border-gray-300"
-              type="button"
-            >
-              {displayValue}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            className="w-[300px] max-h-[300px] overflow-y-auto bg-white shadow-lg z-[100]"
-          >
-            {channelTypes.map((type) => (
-              <DropdownMenuItem
-                key={type.id}
-                onClick={() => handleSelect(type.id)}
-                className={`cursor-pointer hover:bg-gray-100 py-2 ${
-                  selectedType === type.id ? "bg-gray-100 font-medium" : ""
-                }`}
-              >
-                {type.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <div className="space-y-2">
+      <Label htmlFor="channel_type">Channel Type</Label>
+      <Select 
+        value={value || ""} 
+        onValueChange={onChange}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select a type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">-- Select Type --</SelectItem>
+          {channelTypes.map((type) => (
+            <SelectItem key={type.value} value={type.value}>
+              {type.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 };

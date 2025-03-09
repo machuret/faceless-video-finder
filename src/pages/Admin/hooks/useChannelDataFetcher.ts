@@ -29,7 +29,7 @@ export const useChannelDataFetcher = (
         .from("youtube_channels")
         .select("*")
         .eq("id", channelId)
-        .single();
+        .maybeSingle();
       
       if (error) {
         throw error;
@@ -45,7 +45,7 @@ export const useChannelDataFetcher = (
       let channelType = data.channel_type || "";
       if (data.metadata) {
         // Safely access metadata properties by checking type
-        const metadata = typeof data.metadata === 'object' ? data.metadata : null;
+        const metadata = typeof data.metadata === 'object' ? data.metadata : {};
         if (metadata && 'ui_channel_type' in metadata) {
           channelType = (metadata as ChannelMetadata).ui_channel_type || data.channel_type || "";
         }
@@ -65,10 +65,12 @@ export const useChannelDataFetcher = (
         video_count: data.video_count ? String(data.video_count) : "",
         cpm: data.cpm ? String(data.cpm) : "4",
         channel_type: channelType,
-        country: data.country || "",
-        channel_category: data.channel_category || "",
+        country: data.country || "US",
+        channel_category: data.channel_category || "entertainment",
         notes: data.notes || "",
-        keywords: data.keywords || []
+        keywords: data.keywords || [],
+        niche: data.niche || "",
+        is_editor_verified: data.is_editor_verified || false
       };
       
       setFormData(formattedData);
