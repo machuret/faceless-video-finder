@@ -1,5 +1,6 @@
 
 import { RouteObject } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import Index from '@/pages/Index';
 import ChannelSearch from '@/pages/ChannelSearch';
 import ChannelDetails from '@/pages/ChannelDetails';
@@ -99,6 +100,14 @@ const routes: RouteObject[] = [
     element: <ChannelTypeDetails />,
   },
   // Admin routes
+  {
+    path: '/admin',
+    element: <Navigate to="/admin/dashboard" replace />,
+  },
+  {
+    path: '/admin/',
+    element: <Navigate to="/admin/dashboard" replace />,
+  },
   {
     path: '/admin/login',
     element: <AdminLogin />,
