@@ -1,85 +1,149 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
-export interface ProgressState {
-  isProcessing: boolean;
+// Local storage key for saving progress
+const STATS_UPDATE_PROGRESS_KEY = "mass_stats_update_progress";
+
+interface ProgressState {
   progress: number;
-  totalChannels: number;
-  processedChannels: number;
-  successCount: number;
-  errorCount: number;
   currentChannel: string | null;
-  errors: string[];
+  processedCount: number;
+  totalCount: number;
+  errorCount: number;
+  successCount: number;
+  processedChannels: string[];
+  isActive: boolean;
 }
 
-export const createInitialProgressState = (): ProgressState => {
-  return {
-    isProcessing: false,
+export const useStatsUpdateProgress = () => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progressState, setProgressState] = useState<ProgressState>({
     progress: 0,
-    totalChannels: 0,
-    processedChannels: 0,
-    successCount: 0,
-    errorCount: 0,
     currentChannel: null,
-    errors: []
-  };
-};
-
-export const useProgressState = () => {
-  const [state, setState] = useState<ProgressState>(createInitialProgressState());
-
-  const resetProgress = () => {
-    setState(createInitialProgressState());
-  };
-
-  const updateProgress = (updates: Partial<ProgressState>) => {
-    setState(prev => ({ ...prev, ...updates }));
-  };
-
-  const incrementSuccess = () => {
-    setState(prev => ({ 
-      ...prev, 
-      successCount: prev.successCount + 1 
-    }));
-  };
-
-  const incrementError = () => {
-    setState(prev => ({ 
-      ...prev, 
-      errorCount: prev.errorCount + 1 
-    }));
-  };
-
-  const addError = (error: string) => {
-    setState(prev => ({ 
-      ...prev, 
-      errors: [...prev.errors, error] 
-    }));
-  };
-
-  const updateProcessedCount = (newProcessedCount: number) => {
-    setState(prev => {
-      const newProgress = Math.floor((newProcessedCount / prev.totalChannels) * 100);
-      return {
-        ...prev,
-        processedChannels: newProcessedCount,
-        progress: newProgress
-      };
+    processedCount: 0,
+    totalCount: 0,
+    errorCount: 0,
+    successCount: 0,
+    processedChannels: [],
+    isActive: false
+  });
+  
+  // Initialize progress tracking
+  const initializeProgress = useCallback((
+    totalCount: number, 
+    processedCount: number = 0,
+    successCount: number = 0,
+    errorCount: number = 0,
+    processedChannels: string[] = []
+  ) => {
+    setIsProcessing(true);
+    setProgressState({
+      progress: processedCount > 0 ? Math.floor((processedCount / totalCount) * 100) : 0,
+      currentChannel: null,
+      processedCount,
+      totalCount,
+      errorCount,
+      successCount,
+      processedChannels,
+      isActive: true
     });
-  };
-
-  const setCurrentChannel = (channelTitle: string | null) => {
-    setState(prev => ({ ...prev, currentChannel: channelTitle }));
-  };
-
+  }, []);
+  
+  // Update progress
+  const updateProgress = useCallback((currentIndex: number, totalCount: number) => {
+    setProgressState(prev => ({
+      ...prev,
+      progress: Math.floor(((currentIndex + 1) / totalCount) * 100),
+      processedCount: currentIndex + 1,
+    }));
+  }, []);
+  
+  // Update current channel
+  const updateCurrentChannel = useCallback((channelName: string) => {
+    setProgressState(prev => ({
+      ...prev,
+      currentChannel: channelName
+    }));
+  }, []);
+  
+  // Increment success count
+  const incrementSuccessCount = useCallback(() => {
+    setProgressState(prev => ({
+      ...prev,
+      successCount: prev.successCount + 1
+    }));
+  }, []);
+  
+  // Increment error count
+  const incrementErrorCount = useCallback(() => {
+    setProgressState(prev => ({
+      ...prev,
+      errorCount: prev.errorCount + 1
+    }));
+  }, []);
+  
+  // Finish processing
+  const finishProcessing = useCallback(() => {
+    setIsProcessing(false);
+    setProgressState(prev => ({
+      ...prev,
+      isActive: false
+    }));
+  }, []);
+  
+  // Save progress to local storage
+  const saveProgressToStorage = useCallback((processedChannels?: string[]) => {
+    setProgressState(prev => {
+      const updatedState = {
+        ...prev,
+        processedChannels: processedChannels || prev.processedChannels,
+        isActive: true
+      };
+      
+      try {
+        localStorage.setItem(STATS_UPDATE_PROGRESS_KEY, JSON.stringify(updatedState));
+      } catch (error) {
+        console.error("Error saving progress to local storage:", error);
+      }
+      
+      return updatedState;
+    });
+  }, []);
+  
+  // Load progress from local storage
+  const loadProgressFromStorage = useCallback(() => {
+    try {
+      const savedProgress = localStorage.getItem(STATS_UPDATE_PROGRESS_KEY);
+      if (savedProgress) {
+        const parsedProgress = JSON.parse(savedProgress) as ProgressState;
+        return parsedProgress;
+      }
+    } catch (error) {
+      console.error("Error loading progress from local storage:", error);
+    }
+    return null;
+  }, []);
+  
+  // Clear stored progress
+  const clearStoredProgress = useCallback(() => {
+    try {
+      localStorage.removeItem(STATS_UPDATE_PROGRESS_KEY);
+    } catch (error) {
+      console.error("Error clearing progress from local storage:", error);
+    }
+  }, []);
+  
   return {
-    state,
-    resetProgress,
+    isProcessing,
+    progressState,
+    initializeProgress,
     updateProgress,
-    incrementSuccess,
-    incrementError,
-    addError,
-    updateProcessedCount,
-    setCurrentChannel
+    updateCurrentChannel,
+    incrementSuccessCount,
+    incrementErrorCount,
+    finishProcessing,
+    saveProgressToStorage,
+    loadProgressFromStorage,
+    clearStoredProgress
   };
 };

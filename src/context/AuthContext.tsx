@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -31,7 +31,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  const checkAdminStatus = async (userId: string | undefined) => {
+  // Memoized function to check admin status
+  const checkAdminStatus = useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setIsAdmin(false);
       return false;
@@ -56,20 +57,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(false);
       return false;
     }
-  };
+  }, []);
 
   const signOut = async () => {
     try {
+      setLoading(true);
       await supabase.auth.signOut();
       setUser(null);
       setIsAdmin(false);
       
-      // Use window.location instead of navigate hook
       window.location.href = '/admin/login';
       toast.success("Logged out successfully");
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error("Error signing out");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -143,7 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Remove navigate dependency
+  }, [checkAdminStatus]); 
 
   const contextValue = {
     user,

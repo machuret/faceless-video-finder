@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import AdminHeader from "./components/AdminHeader";
 import DashboardHeader from "./components/dashboard/DashboardHeader";
 import FeaturedChannels from "./components/dashboard/FeaturedChannels";
@@ -13,8 +13,25 @@ import CsvChannelUploader from "./components/dashboard/components/CsvChannelUplo
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Database, Layers, BookOpen, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 const Dashboard = () => {
+  // Check for any in-progress operations on mount
+  useEffect(() => {
+    // Check for in-progress stats updates
+    try {
+      const savedStatsProgress = localStorage.getItem("mass_stats_update_progress");
+      if (savedStatsProgress) {
+        const parsedProgress = JSON.parse(savedStatsProgress);
+        if (parsedProgress.isActive) {
+          toast.info(`You have a paused stats update (${parsedProgress.processedCount}/${parsedProgress.totalCount}). You can resume it in the Mass Stats Updater section.`);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking for saved progress:", error);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader title="Admin Dashboard" />

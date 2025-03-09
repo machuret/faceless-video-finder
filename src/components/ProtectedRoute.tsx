@@ -2,6 +2,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export const ProtectedRoute = ({
   children,
@@ -27,7 +28,7 @@ export const ProtectedRoute = ({
       // Small delay to ensure all auth states are properly updated
       const timer = setTimeout(() => {
         setAuthCheckComplete(true);
-      }, 500);
+      }, 300); // Reduced from 500ms to 300ms for faster rendering
       
       return () => clearTimeout(timer);
     }
@@ -38,8 +39,8 @@ export const ProtectedRoute = ({
     console.log("ProtectedRoute - Still loading auth state");
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
-        <p>Authenticating...</p>
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-sm text-muted-foreground">Authenticating...</p>
       </div>
     );
   }
