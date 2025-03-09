@@ -16,6 +16,7 @@ export const ProtectedRoute = ({
   useEffect(() => {
     console.log("ProtectedRoute - Auth state:", { user, isAdmin, loading });
     
+    // Only finish checking after loading is complete and a short delay to ensure AuthContext has fully processed
     const timeoutId = setTimeout(() => {
       if (!loading) {
         console.log("ProtectedRoute - Auth check complete");
