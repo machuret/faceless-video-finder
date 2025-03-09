@@ -1,4 +1,5 @@
-import { Home, Calculator, Lightbulb, Layers, GraduationCap, HelpCircle, Users, Settings } from "lucide-react";
+
+import { Home, Calculator, Lightbulb, Layers, GraduationCap, HelpCircle, Tag, Settings } from "lucide-react";
 import { matchPath } from "react-router-dom";
 
 // Define navigation items
@@ -24,6 +25,11 @@ export const navigationItems = [
     label: "Channel Types",
   },
   {
+    path: "/niches",
+    icon: <Tag className="h-4 w-4" />,
+    label: "Niches",
+  },
+  {
     path: "https://facelesstraining.com/",
     icon: <GraduationCap className="h-4 w-4" />,
     label: "Training",
@@ -33,11 +39,6 @@ export const navigationItems = [
     path: "/how-it-works",
     icon: <HelpCircle className="h-4 w-4" />,
     label: "How It Works",
-  },
-  {
-    path: "/about-us",
-    icon: <Users className="h-4 w-4" />,
-    label: "About Us",
   },
 ];
 
@@ -49,4 +50,9 @@ export const isIdeasActive = (pathname: string): boolean => {
 // Function to check if "Admin" is active
 export const isAdminActive = (pathname: string): boolean => {
   return !!matchPath({ path: "/admin/*", end: false }, pathname) || pathname === '/admin';
+};
+
+// Function to check if "Niches" is active
+export const isNichesActive = (pathname: string): boolean => {
+  return !!matchPath({ path: "/niches/*", end: false }, pathname) || pathname === '/niches';
 };

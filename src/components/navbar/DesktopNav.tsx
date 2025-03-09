@@ -1,7 +1,7 @@
 
 import { useLocation } from "react-router-dom";
 import NavItem from "./NavItem";
-import { navigationItems, isIdeasActive, isAdminActive } from "./navConfig";
+import { navigationItems, isIdeasActive, isAdminActive, isNichesActive } from "./navConfig";
 
 interface DesktopNavProps {
   isActive: (path: string) => boolean;
@@ -19,6 +19,7 @@ const DesktopNav = ({ isActive }: DesktopNavProps) => {
           isActive={
             item.label === "Ideas" ? isIdeasActive(location.pathname) : 
             item.label === "Admin" ? isAdminActive(location.pathname) :
+            item.label === "Niches" ? isNichesActive(location.pathname) :
             isActive(item.path)
           } 
           icon={item.icon} 
