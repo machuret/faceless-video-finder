@@ -5,30 +5,33 @@ import { Channel } from "@/types/youtube";
 import { Star } from "lucide-react";
 import LazyImage from "@/components/ui/lazy-image";
 import { generateChannelSlug } from "@/pages/ChannelDetails";
+import { memo } from "react";
 
 interface ChannelCardProps {
   channel: Channel;
   isFeatured?: boolean;
 }
 
-const ChannelCard = ({ channel, isFeatured = false }: ChannelCardProps) => {
+const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => {
   // Create SEO-friendly URL
   const channelSlug = generateChannelSlug(channel.channel_title);
   const seoUrl = `/channel/${channelSlug}-${channel.id}`;
-  
-  console.log(`ChannelCard for ${channel.channel_title} using URL: ${seoUrl}`);
 
+  // Check if this is a featured card for priority loading
+  const isPriority = isFeatured || channel.is_featured;
+  
   return (
     <Card 
       className={`hover:shadow-lg transition-shadow overflow-hidden ${isFeatured ? 'border-yellow-400 border-2' : ''}`}
     >
-      <Link to={seoUrl}>
+      <Link to={seoUrl} prefetch="intent">
         <div className="aspect-video bg-gray-200 relative overflow-hidden">
           {channel.screenshot_url ? (
             <LazyImage 
               src={channel.screenshot_url} 
               alt={channel.channel_title || "Channel screenshot"} 
               className="w-full h-full object-cover"
+              priority={isPriority}
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-gray-100">
@@ -73,6 +76,9 @@ const ChannelCard = ({ channel, isFeatured = false }: ChannelCardProps) => {
       </Link>
     </Card>
   );
-};
+});
+
+// Add display name for debugging
+ChannelCard.displayName = "ChannelCard";
 
 export default ChannelCard;

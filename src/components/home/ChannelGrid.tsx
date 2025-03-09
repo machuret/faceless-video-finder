@@ -13,6 +13,9 @@ interface ChannelGridProps {
   isFeatured?: boolean;
 }
 
+// Memoize individual channel cards to prevent unnecessary rerenders
+const MemoizedChannelCard = React.memo(ChannelCard);
+
 const ChannelGrid = React.memo(({ channels, loading, resetFilters, isFeatured = false }: ChannelGridProps) => {
   // Early return for loading state
   if (loading) {
@@ -35,10 +38,10 @@ const ChannelGrid = React.memo(({ channels, loading, resetFilters, isFeatured = 
 
   return (
     <div>
-      {/* Channel Grid */}
+      {/* Channel Grid with window-dependent rendering */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {channels.map((channel) => (
-          <ChannelCard 
+          <MemoizedChannelCard 
             key={channel.id} 
             channel={channel}
             isFeatured={isFeatured}
