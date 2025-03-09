@@ -2,67 +2,62 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Trash2, Plus } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { niches as defaultNiches } from "@/data/niches";
 
-export const ManageNiches: React.FC = () => {
-  const { toast } = useToast();
+const ManageNiches = () => {
   const [niches, setNiches] = useState<string[]>([]);
   const [newNiche, setNewNiche] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch niches from storage
+  useEffect(() => {
+    fetchNiches();
+  }, []);
+
   const fetchNiches = async () => {
+    setIsLoading(true);
     try {
-      setLoading(true);
-      // Fetch from Supabase edge function
-      const { data, error } = await supabase.functions.invoke('get-niches');
+      const { data, error } = await supabase.functions.invoke("get-niches");
       
       if (error) {
         throw new Error(error.message);
       }
       
-      if (data && Array.isArray(data.niches)) {
+      if (data && data.niches) {
         setNiches(data.niches);
+      } else {
+        // Fallback to default niches if API fails
+        setNiches(defaultNiches);
       }
     } catch (error) {
       console.error("Error fetching niches:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load niches. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to load niches. Using default list.");
+      setNiches(defaultNiches);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  // Add a new niche
-  const handleAddNiche = async () => {
+  const handleAddNiche = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!newNiche.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a niche name",
-        variant: "destructive"
-      });
+      toast.error("Please enter a niche name");
       return;
     }
-
+    
+    if (niches.includes(newNiche.trim())) {
+      toast.error("This niche already exists");
+      return;
+    }
+    
+    setIsAdding(true);
+    
     try {
-      setLoading(true);
-      
-      // Add niche using edge function
-      const { error } = await supabase.functions.invoke('add-niche', {
+      const { error } = await supabase.functions.invoke("add-niche", {
         body: { niche: newNiche.trim() }
       });
       
@@ -70,37 +65,27 @@ export const ManageNiches: React.FC = () => {
         throw new Error(error.message);
       }
       
-      // Refresh niches list
+      // Refresh the niches list
       await fetchNiches();
       setNewNiche("");
-      
-      toast({
-        title: "Success",
-        description: `Added '${newNiche.trim()}' to niches`
-      });
+      toast.success(`Added "${newNiche}" to niches`);
     } catch (error) {
       console.error("Error adding niche:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add niche. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to add niche");
     } finally {
-      setLoading(false);
+      setIsAdding(false);
     }
   };
 
-  // Delete a niche
   const handleDeleteNiche = async (niche: string) => {
     if (!confirm(`Are you sure you want to delete "${niche}"?`)) {
       return;
     }
-
+    
+    setIsDeleting(true);
+    
     try {
-      setLoading(true);
-      
-      // Delete niche using edge function
-      const { error } = await supabase.functions.invoke('delete-niche', {
+      const { error } = await supabase.functions.invoke("delete-niche", {
         body: { niche }
       });
       
@@ -108,96 +93,57 @@ export const ManageNiches: React.FC = () => {
         throw new Error(error.message);
       }
       
-      // Refresh niches list
+      // Refresh the niches list
       await fetchNiches();
-      
-      toast({
-        title: "Success",
-        description: `Deleted '${niche}' from niches`
-      });
+      toast.success(`Deleted "${niche}" from niches`);
     } catch (error) {
       console.error("Error deleting niche:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete niche. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to delete niche");
     } finally {
-      setLoading(false);
+      setIsDeleting(false);
     }
   };
 
-  // Load niches on component mount
-  useEffect(() => {
-    fetchNiches();
-  }, []);
-
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Manage Channel Niches</h2>
-        <Button onClick={fetchNiches} variant="outline" disabled={loading}>
-          Refresh
-        </Button>
-      </div>
-      
-      <div className="flex gap-4 items-end">
-        <div className="space-y-2 flex-1">
-          <Label htmlFor="new-niche">Add New Niche</Label>
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <h2 className="text-xl font-semibold mb-4">Add New Niche</h2>
+        <form onSubmit={handleAddNiche} className="flex space-x-2">
           <Input
-            id="new-niche"
             value={newNiche}
             onChange={(e) => setNewNiche(e.target.value)}
             placeholder="Enter new niche name"
-            disabled={loading}
+            className="flex-1"
           />
-        </div>
-        <Button onClick={handleAddNiche} disabled={loading || !newNiche.trim()}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Niche
-        </Button>
+          <Button type="submit" disabled={isAdding}>
+            {isAdding ? "Adding..." : "Add Niche"}
+          </Button>
+        </form>
       </div>
-      
-      {loading ? (
-        <div className="text-center py-4">Loading niches...</div>
-      ) : (
-        <div className="border rounded-md max-h-[500px] overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Niche Name</TableHead>
-                <TableHead className="w-20">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {niches.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={2} className="text-center py-4">
-                    No niches found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                niches.map((niche) => (
-                  <TableRow key={niche}>
-                    <TableCell>{niche}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteNiche(niche)}
-                        className="text-destructive hover:text-destructive-foreground hover:bg-destructive/20"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <h2 className="text-xl font-semibold mb-4">Existing Niches</h2>
+        {isLoading ? (
+          <p className="text-gray-500">Loading niches...</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {niches.sort().map((niche) => (
+              <div key={niche} className="flex items-center justify-between p-2 border rounded">
+                <span>{niche}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteNiche(niche)}
+                  disabled={isDeleting}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  Delete
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
