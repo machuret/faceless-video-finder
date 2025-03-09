@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +31,6 @@ export function useBulkScreenshotGenerator(): UseBulkScreenshotGeneratorResult {
       console.log(`Generating screenshot for channel: ${channel.title} (${channel.url})`);
       setCurrentChannel(channel.title);
       
-      // Remove the signal property for compatibility
       const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: { 
           channelId: channel.id,
@@ -74,7 +72,6 @@ export function useBulkScreenshotGenerator(): UseBulkScreenshotGeneratorResult {
     toast.info(`Starting screenshot generation for ${channels.length} channels. This may take a while.`);
 
     try {
-      // Process channels in sequence to avoid overloading
       for (let i = 0; i < channels.length; i++) {
         const channel = channels[i];
         const success = await generateScreenshotForSingleChannel(channel);
@@ -85,11 +82,9 @@ export function useBulkScreenshotGenerator(): UseBulkScreenshotGeneratorResult {
           setErrorCount(prev => prev + 1);
         }
         
-        // Update progress
         const newProgress = Math.floor(((i + 1) / channels.length) * 100);
         setProgress(newProgress);
         
-        // Add a small delay between requests to be nice to the API
         if (i < channels.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }

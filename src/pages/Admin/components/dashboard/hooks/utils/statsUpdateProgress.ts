@@ -13,6 +13,7 @@ export interface ProgressState {
   successCount: number;
   processedChannels: string[];
   isActive: boolean;
+  errors?: string[];
 }
 
 export const createInitialProgressState = (): ProgressState => {
@@ -24,7 +25,8 @@ export const createInitialProgressState = (): ProgressState => {
     errorCount: 0,
     successCount: 0,
     processedChannels: [],
-    isActive: false
+    isActive: false,
+    errors: []
   };
 };
 
@@ -62,7 +64,7 @@ export const useProgressState = () => {
   
   // Update processed count
   const updateProcessedCount = useCallback((count: number) => {
-    setState(prev => ({ ...prev, processedChannels: count }));
+    setState(prev => ({ ...prev, processedCount: count }));
   }, []);
   
   // Set current channel
@@ -92,7 +94,8 @@ export const useStatsUpdateProgress = () => {
     errorCount: 0,
     successCount: 0,
     processedChannels: [],
-    isActive: false
+    isActive: false,
+    errors: []
   });
   
   // Initialize progress tracking
@@ -112,7 +115,8 @@ export const useStatsUpdateProgress = () => {
       errorCount,
       successCount,
       processedChannels,
-      isActive: true
+      isActive: true,
+      errors: []
     });
   }, []);
   

@@ -1,8 +1,7 @@
 
-import { useState, useCallback } from "react";
-import { ProgressState, createInitialProgressState, useProgressState } from "./statsUpdateProgress";
+import { useProgressState, ProgressState } from "./statsUpdateProgress";
 
 export type { ProgressState };
-export { createInitialProgressState, useProgressState };
+export { useProgressState };
 
 // Any screenshot-specific progress utilities can be added here as needed

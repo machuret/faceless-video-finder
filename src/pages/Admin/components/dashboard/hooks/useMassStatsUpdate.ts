@@ -24,7 +24,8 @@ export const useMassStatsUpdate = () => {
     cancelUpdate,
     errors,
     totalChannels,
-    processedChannels
+    processedChannels,
+    state
   } = useStatsUpdateProcessor();
 
   const [processingPaused, setProcessingPaused] = useState(false);
@@ -39,7 +40,7 @@ export const useMassStatsUpdate = () => {
   }, [loadProgressFromStorage]);
   
   const updateChannelStats = useCallback(async (count: number) => {
-    startMassUpdate();
+    await startMassUpdate();
   }, [startMassUpdate]);
   
   const pauseProcessing = useCallback(() => {
@@ -60,15 +61,15 @@ export const useMassStatsUpdate = () => {
     updateChannelStats,
     pauseProcessing,
     resumeProcessing,
-    isProcessing,
+    isProcessing: state.isActive,
     processingPaused,
     processingComplete,
-    progress: progressState.progress,
-    currentChannel: progressState.currentChannel,
-    processedCount: progressState.processedCount,
-    totalCount: progressState.totalCount,
-    errorCount: progressState.errorCount,
-    successCount: progressState.successCount,
+    progress: state.progress,
+    currentChannel: state.currentChannel,
+    processedCount: state.processedCount,
+    totalCount: state.totalCount,
+    errorCount: state.errorCount,
+    successCount: state.successCount,
     startMassUpdate,
     cancelUpdate,
     errors,
