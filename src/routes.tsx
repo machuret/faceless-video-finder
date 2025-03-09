@@ -129,6 +129,14 @@ const routes: RouteObject[] = [
     ),
   },
   {
+    path: '/admin/edit-channel/:channelId',
+    element: (
+      <ProtectedRoute requireAdmin>
+        <AddChannel />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/admin/manage-niches',
     element: (
       <ProtectedRoute requireAdmin>

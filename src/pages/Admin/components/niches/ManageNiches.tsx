@@ -46,11 +46,15 @@ const ManageNiches = () => {
   const fetchNiches = async () => {
     setIsLoading(true);
     try {
+      console.log("Fetching niches from Supabase...");
       const { data, error } = await supabase.functions.invoke("get-niches");
       
       if (error) {
+        console.error("Error from get-niches function:", error);
         throw new Error(error.message);
       }
+      
+      console.log("Niches response:", data);
       
       if (data && data.niches) {
         setNiches(data.niches);
@@ -60,6 +64,7 @@ const ManageNiches = () => {
           setNicheDetails(data.nicheDetails);
         }
       } else {
+        console.warn("No niches found, using default list");
         // Fallback to default niches if API fails
         setNiches(defaultNiches);
       }

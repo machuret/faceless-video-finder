@@ -22,6 +22,8 @@ export function useBulkScreenshotGenerator() {
       console.log(`Taking screenshot for channel: ${channel.title} (${channel.url})`);
       setCurrentChannel(channel.title);
       
+      toast.info(`Processing screenshot for ${channel.title}...`);
+      
       const { data, error } = await supabase.functions.invoke<any>('take-channel-screenshot', {
         body: { 
           channelId: channel.id,
@@ -31,18 +33,22 @@ export function useBulkScreenshotGenerator() {
 
       if (error) {
         console.error(`Error taking screenshot for ${channel.title}:`, error);
+        toast.error(`Failed to take screenshot for ${channel.title}: ${error.message}`);
         return false;
       }
 
-      if (!data || !data.success || !data.screenshotUrl) {
+      if (!data || !data.success) {
         console.error(`Failed to take screenshot for ${channel.title}:`, data?.error || "Unknown error");
+        toast.error(`Failed to take screenshot for ${channel.title}: ${data?.error || "Unknown error"}`);
         return false;
       }
 
       console.log(`Successfully took screenshot for ${channel.title}: ${data.screenshotUrl}`);
+      toast.success(`Successfully took screenshot for ${channel.title}`);
       return true;
     } catch (error) {
       console.error(`Exception when taking screenshot for ${channel.title}:`, error);
+      toast.error(`Exception when taking screenshot for ${channel.title}: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   };
@@ -84,16 +90,18 @@ export function useBulkScreenshotGenerator() {
         }
       }
 
-      if (successCount === channels.length) {
+      const currentSuccessCount = successCount + (channels.filter((_, i) => i < channels.length && i >= channels.length - errorCount).length);
+      
+      if (currentSuccessCount === channels.length) {
         toast.success(`Successfully took screenshots for all ${channels.length} channels!`);
       } else {
         toast.warning(
-          `Screenshot process completed: ${successCount} successful, ${channels.length - successCount} failed.`
+          `Screenshot process completed: ${currentSuccessCount} successful, ${channels.length - currentSuccessCount} failed.`
         );
       }
     } catch (error) {
       console.error("Error in bulk screenshot process:", error);
-      toast.error("Screenshot process encountered an error");
+      toast.error(`Screenshot process encountered an error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsProcessing(false);
       setCurrentChannel(null);
