@@ -56,3 +56,8 @@ version = 1
 name = "update-niche-details"
 verify_jwt = false
 version = 1
+
+[[functions]]
+name = "initialize-storage"
+verify_jwt = false
+version = 1
