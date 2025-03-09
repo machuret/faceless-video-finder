@@ -11,7 +11,7 @@ import PageFooter from "@/components/home/PageFooter";
 interface Niche {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
 }
 
 const Niches = () => {
@@ -20,7 +20,8 @@ const Niches = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("niches")
-        .select("*");
+        .select("*")
+        .order('name');
       
       if (error) throw error;
       return data as Niche[];
