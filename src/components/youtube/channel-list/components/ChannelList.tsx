@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useChannelOperations } from "../hooks/useChannelOperations";
 import { LoadingState } from "./LoadingState";
@@ -13,6 +12,8 @@ import ChannelListHeader from "./ChannelListHeader";
 import ChannelListFooter from "./ChannelListFooter";
 import BulkOperationsHandler from "./BulkOperationsHandler";
 import { BulkOperationsProvider } from "../context/BulkOperationsContext";
+import { Button } from "@/components/ui/button";
+import { ArrowUpDown } from "lucide-react";
 
 interface ChannelListProps {
   isAdmin: boolean;
@@ -27,6 +28,7 @@ export const ChannelList: React.FC<ChannelListProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showSelectionControls, setShowSelectionControls] = useState(false);
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const pageSize = 12;
   
   const { 
@@ -95,6 +97,14 @@ export const ChannelList: React.FC<ChannelListProps> = ({
       fetchChannels(0, effectiveLimit);
     }
   }, [isAdmin, limit, showAll, fetchChannels, currentPage, pageSize]);
+
+  const sortedChannels = sortAlphabetically && channels ? 
+    [...channels].sort((a, b) => (a.channel_title || "").localeCompare(b.channel_title || "")) : 
+    channels;
+
+  const toggleAlphabeticalSort = () => {
+    setSortAlphabetically(!sortAlphabetically);
+  };
 
   const handleBulkFetchStats = async () => {
     const selectedChannels = getSelectedChannels();
@@ -170,26 +180,39 @@ export const ChannelList: React.FC<ChannelListProps> = ({
       screenshotTotalCount={screenshotTotalCount}
     >
       <div className="space-y-4">
-        <ChannelListHeader 
-          isAdmin={isAdmin}
-          showSelectionControls={showSelectionControls}
-          selectedCount={selectedCount}
-          channelsLength={channels.length}
-          toggleSelectionMode={toggleSelectionMode}
-          selectAllChannels={selectAllChannels}
-          clearSelection={clearSelection}
-          onBulkFetchStats={handleBulkFetchStats}
-          onBulkGenerateTypes={handleBulkGenerateTypes}
-          onBulkGenerateKeywords={handleBulkGenerateKeywords}
-          onBulkTakeScreenshots={handleBulkTakeScreenshots}
-          isStatsProcessing={isStatsProcessing}
-          isTypeProcessing={isTypeProcessing}
-          isKeywordsProcessing={isKeywordsProcessing}
-          isScreenshotProcessing={isScreenshotProcessing}
-        />
+        <div className="flex justify-between items-center">
+          <ChannelListHeader 
+            isAdmin={isAdmin}
+            showSelectionControls={showSelectionControls}
+            selectedCount={selectedCount}
+            channelsLength={channels.length}
+            toggleSelectionMode={toggleSelectionMode}
+            selectAllChannels={selectAllChannels}
+            clearSelection={clearSelection}
+            onBulkFetchStats={handleBulkFetchStats}
+            onBulkGenerateTypes={handleBulkGenerateTypes}
+            onBulkGenerateKeywords={handleBulkGenerateKeywords}
+            onBulkTakeScreenshots={handleBulkTakeScreenshots}
+            isStatsProcessing={isStatsProcessing}
+            isTypeProcessing={isTypeProcessing}
+            isKeywordsProcessing={isKeywordsProcessing}
+            isScreenshotProcessing={isScreenshotProcessing}
+          />
+          
+          {isAdmin && (
+            <Button 
+              variant="outline" 
+              onClick={toggleAlphabeticalSort}
+              className="flex items-center gap-2"
+            >
+              <ArrowUpDown className="h-4 w-4" />
+              {sortAlphabetically ? "Original Order" : "Sort A-Z"}
+            </Button>
+          )}
+        </div>
         
         <ChannelGrid
-          channels={channels}
+          channels={sortedChannels || []}
           isAdmin={isAdmin}
           showSelectionControls={showSelectionControls}
           isChannelSelected={isChannelSelected}
@@ -206,7 +229,7 @@ export const ChannelList: React.FC<ChannelListProps> = ({
           totalPages={totalPages}
           onPageChange={setCurrentPage}
           limit={limit}
-          channelsLength={channels.length}
+          channelsLength={channels?.length || 0}
         />
         
         <BulkOperationsHandler />

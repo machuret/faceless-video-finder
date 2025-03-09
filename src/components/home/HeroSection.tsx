@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { Search, AlertCircle } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import MainNavbar from "@/components/MainNavbar";
 import { useNavigate } from "react-router-dom";
+import { searchChannel } from "@/utils/channelSearch";
 import { toast } from "sonner";
 
 const HeroSection = () => {
@@ -38,22 +39,7 @@ const HeroSection = () => {
     setIsSearching(true);
     
     try {
-      // If it looks like a YouTube channel URL with a Channel ID (UC...), provide a warning
-      if (searchQuery.includes('youtube.com/channel/')) {
-        const channelIdMatch = searchQuery.match(/youtube\.com\/channel\/([^\/\s?&]+)/i);
-        if (channelIdMatch && channelIdMatch[1]) {
-          const channelId = channelIdMatch[1];
-          
-          // Check if the ID is lowercase but should be uppercase (common issue with UC... IDs)
-          if (channelId.startsWith('uc') && channelId !== channelId.toUpperCase()) {
-            toast.warning("YouTube channel IDs are case-sensitive. If you're having trouble, try using uppercase 'UC' instead of 'uc'.", {
-              duration: 6000,
-            });
-          }
-        }
-      }
-      
-      // Fix: Navigate to the proper channels search route
+      // Navigate to the proper channels search route
       navigate(`/channels?search=${encodeURIComponent(searchQuery.trim())}`);
     } finally {
       setIsSearching(false);
@@ -93,12 +79,6 @@ const HeroSection = () => {
               </button>
             </div>
           </form>
-          <div className="text-sm text-blue-200 mt-2">
-            <div className="flex justify-center items-center gap-1">
-              <AlertCircle className="h-4 w-4" />
-              <span>For YouTube channel URLs, case matters! Example: UC... not uc...</span>
-            </div>
-          </div>
         </div>
       </div>
     </>

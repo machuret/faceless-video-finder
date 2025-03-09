@@ -11,7 +11,7 @@ export const searchChannel = async (channelInput: string) => {
     isUrlSearch = true;
     // Extract channel name or ID from URL
     if (searchTerm.includes("youtube.com/channel/")) {
-      // Handle channel ID format - retain original casing
+      // Handle channel ID format
       const channelIdMatch = searchTerm.match(/youtube\.com\/channel\/([^\/\s?&]+)/i);
       if (channelIdMatch && channelIdMatch[1]) {
         searchTerm = channelIdMatch[1];
@@ -37,8 +37,7 @@ export const searchChannel = async (channelInput: string) => {
   let query = supabase.from("youtube_channels").select("*");
   
   if (isChannelId) {
-    // For channel IDs, we need to match exactly including case
-    // This uses case-sensitive match via ilike for channel_url containing the ID
+    // For channel IDs, search in channel_url
     query = query.ilike("channel_url", `%${searchTerm}%`);
   } else if (isUrlSearch) {
     // For other URL searches, use OR and case-insensitive search
@@ -51,7 +50,8 @@ export const searchChannel = async (channelInput: string) => {
       `description.ilike.%${searchTerm}%,` +
       `channel_category.ilike.%${searchTerm}%,` +
       `niche.ilike.%${searchTerm}%,` +
-      `channel_type.ilike.%${searchTerm}%`
+      `channel_type.ilike.%${searchTerm}%,` +
+      `keywords.ilike.%${searchTerm}%`
     );
   }
   
