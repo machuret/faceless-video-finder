@@ -23,8 +23,8 @@ const ChannelTypeCategories = ({
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <TypeSelector 
-          value={formData.channel_type || ""} 
-          onChange={(typeId) => handleFieldChange('channel_type', typeId)} 
+          value={formData.channel_type || "_none"} 
+          onChange={(typeId) => handleFieldChange('channel_type', typeId === "_none" ? "" : typeId)} 
         />
         
         <CategorySelector 
@@ -35,8 +35,8 @@ const ChannelTypeCategories = ({
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <NicheSelector
-          value={formData.niche || ""}
-          onChange={(niche) => handleFieldChange('niche', niche)}
+          value={formData.niche || "_none"}
+          onChange={(niche) => handleFieldChange('niche', niche === "_none" ? "" : niche)}
         />
         
         <CountrySelector 

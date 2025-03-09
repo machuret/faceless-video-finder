@@ -30,7 +30,8 @@ const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
           <SelectValue placeholder="Select a type" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">-- Select Type --</SelectItem>
+          {/* Use a placeholder value that's not an empty string */}
+          <SelectItem value="_none">-- Select Type --</SelectItem>
           {channelTypes.map((type) => (
             <SelectItem key={type.id} value={type.id}>
               {type.label}

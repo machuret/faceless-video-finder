@@ -30,7 +30,8 @@ const NicheSelector = ({ value, onChange }: NicheSelectorProps) => {
           <SelectValue placeholder="Select a niche" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">-- Select Niche --</SelectItem>
+          {/* Use a placeholder value that's not an empty string */}
+          <SelectItem value="_none">-- Select Niche --</SelectItem>
           {niches.map((niche) => (
             <SelectItem key={niche} value={niche}>
               {niche}
