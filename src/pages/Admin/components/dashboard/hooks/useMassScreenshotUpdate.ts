@@ -1,58 +1,181 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { useProgressState } from "./utils/statsUpdateProgress";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useMassScreenshotUpdate = () => {
-  const progressManager = useProgressState();
-  const { state } = progressManager;
-  
-  const [processingPaused, setProcessingPaused] = useState(false);
-  const [processingComplete, setProcessingComplete] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentChannel, setCurrentChannel] = useState<string | null>(null);
   const [processedChannels, setProcessedChannels] = useState(0);
   const [totalChannels, setTotalChannels] = useState(0);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [successCount, setSuccessCount] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
+  const [updatedChannels, setUpdatedChannels] = useState<string[]>([]);
   
-  // Mock implementation for now - this will need real implementation later
-  const startMassUpdate = useCallback(async () => {
-    progressManager.updateProgress({ isActive: true });
-    
-    // Mock processing flow
-    setTotalChannels(5);
-    
-    for (let i = 1; i <= 5; i++) {
-      progressManager.updateProgress({ progress: i * 20 });
-      progressManager.updateProgress({ processedCount: i });
-      setProcessedChannels(i);
+  const fetchChannelsForScreenshotUpdate = async () => {
+    try {
+      const { data, error, count } = await supabase
+        .from('youtube_channels')
+        .select('id, channel_url, channel_title', { count: 'exact' })
+        .is('screenshot_url', null)
+        .order('created_at', { ascending: false });
       
-      if (i === 3) {
-        progressManager.incrementError();
-        setErrors(prev => [...prev, "Error updating screenshot for Channel 3"]);
-      } else {
-        progressManager.incrementSuccess();
+      if (error) throw error;
+      console.log(`Found ${count || 0} channels missing screenshots`);
+      
+      return { channels: data || [], count: count || 0 };
+    } catch (error) {
+      console.error("Error fetching channels for screenshot update:", error);
+      return { channels: [], count: 0 };
+    }
+  };
+  
+  const updateScreenshotForChannel = async (
+    channelId: string, 
+    channelUrl: string, 
+    channelTitle: string
+  ) => {
+    try {
+      console.log(`Taking screenshot for channel: ${channelTitle} (${channelUrl})`);
+      
+      const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
+        body: { 
+          channelId,
+          channelUrl
+        }
+      });
+      
+      if (error) {
+        console.error(`Error taking screenshot for ${channelTitle}:`, error);
+        return { 
+          success: false, 
+          message: `Failed to take screenshot for ${channelTitle}: ${error.message}`
+        };
       }
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!data || !data.success) {
+        console.error(`Failed to take screenshot for ${channelTitle}:`, data?.error || "Unknown error");
+        return { 
+          success: false, 
+          message: `Failed to take screenshot for ${channelTitle}: ${data?.error || "Unknown error"}`
+        };
+      }
+      
+      console.log(`Successfully took screenshot for ${channelTitle}: ${data.screenshotUrl}`);
+      return { 
+        success: true, 
+        message: `Successfully took screenshot for ${channelTitle}`,
+        screenshotUrl: data.screenshotUrl
+      };
+    } catch (error) {
+      console.error(`Exception when taking screenshot for ${channelTitle}:`, error);
+      return { 
+        success: false, 
+        message: `Error taking screenshot for ${channelTitle}: ${error instanceof Error ? error.message : "Unknown error"}`
+      };
     }
+  };
+  
+  const startMassUpdate = useCallback(async () => {
+    setIsProcessing(true);
+    setProgress(0);
+    setCurrentChannel(null);
+    setProcessedChannels(0);
+    setTotalChannels(0);
+    setErrors([]);
+    setSuccessCount(0);
+    setErrorCount(0);
+    setUpdatedChannels([]);
     
-    progressManager.updateProgress({ isActive: false });
-    toast.success("Screenshot update completed");
-  }, [progressManager]);
+    try {
+      const { channels, count } = await fetchChannelsForScreenshotUpdate();
+      
+      if (channels.length === 0) {
+        toast.info("No channels found missing screenshots");
+        setIsProcessing(false);
+        return;
+      }
+      
+      setTotalChannels(count);
+      toast.info(`Starting screenshot update for ${channels.length} channels. This may take a while.`);
+      
+      const newErrors: string[] = [];
+      const updatedList: string[] = [];
+      
+      for (let i = 0; i < channels.length; i++) {
+        const channel = channels[i];
+        const channelTitle = channel.channel_title || `Channel ${i+1}`;
+        
+        setCurrentChannel(channelTitle);
+        
+        const result = await updateScreenshotForChannel(
+          channel.id,
+          channel.channel_url,
+          channelTitle
+        );
+        
+        if (result.success) {
+          setSuccessCount(prev => prev + 1);
+          updatedList.push(`${channelTitle} (${result.screenshotUrl || 'screenshot updated'})`);
+        } else {
+          setErrorCount(prev => prev + 1);
+          newErrors.push(result.message);
+        }
+        
+        const newProcessedCount = i + 1;
+        setProcessedChannels(newProcessedCount);
+        
+        const newProgress = Math.floor((newProcessedCount / channels.length) * 100);
+        setProgress(newProgress);
+        
+        if ((newProcessedCount % 5 === 0) || newProcessedCount === channels.length) {
+          toast.info(`Screenshot progress: ${newProcessedCount}/${channels.length} channels processed`);
+        }
+        
+        if (i < channels.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      setErrors(newErrors);
+      setUpdatedChannels(updatedList);
+      
+      if (errorCount > 0) {
+        toast.warning(
+          `Screenshot update completed: ${successCount} successful, ${errorCount} failed.`
+        );
+      } else {
+        toast.success(`Successfully updated screenshots for all ${successCount} channels!`);
+      }
+      
+      console.log("Channels updated with screenshots:", updatedList);
+    } catch (error) {
+      console.error("Error in mass screenshot update:", error);
+      toast.error(`Screenshot update process encountered an error: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsProcessing(false);
+      setCurrentChannel(null);
+    }
+  }, []);
   
   const cancelUpdate = useCallback(() => {
-    progressManager.updateProgress({ isActive: false });
+    setIsProcessing(false);
     toast.info("Screenshot update cancelled");
-  }, [progressManager]);
+  }, []);
   
   return {
     startMassUpdate,
     cancelUpdate,
-    isProcessing: state.isActive,
-    progress: state.progress,
-    currentChannel: state.currentChannel,
+    isProcessing,
+    progress,
+    currentChannel,
     processedChannels,
     totalChannels,
     errors,
-    successCount: state.successCount
+    successCount,
+    errorCount,
+    updatedChannels
   };
 };

@@ -1,45 +1,49 @@
 
 /**
- * Extracts a UUID from a slug string
- * @param slug The slug to extract UUID from
- * @returns The extracted UUID or null if not found
+ * Extract ID from a channel slug in the format "title-UC12345"
  */
-export const extractIdFromSlug = (slug: string): string | null => {
+export const extractIdFromSlug = (slug: string) => {
   if (!slug) return null;
   
-  // UUID pattern: 8-4-4-4-12 hex digits with hyphens
-  // Example: ac004f01-4aad-439d-b1ab-59988473f7fc
-  const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-  const match = slug.match(uuidPattern);
+  const parts = slug.split('-');
+  if (parts.length === 0) return null;
   
-  if (match && match[0]) {
-    console.log("Extracted UUID from slug:", match[0]);
-    return match[0];
-  }
-  
-  return null;
+  // The ID is the last part
+  const id = parts[parts.length - 1];
+  return id;
 };
 
 /**
- * Extracts YouTube channel ID from channel URL
- * @param url The YouTube channel URL
- * @returns The YouTube channel ID or null if not found
+ * Extract YouTube channel ID from a channel URL
+ * - Handles multiple URL formats (youtube.com/channel/UC..., youtube.com/c/name, youtube.com/@handle)
  */
 export const extractYouTubeChannelId = (url: string): string | null => {
   if (!url) return null;
   
-  // Pattern for channel URLs like: https://www.youtube.com/channel/UC...
-  const channelPattern = /youtube\.com\/channel\/([\w-]{22,24})/i;
-  const channelMatch = url.match(channelPattern);
-  
-  if (channelMatch && channelMatch[1]) {
-    // Format the ID to ensure proper casing but without warning
-    return channelMatch[1];
+  try {
+    // For standard channel URLs (youtube.com/channel/UC...)
+    if (url.includes('/channel/')) {
+      const matches = url.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+      return matches?.[1] || null;
+    }
+    
+    // For custom URLs (youtube.com/c/name or youtube.com/@handle)
+    // We'll just return the entire URL as we can't reliably extract the ID
+    // The edge function will handle the conversion
+    if (url.includes('/c/') || url.includes('/@')) {
+      console.log("Returning entire URL for custom handle:", url);
+      return url;
+    }
+    
+    // For direct IDs that might be stored in the database
+    if (url.startsWith('UC') && url.length >= 24) {
+      return url;
+    }
+    
+    console.warn("Could not extract YouTube channel ID from URL:", url);
+    return null;
+  } catch (e) {
+    console.error("Error extracting YouTube channel ID:", e);
+    return null;
   }
-  
-  // Pattern for user URLs like: https://www.youtube.com/user/username
-  // or handle URLs like: https://www.youtube.com/@username
-  // These require an additional API call to get the channel ID, which we'll skip for now
-  
-  return null;
 };

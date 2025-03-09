@@ -18,23 +18,27 @@ interface NicheSelectorProps {
   onChange: (value: string) => void;
 }
 
-const fetchNichesForSelector = async () => {
+const fetchNichesForSelector = async (): Promise<string[]> => {
   try {
     // First try the edge function with timeout
     const fetchPromise = supabase.functions.invoke("get-niches");
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise<never>((_, reject) => 
       setTimeout(() => reject(new Error("Edge function timeout")), 5000)
     );
     
-    const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
-    
-    if (error) {
-      console.warn("Edge function error:", error);
-      throw new Error(error.message);
-    }
-    
-    if (data?.niches && Array.isArray(data.niches) && data.niches.length > 0) {
-      return data.niches;
+    try {
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      
+      if (error) {
+        console.warn("Edge function error:", error);
+        throw new Error(error.message);
+      }
+      
+      if (data?.niches && Array.isArray(data.niches) && data.niches.length > 0) {
+        return data.niches;
+      }
+    } catch (err) {
+      console.warn("Edge function failed, falling back to direct query:", err);
     }
     
     // Fallback to direct query with timeout
@@ -43,7 +47,7 @@ const fetchNichesForSelector = async () => {
       .select('name')
       .order('name');
       
-    const queryTimeoutPromise = new Promise((_, reject) => 
+    const queryTimeoutPromise = new Promise<never>((_, reject) => 
       setTimeout(() => reject(new Error("Database query timeout")), 5000)
     );
     
@@ -56,7 +60,7 @@ const fetchNichesForSelector = async () => {
     
     if (nichesData && nichesData.length > 0) {
       console.log("Retrieved niches from database:", nichesData.length);
-      return nichesData.map(niche => niche.name);
+      return nichesData.map((niche: any) => niche.name);
     }
     
     console.log("No niches found, using default list");
@@ -77,11 +81,9 @@ const NicheSelector = ({ value, onChange }: NicheSelectorProps) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     retry: 2,
-    meta: {
-      onError: (err: Error) => {
-        console.error("Failed to fetch niches:", err);
-        toast.error("Could not load niches. Using default list.");
-      }
+    onError: (err: Error) => {
+      console.error("Failed to fetch niches:", err);
+      toast.error("Could not load niches. Using default list.");
     }
   });
   

@@ -14,16 +14,22 @@ export interface StatsUpdateResult {
 
 export const fetchChannelsForStatsUpdate = async (): Promise<{ channels: ChannelForUpdate[], count: number }> => {
   try {
-    // Improved query to find channels missing any of the important stats
+    // More precise query to find channels that are missing important stats
+    // Using explicit NULL checks for more accuracy and improved performance
     const { data, error, count } = await supabase
       .from('youtube_channels')
       .select('id, channel_url, channel_title', { count: 'exact' })
       .or('total_subscribers.is.null,total_views.is.null,video_count.is.null,description.is.null')
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: true });
     
     if (error) throw error;
     console.log(`Found ${count || 0} channels missing stats`);
-    console.log("Sample channels with missing stats:", data?.slice(0, 3));
+    
+    // Log each channel missing stats to help debug
+    if (data && data.length > 0) {
+      console.log("First 5 channels with missing stats:", data.slice(0, 5));
+    }
+    
     return { channels: data || [], count: count || 0 };
   } catch (error) {
     console.error("Error fetching channels for stats update:", error);

@@ -1,0 +1,53 @@
+
+project_id = "dhbuaffdzhjzsqjfkesg"
+extend_path = ".."
+
+[[functions]]
+name = "fetch-channel-stats-apify"
+verify_jwt = false
+version = 1
+
+[[functions]]
+name = "fetch-top-videos"
+verify_jwt = false
+version = 1
+
+[[functions]]
+name = "fetch-youtube-data"
+verify_jwt = false
+version = 1
+
+[[functions]]
+name = "generate-channel-metadata"
+verify_jwt = false
+version = 1
+
+[[functions]]
+name = "generate-channel-type"
+verify_jwt = false
+version = 1
+
+[[functions]]
+name = "take-channel-screenshot"
+verify_jwt = false
+version = 1
+
+[[functions]]
+name = "test-apify-connection"
+verify_jwt = false
+version = 1
+
+[[functions]]
+name = "update-channel-metadata"
+verify_jwt = false
+version = 1
+
+[[functions]]
+name = "get-channel-types"
+verify_jwt = false
+version = 1
+
+[[functions]]
+name = "get-niches"
+verify_jwt = false
+version = 1

@@ -18,28 +18,28 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch niches from the database
-    const { data: nichesData, error } = await supabase
-      .from('niches')
-      .select('name')
-      .order('name');
+    // Fetch channel types from the database
+    const { data: channelTypes, error } = await supabase
+      .from('channel_types')
+      .select('id, label, description')
+      .order('label');
 
     if (error) {
-      console.error('Error fetching niches:', error);
+      console.error('Error fetching channel types:', error);
       throw error;
     }
 
-    // Extract niche names and return them
-    const niches = nichesData ? nichesData.map(niche => niche.name) : [];
-    
-    return new Response(JSON.stringify({
-      niches,
+    // Return the channel types
+    const response = {
+      channelTypes: channelTypes || [],
       success: true,
-    }), {
+    };
+
+    return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in get-niches function:', error);
+    console.error('Error in get-channel-types function:', error);
     
     return new Response(JSON.stringify({
       success: false,

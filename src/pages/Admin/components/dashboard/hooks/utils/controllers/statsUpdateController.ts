@@ -44,22 +44,21 @@ export const useStatsUpdateController = (progressManager: {
       return;
     }
     
-    // Reset progress state if starting fresh (not resuming)
-    if (processedChannels.length === 0) {
-      progressManager.updateProgress({
-        isActive: true,
-        progress: 0,
-        processedCount: 0,
-        successCount: 0,
-        errorCount: 0,
-        currentChannel: null,
-        totalCount: 0
-      });
-    } else {
-      progressManager.updateProgress({
-        isActive: true,
-      });
-    }
+    // Reset all state to ensure we start fresh
+    setProcessedChannels([]);
+    setErrors([]);
+    
+    // Reset progress state
+    progressManager.updateProgress({
+      isActive: true,
+      progress: 0,
+      processedCount: 0,
+      successCount: 0,
+      errorCount: 0,
+      currentChannel: null,
+      totalCount: 0,
+      errors: []
+    });
     
     processingRef.current = true;
     
@@ -75,39 +74,33 @@ export const useStatsUpdateController = (progressManager: {
       // Set total channels
       setTotalChannels(count);
       
-      // Filter out already processed channels if resuming
-      const remainingChannels = processedChannels.length > 0 
-        ? channels.filter(ch => !processedChannels.includes(ch.id))
-        : channels;
-      
-      console.log(`Processing ${remainingChannels.length} remaining channels`);
-      
       progressManager.updateProgress({ 
         totalCount: count,
-        processedCount: processedChannels.length,
+        processedCount: 0,
       });
       
-      if (remainingChannels.length === 0) {
+      if (channels.length === 0) {
         toast.info("No channels found missing stats");
         progressManager.updateProgress({ isActive: false });
         processingRef.current = false;
         return;
       }
 
-      toast.info(`Starting stats update for ${remainingChannels.length} channels with missing stats. This may take a while.`);
+      toast.info(`Starting stats update for ${channels.length} channels with missing stats. This may take a while.`);
       
       // Process channels sequentially with error handling for each
       const batchSize = 1; // Process one at a time
       const newErrors: string[] = [];
+      let processedCount = 0;
 
-      for (let i = 0; i < remainingChannels.length; i += batchSize) {
+      for (let i = 0; i < channels.length; i += batchSize) {
         // Check if operation was cancelled
         if (signal.aborted) {
           console.log("Stats update process was cancelled");
           break;
         }
         
-        const batch = remainingChannels.slice(i, i + batchSize);
+        const batch = channels.slice(i, i + batchSize);
         
         // Process this batch sequentially
         for (const channel of batch) {
@@ -115,7 +108,7 @@ export const useStatsUpdateController = (progressManager: {
           if (signal.aborted) break;
           
           const channelTitle = channel.channel_title || `Channel ${i+1}`;
-          console.log(`Processing channel ${processedChannels.length + i + batch.indexOf(channel) + 1}/${count}: ${channelTitle}`);
+          console.log(`Processing channel ${processedCount + 1}/${count}: ${channelTitle}`);
           progressManager.setCurrentChannel(channelTitle);
           
           try {
@@ -136,6 +129,9 @@ export const useStatsUpdateController = (progressManager: {
               progressManager.addError(result.message);
             }
             
+            // Increment processed count
+            processedCount++;
+            
             // Add to processed channels list to enable resuming
             setProcessedChannels(prev => [...prev, channel.id]);
           } catch (error) {
@@ -146,25 +142,27 @@ export const useStatsUpdateController = (progressManager: {
             newErrors.push(errorMessage);
             progressManager.addError(errorMessage);
             
+            // Increment processed count even for errors
+            processedCount++;
+            
             // Still add to processed to avoid getting stuck
             setProcessedChannels(prev => [...prev, channel.id]);
           }
           
-          // Update processed count regardless of success or failure
-          const newProcessedCount = processedChannels.length + i + batch.indexOf(channel) + 1;
-          progressManager.updateProgress({ processedCount: newProcessedCount });
+          // Update processed count
+          progressManager.updateProgress({ processedCount });
           
           // Calculate and update progress
-          const newProgress = Math.floor((newProcessedCount / count) * 100);
+          const newProgress = Math.floor((processedCount / count) * 100);
           progressManager.updateProgress({ progress: newProgress });
           
           // Show periodic progress updates (reduced frequency to avoid toast flooding)
-          if ((newProcessedCount % 10 === 0) || newProcessedCount === count) {
-            toast.info(`Progress: ${newProcessedCount}/${count} channels processed`);
+          if ((processedCount % 10 === 0) || processedCount === count) {
+            toast.info(`Progress: ${processedCount}/${count} channels processed`);
           }
           
           // Delay between each channel to avoid API rate limits
-          if (!signal.aborted && (i + batch.indexOf(channel) + 1 < remainingChannels.length)) {
+          if (!signal.aborted && (i + batch.indexOf(channel) + 1 < channels.length)) {
             await new Promise(resolve => setTimeout(resolve, 3000));
           }
         }
@@ -188,12 +186,10 @@ export const useStatsUpdateController = (progressManager: {
       toast.error(`Stats update process encountered an error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       // Always clean up, even if there was an error
-      if (processingRef.current) {
-        progressManager.updateProgress({ isActive: false });
-        processingRef.current = false;
-        progressManager.setCurrentChannel(null);
-        abortControllerRef.current = null;
-      }
+      progressManager.updateProgress({ isActive: false });
+      processingRef.current = false;
+      progressManager.setCurrentChannel(null);
+      abortControllerRef.current = null;
     }
   };
 
@@ -206,18 +202,10 @@ export const useStatsUpdateController = (progressManager: {
       progressManager.setCurrentChannel(null);
     }
   };
-  
-  const resetUpdateProcess = () => {
-    // Clear the processed channels to start from beginning
-    setProcessedChannels([]);
-    setErrors([]);
-    return;
-  };
 
   return {
     startMassUpdate,
     cancelUpdate,
-    resetUpdateProcess,
     errors,
     totalChannels,
     processedChannels: processedChannels.length,
