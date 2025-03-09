@@ -76,6 +76,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check active session
     const checkSession = async () => {
       try {
+        setLoading(true);
         const { data } = await supabase.auth.getSession();
         console.log("Initial session check:", data?.session ? "Session exists" : "No session");
         
@@ -96,6 +97,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
+        
+        setLoading(true);
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
