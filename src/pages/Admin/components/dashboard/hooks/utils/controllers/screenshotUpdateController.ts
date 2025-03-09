@@ -43,9 +43,9 @@ export const useScreenshotUpdateController = () => {
     }
     
     updateProgress({
-      isProcessing: true,
+      isActive: true,
       progress: 0,
-      processedChannels: 0,
+      processedCount: 0,
       successCount: 0,
       errorCount: 0,
       currentChannel: null,
@@ -60,11 +60,11 @@ export const useScreenshotUpdateController = () => {
     
     try {
       const { channels, count } = await screenshotApiService.fetchChannelsWithoutScreenshots();
-      updateProgress({ totalChannels: count });
+      updateProgress({ totalCount: count });
       
       if (channels.length === 0) {
         toast.info("No channels found without screenshots");
-        updateProgress({ isProcessing: false });
+        updateProgress({ isActive: false });
         processingRef.current = false;
         return;
       }
@@ -90,7 +90,7 @@ export const useScreenshotUpdateController = () => {
     } finally {
       // Only if this specific process is still the active one
       if (processingRef.current) {
-        updateProgress({ isProcessing: false });
+        updateProgress({ isActive: false });
         processingRef.current = false;
         setCurrentChannel(null);
         abortControllerRef.current = null;
@@ -167,7 +167,7 @@ export const useScreenshotUpdateController = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       toast.info("Screenshot update process cancelled");
-      updateProgress({ isProcessing: false });
+      updateProgress({ isActive: false });
       processingRef.current = false;
       setCurrentChannel(null);
     }
