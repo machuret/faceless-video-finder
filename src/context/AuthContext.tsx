@@ -71,60 +71,86 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    let mounted = true;
+    console.log("Auth Provider mounted");
+    let isMounted = true;
     
     const initializeAuth = async () => {
-      // Only set loading if component is still mounted
-      if (mounted) setLoading(true);
-      
       try {
-        // Check current session
-        const { data: sessionData } = await supabase.auth.getSession();
+        if (isMounted) setLoading(true);
         
-        if (mounted && sessionData?.session?.user) {
+        // Check current session
+        const { data: sessionData, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          if (isMounted) setLoading(false);
+          return;
+        }
+        
+        if (isMounted && sessionData?.session?.user) {
+          console.log("Found existing user session:", sessionData.session.user.email);
           setUser(sessionData.session.user);
           await checkAdminStatus(sessionData.session.user.id);
         }
       } catch (error) {
         console.error("Error checking session:", error);
       } finally {
-        // Only update loading state if component is still mounted
-        if (mounted) setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     
     initializeAuth();
     
     // Set up auth state change listener
+    console.log("Setting up auth state change listener");
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
+        console.log("Auth state changed:", event, session?.user?.email);
         
-        if (!mounted) return;
+        if (!isMounted) {
+          console.log("Component unmounted, ignoring auth state change");
+          return;
+        }
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setLoading(true);
+          if (isMounted) setLoading(true);
+          
           if (session?.user) {
-            setUser(session.user);
-            await checkAdminStatus(session.user.id);
+            if (isMounted) {
+              console.log("Setting user after auth change:", session.user.email);
+              setUser(session.user);
+              await checkAdminStatus(session.user.id);
+            }
           }
-          setLoading(false);
+          
+          if (isMounted) setLoading(false);
         } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setIsAdmin(false);
+          if (isMounted) {
+            console.log("User signed out, clearing user state");
+            setUser(null);
+            setIsAdmin(false);
+          }
         }
       }
     );
     
     // Clean up subscription and mounted flag on unmount
     return () => {
-      mounted = false;
+      console.log("Auth Provider unmounting, cleaning up");
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, [navigate]);
 
+  const contextValue = {
+    user,
+    isAdmin,
+    loading,
+    signOut
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, signOut }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
