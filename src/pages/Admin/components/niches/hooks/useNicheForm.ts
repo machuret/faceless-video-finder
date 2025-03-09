@@ -5,7 +5,8 @@ import { useImageHandling } from "./useImageHandling";
 import { useNicheSubmission } from "./useNicheSubmission";
 import { NicheInfo } from "./types";
 
-export { NicheInfo };
+// Use export type for re-exporting types when isolatedModules is enabled
+export type { NicheInfo };
 
 export const useNicheForm = () => {
   const {
