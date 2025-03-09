@@ -41,9 +41,10 @@ const ChannelSearch = () => {
         } else {
           throw new Error("Invalid search results format");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Search error:', err);
-        setError('Failed to perform search. Please try again.');
+        const errorMessage = err?.message || 'Failed to perform search. Please try again.';
+        setError(errorMessage);
         toast.error('Search failed. Please try again.');
       } finally {
         setLoading(false);
@@ -54,6 +55,11 @@ const ChannelSearch = () => {
   }, [searchQuery]);
 
   const handleSearch = (query: string) => {
+    if (!query.trim()) {
+      toast.info("Please enter a search term");
+      return;
+    }
+    
     setSearchParams({ search: query });
     setCurrentPage(1); // Reset to first page on new search
   };
@@ -69,6 +75,8 @@ const ChannelSearch = () => {
     const endIndex = startIndex + channelsPerPage;
     return channels.slice(startIndex, endIndex);
   };
+
+  const totalPages = Math.ceil(channels.length / channelsPerPage);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">

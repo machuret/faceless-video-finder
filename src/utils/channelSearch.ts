@@ -71,14 +71,13 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
         query = query.or(
           `channel_title.ilike.%${searchTerm}%,` +
           `description.ilike.%${searchTerm}%,` +
-          `channel_category.ilike.%${searchTerm}%,` +
           `niche.ilike.%${searchTerm}%,` +
-          `channel_type.ilike.%${searchTerm}%,` +
-          `keywords.ilike.%${searchTerm}%`
+          `channel_type.ilike.%${searchTerm}%`
         );
       }
     }
     
+    // Limit the number of results to avoid performance issues
     const { data, error } = await query.limit(100);
 
     if (error) {
