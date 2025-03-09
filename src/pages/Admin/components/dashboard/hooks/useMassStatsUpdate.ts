@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -16,10 +16,21 @@ export const useMassStatsUpdate = () => {
   const [successCount, setSuccessCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [currentChannel, setCurrentChannel] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
   
   // Use refs to track state that shouldn't trigger re-renders
   const processingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        processingRef.current = false;
+      }
+    };
+  }, []);
 
   const fetchChannelsForStatsUpdate = async () => {
     try {
@@ -33,7 +44,7 @@ export const useMassStatsUpdate = () => {
       if (error) throw error;
       console.log(`Found ${count || 0} channels missing stats`);
       console.log("Sample channels with missing stats:", data?.slice(0, 3));
-      return { channels: data, count: count || 0 };
+      return { channels: data || [], count: count || 0 };
     } catch (error) {
       console.error("Error fetching channels for stats update:", error);
       toast.error("Failed to fetch channels");
@@ -130,6 +141,7 @@ export const useMassStatsUpdate = () => {
     setSuccessCount(0);
     setErrorCount(0);
     setCurrentChannel(null);
+    setErrors([]);
     
     // Create abort controller for cancellation
     abortControllerRef.current = new AbortController();
@@ -148,41 +160,73 @@ export const useMassStatsUpdate = () => {
 
       toast.info(`Starting stats update for ${channels.length} channels with missing stats. This may take a while.`);
       
-      // Process channels one at a time to avoid API rate limits
-      for (let i = 0; i < channels.length; i++) {
+      // Process channels in small batches to avoid timeouts
+      const batchSize = 1; // Process one at a time to avoid overwhelming the server
+      const newErrors: string[] = [];
+
+      for (let i = 0; i < channels.length; i += batchSize) {
         // Check if operation was cancelled
         if (signal.aborted) {
           console.log("Stats update process was cancelled");
           break;
         }
         
-        const channel = channels[i];
+        const batch = channels.slice(i, i + batchSize);
         
-        const result = await updateStatsForChannel(
-          channel.id, 
-          channel.channel_url,
-          channel.channel_title || `Channel ${i+1}`
-        );
-        
-        if (result.success) {
-          setSuccessCount(prev => prev + 1);
-        } else {
-          setErrorCount(prev => prev + 1);
-          console.warn(result.message);
+        // Process this batch sequentially
+        for (const channel of batch) {
+          // Check if operation was cancelled
+          if (signal.aborted) break;
+          
+          try {
+            const result = await updateStatsForChannel(
+              channel.id, 
+              channel.channel_url,
+              channel.channel_title || `Channel ${i+1}`
+            );
+            
+            if (result.success) {
+              setSuccessCount(prev => prev + 1);
+            } else {
+              setErrorCount(prev => prev + 1);
+              newErrors.push(result.message);
+              console.warn(result.message);
+            }
+            
+            // Update processed count
+            const newProcessedCount = i + batch.indexOf(channel) + 1;
+            setProcessedChannels(newProcessedCount);
+            setProgress(Math.floor((newProcessedCount / channels.length) * 100));
+            
+            // Show periodic progress updates
+            if ((newProcessedCount % 5 === 0) || newProcessedCount === channels.length) {
+              toast.info(`Progress: ${newProcessedCount}/${channels.length} channels processed`);
+            }
+            
+            // Update errors state
+            setErrors(newErrors);
+            
+            // Delay between each channel to avoid API rate limits
+            if (!signal.aborted && i + 1 < channels.length) {
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+          } catch (error) {
+            // Catch any unexpected errors to prevent the entire process from failing
+            console.error(`Unexpected error processing channel:`, error);
+            setErrorCount(prev => prev + 1);
+            newErrors.push(`Channel ${channel.channel_title || channel.id}: Unexpected error`);
+            setErrors(newErrors);
+            
+            // Still update progress
+            const newProcessedCount = i + batch.indexOf(channel) + 1;
+            setProcessedChannels(newProcessedCount);
+            setProgress(Math.floor((newProcessedCount / channels.length) * 100));
+          }
         }
         
-        // Update processed count
-        setProcessedChannels(i + 1);
-        setProgress(Math.floor(((i + 1) / channels.length) * 100));
-        
-        // Show periodic progress updates
-        if ((i + 1) % 5 === 0 || i === channels.length - 1) {
-          toast.info(`Progress: ${i + 1}/${channels.length} channels processed`);
-        }
-        
-        // Delay between each channel to avoid API rate limits
-        if (i + 1 < channels.length && !signal.aborted) {
-          await new Promise(resolve => setTimeout(resolve, 3000));
+        // Longer delay between batches
+        if (i + batchSize < channels.length && !signal.aborted) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
         }
       }
       
@@ -190,7 +234,7 @@ export const useMassStatsUpdate = () => {
       if (!signal.aborted) {
         if (errorCount > 0) {
           toast.warning(
-            `Stats update completed: ${successCount} successful, ${errorCount} failed. Check console for details.`
+            `Stats update completed: ${successCount} successful, ${errorCount} failed. Check errors for details.`
           );
         } else {
           toast.success(`Successfully updated stats for all ${successCount} channels!`);
@@ -228,6 +272,7 @@ export const useMassStatsUpdate = () => {
     successCount,
     errorCount,
     currentChannel,
+    errors,
     startMassUpdate,
     cancelUpdate
   };

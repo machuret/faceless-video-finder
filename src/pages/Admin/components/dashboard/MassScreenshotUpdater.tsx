@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, X } from "lucide-react";
+import { Camera, RefreshCw, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useMassScreenshotUpdate } from "./hooks/useMassScreenshotUpdate";
@@ -14,6 +14,8 @@ const MassScreenshotUpdater = () => {
     totalChannels,
     processedChannels,
     errors,
+    successCount,
+    currentChannel,
     startMassUpdate,
     cancelUpdate
   } = useMassScreenshotUpdate();
@@ -32,6 +34,17 @@ const MassScreenshotUpdater = () => {
             <span>{progress}%</span>
           </div>
           <Progress value={progress} className="h-2 mb-4" />
+          
+          {currentChannel && (
+            <div className="text-sm text-gray-600 mt-2">
+              Currently processing: <span className="font-medium">{currentChannel}</span>
+            </div>
+          )}
+          
+          <div className="flex justify-between text-sm mt-2">
+            <span className="text-green-600">Success: {successCount}</span>
+            <span className="text-red-600">Failed: {errors.length}</span>
+          </div>
           
           {errors.length > 0 && (
             <Accordion type="single" collapsible className="mt-4">
@@ -66,7 +79,10 @@ const MassScreenshotUpdater = () => {
               Processing...
             </>
           ) : (
-            "Update Missing Screenshots"
+            <>
+              <Camera className="h-4 w-4 mr-2" />
+              Update Missing Screenshots
+            </>
           )}
         </Button>
         

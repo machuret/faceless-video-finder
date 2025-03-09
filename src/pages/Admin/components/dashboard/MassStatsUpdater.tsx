@@ -5,6 +5,7 @@ import { Activity, RefreshCw, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useMassStatsUpdate } from "./hooks/useMassStatsUpdate";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const MassStatsUpdater = () => {
   const {
@@ -15,6 +16,7 @@ const MassStatsUpdater = () => {
     successCount,
     errorCount,
     currentChannel,
+    errors,
     startMassUpdate,
     cancelUpdate
   } = useMassStatsUpdate();
@@ -44,6 +46,25 @@ const MassStatsUpdater = () => {
             <span className="text-green-600">Success: {successCount}</span>
             <span className="text-red-600">Failed: {errorCount}</span>
           </div>
+
+          {errors && errors.length > 0 && (
+            <Accordion type="single" collapsible className="mt-4">
+              <AccordionItem value="errors">
+                <AccordionTrigger>
+                  <span className="text-red-500">Errors ({errors.length})</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="max-h-40 overflow-y-auto">
+                    <ul className="text-sm text-red-500 list-disc pl-5">
+                      {errors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
         </div>
       )}
       
