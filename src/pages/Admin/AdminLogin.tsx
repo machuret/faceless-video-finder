@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,16 +18,19 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAdmin, loading: authLoading } = useAuth();
+  
+  // Get the intended destination from the URL or default to dashboard
+  const from = location.state?.from?.pathname || "/admin/dashboard";
 
   // Redirect if already logged in as admin
   useEffect(() => {
-    console.log("AdminLogin - Auth state:", { user, isAdmin, authLoading });
     if (!authLoading && user && isAdmin) {
-      console.log("Already logged in as admin, redirecting to dashboard");
-      navigate("/admin/dashboard");
+      console.log("Already logged in as admin, redirecting to destination");
+      navigate(from, { replace: true });
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, isAdmin, authLoading, navigate, from]);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -45,7 +48,6 @@ export default function AdminLogin() {
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Login form submitted");
     
     // Form validation
     if (!email || !password) {
@@ -56,7 +58,7 @@ export default function AdminLogin() {
     
     try {
       setIsLoading(true);
-      console.log("Attempting to sign in with:", email);
+      setErrorMessage("");
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -69,8 +71,6 @@ export default function AdminLogin() {
       }
       
       if (data?.user) {
-        console.log("User signed in successfully:", data.user.id);
-        
         // Check if user is an admin
         const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
           user_id: data.user.id
@@ -82,9 +82,9 @@ export default function AdminLogin() {
         }
 
         if (adminData) {
-          console.log("User is admin, redirecting to dashboard");
+          console.log("User is admin, redirecting to destination");
           toast.success("Logged in successfully");
-          navigate("/admin/dashboard");
+          navigate(from, { replace: true });
         } else {
           console.log("User is not an admin, signing out");
           toast.error("You don't have admin access");

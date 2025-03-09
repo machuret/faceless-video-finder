@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -148,12 +148,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [checkAdminStatus]); 
 
-  const contextValue = {
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
     user,
     isAdmin,
     loading,
     signOut
-  };
+  }), [user, isAdmin, loading, signOut]);
 
   return (
     <AuthContext.Provider value={contextValue}>
