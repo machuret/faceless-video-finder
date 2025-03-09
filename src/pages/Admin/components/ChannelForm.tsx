@@ -9,6 +9,7 @@ import ChannelContentSection from "./form-sections/ChannelContentSection";
 import RevenueDetailsSection from "./form-sections/RevenueDetailsSection";
 import NotesSection from "./form-sections/NotesSection";
 import KeywordsSection from "./form-sections/KeywordsSection";
+import TopVideosPreview from "./channel-videos/TopVideosPreview";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -36,6 +37,20 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
   handleBooleanFieldChange
 }) => {
   const navigate = useNavigate();
+
+  // Extract youtube channel ID if available in channel_url
+  const extractYoutubeChannelId = (url: string) => {
+    if (!url) return null;
+    const channelMatch = url.match(/\/channel\/(UC[\w-]{22})/);
+    if (channelMatch) return channelMatch[1];
+    
+    const rawIdMatch = url.match(/(UC[\w-]{22})/);
+    if (rawIdMatch) return rawIdMatch[1];
+    
+    return null;
+  };
+
+  const youtubeChannelId = formData.channel_url ? extractYoutubeChannelId(formData.channel_url) : null;
 
   return (
     <div className="space-y-8 mb-8">
@@ -83,6 +98,13 @@ const ChannelForm: React.FC<ChannelFormProps> = ({
         channelType={formData.channel_type}
         onFieldChange={handleFieldChange}
       />
+
+      {isEditMode && formData.id && (
+        <TopVideosPreview 
+          channelId={formData.id} 
+          youtubeChannelId={youtubeChannelId || undefined}
+        />
+      )}
 
       <div className="flex justify-end gap-4">
         <Button 

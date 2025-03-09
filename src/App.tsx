@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -78,6 +79,11 @@ const App = () => {
           />
           <Route
             path="/admin/channels/edit/:channelId"
+            element={<ProtectedRoute><AddChannel /></ProtectedRoute>}
+          />
+          {/* Add alternative route for edit-channel for compatibility */}
+          <Route
+            path="/admin/edit-channel/:channelId"
             element={<ProtectedRoute><AddChannel /></ProtectedRoute>}
           />
           <Route
