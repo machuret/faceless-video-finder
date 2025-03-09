@@ -44,9 +44,9 @@ export const updateStatsForChannel = async (
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
     try {
+      // Remove the signal property from the options object
       const { data, error } = await supabase.functions.invoke<any>('fetch-channel-stats-apify', {
-        body: { channelUrl },
-        signal: controller.signal
+        body: { channelUrl }
       });
       
       clearTimeout(timeoutId);

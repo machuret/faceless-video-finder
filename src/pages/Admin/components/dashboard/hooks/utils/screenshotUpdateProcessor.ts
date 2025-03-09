@@ -63,9 +63,9 @@ export const useScreenshotUpdateProcessor = () => {
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for screenshots
       
       try {
+        // Remove the signal property from the options object
         const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
-          body: { channelId: channel.id, channelUrl: channel.channel_url },
-          signal: controller.signal
+          body: { channelId: channel.id, channelUrl: channel.channel_url }
         });
         
         clearTimeout(timeoutId);
