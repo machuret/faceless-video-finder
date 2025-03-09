@@ -1,8 +1,8 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
 type AuthContextType = {
   user: User | null;
@@ -30,7 +30,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
   
   const checkAdminStatus = async (userId: string | undefined) => {
     if (!userId) {
@@ -64,9 +63,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
       setUser(null);
       setIsAdmin(false);
-      navigate('/admin/login');
+      
+      // Use window.location instead of navigate hook
+      window.location.href = '/admin/login';
+      toast.success("Logged out successfully");
     } catch (error) {
       console.error('Error signing out:', error);
+      toast.error("Error signing out");
     }
   };
 
@@ -140,7 +143,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []); // Remove navigate dependency
 
   const contextValue = {
     user,
