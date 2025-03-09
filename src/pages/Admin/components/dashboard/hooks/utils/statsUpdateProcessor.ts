@@ -22,6 +22,8 @@ export const useStatsUpdateProcessor = () => {
   
   // Track batches to prevent restarting from beginning
   const [processedChannels, setProcessedChannels] = useState<string[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [totalChannels, setTotalChannels] = useState(0);
 
   // Clean up on unmount
   useEffect(() => {
@@ -67,6 +69,9 @@ export const useStatsUpdateProcessor = () => {
       console.log("Starting mass stats update process");
       const { channels, count } = await fetchChannelsForStatsUpdate();
       console.log(`Found ${count} channels to update`);
+      
+      // Set total channels
+      setTotalChannels(count);
       
       // Filter out already processed channels if resuming
       const remainingChannels = processedChannels.length > 0 
@@ -163,6 +168,9 @@ export const useStatsUpdateProcessor = () => {
         }
       }
       
+      // Update errors state
+      setErrors(newErrors);
+      
       // Show final results only if not aborted
       if (!signal.aborted) {
         if (state.errorCount > 0) {
@@ -208,6 +216,9 @@ export const useStatsUpdateProcessor = () => {
     ...state,
     startMassUpdate,
     cancelUpdate,
-    resetUpdateProcess
+    resetUpdateProcess,
+    errors,
+    totalChannels,
+    processedChannels: processedChannels.length
   };
 };

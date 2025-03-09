@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -9,70 +9,56 @@ interface SelectedChannel {
   title: string;
 }
 
-export function useBulkScreenshotGenerator() {
+interface UseBulkScreenshotGeneratorResult {
+  generateScreenshotsForChannels: (channels: SelectedChannel[]) => Promise<void>;
+  isProcessing: boolean;
+  progress: number;
+  currentChannel: string | null;
+  successCount: number;
+  errorCount: number;
+  totalCount: number;
+}
+
+export function useBulkScreenshotGenerator(): UseBulkScreenshotGeneratorResult {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentChannel, setCurrentChannel] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [retryAttempts, setRetryAttempts] = useState<Record<string, number>>({});
 
-  // Memoized function to generate screenshot for a single channel
-  const generateScreenshotForChannel = useCallback(async (channel: SelectedChannel): Promise<boolean> => {
+  const generateScreenshotForSingleChannel = async (channel: SelectedChannel): Promise<boolean> => {
     try {
-      console.log(`Taking screenshot for channel: ${channel.title} (${channel.url})`);
+      console.log(`Generating screenshot for channel: ${channel.title} (${channel.url})`);
       setCurrentChannel(channel.title);
       
-      toast.info(`Processing screenshot for ${channel.title}...`);
-      
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      const { data, error } = await supabase.functions.invoke<any>('take-channel-screenshot', {
+      // Remove the signal property for compatibility
+      const { data, error } = await supabase.functions.invoke('take-channel-screenshot', {
         body: { 
           channelId: channel.id,
           channelUrl: channel.url
-        },
-        signal: controller.signal
+        }
       });
-      
-      clearTimeout(timeoutId);
 
       if (error) {
-        if (error.name === 'AbortError') {
-          console.error(`Timeout taking screenshot for ${channel.title}`);
-          toast.error(`Timeout while taking screenshot for ${channel.title}`);
-        } else {
-          console.error(`Error taking screenshot for ${channel.title}:`, error);
-          toast.error(`Failed to take screenshot for ${channel.title}: ${error.message}`);
-        }
+        console.error(`Error generating screenshot for ${channel.title}:`, error);
         return false;
       }
 
       if (!data || !data.success) {
-        console.error(`Failed to take screenshot for ${channel.title}:`, data?.error || "Unknown error");
-        toast.error(`Failed to take screenshot for ${channel.title}: ${data?.error || "Unknown error"}`);
+        console.error(`Failed to generate screenshot for ${channel.title}:`, data?.error || "Unknown error");
         return false;
       }
 
-      console.log(`Successfully took screenshot for ${channel.title}: ${data.screenshotUrl}`);
-      toast.success(`Successfully took screenshot for ${channel.title}`);
+      console.log(`Successfully generated screenshot for ${channel.title}`);
       return true;
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        console.error(`Timeout taking screenshot for ${channel.title}`);
-        toast.error(`Timeout while taking screenshot for ${channel.title}`);
-      } else {
-        console.error(`Exception when taking screenshot for ${channel.title}:`, error);
-        toast.error(`Exception when taking screenshot for ${channel.title}: ${error instanceof Error ? error.message : String(error)}`);
-      }
+      console.error(`Exception when generating screenshot for ${channel.title}:`, error);
       return false;
     }
-  }, []);
+  };
 
-  const generateScreenshotsForChannels = useCallback(async (channels: SelectedChannel[]) => {
+  const generateScreenshotsForChannels = async (channels: SelectedChannel[]) => {
     if (!channels.length) {
       toast.error("No channels selected");
       return;
@@ -84,73 +70,46 @@ export function useBulkScreenshotGenerator() {
     setErrorCount(0);
     setTotalCount(channels.length);
     setCurrentChannel(null);
-    setRetryAttempts({});
 
-    const failedChannels: SelectedChannel[] = [];
-    toast.info(`Starting screenshots for ${channels.length} channels. This may take a while.`);
+    toast.info(`Starting screenshot generation for ${channels.length} channels. This may take a while.`);
 
     try {
       // Process channels in sequence to avoid overloading
       for (let i = 0; i < channels.length; i++) {
         const channel = channels[i];
-        
-        // Try up to 2 times for each channel
-        let success = false;
-        const attemptCount = retryAttempts[channel.id] || 0;
-        
-        if (attemptCount < 2) {
-          success = await generateScreenshotForChannel(channel);
-          
-          // Update retry attempts
-          setRetryAttempts(prev => ({
-            ...prev,
-            [channel.id]: attemptCount + 1
-          }));
-        }
+        const success = await generateScreenshotForSingleChannel(channel);
         
         if (success) {
           setSuccessCount(prev => prev + 1);
         } else {
           setErrorCount(prev => prev + 1);
-          failedChannels.push(channel);
         }
         
         // Update progress
         const newProgress = Math.floor(((i + 1) / channels.length) * 100);
         setProgress(newProgress);
         
-        // Add a small delay between requests to avoid overwhelming the API
+        // Add a small delay between requests to be nice to the API
         if (i < channels.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
-      if (failedChannels.length === 0) {
-        toast.success(`Successfully took screenshots for all ${channels.length} channels!`);
-      } else if (failedChannels.length < channels.length) {
-        toast.warning(
-          `Screenshot process completed: ${successCount} successful, ${failedChannels.length} failed.`
-        );
-        
-        // Option to retry failed channels
-        if (failedChannels.length > 0 && failedChannels.length <= 5) {
-          setTimeout(() => {
-            if (confirm(`Would you like to retry the ${failedChannels.length} failed channels?`)) {
-              generateScreenshotsForChannels(failedChannels);
-            }
-          }, 1000);
-        }
+      if (successCount === channels.length) {
+        toast.success(`Successfully generated screenshots for all ${channels.length} channels!`);
       } else {
-        toast.error(`Failed to take screenshots for all ${channels.length} channels.`);
+        toast.warning(
+          `Screenshot process completed: ${successCount} successful, ${channels.length - successCount} failed.`
+        );
       }
     } catch (error) {
       console.error("Error in bulk screenshot process:", error);
-      toast.error(`Screenshot process encountered an error: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error("Screenshot process encountered an error");
     } finally {
       setIsProcessing(false);
       setCurrentChannel(null);
     }
-  }, [generateScreenshotForChannel, retryAttempts]);
+  };
 
   return {
     generateScreenshotsForChannels,

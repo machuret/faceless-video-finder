@@ -11,8 +11,8 @@ const MassStatsUpdater = () => {
   const {
     isProcessing,
     progress,
-    totalChannels,
-    processedChannels,
+    totalCount,
+    processedCount,
     successCount,
     errorCount,
     currentChannel,
@@ -31,7 +31,7 @@ const MassStatsUpdater = () => {
       {isProcessing && (
         <div className="mb-4">
           <div className="flex justify-between mb-2">
-            <span>Progress: {processedChannels} of {totalChannels} channels</span>
+            <span>Progress: {processedCount} of {totalCount} channels</span>
             <span>{progress}%</span>
           </div>
           <Progress value={progress} className="h-2 mb-2" />
