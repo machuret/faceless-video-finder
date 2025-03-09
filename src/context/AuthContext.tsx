@@ -30,7 +30,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
   
   // Create a client-side cache for admin status to prevent repeated checks
   const adminCache = useMemo(() => new Map<string, boolean>(), []);
@@ -95,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     const initializeAuth = async () => {
       try {
-        setLoading(true);
+        if (!isMounted) return;
         
         // Check current session
         const { data: sessionData, error } = await supabase.auth.getSession();
@@ -104,7 +103,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.error("Error getting session:", error);
           if (isMounted) {
             setLoading(false);
-            setAuthChecked(true);
           }
           return;
         }
@@ -118,13 +116,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (isMounted) {
           setLoading(false);
-          setAuthChecked(true);
         }
       } catch (error) {
         console.error("Error checking session:", error);
         if (isMounted) {
           setLoading(false);
-          setAuthChecked(true);
         }
       }
     };
@@ -134,19 +130,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || !isMounted) return;
         
-        if (isMounted) {
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            setLoading(true);
-            
-            if (session?.user) {
+        console.log("Auth state changed:", event);
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (isMounted) setLoading(true);
+          
+          if (session?.user) {
+            if (isMounted) {
               setUser(session.user);
               await checkAdminStatus(session.user.id);
             }
-            
-            setLoading(false);
-          } else if (event === 'SIGNED_OUT') {
+          }
+          
+          if (isMounted) setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          if (isMounted) {
             setUser(null);
             setIsAdmin(false);
           }
