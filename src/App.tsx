@@ -24,9 +24,9 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <Routes>
-        {routes.map((route) => (
+        {Array.isArray(routes) ? routes.map((route) => (
           <Route key={route.path} path={route.path} element={route.element} />
-        ))}
+        )) : null}
       </Routes>
       <Toaster />
     </ThemeProvider>
