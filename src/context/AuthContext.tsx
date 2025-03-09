@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   
   const checkAdminStatus = async (userId: string | undefined) => {
     console.log("Checking admin status for userId:", userId);
@@ -63,62 +64,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
+      setLoading(true);
       await supabase.auth.signOut();
-      window.location.href = '/admin/login';
+      setUser(null);
+      setIsAdmin(false);
+      navigate('/admin/login');
     } catch (error) {
       console.error('Error signing out:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log("AuthProvider: Initializing");
-    
-    // Check active session
-    const checkSession = async () => {
+    const initializeAuth = async () => {
+      console.log("AuthProvider: Initializing");
+      setLoading(true);
+      
       try {
-        setLoading(true);
-        const { data } = await supabase.auth.getSession();
-        console.log("Initial session check:", data?.session ? "Session exists" : "No session");
+        // Check current session
+        const { data: sessionData } = await supabase.auth.getSession();
+        console.log("Initial session check:", sessionData?.session ? "Session exists" : "No session");
         
-        if (data?.session?.user) {
-          setUser(data.session.user);
-          await checkAdminStatus(data.session.user.id);
+        if (sessionData?.session?.user) {
+          setUser(sessionData.session.user);
+          await checkAdminStatus(sessionData.session.user.id);
         }
       } catch (error) {
         console.error("Error checking session:", error);
       } finally {
         setLoading(false);
       }
+      
+      // Set up auth state change listener
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log("Auth state changed:", event, session?.user?.id);
+          
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            setLoading(true);
+            if (session?.user) {
+              setUser(session.user);
+              await checkAdminStatus(session.user.id);
+            }
+            setLoading(false);
+          } else if (event === 'SIGNED_OUT') {
+            setUser(null);
+            setIsAdmin(false);
+          }
+        }
+      );
+      
+      // Clean up subscription on unmount
+      return () => {
+        console.log("AuthProvider: Cleaning up subscription");
+        subscription.unsubscribe();
+      };
     };
     
-    checkSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
-        
-        setLoading(true);
-        
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          if (session?.user) {
-            setUser(session.user);
-            await checkAdminStatus(session.user.id);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setIsAdmin(false);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      console.log("AuthProvider: Cleaning up subscription");
-      subscription.unsubscribe();
-    };
-  }, []);
+    initializeAuth();
+  }, [navigate]);
 
   return (
     <AuthContext.Provider value={{ user, isAdmin, loading, signOut }}>

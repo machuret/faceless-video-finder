@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
@@ -11,19 +11,13 @@ export const ProtectedRoute = ({
   requireAdmin?: boolean;
 }) => {
   const { user, isAdmin, loading } = useAuth();
-  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     console.log("ProtectedRoute - Auth state:", { user, isAdmin, loading });
-    
-    // Only finish checking after loading is complete
-    if (!loading) {
-      console.log("ProtectedRoute - Auth check complete");
-      setIsChecking(false);
-    }
   }, [user, isAdmin, loading]);
 
-  if (loading || isChecking) {
+  // Show loading spinner while authentication is in progress
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
