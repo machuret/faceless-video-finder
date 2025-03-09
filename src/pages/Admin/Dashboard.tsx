@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useEffect } from "react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import AdminHeader from "./components/AdminHeader";
 import DashboardHeader from "./components/dashboard/DashboardHeader";
@@ -14,9 +13,18 @@ import CsvChannelUploader from "./components/dashboard/components/CsvChannelUplo
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Database, Layers, BookOpen, Sparkles } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const Dashboard = () => {
-  console.log("Rendering Dashboard component");
+  const { user, isAdmin, loading } = useAuth();
+  
+  useEffect(() => {
+    console.log("Dashboard component rendered with auth state:", {
+      user: user ? "exists" : "null",
+      isAdmin,
+      loading
+    });
+  }, [user, isAdmin, loading]);
   
   return (
     <div className="min-h-screen bg-gray-50">

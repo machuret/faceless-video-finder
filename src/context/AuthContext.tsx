@@ -48,7 +48,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) {
         console.error('Error checking admin status:', error);
-        throw error;
+        setIsAdmin(false);
+        return false;
       }
       
       console.log("Admin check result:", data);
@@ -62,15 +63,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     // Get initial session
     const initAuth = async () => {
       try {
         console.log("Initializing auth...");
-        setLoading(true);
+        if (mounted) setLoading(true);
         
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          if (mounted) {
+            setUser(null);
+            setIsAdmin(false);
+            setLoading(false);
+          }
+          return;
+        }
+        
         console.log("Session retrieved:", session ? "Yes" : "No");
         
+        if (session?.user) {
+          if (mounted) setUser(session.user);
+          if (mounted && session.user.id) {
+            await checkAdminStatus(session.user.id);
+          }
+        } else {
+          if (mounted) {
+            setUser(null);
+            setIsAdmin(false);
+          }
+        }
+      } catch (error) {
+        console.error("Error getting session:", error);
+        if (mounted) {
+          setUser(null);
+          setIsAdmin(false);
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session ? "Session exists" : "No session");
+      
+      if (mounted) {
         if (session?.user) {
           setUser(session.user);
           await checkAdminStatus(session.user.id);
@@ -78,44 +121,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(null);
           setIsAdmin(false);
         }
-      } catch (error) {
-        console.error("Error getting session:", error);
-        setUser(null);
-        setIsAdmin(false);
-      } finally {
+        
         setLoading(false);
       }
-    };
-
-    initAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log("Auth state changed:", _event, session ? "Session exists" : "No session");
-      
-      if (session?.user) {
-        setUser(session.user);
-        await checkAdminStatus(session.user.id);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-      }
-      
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
     try {
       console.log("Signing out...");
+      setLoading(true);
       await supabase.auth.signOut();
       navigate("/admin/login");
       toast.success("Logged out successfully");
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Error signing out");
+    } finally {
+      setLoading(false);
     }
   };
 

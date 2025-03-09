@@ -14,43 +14,87 @@ export const ProtectedRoute = ({
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [isChecking, setIsChecking] = useState(true);
+  const [timeoutReached, setTimeoutReached] = useState(false);
+
+  // Add a timeout to prevent infinite loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading || isChecking) {
+        console.log("Auth check timeout reached, forcing completion");
+        setTimeoutReached(true);
+      }
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timer);
+  }, [loading, isChecking]);
 
   useEffect(() => {
-    // Add more specific logging to debug the loading state
+    // More detailed logging to debug the auth state
     console.log("ProtectedRoute auth state:", { 
       user: user ? "exists" : "null", 
+      userId: user?.id,
       isAdmin, 
       loading, 
       requireAdmin,
-      isChecking
+      isChecking,
+      timeoutReached
     });
 
-    // Only proceed with checks when auth data is loaded
-    if (!loading) {
+    const checkAuth = () => {
       if (!user) {
         console.log("No user found, redirecting to login");
         navigate("/admin/login");
-      } else if (requireAdmin && !isAdmin) {
+        return false;
+      } 
+      
+      if (requireAdmin && !isAdmin) {
         console.log("User is not admin, redirecting to home");
         navigate("/");
-      } else {
-        // Auth check passed, render the protected content
-        console.log("Auth check passed, rendering content");
-        setIsChecking(false);
+        return false;
+      }
+      
+      // Auth check passed
+      console.log("Auth check passed");
+      return true;
+    };
+
+    // If loading is done or timeout reached, check auth status
+    if (!loading || timeoutReached) {
+      const authPassed = checkAuth();
+      setIsChecking(false);
+      
+      if (timeoutReached && !authPassed) {
+        console.log("Timeout forced auth check completion");
       }
     }
-  }, [user, isAdmin, loading, navigate, requireAdmin]);
+  }, [user, isAdmin, loading, navigate, requireAdmin, timeoutReached]);
 
-  // Improve the loading state display with more information
-  if (loading || isChecking) {
-    console.log("ProtectedRoute: Still loading or checking auth state");
+  // Show loading state
+  if (loading && !timeoutReached) {
+    console.log("ProtectedRoute: Still loading auth state");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-gray-600">Verifying authorization...</p>
           <p className="text-sm text-gray-500 mt-2">
-            {loading ? "Loading authentication data..." : "Checking permissions..."}
+            Loading authentication data...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show checking state with more info
+  if (isChecking && !timeoutReached) {
+    console.log("ProtectedRoute: Checking permissions");
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-gray-600">Verifying authorization...</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Checking permissions...
           </p>
         </div>
       </div>
