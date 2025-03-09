@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ChannelTypeInfo } from "@/services/channelTypeService";
+import { Button } from "@/components/ui/button";
 import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
+import { ChannelTypeInfo } from "@/services/channelTypeService";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -13,13 +12,13 @@ interface ChannelTypeFormProps {
   formData: ChannelTypeInfo;
   selectedType: ChannelTypeInfo | null;
   submitting: boolean;
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRichTextChange: (name: string, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
 }
 
-export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
+const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
   formData,
   selectedType,
   submitting,
@@ -28,45 +27,9 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
   onSubmit,
   onCancel
 }) => {
-  const [idError, setIdError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  
-  // Debug log to check form data
-  useEffect(() => {
-    console.log("Channel Type Form Data:", formData);
-    console.log("Selected Type:", selectedType);
-  }, [formData, selectedType]);
-  
-  const validateId = (value: string) => {
-    const regex = /^[a-z0-9_]+$/;
-    if (!regex.test(value)) {
-      return "ID must contain only lowercase letters, numbers, and underscores";
-    }
-    return null;
-  };
-  
-  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const error = validateId(value);
-    setIdError(error);
-    onInputChange(e);
-  };
-  
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate ID field before submission
-    if (!selectedType) {
-      const idValidationError = validateId(formData.id);
-      if (idValidationError) {
-        setIdError(idValidationError);
-        return;
-      }
-    }
-    
-    onSubmit(e);
-  };
 
+  // Handle image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) {
       return;
@@ -80,8 +43,8 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
       const fileExt = file.name.split('.').pop();
       const fileName = `channel_type_${formData.id}_${Date.now()}.${fileExt}`;
 
-      // Upload file to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
         .from('channel-type-images')
         .upload(fileName, file, {
           cacheControl: '3600',
@@ -89,35 +52,32 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
         });
 
       if (uploadError) {
-        throw new Error(uploadError.message);
+        throw uploadError;
       }
 
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
+      // Get the public URL
+      const { data } = supabase.storage
         .from('channel-type-images')
         .getPublicUrl(fileName);
 
-      if (!publicUrlData?.publicUrl) {
-        throw new Error("Failed to get public URL for image");
-      }
-
-      // Update form data with image URL
+      // Update the form data
       onInputChange({
         target: {
           name: 'image_url',
-          value: publicUrlData.publicUrl
+          value: data.publicUrl
         }
       } as React.ChangeEvent<HTMLInputElement>);
 
       toast.success("Image uploaded successfully");
     } catch (error) {
       console.error("Error uploading image:", error);
-      toast.error(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error("Failed to upload image");
     } finally {
       setUploading(false);
     }
   };
 
+  // Handle image deletion
   const handleDeleteImage = async () => {
     if (!formData.image_url) return;
 
@@ -128,13 +88,13 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
       const fileName = formData.image_url.split('/').pop();
       
       if (fileName) {
-        // Delete file from storage
+        // Delete from storage
         const { error } = await supabase.storage
           .from('channel-type-images')
           .remove([fileName]);
         
         if (error) {
-          throw new Error(error.message);
+          throw error;
         }
       }
       
@@ -149,118 +109,129 @@ export const ChannelTypeForm: React.FC<ChannelTypeFormProps> = ({
       toast.success("Image removed successfully");
     } catch (error) {
       console.error("Error removing image:", error);
-      toast.error(`Failed to remove image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error("Failed to remove image");
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-6">
-        {selectedType ? `Edit Channel Type: ${selectedType.label}` : "Create New Channel Type"}
-      </h2>
-      
-      <form onSubmit={handleFormSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="id">ID (slug)</Label>
-              <Input 
-                id="id" 
-                name="id" 
-                value={formData.id} 
-                onChange={handleIdChange}
-                placeholder="e.g. documentary_style"
-                disabled={!!selectedType}
-                required
-                className={idError ? "border-red-500" : ""}
-              />
-              {idError ? (
-                <p className="text-sm text-red-500 mt-1">{idError}</p>
-              ) : !selectedType && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Use lowercase letters, numbers, and underscores only. This cannot be changed later.
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <Label htmlFor="label">Label</Label>
-              <Input 
-                id="label" 
-                name="label" 
-                value={formData.label} 
-                onChange={onInputChange}
-                placeholder="e.g. Documentary Style"
-                required
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="image">Featured Image</Label>
-              <ImageUploader
-                imageUrl={formData.image_url || null}
-                uploading={uploading}
-                onUpload={handleImageUpload}
-                onDelete={handleDeleteImage}
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <RichTextEditor
-              id="description"
-              name="description"
-              label="Description"
-              value={formData.description || ''}
-              onChange={(name, value) => {
-                console.log(`Updating ${name} with value:`, value);
-                onRichTextChange(name, value);
-              }}
-              placeholder="Describe this channel type..."
-              className="min-h-[100px]"
-            />
-          </div>
+    <form onSubmit={onSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">
+          {selectedType ? "Edit Channel Type" : "Create New Channel Type"}
+        </h2>
+        
+        {/* ID Field */}
+        <div className="space-y-2">
+          <label htmlFor="id" className="block text-sm font-medium">
+            ID (lowercase, underscores only)
+          </label>
+          <Input
+            id="id"
+            name="id"
+            value={formData.id}
+            onChange={onInputChange}
+            placeholder="channel_type_id"
+            required
+            readOnly={!!selectedType}
+            className={selectedType ? "bg-gray-100" : ""}
+          />
         </div>
         
-        <div className="space-y-4">
+        {/* Label Field */}
+        <div className="space-y-2">
+          <label htmlFor="label" className="block text-sm font-medium">
+            Label
+          </label>
+          <Input
+            id="label"
+            name="label"
+            value={formData.label}
+            onChange={onInputChange}
+            placeholder="Channel Type Name"
+            required
+          />
+        </div>
+
+        {/* Image Upload Field */}
+        <div className="space-y-2">
+          <label htmlFor="image" className="block text-sm font-medium">
+            Featured Image
+          </label>
+          <ImageUploader
+            imageUrl={formData.image_url}
+            uploading={uploading}
+            onUpload={handleImageUpload}
+            onDelete={handleDeleteImage}
+          />
+        </div>
+        
+        {/* Description Field */}
+        <div className="space-y-2">
+          <label htmlFor="description" className="block text-sm font-medium">
+            Description
+          </label>
+          <RichTextEditor
+            id="description"
+            name="description"
+            label=""
+            value={formData.description || ""}
+            onChange={onRichTextChange}
+            placeholder="Enter description..."
+          />
+        </div>
+        
+        {/* Production Field */}
+        <div className="space-y-2">
+          <label htmlFor="production" className="block text-sm font-medium">
+            How to Create
+          </label>
           <RichTextEditor
             id="production"
             name="production"
-            label="How to Create"
-            value={formData.production || ''}
-            onChange={(name, value) => {
-              console.log(`Updating ${name} with value:`, value);
-              onRichTextChange(name, value);
-            }}
-            placeholder="Describe how to create this type of content with step-by-step instructions..."
-            className="min-h-[200px]"
-          />
-          
-          <RichTextEditor
-            id="example"
-            name="example"
-            label="Example Ideas"
-            value={formData.example || ''}
-            onChange={(name, value) => {
-              console.log(`Updating ${name} with value:`, value);
-              onRichTextChange(name, value);
-            }}
-            placeholder="Provide examples of content ideas for this channel type..."
-            className="min-h-[100px]"
+            label=""
+            value={formData.production || ""}
+            onChange={onRichTextChange}
+            placeholder="Enter production details..."
           />
         </div>
         
-        <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={submitting || uploading}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={submitting || uploading || (idError !== null && !selectedType)}>
-            {submitting ? "Saving..." : (selectedType ? "Update Channel Type" : "Create Channel Type")}
-          </Button>
+        {/* Example Field */}
+        <div className="space-y-2">
+          <label htmlFor="example" className="block text-sm font-medium">
+            Examples
+          </label>
+          <RichTextEditor
+            id="example"
+            name="example"
+            label=""
+            value={formData.example || ""}
+            onChange={onRichTextChange}
+            placeholder="Enter examples..."
+          />
         </div>
-      </form>
-    </div>
+      </div>
+      
+      {/* Submit and Cancel Buttons */}
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel}
+          disabled={submitting}
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="submit" 
+          disabled={submitting}
+        >
+          {submitting ? "Saving..." : selectedType ? "Update" : "Create"}
+        </Button>
+      </div>
+    </form>
   );
 };
+
+export default ChannelTypeForm;

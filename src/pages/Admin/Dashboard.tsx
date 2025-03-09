@@ -10,6 +10,9 @@ import MassStatsUpdater from "./components/dashboard/MassStatsUpdater";
 import BulkChannelUploader from "./components/dashboard/BulkChannelUploader";
 import ChannelsToImprove from "./components/dashboard/ChannelsToImprove";
 import CsvChannelUploader from "./components/dashboard/components/CsvChannelUploader";
+import { Card } from "@/components/ui/card";
+import { Link } from "react-router-dom";
+import { Database, Layers, BookOpen, Sparkles } from "lucide-react";
 
 const Dashboard = () => {
   return (
@@ -25,7 +28,28 @@ const Dashboard = () => {
             <FeaturedChannels />
           </div>
           <div className="lg:col-span-1 space-y-6">
-            {/* Removed the mass updaters from here */}
+            {/* Admin page shortcuts */}
+            <Card className="p-6">
+              <h3 className="text-xl font-semibold mb-4">Content Management</h3>
+              <div className="space-y-2">
+                <Link to="/admin/niches" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+                  <Database className="h-5 w-5 mr-2 text-blue-600" />
+                  <span>Manage Niches</span>
+                </Link>
+                <Link to="/admin/channel-types" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+                  <Layers className="h-5 w-5 mr-2 text-purple-600" />
+                  <span>Manage Channel Types</span>
+                </Link>
+                <Link to="/admin/faceless-ideas" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+                  <Sparkles className="h-5 w-5 mr-2 text-orange-600" />
+                  <span>Manage Faceless Ideas</span>
+                </Link>
+                <Link to="/admin/did-you-know" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+                  <BookOpen className="h-5 w-5 mr-2 text-green-600" />
+                  <span>Manage Did You Know Facts</span>
+                </Link>
+              </div>
+            </Card>
           </div>
         </div>
         

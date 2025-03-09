@@ -1,122 +1,36 @@
-import { Routes, Route } from "react-router-dom";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/theme-provider";
-import { QueryProvider } from "@/providers/QueryProvider";
-import { AuthProvider } from "@/context/AuthContext";
-import { Navigate } from "react-router-dom";
 
-// Pages
-import Index from "@/pages/Index";
-import NotFound from "@/pages/NotFound";
-import ContactUs from "@/pages/ContactUs";
-import HowItWorks from "@/pages/HowItWorks";
-import Training from "@/pages/Training";
-import Calculator from "@/pages/Calculator";
-import Calculators from "@/pages/Calculators";
-import ChannelEarnings from "@/pages/ChannelEarnings";
-import ReachCalculator from "@/pages/ReachCalculator";
-import GrowthRateCalculator from "@/pages/GrowthRateCalculator";
-import ChannelDetails from "@/pages/ChannelDetails";
-import FacelessIdeas from "@/pages/FacelessIdeas";
-import FacelessChannelIdeas from "@/pages/FacelessChannelIdeas";
-import FacelessIdeaDetails from "@/pages/FacelessIdeaDetails";
-import ChannelTypes from "@/pages/ChannelTypes";
-import ChannelTypeDetails from "@/pages/ChannelTypeDetails";
-import ManageNichesPage from "@/pages/Admin/ManageNichesPage";
-import ChannelSearch from "@/pages/ChannelSearch";
-import Niches from "@/pages/Niches";
-import NicheDetails from "@/pages/NicheDetails";
+import React, { useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import './App.css';
+import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
+import routes from './routes';
+import { initializeStorage } from './integrations/supabase/initStorage';
 
-// Admin Pages
-import AdminLogin from "@/pages/Admin/AdminLogin";
-import Dashboard from "@/pages/Admin/Dashboard";
-import AddChannel from "@/pages/Admin/AddChannel";
-import ManageChannelTypes from "@/pages/Admin/ManageChannelTypes";
-import ManageFacelessIdeas from "@/pages/Admin/ManageFacelessIdeas";
-import ManageDidYouKnowFacts from "@/pages/Admin/ManageDidYouKnowFacts";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+function App() {
+  useEffect(() => {
+    // Initialize storage buckets on app startup
+    initializeStorage()
+      .then(result => {
+        if (result.success) {
+          console.log("Storage buckets initialized successfully");
+        }
+      })
+      .catch(error => {
+        console.error("Failed to initialize storage buckets:", error);
+      });
+  }, []);
 
-import "./App.css";
-
-const App = () => {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/contact" element={<ContactUs />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/training" element={<Training />} />
-          <Route path="/calculators" element={<Calculators />} />
-          <Route path="/calculator" element={<Calculator />} />
-          <Route path="/channel-earnings" element={<ChannelEarnings />} />
-          <Route path="/reach-calculator" element={<ReachCalculator />} />
-          <Route path="/growth-calculator" element={<GrowthRateCalculator />} />
-          
-          {/* Add the search channels route */}
-          <Route path="/channels" element={<ChannelSearch />} />
-          
-          {/* Legacy channel route - keep for backward compatibility */}
-          <Route path="/channels/:channelId" element={<ChannelDetails />} />
-          
-          {/* SEO-friendly channel route */}
-          <Route path="/channel/:slug" element={<ChannelDetails />} />
-          
-          <Route path="/faceless-ideas" element={<FacelessIdeas />} />
-          <Route path="/faceless-channels" element={<FacelessChannelIdeas />} />
-          <Route path="/faceless-channel-ideas" element={<FacelessChannelIdeas />} />
-          <Route path="/faceless-ideas/:ideaId" element={<FacelessIdeaDetails />} />
-          <Route path="/channel-types" element={<ChannelTypes />} />
-          <Route path="/channel-types/:typeId" element={<ChannelTypeDetails />} />
-          
-          {/* Add the niches routes */}
-          <Route path="/niches" element={<Niches />} />
-          <Route path="/niches/:nicheId" element={<NicheDetails />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route
-            path="/admin/dashboard"
-            element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/channels/add"
-            element={<ProtectedRoute><AddChannel /></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/channels/edit/:channelId"
-            element={<ProtectedRoute><AddChannel /></ProtectedRoute>}
-          />
-          {/* Add alternative route for edit-channel for compatibility */}
-          <Route
-            path="/admin/edit-channel/:channelId"
-            element={<ProtectedRoute><AddChannel /></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/channel-types"
-            element={<ProtectedRoute><ManageChannelTypes /></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/did-you-know"
-            element={<ProtectedRoute><ManageDidYouKnowFacts /></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/faceless-ideas"
-            element={<ProtectedRoute><ManageFacelessIdeas /></ProtectedRoute>}
-          />
-          <Route
-            path="/admin/niches"
-            element={<ProtectedRoute><ManageNichesPage /></ProtectedRoute>}
-          />
-          
-          {/* 404 Not Found */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster position="top-right" />
-      </AuthProvider>
+      <Routes>
+        {routes.map((route) => (
+          <Route key={route.path} path={route.path} element={route.element} />
+        ))}
+      </Routes>
+      <Toaster />
     </ThemeProvider>
   );
-};
+}
 
 export default App;
