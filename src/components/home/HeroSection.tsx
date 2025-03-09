@@ -41,7 +41,7 @@ const HeroSection = () => {
     
     try {
       console.log("Navigating to search results for:", trimmedQuery);
-      // Navigate to the proper channels search route
+      // Navigate to the search page with the search query as a parameter
       navigate(`/channels?search=${encodeURIComponent(trimmedQuery)}`);
     } catch (err) {
       console.error("Navigation error:", err);

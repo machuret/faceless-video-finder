@@ -5,6 +5,8 @@
  * @returns The extracted UUID or null if not found
  */
 export const extractIdFromSlug = (slug: string): string | null => {
+  if (!slug) return null;
+  
   // UUID pattern: 8-4-4-4-12 hex digits with hyphens
   // Example: ac004f01-4aad-439d-b1ab-59988473f7fc
   const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
