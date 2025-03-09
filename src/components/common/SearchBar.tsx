@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ interface SearchBarProps {
   className?: string;
   showClearButton?: boolean;
   autoSubmit?: boolean;
+  debounceTime?: number;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -19,9 +20,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = "Search...",
   className = "",
   showClearButton = true,
-  autoSubmit = true
+  autoSubmit = false,
+  debounceTime = 300
 }) => {
   const [query, setQuery] = useState(initialQuery);
+  const debounceTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -30,8 +33,18 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
+    
     if (autoSubmit) {
-      onSearch(value);
+      // Clear existing timer
+      if (debounceTimerRef.current !== null) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+      
+      // Set new timer for debounced search
+      debounceTimerRef.current = window.setTimeout(() => {
+        onSearch(value);
+        debounceTimerRef.current = null;
+      }, debounceTime);
     }
   };
 
@@ -44,6 +57,15 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setQuery("");
     onSearch("");
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current !== null) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <form onSubmit={handleSubmit} className={`relative ${className}`}>
@@ -70,6 +92,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
           </Button>
         )}
       </div>
+      {!autoSubmit && (
+        <Button type="submit" className="sr-only">Search</Button>
+      )}
     </form>
   );
 };
