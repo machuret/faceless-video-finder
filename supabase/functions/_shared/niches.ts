@@ -2,6 +2,7 @@
 // A comprehensive list of niche options for YouTube channels
 export const niches = [
   "Affirmation",
+  "AI Parody",
   "Animal",
   "Animation",
   "Archaeology",
@@ -15,9 +16,10 @@ export const niches = [
   "Celebrity",
   "Comics",
   "Comedy/Funny",
+  "Court Cases",
   "Crime",
   "Cruises",
-  "Cyrptocurrency",
+  "Cryptocurrency",
   "Data Comparisons",
   "DIY",
   "Dinosaurs",
@@ -51,6 +53,7 @@ export const niches = [
   "Make Money",
   "Mindfulness",
   "Movie",
+  "Movie Analysis",
   "Mystery",
   "Narcissism",
   "NASCAR",
@@ -63,6 +66,7 @@ export const niches = [
   "Philosophy",
   "Piano",
   "Planner",
+  "Police Cam",
   "Politics",
   "Productivity",
   "Programming",
@@ -79,11 +83,11 @@ export const niches = [
   "Spirituality",
   "Sports",
   "Tech",
-  "Test",
   "Tours",
   "Travel",
   "Tutorials",
   "Vehicles",
   "Weird",
+  "Woke Culture",
   "YouTube Growth"
 ].sort(); // Sort alphabetically for easier selection

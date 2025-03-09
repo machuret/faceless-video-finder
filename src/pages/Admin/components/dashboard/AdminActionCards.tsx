@@ -1,44 +1,83 @@
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PlusCircle, UploadCloud, Upload, List, Tag } from "lucide-react";
+import { Link } from "react-router-dom";
 
-const AdminActionCards = () => {
-  const navigate = useNavigate();
-  
+const AdminActionCards: React.FC = () => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Channels</h2>
-        <p className="text-gray-600 mb-4">Manage YouTube channels in the database.</p>
-        <Button onClick={() => navigate("/admin/add-channel")} className="w-full">
-          Add New Channel
-        </Button>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <PlusCircle className="w-5 h-5 mr-2 text-primary" />
+            Add New Channel
+          </CardTitle>
+          <CardDescription>Add a new YouTube channel entry</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm">Create a new channel record with detailed information about a YouTube channel.</p>
+        </CardContent>
+        <CardFooter>
+          <Button asChild className="w-full">
+            <Link to="/admin/channels/add">Add Channel</Link>
+          </Button>
+        </CardFooter>
       </Card>
-      
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Channel Types</h2>
-        <p className="text-gray-600 mb-4">Manage channel types and their descriptions.</p>
-        <Button onClick={() => navigate("/admin/channel-types")} className="w-full">
-          Manage Channel Types
-        </Button>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <UploadCloud className="w-5 h-5 mr-2 text-primary" />
+            Bulk Upload Channels
+          </CardTitle>
+          <CardDescription>Upload multiple channels at once</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm">Process a CSV file with multiple YouTube channels to add them in a batch.</p>
+        </CardContent>
+        <CardFooter>
+          <Button variant="outline" className="w-full">
+            Bulk Upload
+          </Button>
+        </CardFooter>
       </Card>
-      
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Faceless Ideas</h2>
-        <p className="text-gray-600 mb-4">Manage faceless content ideas for YouTube creators.</p>
-        <Button onClick={() => navigate("/admin/faceless-ideas")} className="w-full">
-          Manage Faceless Ideas
-        </Button>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <List className="w-5 h-5 mr-2 text-primary" />
+            Manage Channel Types
+          </CardTitle>
+          <CardDescription>Edit channel type definitions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm">Add, edit or remove channel type definitions with detailed information.</p>
+        </CardContent>
+        <CardFooter>
+          <Button asChild className="w-full" variant="outline">
+            <Link to="/admin/channel-types">Manage Types</Link>
+          </Button>
+        </CardFooter>
       </Card>
-      
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Did You Know Facts</h2>
-        <p className="text-gray-600 mb-4">Manage facts that appear on channel pages.</p>
-        <Button onClick={() => navigate("/admin/did-you-know-facts")} className="w-full">
-          Manage Facts
-        </Button>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <Tag className="w-5 h-5 mr-2 text-primary" />
+            Manage Niches
+          </CardTitle>
+          <CardDescription>Edit channel niche categories</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm">Add, edit or remove niche categories for better channel classification.</p>
+        </CardContent>
+        <CardFooter>
+          <Button asChild className="w-full" variant="outline">
+            <Link to="/admin/niches">Manage Niches</Link>
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
