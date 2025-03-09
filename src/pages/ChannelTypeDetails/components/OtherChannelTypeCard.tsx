@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 interface ChannelType {
   id: string;
   label: string;
-  description?: string;
+  description?: string | null;
   image_url?: string | null;
 }
 
@@ -14,6 +14,10 @@ interface OtherChannelTypeCardProps {
 }
 
 const OtherChannelTypeCard = ({ type }: OtherChannelTypeCardProps) => {
+  const description = type.description || '';
+  const strippedDescription = typeof description === 'string' ? 
+    description.replace(/<[^>]*>?/gm, '') : '';
+
   return (
     <Card className="overflow-hidden h-full flex flex-col">
       {type.image_url && (
@@ -28,7 +32,7 @@ const OtherChannelTypeCard = ({ type }: OtherChannelTypeCardProps) => {
       <Link to={`/channel-types/${type.id}`} className="flex-grow p-4 hover:bg-gray-50 transition-colors">
         <h3 className="text-lg font-semibold mb-2">{type.label}</h3>
         <p className="text-sm text-gray-700 line-clamp-3">
-          {type.description?.replace(/<[^>]*>?/gm, '') || ''}
+          {strippedDescription}
         </p>
       </Link>
       <div className="p-3 bg-blue-50 border-t">

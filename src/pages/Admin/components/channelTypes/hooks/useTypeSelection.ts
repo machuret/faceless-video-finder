@@ -1,6 +1,6 @@
 
 import { Dispatch, SetStateAction } from "react";
-import { ChannelTypeInfo, getChannelTypeById } from "@/services/channelTypeService";
+import { ChannelTypeInfo, fetchChannelTypeById } from "@/services/channelTypeService";
 
 export const useTypeSelection = (
   setSelectedType: Dispatch<SetStateAction<ChannelTypeInfo | null>>,
@@ -10,7 +10,7 @@ export const useTypeSelection = (
   const handleSelectType = async (id: string) => {
     try {
       console.log("Fetching channel type data for ID:", id);
-      const typeInfo = await getChannelTypeById(id);
+      const typeInfo = await fetchChannelTypeById(id);
       
       if (typeInfo) {
         console.log("Channel type data received:", typeInfo);
@@ -22,7 +22,8 @@ export const useTypeSelection = (
           label: typeInfo.label,
           description: typeInfo.description || '',
           production: typeInfo.production || '',
-          example: typeInfo.example || ''
+          example: typeInfo.example || '',
+          image_url: typeInfo.image_url
         });
         
         setActiveTab("edit");
@@ -41,7 +42,8 @@ export const useTypeSelection = (
       label: "",
       description: "",
       production: "",
-      example: ""
+      example: "",
+      image_url: null
     });
     setActiveTab("edit");
   };

@@ -6,7 +6,7 @@ import { Channel, ChannelMetadata } from "@/types/youtube";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
-import { getChannelTypeById } from "@/services/channelTypeService";
+import { fetchChannelTypeById } from "@/services/channelTypeService";
 import ChannelTypeNotFound from "./ChannelTypeNotFound";
 import ChannelTypeHeader from "./ChannelTypeHeader";
 import ChannelsOfType from "./ChannelsOfType";
@@ -40,7 +40,7 @@ const ChannelTypeDetailsPage = () => {
     
     const fetchTypeInfo = async () => {
       try {
-        const dbTypeInfo = await getChannelTypeById(typeId);
+        const dbTypeInfo = await fetchChannelTypeById(typeId);
         if (dbTypeInfo) {
           setTypeInfo(dbTypeInfo);
         } else {

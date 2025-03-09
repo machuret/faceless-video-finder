@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
@@ -9,7 +8,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Array of background images for random selection
 const backgroundImages = [
   "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80",
   "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&q=80",
@@ -21,10 +19,10 @@ const backgroundImages = [
 interface ChannelTypeData {
   id: string;
   label: string;
-  description: string;
-  production?: string;
-  example?: string;
-  image_url?: string;
+  description: string | null;
+  production?: string | null;
+  example?: string | null;
+  image_url?: string | null;
 }
 
 const ChannelTypes = () => {
@@ -33,11 +31,9 @@ const ChannelTypes = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Select a random background image
     const randomIndex = Math.floor(Math.random() * backgroundImages.length);
     setBackgroundImage(backgroundImages[randomIndex]);
     
-    // Fetch channel types from database
     fetchChannelTypes();
   }, []);
   
@@ -56,7 +52,6 @@ const ChannelTypes = () => {
       if (data && data.length > 0) {
         setTypes(data);
       } else {
-        // Fallback to constants if no data in database
         setTypes(channelTypes.map(type => ({
           id: type.id,
           label: type.label,
@@ -66,7 +61,6 @@ const ChannelTypes = () => {
     } catch (error) {
       console.error("Error fetching channel types:", error);
       toast.error("Failed to load channel types");
-      // Fallback to constants
       setTypes(channelTypes.map(type => ({
         id: type.id,
         label: type.label,
@@ -79,7 +73,6 @@ const ChannelTypes = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sticky Navigation Bar */}
       <MainNavbar />
       
       <div 
@@ -118,7 +111,7 @@ const ChannelTypes = () => {
                   <p className="font-lato text-sm text-gray-600 mb-4 flex-grow">
                     {typeof type.description === 'string' ? 
                       type.description.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 
-                      type.description?.substring(0, 120) + '...'}
+                      'No description available'}
                   </p>
                   <Link 
                     to={`/channel-types/${type.id}`} 

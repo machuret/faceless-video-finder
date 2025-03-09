@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
-import { getChannelTypeById } from "@/services/channelTypeService";
+import { fetchChannelTypeById } from "@/services/channelTypeService";
 import { ChannelTypeInfo as ChannelTypeInfoType } from "@/services/channelTypeService";
 
 interface ChannelTypeInfoProps {
@@ -20,20 +20,44 @@ const ChannelTypeInfo = ({ channelType }: ChannelTypeInfoProps) => {
       setLoading(true);
       try {
         // First try to get the channel type from the database
-        const dbTypeInfo = await getChannelTypeById(channelType);
+        const dbTypeInfo = await fetchChannelTypeById(channelType);
         
         if (dbTypeInfo) {
           setTypeInfo(dbTypeInfo);
         } else {
           // Fallback to local constant if not found in DB
           const localTypeInfo = channelTypes.find(type => type.id === channelType);
-          setTypeInfo(localTypeInfo || null);
+          if (localTypeInfo) {
+            // Convert local type to match ChannelTypeInfoType
+            setTypeInfo({
+              id: localTypeInfo.id,
+              label: localTypeInfo.label,
+              description: localTypeInfo.description,
+              production: localTypeInfo.production,
+              example: localTypeInfo.example,
+              image_url: null // Local types don't have image_url
+            });
+          } else {
+            setTypeInfo(null);
+          }
         }
       } catch (error) {
         console.error("Error fetching channel type info:", error);
         // Fallback to local constant if there's an error
         const localTypeInfo = channelTypes.find(type => type.id === channelType);
-        setTypeInfo(localTypeInfo || null);
+        if (localTypeInfo) {
+          // Convert local type to match ChannelTypeInfoType
+          setTypeInfo({
+            id: localTypeInfo.id,
+            label: localTypeInfo.label,
+            description: localTypeInfo.description,
+            production: localTypeInfo.production,
+            example: localTypeInfo.example,
+            image_url: null // Local types don't have image_url
+          });
+        } else {
+          setTypeInfo(null);
+        }
       } finally {
         setLoading(false);
       }
