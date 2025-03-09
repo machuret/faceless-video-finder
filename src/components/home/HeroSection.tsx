@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import MainNavbar from "@/components/MainNavbar";
 import { useNavigate } from "react-router-dom";
-import { searchChannel } from "@/utils/channelSearch";
 import { toast } from "sonner";
 
 const HeroSection = () => {
@@ -34,13 +33,19 @@ const HeroSection = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) return;
     
     setIsSearching(true);
     
     try {
+      console.log("Navigating to search results for:", trimmedQuery);
       // Navigate to the proper channels search route
-      navigate(`/channels?search=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/channels?search=${encodeURIComponent(trimmedQuery)}`);
+    } catch (err) {
+      console.error("Navigation error:", err);
+      toast.error("An error occurred. Please try again.");
     } finally {
       setIsSearching(false);
     }
@@ -75,7 +80,7 @@ const HeroSection = () => {
                 disabled={isSearching}
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-transparent border-none p-0 cursor-pointer"
               >
-                <Search className="h-5 w-5 text-gray-400" />
+                <Search className={`h-5 w-5 ${isSearching ? 'text-gray-300' : 'text-gray-400'}`} />
               </button>
             </div>
           </form>

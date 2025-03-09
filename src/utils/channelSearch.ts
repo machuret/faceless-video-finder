@@ -1,7 +1,10 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export const searchChannel = async (channelInput: string) => {
+  if (!channelInput || !channelInput.trim()) {
+    return [];
+  }
+  
   // If the input looks like a URL, extract channel name or ID
   let searchTerm = channelInput.trim();
   let isChannelId = false;
@@ -33,37 +36,43 @@ export const searchChannel = async (channelInput: string) => {
     }
   }
 
-  // Build the query based on what we extracted
-  let query = supabase.from("youtube_channels").select("*");
-  
-  if (isChannelId) {
-    // For channel IDs, search in channel_url
-    query = query.ilike("channel_url", `%${searchTerm}%`);
-  } else if (isUrlSearch) {
-    // For other URL searches, use OR and case-insensitive search
-    query = query.or(`channel_title.ilike.%${searchTerm}%,channel_url.ilike.%${searchTerm}%,video_id.eq.${searchTerm}`);
-  } else {
-    // For regular keyword searches (not URLs), do a more comprehensive search
-    // Including description and other fields
-    query = query.or(
-      `channel_title.ilike.%${searchTerm}%,` +
-      `description.ilike.%${searchTerm}%,` +
-      `channel_category.ilike.%${searchTerm}%,` +
-      `niche.ilike.%${searchTerm}%,` +
-      `channel_type.ilike.%${searchTerm}%,` +
-      `keywords.ilike.%${searchTerm}%`
-    );
-  }
-  
-  const { data, error } = await query;
+  console.log("Search term after processing:", searchTerm);
 
-  if (error) {
-    console.error("Search error:", error);
-    throw error;
-  }
+  try {
+    // Build the query based on what we extracted
+    let query = supabase.from("youtube_channels").select("*, videoStats:youtube_video_stats(*)");
+    
+    if (isChannelId) {
+      // For channel IDs, search in channel_url
+      query = query.ilike("channel_url", `%${searchTerm}%`);
+    } else if (isUrlSearch) {
+      // For other URL searches, use OR and case-insensitive search
+      query = query.or(`channel_title.ilike.%${searchTerm}%,channel_url.ilike.%${searchTerm}%,video_id.eq.${searchTerm}`);
+    } else {
+      // For regular keyword searches (not URLs), do a more comprehensive search
+      query = query.or(
+        `channel_title.ilike.%${searchTerm}%,` +
+        `description.ilike.%${searchTerm}%,` +
+        `channel_category.ilike.%${searchTerm}%,` +
+        `niche.ilike.%${searchTerm}%,` +
+        `channel_type.ilike.%${searchTerm}%,` +
+        `keywords.ilike.%${searchTerm}%`
+      );
+    }
+    
+    const { data, error } = await query;
 
-  console.log(`Search for "${searchTerm}" returned ${data?.length || 0} results`);
-  return data;
+    if (error) {
+      console.error("Search error:", error);
+      throw error;
+    }
+
+    console.log(`Search for "${searchTerm}" returned ${data?.length || 0} results`);
+    return data || [];
+  } catch (err) {
+    console.error("Search execution error:", err);
+    throw err;
+  }
 };
 
 export const formatNumber = (num: number): string => {
