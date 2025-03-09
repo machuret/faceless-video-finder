@@ -35,9 +35,8 @@ export default function AdminLogin() {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoginError("");
     
     if (!email || !password) {
       setLoginError("Please enter both email and password");
@@ -47,6 +46,7 @@ export default function AdminLogin() {
     
     try {
       setLoading(true);
+      setLoginError("");
       console.log(`Attempting to login with email: ${email}`);
       
       // Step 1: Sign in with email and password
@@ -106,7 +106,7 @@ export default function AdminLogin() {
         // Sign out non-admin users
         await supabase.auth.signOut();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Unexpected login error:", error);
       setLoginError(error.message || "An unexpected error occurred");
       toast.error(error.message || "Login failed");
@@ -136,7 +136,7 @@ export default function AdminLogin() {
               </div>
             )}
             
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

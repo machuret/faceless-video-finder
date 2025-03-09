@@ -24,7 +24,7 @@ export const ProtectedRoute = ({
         console.log("Auth check timeout reached, forcing completion");
         setTimeoutReached(true);
       }
-    }, 1000); // 1 second timeout (reduced from 1.5s)
+    }, 1000); // 1 second timeout
 
     return () => clearTimeout(timer);
   }, [loading, isChecking]);
