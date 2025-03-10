@@ -79,6 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
       setUser(null);
       setIsAdmin(false);
+      adminCache.clear(); // Clear the cache on sign out
       
       toast.success("Logged out successfully");
       return;
@@ -147,7 +148,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           if (session?.user) {
             if (isMounted) {
-              console.log("User signed in, setting user and checking admin status");
+              console.log("User signed in or token refreshed, setting user and checking admin status");
               setUser(session.user);
               await checkAdminStatus(session.user.id);
             }
@@ -159,6 +160,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.log("User signed out, clearing user and admin status");
             setUser(null);
             setIsAdmin(false);
+            adminCache.clear(); // Clear cache on sign out
           }
         }
       }
@@ -170,7 +172,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       controller.abort();
       subscription.unsubscribe();
     };
-  }, [checkAdminStatus]);
+  }, [checkAdminStatus, adminCache]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({

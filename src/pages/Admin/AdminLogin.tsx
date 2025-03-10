@@ -21,15 +21,16 @@ export default function AdminLogin() {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
   
   // Redirect if already logged in as admin
   useEffect(() => {
-    if (user && isAdmin) {
+    // Only redirect when not loading and we have confirmed admin status
+    if (user && isAdmin && !loading) {
       console.log("Already logged in as admin, redirecting to dashboard");
       navigate("/admin/dashboard", { replace: true });
     }
-  }, [user, isAdmin, navigate]);
+  }, [user, isAdmin, loading, navigate]);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -90,8 +91,12 @@ export default function AdminLogin() {
         if (adminData) {
           console.log("User is admin, redirecting to dashboard");
           toast.success("Logged in successfully");
-          // Force a complete page reload to ensure all context is refreshed
-          window.location.href = "/admin/dashboard";
+          
+          // Wait a moment before redirecting to ensure auth context is updated
+          setTimeout(() => {
+            // Add timestamp to force a clean load and avoid caching issues
+            window.location.href = `/admin/dashboard?t=${Date.now()}`;
+          }, 500);
         } else {
           console.log("User is not an admin, signing out");
           toast.error("You don't have admin access");
