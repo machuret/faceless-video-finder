@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, AuthChangeEvent } from "@supabase/supabase-js";
@@ -42,13 +41,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return false;
     }
 
-    // Check cache first
-    if (adminCache.has(userId)) {
-      const cachedValue = adminCache.get(userId);
-      setIsAdmin(!!cachedValue);
-      return cachedValue;
-    }
-
     try {
       console.log("Checking admin status for user:", userId);
       const { data, error } = await supabase.rpc('check_is_admin', {
@@ -62,17 +54,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       console.log("Admin status check result:", data);
-      
-      // Cache the result
-      adminCache.set(userId, !!data);
       setIsAdmin(!!data);
       return !!data;
     } catch (error) {
       console.error('Exception checking admin status:', error);
       setIsAdmin(false);
       return false;
+    } finally {
+      setLoading(false); // Always ensure loading is set to false after admin check
     }
-  }, [adminCache]);
+  }, []);
 
   const signOut = async () => {
     try {
@@ -99,9 +90,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Initialize auth state
   useEffect(() => {
-    if (initialized) return; // Prevent multiple initializations
+    if (initialized) return;
     
     let isMounted = true;
     const controller = new AbortController();
@@ -109,10 +99,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const initializeAuth = async () => {
       try {
         if (!isMounted) return;
-        
         setLoading(true);
         
-        // Check current session
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -128,10 +116,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         } else {
           console.log("No active session found");
+          if (isMounted) setLoading(false);
         }
         
         if (isMounted) {
-          setLoading(false);
           setInitialized(true);
         }
       } catch (error) {
@@ -145,57 +133,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     initializeAuth();
     
-    // Auth state change listener with improved error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session) => {
         if (controller.signal.aborted || !isMounted) return;
         
         console.log("Auth state changed:", event);
+        setLoading(true);
         
-        if (event === 'SIGNED_IN') {
-          if (isMounted) setLoading(true);
-          
-          if (session?.user) {
+        try {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            if (session?.user) {
+              if (isMounted) {
+                console.log(`${event}: Setting user and checking admin status`);
+                setUser(session.user);
+                await checkAdminStatus(session.user.id);
+              }
+            }
+          } 
+          else if (event === 'SIGNED_OUT') {
             if (isMounted) {
-              console.log("User signed in, setting user and checking admin status");
-              setUser(session.user);
-              await checkAdminStatus(session.user.id);
+              console.log("User signed out, clearing user and admin status");
+              setUser(null);
+              setIsAdmin(false);
+              setLoading(false);
             }
           }
-          
+        } catch (error) {
+          console.error("Error handling auth state change:", error);
           if (isMounted) setLoading(false);
-        } 
-        else if (event === 'TOKEN_REFRESHED') {
-          if (isMounted) setLoading(true);
-          
-          if (session?.user) {
-            if (isMounted) {
-              console.log("Token refreshed, updating user and admin status");
-              setUser(session.user);
-              await checkAdminStatus(session.user.id);
-            }
-          }
-          
-          if (isMounted) setLoading(false);
-        }
-        else if (event === 'SIGNED_OUT') {
-          if (isMounted) {
-            console.log("User signed out, clearing user and admin status");
-            setUser(null);
-            setIsAdmin(false);
-            adminCache.clear(); // Clear cache on sign out
-          }
         }
       }
     );
     
-    // Clean up function
     return () => {
       isMounted = false;
       controller.abort();
       subscription.unsubscribe();
     };
-  }, [checkAdminStatus, adminCache, initialized]);
+  }, [checkAdminStatus, initialized]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({

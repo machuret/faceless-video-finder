@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,6 @@ export default function AdminLogin() {
   const [errorMessage, setErrorMessage] = useState("");
   
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, isAdmin, loading } = useAuth();
   
   // Redirect if already logged in as admin
@@ -48,7 +46,6 @@ export default function AdminLogin() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // Form validation
     if (!email || !password) {
       setErrorMessage("Please enter both email and password");
       toast.error("Please enter both email and password");
@@ -74,7 +71,6 @@ export default function AdminLogin() {
       if (data?.user) {
         console.log("User logged in successfully, checking admin status");
         
-        // Check if user is an admin using the RPC function
         const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
           user_id: data.user.id
         });
@@ -89,21 +85,16 @@ export default function AdminLogin() {
         if (adminData) {
           console.log("User is admin, redirecting to dashboard");
           toast.success("Logged in successfully");
-          
-          // Force refresh auth context by adding a small delay before redirect
-          setTimeout(() => {
-            navigate("/admin/dashboard", { replace: true });
-          }, 500);
+          navigate("/admin/dashboard", { replace: true });
         } else {
           console.log("User is not an admin, signing out");
           toast.error("You don't have admin access");
-          // Sign out non-admin users
           await supabase.auth.signOut();
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Login process failed:", error);
-      setErrorMessage(error.message || "An unexpected error occurred");
+      setErrorMessage(error.message || "Login failed");
       toast.error(error.message || "Login failed");
     } finally {
       setIsLoading(false);
