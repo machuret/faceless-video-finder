@@ -1,3 +1,4 @@
+
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
@@ -16,12 +17,13 @@ export const ProtectedRoute = ({
   const location = useLocation();
 
   useEffect(() => {
+    // Use a shorter timeout to prevent long loading screens
     let timer: NodeJS.Timeout | null = null;
     
     if (loading) {
       timer = setTimeout(() => {
         setShowLoader(true);
-      }, 300);
+      }, 200); // Reduced from 300ms to 200ms for a faster response
     } else {
       setShowLoader(false);
     }
@@ -33,6 +35,13 @@ export const ProtectedRoute = ({
     };
   }, [loading]);
   
+  // If we're still loading but not long enough to show the loader, render nothing
+  // This prevents flash of loading screen for quick auth checks
+  if (loading && !showLoader) {
+    return null;
+  }
+  
+  // Show loader only after the timeout has passed
   if (loading && showLoader) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -49,6 +58,7 @@ export const ProtectedRoute = ({
   
   if (requireAdmin && !isAdmin) {
     console.log("User is not admin, redirecting to home");
+    toast.error("You don't have admin access");
     return <Navigate to="/" replace />;
   }
   

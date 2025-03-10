@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   
   // Create a client-side cache for admin status to prevent repeated checks
   const adminCache = useMemo(() => new Map<string, boolean>(), []);
@@ -81,6 +82,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(false);
       adminCache.clear(); // Clear the cache on sign out
       
+      // Clear any stored session data from localStorage
+      localStorage.removeItem('supabase.auth.token');
+      
       toast.success("Logged out successfully");
       return;
     } catch (error) {
@@ -91,8 +95,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Initialize auth once
+  // Initialize auth only once with better error handling
   useEffect(() => {
+    if (initialized) return;
+    
     let isMounted = true;
     const controller = new AbortController();
     
@@ -109,6 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.error("Error getting session:", error);
           if (isMounted) {
             setLoading(false);
+            setInitialized(true);
           }
           return;
         }
@@ -125,18 +132,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (isMounted) {
           setLoading(false);
+          setInitialized(true);
         }
       } catch (error) {
         console.error("Error checking session:", error);
         if (isMounted) {
           setLoading(false);
+          setInitialized(true);
         }
       }
     };
     
     initializeAuth();
     
-    // Auth state change listener
+    // Auth state change listener with improved error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (controller.signal.aborted || !isMounted) return;
@@ -155,7 +164,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
           
           if (isMounted) setLoading(false);
-        } else if (event === 'SIGNED_OUT') {
+        } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
           if (isMounted) {
             console.log("User signed out, clearing user and admin status");
             setUser(null);
@@ -172,7 +181,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       controller.abort();
       subscription.unsubscribe();
     };
-  }, [checkAdminStatus, adminCache]);
+  }, [checkAdminStatus, adminCache, initialized]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
