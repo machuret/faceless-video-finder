@@ -3,7 +3,6 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 export const ProtectedRoute = ({
   children,
@@ -23,7 +22,7 @@ export const ProtectedRoute = ({
     if (loading) {
       timer = setTimeout(() => {
         setShowLoader(true);
-      }, 100); // Very short timeout for smoother UX
+      }, 200); // Short timeout for smoother UX
     } else {
       setShowLoader(false);
     }
@@ -53,13 +52,12 @@ export const ProtectedRoute = ({
   // If not authenticated, redirect to login
   if (!user) {
     console.log("User not authenticated, redirecting to login");
-    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />;
   }
   
   // If admin access is required but user is not an admin
   if (requireAdmin && !isAdmin) {
     console.log("User is not admin, redirecting to home");
-    toast.error("You don't have admin access");
     return <Navigate to="/" replace />;
   }
   

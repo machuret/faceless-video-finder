@@ -21,24 +21,17 @@ export default function AdminLogin() {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin, loading, signOut } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
   
   // Redirect if already logged in as admin
   useEffect(() => {
-    // Only proceed when not in loading state
     if (!loading) {
       if (user && isAdmin) {
         console.log("Already logged in as admin, redirecting to dashboard");
-        // Force hard navigation to avoid caching issues
-        window.location.href = `/admin/dashboard?t=${Date.now()}`;
-      } else if (user && !isAdmin) {
-        // User is logged in but not an admin, sign them out
-        console.log("User is not an admin, signing out");
-        toast.error("You don't have admin access");
-        signOut();
+        navigate("/admin/dashboard", { replace: true });
       }
     }
-  }, [user, isAdmin, loading, navigate, signOut]);
+  }, [user, isAdmin, loading, navigate]);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -68,7 +61,6 @@ export default function AdminLogin() {
       setIsLoading(true);
       setErrorMessage("");
       
-      // Log the attempt for debugging
       console.log(`Attempting login with email: ${email} at ${new Date().toISOString()}`);
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -99,24 +91,19 @@ export default function AdminLogin() {
         if (adminData) {
           console.log("User is admin, redirecting to dashboard");
           toast.success("Logged in successfully");
-          
-          // Clear any cached auth state
-          localStorage.removeItem('authRedirectAttempted');
-          
-          // Use direct location change with timestamp to avoid cache issues
-          window.location.href = `/admin/dashboard?t=${Date.now()}`;
+          navigate("/admin/dashboard", { replace: true });
         } else {
           console.log("User is not an admin, signing out");
           toast.error("You don't have admin access");
           // Sign out non-admin users
           await supabase.auth.signOut();
-          setIsLoading(false);
         }
       }
     } catch (error: any) {
       console.error("Login process failed:", error);
       setErrorMessage(error.message || "An unexpected error occurred");
       toast.error(error.message || "Login failed");
+    } finally {
       setIsLoading(false);
     }
   };

@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   
   // Create a client-side cache for admin status to prevent repeated checks
   const adminCache = useMemo(() => new Map<string, boolean>(), []);
@@ -82,10 +83,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(false);
       adminCache.clear();
       
-      // Clear any app-specific localStorage items
-      localStorage.removeItem('authRedirectAttempted');
-      localStorage.removeItem('supabase.auth.token');
-      
       // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
@@ -104,6 +101,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Initialize auth state
   useEffect(() => {
+    if (initialized) return; // Prevent multiple initializations
+    
     let isMounted = true;
     const controller = new AbortController();
     
@@ -133,11 +132,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (isMounted) {
           setLoading(false);
+          setInitialized(true);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
         if (isMounted) {
           setLoading(false);
+          setInitialized(true);
         }
       }
     };
@@ -180,7 +181,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       controller.abort();
       subscription.unsubscribe();
     };
-  }, [checkAdminStatus, adminCache]);
+  }, [checkAdminStatus, adminCache, initialized]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
