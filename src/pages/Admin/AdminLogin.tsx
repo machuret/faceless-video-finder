@@ -18,27 +18,27 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [redirectAttempted, setRedirectAttempted] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading, signOut } = useAuth();
   
   // Redirect if already logged in as admin
   useEffect(() => {
-    // Only attempt redirect once to prevent loops
-    if (redirectAttempted) return;
-    
-    // Only redirect when not loading and we have confirmed admin status
-    if (!loading && user && isAdmin) {
-      console.log("Already logged in as admin, redirecting to dashboard");
-      setRedirectAttempted(true);
-      
-      // Use a direct navigation approach with cache-busting
-      const destinationUrl = `/admin/dashboard?t=${Date.now()}`;
-      window.location.href = destinationUrl;
+    // Only proceed when not in loading state
+    if (!loading) {
+      if (user && isAdmin) {
+        console.log("Already logged in as admin, redirecting to dashboard");
+        // Force hard navigation to avoid caching issues
+        window.location.href = `/admin/dashboard?t=${Date.now()}`;
+      } else if (user && !isAdmin) {
+        // User is logged in but not an admin, sign them out
+        console.log("User is not an admin, signing out");
+        toast.error("You don't have admin access");
+        signOut();
+      }
     }
-  }, [user, isAdmin, loading, navigate, redirectAttempted]);
+  }, [user, isAdmin, loading, navigate, signOut]);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -84,10 +84,7 @@ export default function AdminLogin() {
       if (data?.user) {
         console.log("User logged in successfully, checking admin status");
         
-        // Add artificial delay to ensure auth state is fully processed
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Check if user is an admin
+        // Check if user is an admin using the RPC function
         const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
           user_id: data.user.id
         });
@@ -103,9 +100,11 @@ export default function AdminLogin() {
           console.log("User is admin, redirecting to dashboard");
           toast.success("Logged in successfully");
           
+          // Clear any cached auth state
+          localStorage.removeItem('authRedirectAttempted');
+          
           // Use direct location change with timestamp to avoid cache issues
-          const timestamp = Date.now();
-          window.location.href = `/admin/dashboard?t=${timestamp}`;
+          window.location.href = `/admin/dashboard?t=${Date.now()}`;
         } else {
           console.log("User is not an admin, signing out");
           toast.error("You don't have admin access");
