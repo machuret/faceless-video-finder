@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, useMemo } from "react";
+import { createContext, useContext, useState, useMemo, useEffect } from "react";
 import { User } from "@supabase/supabase-js";
 import { AuthContextType } from "./auth/types";
 import { useAdminCheck } from "./auth/useAdminCheck";
@@ -40,6 +40,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setInitialized,
     checkAdminStatus
   );
+
+  // Add a timeout to prevent infinite loading state
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => {
+        if (loading) {
+          console.log("Auth loading timeout reached, forcing loading state to false");
+          setLoading(false);
+        }
+      }, 5000); // 5 second timeout
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({

@@ -21,6 +21,7 @@ export const useAuthInit = (
         if (!isMounted) return;
         setLoading(true);
         
+        console.log("Initializing auth state...");
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -30,9 +31,16 @@ export const useAuthInit = (
         
         if (sessionData?.session?.user) {
           if (isMounted) {
-            console.log("Session found, setting user and checking admin status");
+            console.log("Session found, setting user");
             setUser(sessionData.session.user);
-            await checkAdminStatus(sessionData.session.user.id);
+            
+            // Set a timeout for admin check to prevent blocking the UI
+            setTimeout(async () => {
+              if (isMounted) {
+                console.log("Checking admin status");
+                await checkAdminStatus(sessionData.session.user.id);
+              }
+            }, 100);
           }
         } else {
           console.log("No active session found");
@@ -58,15 +66,23 @@ export const useAuthInit = (
         if (controller.signal.aborted || !isMounted) return;
         
         console.log("Auth state changed:", event);
-        setLoading(true);
         
         try {
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             if (session?.user) {
               if (isMounted) {
-                console.log(`${event}: Setting user and checking admin status`);
+                console.log(`${event}: Setting user`);
                 setUser(session.user);
-                await checkAdminStatus(session.user.id);
+                setLoading(true);
+                
+                // Set a timeout for admin check to prevent blocking the UI
+                setTimeout(async () => {
+                  if (isMounted) {
+                    console.log("Checking admin status");
+                    await checkAdminStatus(session.user.id);
+                    if (isMounted) setLoading(false);
+                  }
+                }, 100);
               }
             }
           } 
