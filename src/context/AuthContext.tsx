@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { User, AuthChangeEvent } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
 type AuthContextType = {
@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
           
           if (isMounted) setLoading(false);
-        } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        } else if (event === 'SIGNED_OUT') {
           if (isMounted) {
             console.log("User signed out, clearing user and admin status");
             setUser(null);
