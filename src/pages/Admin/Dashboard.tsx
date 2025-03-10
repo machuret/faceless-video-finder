@@ -21,19 +21,19 @@ const AdminLinks = React.memo(() => (
   <Card className="p-6">
     <h3 className="text-xl font-semibold mb-4">Content Management</h3>
     <div className="space-y-2">
-      <Link to="/admin/manage-niches" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+      <Link to="/admin/niches" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
         <Database className="h-5 w-5 mr-2 text-blue-600" />
         <span>Manage Niches</span>
       </Link>
-      <Link to="/admin/manage-channel-types" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+      <Link to="/admin/channel-types" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
         <Layers className="h-5 w-5 mr-2 text-purple-600" />
         <span>Manage Channel Types</span>
       </Link>
-      <Link to="/admin/manage-faceless-ideas" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+      <Link to="/admin/faceless-ideas" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
         <Sparkles className="h-5 w-5 mr-2 text-orange-600" />
         <span>Manage Faceless Ideas</span>
       </Link>
-      <Link to="/admin/manage-did-you-know-facts" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+      <Link to="/admin/did-you-know-facts" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
         <BookOpen className="h-5 w-5 mr-2 text-green-600" />
         <span>Manage Did You Know Facts</span>
       </Link>

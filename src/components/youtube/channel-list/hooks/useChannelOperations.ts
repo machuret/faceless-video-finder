@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { Channel } from "@/types/youtube";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +18,6 @@ export function useChannelOperations() {
       setLoading(true);
       setError(null);
       
-      // First fetch the total count of channels
       const { count, error: countError } = await supabase
         .from("youtube_channels")
         .select("*", { count: 'exact', head: true });
@@ -32,18 +30,15 @@ export function useChannelOperations() {
       setTotalCount(count || 0);
       console.log("Total channel count:", count);
       
-      // Then fetch the actual data with pagination
       let query = supabase
         .from("youtube_channels")
         .select("*")
         .order("created_at", { ascending: false });
       
-      // Apply pagination parameters if provided
       if (typeof offset === 'number') {
         console.log("Applying offset to query:", offset);
         query = query.range(offset, (offset + (limit || 10)) - 1);
       }
-      // Apply limit if provided but no offset (legacy behavior)
       else if (limit && typeof limit === 'number') {
         console.log("Applying limit to query:", limit);
         query = query.limit(limit);
@@ -58,10 +53,8 @@ export function useChannelOperations() {
       
       console.log(`Fetched ${data?.length || 0} channels from Supabase`);
       
-      // Transform the data to ensure metadata is properly typed
       const typedChannels: Channel[] = (data || []).map(channel => ({
         ...channel,
-        // Ensure metadata is treated as ChannelMetadata or undefined
         metadata: channel.metadata as Channel['metadata']
       }));
       
@@ -76,7 +69,7 @@ export function useChannelOperations() {
   }, []);
 
   const handleEdit = (channelId: string) => {
-    navigate(`/admin/edit-channel/${channelId}`);
+    navigate(`/admin/channels/edit/${channelId}`);
   };
 
   const handleDelete = async (channelId: string) => {
@@ -91,7 +84,7 @@ export function useChannelOperations() {
       if (error) throw error;
       
       toast.success("Channel deleted successfully");
-      fetchChannels(); // Refresh the list
+      fetchChannels();
     } catch (error: any) {
       console.error("Error deleting channel:", error);
       toast.error("Failed to delete channel: " + error.message);
@@ -100,7 +93,6 @@ export function useChannelOperations() {
 
   const toggleFeatured = async (channelId: string, currentStatus: boolean) => {
     try {
-      // Update using the dedicated is_featured column
       const { error } = await supabase
         .from("youtube_channels")
         .update({ 
@@ -112,7 +104,6 @@ export function useChannelOperations() {
       
       toast.success(`Channel ${!currentStatus ? "featured" : "unfeatured"} successfully`);
       
-      // Update local state to avoid refetching
       setChannels(prev => 
         prev.map(channel => 
           channel.id === channelId 
@@ -126,7 +117,6 @@ export function useChannelOperations() {
     }
   };
 
-  // Toggle channel selection
   const toggleChannelSelection = (channelId: string) => {
     setSelectedChannels(prev => {
       const newSelection = new Set(prev);
@@ -139,28 +129,23 @@ export function useChannelOperations() {
     });
   };
 
-  // Clear all selections
   const clearSelection = () => {
     setSelectedChannels(new Set());
   };
 
-  // Select all channels on the current page
   const selectAllChannels = () => {
     const channelIds = channels.map(channel => channel.id);
     setSelectedChannels(new Set(channelIds));
   };
 
-  // Check if a channel is selected
   const isChannelSelected = (channelId: string) => {
     return selectedChannels.has(channelId);
   };
 
-  // Get the number of selected channels
   const getSelectedCount = () => {
     return selectedChannels.size;
   };
 
-  // Get the selected channel IDs and URLs as an array of objects
   const getSelectedChannels = () => {
     return channels
       .filter(channel => selectedChannels.has(channel.id))

@@ -1,4 +1,3 @@
-
 import React, { lazy, Suspense } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -224,7 +223,7 @@ const routes = [
     element: <Navigate to="/admin" replace />,
   },
   {
-    path: "/admin/add-channel",
+    path: "/admin/channels/add",
     element: (
       <ProtectedRoute requireAdmin={true}>
         <Suspense fallback={<PageLoader />}>
@@ -234,7 +233,17 @@ const routes = [
     ),
   },
   {
-    path: "/admin/manage-niches",
+    path: "/admin/channels/edit/:channelId",
+    element: (
+      <ProtectedRoute requireAdmin={true}>
+        <Suspense fallback={<PageLoader />}>
+          <AddChannel />
+        </Suspense>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/admin/niches",
     element: (
       <ProtectedRoute requireAdmin={true}>
         <Suspense fallback={<PageLoader />}>
@@ -244,7 +253,7 @@ const routes = [
     ),
   },
   {
-    path: "/admin/manage-channel-types",
+    path: "/admin/channel-types",
     element: (
       <ProtectedRoute requireAdmin={true}>
         <Suspense fallback={<PageLoader />}>
@@ -254,7 +263,7 @@ const routes = [
     ),
   },
   {
-    path: "/admin/manage-faceless-ideas",
+    path: "/admin/faceless-ideas",
     element: (
       <ProtectedRoute requireAdmin={true}>
         <Suspense fallback={<PageLoader />}>
@@ -264,7 +273,7 @@ const routes = [
     ),
   },
   {
-    path: "/admin/manage-did-you-know-facts",
+    path: "/admin/did-you-know-facts",
     element: (
       <ProtectedRoute requireAdmin={true}>
         <Suspense fallback={<PageLoader />}>
