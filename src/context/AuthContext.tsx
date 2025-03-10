@@ -1,14 +1,10 @@
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { User, AuthChangeEvent } from "@supabase/supabase-js";
-import { toast } from "sonner";
 
-type AuthContextType = {
-  user: User | null;
-  isAdmin: boolean;
-  loading: boolean;
-  signOut: () => Promise<void>;
-};
+import { createContext, useContext, useState, useMemo } from "react";
+import { User } from "@supabase/supabase-js";
+import { AuthContextType } from "./auth/types";
+import { useAdminCheck } from "./auth/useAdminCheck";
+import { useAuthSignOut } from "./auth/useAuthSignOut";
+import { useAuthInit } from "./auth/useAuthInit";
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -31,146 +27,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   
-  // Create a client-side cache for admin status to prevent repeated checks
+  // Create a client-side cache for admin status
   const adminCache = useMemo(() => new Map<string, boolean>(), []);
   
-  // Optimized function to check admin status with caching
-  const checkAdminStatus = useCallback(async (userId: string | undefined) => {
-    if (!userId) {
-      setIsAdmin(false);
-      return false;
-    }
-
-    try {
-      console.log("Checking admin status for user:", userId);
-      const { data, error } = await supabase.rpc('check_is_admin', {
-        user_id: userId
-      });
-
-      if (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
-        return false;
-      }
-      
-      console.log("Admin status check result:", data);
-      setIsAdmin(!!data);
-      return !!data;
-    } catch (error) {
-      console.error('Exception checking admin status:', error);
-      setIsAdmin(false);
-      return false;
-    } finally {
-      setLoading(false); // Always ensure loading is set to false after admin check
-    }
-  }, []);
-
-  const signOut = async () => {
-    try {
-      setLoading(true);
-      
-      // Clear any client-side state first
-      setUser(null);
-      setIsAdmin(false);
-      adminCache.clear();
-      
-      // Then sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        throw error;
-      }
-      
-      toast.success("Logged out successfully");
-    } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error("Error signing out");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (initialized) return;
-    
-    let isMounted = true;
-    const controller = new AbortController();
-    
-    const initializeAuth = async () => {
-      try {
-        if (!isMounted) return;
-        setLoading(true);
-        
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Error getting session:", sessionError);
-          throw sessionError;
-        }
-        
-        if (sessionData?.session?.user) {
-          if (isMounted) {
-            console.log("Session found, setting user and checking admin status");
-            setUser(sessionData.session.user);
-            await checkAdminStatus(sessionData.session.user.id);
-          }
-        } else {
-          console.log("No active session found");
-          if (isMounted) setLoading(false);
-        }
-        
-        if (isMounted) {
-          setInitialized(true);
-        }
-      } catch (error) {
-        console.error("Error initializing auth:", error);
-        if (isMounted) {
-          setLoading(false);
-          setInitialized(true);
-        }
-      }
-    };
-    
-    initializeAuth();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session) => {
-        if (controller.signal.aborted || !isMounted) return;
-        
-        console.log("Auth state changed:", event);
-        setLoading(true);
-        
-        try {
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            if (session?.user) {
-              if (isMounted) {
-                console.log(`${event}: Setting user and checking admin status`);
-                setUser(session.user);
-                await checkAdminStatus(session.user.id);
-              }
-            }
-          } 
-          else if (event === 'SIGNED_OUT') {
-            if (isMounted) {
-              console.log("User signed out, clearing user and admin status");
-              setUser(null);
-              setIsAdmin(false);
-              setLoading(false);
-            }
-          }
-        } catch (error) {
-          console.error("Error handling auth state change:", error);
-          if (isMounted) setLoading(false);
-        }
-      }
-    );
-    
-    return () => {
-      isMounted = false;
-      controller.abort();
-      subscription.unsubscribe();
-    };
-  }, [checkAdminStatus, initialized]);
+  const checkAdminStatus = useAdminCheck(setIsAdmin, setLoading);
+  const signOut = useAuthSignOut(setUser, setIsAdmin, setLoading, adminCache);
+  
+  useAuthInit(
+    initialized,
+    setUser,
+    setLoading,
+    setInitialized,
+    checkAdminStatus
+  );
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
