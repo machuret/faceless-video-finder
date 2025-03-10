@@ -25,11 +25,9 @@ export default function AdminLogin() {
   
   // Redirect if already logged in as admin
   useEffect(() => {
-    if (!loading) {
-      if (user && isAdmin) {
-        console.log("Already logged in as admin, redirecting to dashboard");
-        navigate("/admin/dashboard", { replace: true });
-      }
+    if (!loading && user && isAdmin) {
+      console.log("Already logged in as admin, redirecting to dashboard");
+      navigate("/admin/dashboard", { replace: true });
     }
   }, [user, isAdmin, loading, navigate]);
 
@@ -91,7 +89,11 @@ export default function AdminLogin() {
         if (adminData) {
           console.log("User is admin, redirecting to dashboard");
           toast.success("Logged in successfully");
-          navigate("/admin/dashboard", { replace: true });
+          
+          // Force refresh auth context by adding a small delay before redirect
+          setTimeout(() => {
+            navigate("/admin/dashboard", { replace: true });
+          }, 500);
         } else {
           console.log("User is not an admin, signing out");
           toast.error("You don't have admin access");

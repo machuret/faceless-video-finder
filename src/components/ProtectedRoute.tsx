@@ -17,22 +17,22 @@ export const ProtectedRoute = ({
 
   // Show loader after a very short delay to prevent flash
   useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-    
-    if (loading) {
-      timer = setTimeout(() => {
-        setShowLoader(true);
-      }, 200); // Short timeout for smoother UX
-    } else {
-      setShowLoader(false);
-    }
-    
+    const timer = loading ? setTimeout(() => setShowLoader(true), 200) : null;
+    if (!loading) setShowLoader(false);
     return () => {
-      if (timer) {
-        clearTimeout(timer);
-      }
+      if (timer) clearTimeout(timer);
     };
   }, [loading]);
+
+  // Log current auth state for debugging
+  useEffect(() => {
+    console.log("ProtectedRoute - Auth state:", { 
+      user: !!user, 
+      isAdmin, 
+      loading, 
+      path: location.pathname 
+    });
+  }, [user, isAdmin, loading, location.pathname]);
 
   // If we're still loading but the timeout hasn't elapsed, render nothing
   if (loading && !showLoader) {

@@ -152,19 +152,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         console.log("Auth state changed:", event);
         
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (event === 'SIGNED_IN') {
           if (isMounted) setLoading(true);
           
           if (session?.user) {
             if (isMounted) {
-              console.log("User signed in or token refreshed, setting user and checking admin status");
+              console.log("User signed in, setting user and checking admin status");
               setUser(session.user);
               await checkAdminStatus(session.user.id);
             }
           }
           
           if (isMounted) setLoading(false);
-        } else if (event === 'SIGNED_OUT') {
+        } 
+        else if (event === 'TOKEN_REFRESHED') {
+          if (isMounted) setLoading(true);
+          
+          if (session?.user) {
+            if (isMounted) {
+              console.log("Token refreshed, updating user and admin status");
+              setUser(session.user);
+              await checkAdminStatus(session.user.id);
+            }
+          }
+          
+          if (isMounted) setLoading(false);
+        }
+        else if (event === 'SIGNED_OUT') {
           if (isMounted) {
             console.log("User signed out, clearing user and admin status");
             setUser(null);
