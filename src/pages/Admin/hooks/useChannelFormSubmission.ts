@@ -55,6 +55,9 @@ export const useChannelFormSubmission = (
       // Set default country to US if not provided
       const country = formData.country || "US";
       
+      // Set default CPM to 4 if not provided
+      const cpm = formData.cpm ? parseFloat(formData.cpm) : 4;
+      
       // Format data for database
       const channelData = {
         video_id: video_id,
@@ -67,7 +70,7 @@ export const useChannelFormSubmission = (
         total_views: formData.total_views ? parseInt(formData.total_views) : null,
         start_date: formData.start_date || null,
         video_count: formData.video_count ? parseInt(formData.video_count) : null,
-        cpm: formData.cpm ? parseFloat(formData.cpm) : null,
+        cpm: cpm,
         channel_type: dbChannelType,
         country: country,
         channel_category: channelCategory,

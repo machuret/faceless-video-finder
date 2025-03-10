@@ -18,10 +18,10 @@ export const useChannelFormState = () => {
     total_views: "",
     start_date: "",
     video_count: "",
-    cpm: "4",
+    cpm: "4", // Default to $4 CPM
     channel_type: "",
-    country: "US", // Default to US as requested
-    channel_category: "entertainment", // Default to entertainment as requested
+    country: "US", // Default to US
+    channel_category: "entertainment", // Default to entertainment
     notes: "",
     keywords: [],
     niche: "",

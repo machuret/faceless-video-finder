@@ -20,7 +20,7 @@ export const calculateRevenuePerSubscriber = (
   totalSubscribers?: number
 ): number | null => {
   if (!totalRevenue || !totalSubscribers || totalSubscribers <= 0) return null;
-  return totalRevenue / totalSubscribers;
+  return Number((totalRevenue / totalSubscribers).toFixed(2));
 };
 
 /**
@@ -38,14 +38,14 @@ export const calculateRevenuePerVideo = (
  * Calculate potential revenue for next 12 months
  * Assuming a modest 5% growth rate per month if not specified
  */
-export const calculatePotentialRevenue = (totalRevenue: number | null): number | null => {
+export const calculatePotentialRevenue = (totalRevenue: number | null, growthRate = 0.05): number | null => {
   if (!totalRevenue) return null;
   
   // Base calculation is current monthly revenue
   let baseMonthlyRevenue = totalRevenue / 12;
   
   // Add growth component - assuming 5% monthly growth compounded
-  const monthlyGrowthRate = 0.05; // 5% monthly growth
+  const monthlyGrowthRate = growthRate; // 5% monthly growth by default
   let potentialRevenue = 0;
   
   for (let i = 0; i < 12; i++) {
