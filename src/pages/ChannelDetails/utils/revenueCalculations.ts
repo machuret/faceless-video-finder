@@ -7,7 +7,7 @@
  * Calculate total revenue from views and CPM
  */
 export const calculateTotalRevenue = (totalViews?: number, cpm?: number): number | null => {
-  if (!totalViews || !cpm) return null;
+  if (!totalViews || !cpm || totalViews <= 0 || cpm <= 0) return null;
   // Formula: Total Revenue = (Total Views / 1000) * CPM
   return Math.round((totalViews / 1000) * cpm);
 };

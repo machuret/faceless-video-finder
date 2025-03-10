@@ -7,6 +7,7 @@ import AdminActionCards from "./components/dashboard/AdminActionCards";
 import { ChannelList } from "@/components/youtube/channel-list/components/ChannelList";
 import MassScreenshotUpdater from "./components/dashboard/MassScreenshotUpdater";
 import MassStatsUpdater from "./components/dashboard/MassStatsUpdater";
+import MassRevenueStatsUpdater from "./components/dashboard/MassRevenueStatsUpdater";
 import BulkChannelUploader from "./components/dashboard/BulkChannelUploader";
 import ChannelsToImprove from "./components/dashboard/ChannelsToImprove";
 import CsvChannelUploader from "./components/dashboard/components/CsvChannelUploader";
@@ -75,13 +76,16 @@ const Dashboard = () => {
           </div>
         </div>
         
-        {/* Mass updaters moved together in the same row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Mass updaters grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-1">
             <MassScreenshotUpdater />
           </div>
           <div className="lg:col-span-1">
             <MassStatsUpdater />
+          </div>
+          <div className="lg:col-span-1">
+            <MassRevenueStatsUpdater />
           </div>
         </div>
         
