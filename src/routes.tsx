@@ -44,6 +44,7 @@ const ManageNiches = lazy(() => import('./pages/Admin/ManageNiches'));
 const ManageChannelTypes = lazy(() => import('./pages/Admin/ManageChannelTypes'));
 const ManageFacelessIdeas = lazy(() => import('./pages/Admin/ManageFacelessIdeas'));
 const ManageDidYouKnowFacts = lazy(() => import('./pages/Admin/ManageDidYouKnowFacts'));
+const LinkCheckerPage = lazy(() => import('./pages/Admin/components/tools/LinkCheckerPage'));
 
 // Wrap with suspense for better loading experience
 const routes = [
@@ -278,6 +279,16 @@ const routes = [
       <ProtectedRoute requireAdmin={true}>
         <Suspense fallback={<PageLoader />}>
           <ManageDidYouKnowFacts />
+        </Suspense>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/admin/tools/link-checker",
+    element: (
+      <ProtectedRoute requireAdmin={true}>
+        <Suspense fallback={<PageLoader />}>
+          <LinkCheckerPage />
         </Suspense>
       </ProtectedRoute>
     ),
