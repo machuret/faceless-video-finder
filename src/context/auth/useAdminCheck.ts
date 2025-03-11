@@ -1,9 +1,10 @@
-import { useCallback } from "react";
+
+import { useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useAdminCheck = (setIsAdmin: (isAdmin: boolean) => void, setLoading: (loading: boolean) => void) => {
-  // Keep a cache of admin status checks to avoid excessive DB calls
-  const adminStatusCache = new Map<string, boolean>();
+  // Use useRef to maintain a persistent cache across renders
+  const adminStatusCacheRef = useRef(new Map<string, boolean>());
   
   return useCallback(async (userId: string | undefined) => {
     if (!userId) {
@@ -13,8 +14,8 @@ export const useAdminCheck = (setIsAdmin: (isAdmin: boolean) => void, setLoading
     }
 
     // Check if we have a cached result
-    if (adminStatusCache.has(userId)) {
-      const isAdmin = adminStatusCache.get(userId);
+    if (adminStatusCacheRef.current.has(userId)) {
+      const isAdmin = adminStatusCacheRef.current.get(userId);
       console.log("Using cached admin status:", isAdmin);
       setIsAdmin(isAdmin || false);
       setLoading(false);
@@ -36,7 +37,7 @@ export const useAdminCheck = (setIsAdmin: (isAdmin: boolean) => void, setLoading
       
       console.log("Admin status check result:", data);
       // Cache the result
-      adminStatusCache.set(userId, !!data);
+      adminStatusCacheRef.current.set(userId, !!data);
       setIsAdmin(!!data);
       setLoading(false);
       return !!data;

@@ -14,12 +14,12 @@ export const useAuthInit = (
     if (initialized) return;
     
     let isMounted = true;
+    let adminCheckTimeout: NodeJS.Timeout | null = null;
     const controller = new AbortController();
     
     const initializeAuth = async () => {
       try {
         if (!isMounted) return;
-        setLoading(true);
         
         console.log("Initializing auth state...");
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -35,16 +35,19 @@ export const useAuthInit = (
             setUser(sessionData.session.user);
             
             // Set a timeout for admin check to prevent blocking the UI
-            setTimeout(async () => {
+            adminCheckTimeout = setTimeout(async () => {
               if (isMounted) {
-                console.log("Checking admin status");
+                console.log("Checking admin status during init");
                 await checkAdminStatus(sessionData.session.user.id);
               }
             }, 100);
           }
         } else {
           console.log("No active session found");
-          if (isMounted) setLoading(false);
+          if (isMounted) {
+            setUser(null);
+            setLoading(false);
+          }
         }
         
         if (isMounted) {
@@ -73,14 +76,17 @@ export const useAuthInit = (
               if (isMounted) {
                 console.log(`${event}: Setting user`);
                 setUser(session.user);
-                setLoading(true);
+                
+                // Clear any existing timeout
+                if (adminCheckTimeout) {
+                  clearTimeout(adminCheckTimeout);
+                }
                 
                 // Set a timeout for admin check to prevent blocking the UI
-                setTimeout(async () => {
+                adminCheckTimeout = setTimeout(async () => {
                   if (isMounted) {
-                    console.log("Checking admin status");
+                    console.log("Checking admin status after auth change");
                     await checkAdminStatus(session.user.id);
-                    if (isMounted) setLoading(false);
                   }
                 }, 100);
               }
@@ -102,6 +108,9 @@ export const useAuthInit = (
     
     return () => {
       isMounted = false;
+      if (adminCheckTimeout) {
+        clearTimeout(adminCheckTimeout);
+      }
       controller.abort();
       subscription.unsubscribe();
     };

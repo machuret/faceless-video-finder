@@ -1,7 +1,7 @@
 
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 
 export const ProtectedRoute = ({
@@ -17,9 +17,15 @@ export const ProtectedRoute = ({
   
   // Store last valid auth state to prevent flickering
   const [hasVerifiedOnce, setHasVerifiedOnce] = useState(false);
+  
+  // Use a ref to track verification attempts and prevent infinite loops
+  const verificationAttemptsRef = useRef(0);
+  const maxVerificationAttempts = 3;
 
   // Show loader after a delay to prevent flash
   useEffect(() => {
+    let loaderTimer: NodeJS.Timeout | null = null;
+
     if (!loading) {
       setShowLoader(false);
       if (user) {
@@ -30,27 +36,41 @@ export const ProtectedRoute = ({
 
     // Only show loader if we haven't verified the user yet
     // or if it's taking longer than expected
-    const timer = setTimeout(() => {
+    loaderTimer = setTimeout(() => {
       if (loading && !hasVerifiedOnce) {
         setShowLoader(true);
       }
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (loaderTimer) clearTimeout(loaderTimer);
+    };
   }, [loading, hasVerifiedOnce, user]);
 
   // Add a timeout to prevent infinite loading
   useEffect(() => {
+    let timeoutTimer: NodeJS.Timeout | null = null;
+    
     if (loading) {
-      const timeoutTimer = setTimeout(() => {
+      verificationAttemptsRef.current += 1;
+      
+      if (verificationAttemptsRef.current >= maxVerificationAttempts) {
+        console.warn(`Auth verification attempts exceeded (${verificationAttemptsRef.current}/${maxVerificationAttempts}), breaking verification loop`);
+        setShowLoader(false);
+        return;
+      }
+      
+      timeoutTimer = setTimeout(() => {
         if (loading) {
           console.warn("Auth verification taking too long, proceeding with current state");
           setShowLoader(false);
         }
       }, 3000); // 3 seconds max loading time
-      
-      return () => clearTimeout(timeoutTimer);
     }
+    
+    return () => {
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+    };
   }, [loading]);
 
   // Debug logging
@@ -61,7 +81,8 @@ export const ProtectedRoute = ({
       hasVerifiedOnce,
       user: !!user,
       isAdmin,
-      path: location.pathname
+      path: location.pathname,
+      verificationAttempts: verificationAttemptsRef.current
     });
   }, [loading, showLoader, hasVerifiedOnce, user, isAdmin, location.pathname]);
 
@@ -69,6 +90,17 @@ export const ProtectedRoute = ({
   // allow rendering the children while re-checking
   if (hasVerifiedOnce && user && (requireAdmin ? isAdmin : true)) {
     return <>{children}</>;
+  }
+
+  // Verification attempts exceeded max or auth loading timeout reached, take best guess
+  if (verificationAttemptsRef.current >= maxVerificationAttempts) {
+    if (user && (requireAdmin ? isAdmin : true)) {
+      return <>{children}</>;
+    } else if (!user) {
+      return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />;
+    } else if (requireAdmin && !isAdmin) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   // Initial load and not verified yet - show minimal or no UI

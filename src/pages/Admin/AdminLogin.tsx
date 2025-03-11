@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,11 @@ export default function AdminLogin() {
   const [errorMessage, setErrorMessage] = useState("");
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAdmin, loading } = useAuth();
+  
+  // Get return URL from location state or default to admin dashboard
+  const from = location.state?.from || "/admin/dashboard";
   
   // Redirect if already logged in as admin
   useEffect(() => {
@@ -71,32 +76,41 @@ export default function AdminLogin() {
       if (data?.user) {
         console.log("User logged in successfully, checking admin status");
         
-        const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
-          user_id: data.user.id
-        });
+        // Wait a moment for auth state to propagate
+        setTimeout(async () => {
+          try {
+            const { data: adminData, error: adminError } = await supabase.rpc('check_is_admin', {
+              user_id: data.user.id
+            });
 
-        if (adminError) {
-          console.error("Error checking admin status:", adminError);
-          throw adminError;
-        }
+            if (adminError) {
+              console.error("Error checking admin status:", adminError);
+              throw adminError;
+            }
 
-        console.log("Admin check result:", adminData);
+            console.log("Admin check result:", adminData);
 
-        if (adminData) {
-          console.log("User is admin, redirecting to dashboard");
-          toast.success("Logged in successfully");
-          navigate("/admin/dashboard", { replace: true });
-        } else {
-          console.log("User is not an admin, signing out");
-          toast.error("You don't have admin access");
-          await supabase.auth.signOut();
-        }
+            if (adminData) {
+              console.log("User is admin, redirecting to dashboard");
+              toast.success("Logged in successfully");
+              navigate("/admin/dashboard", { replace: true });
+            } else {
+              console.warn("User is not an admin, signing out");
+              toast.error("You don't have admin access");
+              await supabase.auth.signOut();
+              setIsLoading(false);
+            }
+          } catch (adminCheckError) {
+            console.error("Admin check failed:", adminCheckError);
+            setErrorMessage("Failed to verify admin status. Please try again.");
+            setIsLoading(false);
+          }
+        }, 500);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login process failed:", error);
       setErrorMessage(error.message || "Login failed");
       toast.error(error.message || "Login failed");
-    } finally {
       setIsLoading(false);
     }
   };

@@ -1,10 +1,11 @@
 
-import { createContext, useContext, useState, useMemo, useEffect } from "react";
+import { createContext, useContext, useState, useMemo, useEffect, useRef } from "react";
 import { User } from "@supabase/supabase-js";
 import { AuthContextType } from "./auth/types";
 import { useAdminCheck } from "./auth/useAdminCheck";
 import { useAuthSignOut } from "./auth/useAuthSignOut";
 import { useAuthInit } from "./auth/useAuthInit";
+import { toast } from "sonner";
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -27,11 +28,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   
-  // Create a client-side cache for admin status
-  const adminCache = useMemo(() => new Map<string, boolean>(), []);
+  // Use a ref for the admin cache to ensure it persists across renders
+  const adminCacheRef = useRef(new Map<string, boolean>());
   
   const checkAdminStatus = useAdminCheck(setIsAdmin, setLoading);
-  const signOut = useAuthSignOut(setUser, setIsAdmin, setLoading, adminCache);
+  const signOut = useAuthSignOut(setUser, setIsAdmin, setLoading, adminCacheRef.current);
   
   useAuthInit(
     initialized,
@@ -43,16 +44,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Add a timeout to prevent infinite loading state
   useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    
     if (loading) {
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         if (loading) {
           console.log("Auth loading timeout reached, forcing loading state to false");
           setLoading(false);
+          toast.error("Authentication verification timeout. Please refresh or try again.");
         }
       }, 5000); // 5 second timeout
-      
-      return () => clearTimeout(timer);
     }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [loading]);
 
   // Memoize context value to prevent unnecessary re-renders
