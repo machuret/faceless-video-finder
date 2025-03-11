@@ -5,7 +5,6 @@ import { AuthContextType } from "./auth/types";
 import { useAdminCheck } from "./auth/useAdminCheck";
 import { useAuthSignOut } from "./auth/useAuthSignOut";
 import { useAuthInit } from "./auth/useAuthInit";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const AuthContext = createContext<AuthContextType>({
@@ -56,9 +55,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           // If we have a user but admin status check timed out, check again directly
           if (user) {
-            supabase.rpc('check_is_admin', {
-              user_id: user.id
-            }).then(({ data }) => {
+            // Convert the PromiseLike to a proper Promise to safely use catch
+            Promise.resolve(
+              supabase.rpc('check_is_admin', {
+                user_id: user.id
+              })
+            ).then(({ data }) => {
               console.log("Direct admin check result:", data);
               setIsAdmin(!!data);
               // Update cache
