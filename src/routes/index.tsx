@@ -1,5 +1,4 @@
 
-import { lazy } from 'react';
 import { publicRoutes } from './publicRoutes';
 import { calculatorRoutes } from './calculatorRoutes';
 import { channelRoutes } from './channelRoutes';

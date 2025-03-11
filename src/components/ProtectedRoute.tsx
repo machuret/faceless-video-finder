@@ -26,26 +26,21 @@ export const ProtectedRoute = ({
   useEffect(() => {
     let loaderTimer: NodeJS.Timeout | null = null;
 
-    if (!loading) {
+    if (loading) {
+      loaderTimer = setTimeout(() => {
+        setShowLoader(true);
+      }, 500);
+    } else {
       setShowLoader(false);
       if (user) {
         setHasVerifiedOnce(true);
       }
-      return;
     }
-
-    // Only show loader if we haven't verified the user yet
-    // or if it's taking longer than expected
-    loaderTimer = setTimeout(() => {
-      if (loading && !hasVerifiedOnce) {
-        setShowLoader(true);
-      }
-    }, 500);
 
     return () => {
       if (loaderTimer) clearTimeout(loaderTimer);
     };
-  }, [loading, hasVerifiedOnce, user]);
+  }, [loading, user]);
 
   // Add a timeout to prevent infinite loading
   useEffect(() => {
@@ -79,7 +74,7 @@ export const ProtectedRoute = ({
       loading,
       showLoader,
       hasVerifiedOnce,
-      user: !!user,
+      user: user ? user.email : null,
       isAdmin,
       path: location.pathname,
       verificationAttempts: verificationAttemptsRef.current
@@ -103,13 +98,8 @@ export const ProtectedRoute = ({
     }
   }
 
-  // Initial load and not verified yet - show minimal or no UI
-  if (loading && !showLoader) {
-    return null;
-  }
-
   // Loading taking a while, show spinner
-  if ((loading && showLoader) || (showLoader && !hasVerifiedOnce)) {
+  if (loading && showLoader) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
@@ -130,7 +120,6 @@ export const ProtectedRoute = ({
     return <Navigate to="/" replace />;
   }
 
-  // Access verified
-  console.log("Access verified, rendering protected content");
+  // Access verified or loading timed out, render children
   return <>{children}</>;
 };

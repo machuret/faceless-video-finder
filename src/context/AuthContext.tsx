@@ -6,6 +6,7 @@ import { useAdminCheck } from "./auth/useAdminCheck";
 import { useAuthSignOut } from "./auth/useAuthSignOut";
 import { useAuthInit } from "./auth/useAuthInit";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -46,20 +47,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     
-    if (loading) {
+    if (loading && user) {
+      console.log("Setting loading timeout for user:", user.email);
       timer = setTimeout(() => {
         if (loading) {
           console.log("Auth loading timeout reached, forcing loading state to false");
           setLoading(false);
-          toast.error("Authentication verification timeout. Please refresh or try again.");
+          
+          // If we have a user but admin status check timed out, check again directly
+          if (user) {
+            supabase.rpc('check_is_admin', {
+              user_id: user.id
+            }).then(({ data }) => {
+              console.log("Direct admin check result:", data);
+              setIsAdmin(!!data);
+              // Update cache
+              adminCacheRef.current.set(user.id, !!data);
+            }).catch(error => {
+              console.error("Direct admin check failed:", error);
+            });
+          }
         }
-      }, 5000); // 5 second timeout
+      }, 3000); // 3 second timeout
     }
     
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [loading]);
+  }, [loading, user]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({

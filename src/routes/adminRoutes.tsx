@@ -1,29 +1,29 @@
 
-import React, { lazy } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { lazyLoad } from './loaders';
 
-// Lazy load admin page components
-const AdminLogin = lazy(() => import('../pages/Admin/AdminLogin'));
-const AdminDashboard = lazy(() => import('../pages/Admin/Dashboard'));
-const AddChannel = lazy(() => import('../pages/Admin/AddChannel'));
-const ManageNiches = lazy(() => import('../pages/Admin/ManageNiches'));
-const ManageChannelTypes = lazy(() => import('../pages/Admin/ManageChannelTypes'));
-const ManageFacelessIdeas = lazy(() => import('../pages/Admin/ManageFacelessIdeas'));
-const ManageDidYouKnowFacts = lazy(() => import('../pages/Admin/ManageDidYouKnowFacts'));
-const LinkCheckerPage = lazy(() => import('../pages/Admin/components/tools/LinkCheckerPage'));
+// Import components directly instead of using dynamic imports within the routes
+import AdminLogin from '../pages/Admin/AdminLogin';
+import AdminDashboard from '../pages/Admin/Dashboard';
+import AddChannel from '../pages/Admin/AddChannel';
+import ManageNiches from '../pages/Admin/ManageNiches';
+import ManageChannelTypes from '../pages/Admin/ManageChannelTypes';
+import ManageFacelessIdeas from '../pages/Admin/ManageFacelessIdeas';
+import ManageDidYouKnowFacts from '../pages/Admin/ManageDidYouKnowFacts';
+import LinkCheckerPage from '../pages/Admin/components/tools/LinkCheckerPage';
 
 export const adminRoutes = [
   {
     path: "/admin/login",
-    element: lazyLoad(AdminLogin),
+    element: <AdminLogin />
   },
   {
     path: "/admin",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(AdminDashboard)}
+        <AdminDashboard />
       </ProtectedRoute>
     ),
   },
@@ -35,7 +35,7 @@ export const adminRoutes = [
     path: "/admin/channels/add",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(AddChannel)}
+        <AddChannel />
       </ProtectedRoute>
     ),
   },
@@ -43,7 +43,7 @@ export const adminRoutes = [
     path: "/admin/channels/edit/:channelId",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(AddChannel)}
+        <AddChannel />
       </ProtectedRoute>
     ),
   },
@@ -51,7 +51,7 @@ export const adminRoutes = [
     path: "/admin/niches",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(ManageNiches)}
+        <ManageNiches />
       </ProtectedRoute>
     ),
   },
@@ -59,7 +59,7 @@ export const adminRoutes = [
     path: "/admin/channel-types",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(ManageChannelTypes)}
+        <ManageChannelTypes />
       </ProtectedRoute>
     ),
   },
@@ -67,7 +67,7 @@ export const adminRoutes = [
     path: "/admin/faceless-ideas",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(ManageFacelessIdeas)}
+        <ManageFacelessIdeas />
       </ProtectedRoute>
     ),
   },
@@ -75,7 +75,7 @@ export const adminRoutes = [
     path: "/admin/did-you-know-facts",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(ManageDidYouKnowFacts)}
+        <ManageDidYouKnowFacts />
       </ProtectedRoute>
     ),
   },
@@ -83,7 +83,7 @@ export const adminRoutes = [
     path: "/admin/tools/link-checker",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(LinkCheckerPage)}
+        <LinkCheckerPage />
       </ProtectedRoute>
     ),
   },

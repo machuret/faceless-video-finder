@@ -1,5 +1,5 @@
 
-import React, { useEffect, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -10,7 +10,7 @@ import { AuthProvider } from './context/AuthContext';
 import MainLoader from './components/MainLoader';
 
 function App() {
-  useEffect(() => {
+  React.useEffect(() => {
     // Initialize storage buckets on app startup
     initializeStorage()
       .then(result => {
@@ -27,12 +27,10 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <Suspense fallback={<MainLoader />}>
-        <AuthProvider>
-          <RouterProvider router={router} />
-          <Toaster />
-        </AuthProvider>
-      </Suspense>
+      <AuthProvider>
+        <RouterProvider router={router} />
+        <Toaster />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
