@@ -109,7 +109,7 @@ export const fetchChannelData = async (offset: number = 0, limit: number = 10): 
   }
   
   // Transform the channel data to ensure proper typing of metadata
-  const typedChannels: Channel[] = transformChannelData(channelData);
+  const typedChannels = transformChannelData(channelData);
   
   return {
     channels: typedChannels,

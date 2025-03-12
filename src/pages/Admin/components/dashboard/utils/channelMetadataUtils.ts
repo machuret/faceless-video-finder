@@ -31,10 +31,19 @@ export const convertToChannelMetadata = (metadata: Json | null): ChannelMetadata
 
 /**
  * Transforms channel data from Supabase to ensure metadata is properly typed
+ * while preserving all other Channel properties
  */
-export const transformChannelData = <T extends { metadata?: Json | null }>(channels: T[]): (Omit<T, 'metadata'> & { metadata: ChannelMetadata })[] => {
-  return channels.map(channel => ({
-    ...channel,
-    metadata: convertToChannelMetadata(channel.metadata)
-  })) as (Omit<T, 'metadata'> & { metadata: ChannelMetadata })[];
+export const transformChannelData = <T extends { metadata?: Json | null }>(channels: T[]): Channel[] => {
+  return channels.map(channel => {
+    // First ensure all required Channel properties are present
+    if (!('id' in channel) || !('video_id' in channel) || !('channel_title' in channel) || !('channel_url' in channel)) {
+      console.error("Missing required Channel properties:", channel);
+    }
+    
+    // Convert to Channel type with properly typed metadata
+    return {
+      ...channel as any, // Use any here to satisfy TypeScript when spreading unknown properties
+      metadata: convertToChannelMetadata(channel.metadata)
+    } as Channel; // Assert the final result is a Channel
+  });
 };
