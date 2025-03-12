@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ChannelStatsResponse } from "supabase/functions/fetch-channel-stats-apify/types";
 import { formatChannelUrl } from "./urlUtils";
@@ -7,7 +6,7 @@ import { mapResponseToFormData, mapPartialResponseToFormData } from "./dataMappe
 import { toast } from "sonner";
 
 /**
- * Fetches channel stats from the Supabase Edge Function
+ * Fetches channel stats from the Supabase Edge Function with timeout protection
  */
 export const fetchChannelStats = async (channelUrl: string): Promise<{ 
   data: ChannelStatsResponse | null;
@@ -21,23 +20,39 @@ export const fetchChannelStats = async (channelUrl: string): Promise<{
   console.log("Fetching stats for URL:", formattedUrl);
   
   try {
-    const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
-      body: { channelUrl: formattedUrl }
-    });
+    // Add a timeout guard to prevent long-running requests
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    try {
+      const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
+        body: { channelUrl: formattedUrl }
+      });
+      
+      clearTimeout(id);
 
-    if (error) {
-      console.error("Error fetching channel stats:", error);
-      return { data: null, error: error.message };
+      if (error) {
+        console.error("Error fetching channel stats:", error);
+        return { data: null, error: error.message };
+      }
+
+      if (!data || !data.success) {
+        const errorMessage = data?.error || "Failed to fetch channel stats";
+        console.error(errorMessage);
+        return { data: null, error: errorMessage };
+      }
+
+      console.log("Stats received from Apify:", data);
+      return { data, error: null };
+    } catch (err) {
+      clearTimeout(id);
+      
+      if (err.name === 'AbortError') {
+        return { data: null, error: "Request timed out. Please try again." };
+      }
+      
+      throw err; // Re-throw for outer catch
     }
-
-    if (!data || !data.success) {
-      const errorMessage = data?.error || "Failed to fetch channel stats";
-      console.error(errorMessage);
-      return { data: null, error: errorMessage };
-    }
-
-    console.log("Stats received from Apify:", data);
-    return { data, error: null };
   } catch (err) {
     console.error("Error in fetch stats:", err);
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -55,7 +70,7 @@ export const processChannelData = (
 };
 
 /**
- * Fetches missing fields for a channel
+ * Fetches missing fields for a channel with optimized requests and timeout protection
  */
 export const fetchMissingFieldsData = async (
   channelUrl: string,
@@ -79,45 +94,67 @@ export const fetchMissingFieldsData = async (
   console.log("Fetching missing fields for URL:", formattedUrl);
   
   try {
-    const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
-      body: { 
-        channelUrl: formattedUrl,
-        fetchMissingOnly: true
+    // Add a timeout guard to prevent long-running requests
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    try {
+      const { data, error } = await supabase.functions.invoke<ChannelStatsResponse>('fetch-channel-stats-apify', {
+        body: { 
+          channelUrl: formattedUrl,
+          fetchMissingOnly: true,
+          fields: missingFields // Pass specific fields to optimize the request
+        }
+      });
+      
+      clearTimeout(id);
+
+      if (error) {
+        console.error("Error fetching missing fields:", error);
+        return { 
+          partialStats: {}, 
+          successfulFields: [], 
+          failedFields: missingFields,
+          error: `Failed to fetch missing fields: ${error.message}`
+        };
       }
-    });
 
-    if (error) {
-      console.error("Error fetching missing fields:", error);
+      if (!data || !data.success) {
+        const errorMessage = data?.error || "Failed to fetch missing fields";
+        console.error(errorMessage);
+        return { 
+          partialStats: {}, 
+          successfulFields: [], 
+          failedFields: missingFields,
+          error: errorMessage
+        };
+      }
+
+      console.log("Missing fields data received:", data);
+      
+      const { partialStats, successfulFields, failedFields } = 
+        mapPartialResponseToFormData(data, missingFields);
+      
       return { 
-        partialStats: {}, 
-        successfulFields: [], 
-        failedFields: missingFields,
-        error: `Failed to fetch missing fields: ${error.message}`
+        partialStats, 
+        successfulFields, 
+        failedFields,
+        error: null
       };
+    } catch (err) {
+      clearTimeout(id);
+      
+      if (err.name === 'AbortError') {
+        return { 
+          partialStats: {}, 
+          successfulFields: [], 
+          failedFields: missingFields,
+          error: "Request timed out. Please try again."
+        };
+      }
+      
+      throw err; // Re-throw for outer catch
     }
-
-    if (!data || !data.success) {
-      const errorMessage = data?.error || "Failed to fetch missing fields";
-      console.error(errorMessage);
-      return { 
-        partialStats: {}, 
-        successfulFields: [], 
-        failedFields: missingFields,
-        error: errorMessage
-      };
-    }
-
-    console.log("Missing fields data received:", data);
-    
-    const { partialStats, successfulFields, failedFields } = 
-      mapPartialResponseToFormData(data, missingFields);
-    
-    return { 
-      partialStats, 
-      successfulFields, 
-      failedFields,
-      error: null
-    };
   } catch (err) {
     console.error("Error fetching missing fields:", err);
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';

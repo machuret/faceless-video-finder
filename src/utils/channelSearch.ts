@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Channel, ChannelMetadata } from "@/types/youtube";
 import { transformChannelData } from "@/pages/Admin/components/dashboard/utils/channelMetadataUtils";
@@ -7,6 +6,21 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
   if (!channelInput || !channelInput.trim()) {
     return [];
   }
+  
+  // Define fields needed for search results to optimize query
+  const requiredFields = [
+    'id', 
+    'channel_title', 
+    'description', 
+    'total_subscribers', 
+    'total_views', 
+    'screenshot_url', 
+    'niche',
+    'channel_url',
+    'video_id',
+    'channel_type',
+    'metadata'
+  ];
   
   // If the input looks like a URL, extract channel name or ID
   let searchTerm = channelInput.trim();
@@ -42,8 +56,8 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
   console.log("Search term after processing:", searchTerm);
 
   try {
-    // Build the query based on what we extracted
-    let query = supabase.from("youtube_channels").select("*, videoStats:youtube_video_stats(*)");
+    // Build the query based on what we extracted with efficient field selection
+    let query = supabase.from("youtube_channels").select(requiredFields.join(','));
     
     if (isChannelId) {
       // For channel IDs, search in channel_url
@@ -78,7 +92,10 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
     console.log("Executing search query for term:", searchTerm);
     
     // Limit the number of results to avoid performance issues
-    const { data, error } = await query.limit(100);
+    // Add explicit ordering for consistent results and better indexing
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(50); // Reduced from 100 to improve performance
 
     if (error) {
       console.error("Search error details:", error);
@@ -112,6 +129,5 @@ export const formatNumber = (num: number): string => {
 };
 
 export const calculateEarnings = (totalViews: number) => {
-  // Using $1.00 per 1000 views as a conservative estimate
   return totalViews / 1000 * 1.00;
 };

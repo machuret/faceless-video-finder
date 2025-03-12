@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Channel } from '@/types/youtube';
 
 /**
- * Hook to fetch the main channels for the homepage
+ * Hook to fetch the main channels for the homepage with optimized field selection
  */
 export function useHomePageChannels(page: number, channelsPerPage: number) {
   return useQuery({
@@ -14,6 +14,18 @@ export function useHomePageChannels(page: number, channelsPerPage: number) {
         const offset = (page - 1) * channelsPerPage;
         
         console.log(`Fetching channels for homepage, page ${page}, offset ${offset}, limit ${channelsPerPage}`);
+        
+        // Only select the fields we need for homepage display
+        const requiredFields = [
+          'id', 
+          'channel_title', 
+          'description', 
+          'total_subscribers', 
+          'total_views', 
+          'screenshot_url', 
+          'niche',
+          'video_count'
+        ];
         
         // First try getting the count to know how many channels exist
         const { data: countData, error: countError } = await supabase.functions.invoke('get-public-channels', {
@@ -30,20 +42,25 @@ export function useHomePageChannels(page: number, channelsPerPage: number) {
         const totalCount = countData?.totalCount || 0;
         console.log("Total channel count from edge function:", totalCount);
         
-        // Now fetch the actual channels for this page
+        // Now fetch the actual channels for this page with optimized field selection
         const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
           body: { 
             limit: channelsPerPage,
-            offset: offset
+            offset: offset,
+            fields: requiredFields
+          },
+          // Add cache control headers for the client
+          headers: {
+            'Cache-Control': 'max-age=60' // 1 minute cache
           }
         });
         
         if (edgeError) {
           console.error("Edge function error:", edgeError);
-          // Try fallback to direct query
+          // Try fallback to direct query with field selection
           const { data: directData, error: directError, count } = await supabase
             .from("youtube_channels")
-            .select("*", { count: 'exact' })
+            .select(requiredFields.join(','), { count: 'exact' })
             .order("created_at", { ascending: false })
             .range(offset, offset + channelsPerPage - 1);
 

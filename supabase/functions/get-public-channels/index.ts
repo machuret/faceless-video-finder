@@ -1,3 +1,4 @@
+
 // Follow this setup guide to integrate the Deno runtime into your application:
 // https://deno.land/manual/examples/deploy_node_server
 
@@ -31,22 +32,32 @@ serve(async (req) => {
       missingStats = false,
       missingKeywords = false,
       hasStats = false,
+      featured = false,
+      fields = [], // NEW: Support for field selection
     } = requestData;
     
-    console.log("Request parameters:", {
-      limit,
-      offset,
-      countOnly,
-      missingScreenshot,
-      missingType,
-      missingStats,
-      missingKeywords,
-      hasStats,
+    console.log("Request parameters:", { 
+      limit, offset, countOnly, featured,
+      fields: fields.length > 0 ? fields.join(',') : 'all',
+      filters: { missingScreenshot, missingType, missingStats, missingKeywords, hasStats }
     });
     
     // Build the query based on parameters
+    // Determine select fields - performance optimization
+    let selectClause = '*';
+    if (fields && Array.isArray(fields) && fields.length > 0) {
+      // Ensure id is always included for referential integrity
+      if (!fields.includes('id')) {
+        fields.push('id');
+      }
+      selectClause = fields.join(',');
+    } else if (countOnly) {
+      // When just counting, only select id
+      selectClause = 'id';
+    }
+    
     let query = supabase.from('youtube_channels').select(
-      countOnly ? 'id' : '*',
+      selectClause,
       countOnly ? { count: 'exact', head: true } : { count: 'exact' }
     );
     
@@ -69,6 +80,10 @@ serve(async (req) => {
     
     if (hasStats) {
       query = query.not('video_count', 'is', null);
+    }
+    
+    if (featured) {
+      query = query.eq('is_featured', true);
     }
     
     // Always sort by creation date descending
@@ -94,14 +109,19 @@ serve(async (req) => {
       throw error;
     }
     
+    // Add cache-control header for better client caching
+    const responseHeaders = {
+      ...corsHeaders, 
+      'Content-Type': 'application/json',
+      'Cache-Control': 'max-age=60, s-maxage=120' // 1 minute client, 2 minutes CDN
+    };
+    
     return new Response(
       JSON.stringify({
         channels: data || [],
         totalCount: count,
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { headers: responseHeaders }
     );
   } catch (error) {
     console.error("Error in get-public-channels function:", error);

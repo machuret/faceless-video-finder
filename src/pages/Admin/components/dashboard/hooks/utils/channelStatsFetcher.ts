@@ -12,13 +12,19 @@ export interface StatsUpdateResult {
   message: string;
 }
 
+/**
+ * Fetches channels for stats update with optimized queries
+ */
 export const fetchChannelsForStatsUpdate = async (): Promise<{ channels: ChannelForUpdate[], count: number }> => {
   try {
+    // Only select the fields we need for the update to optimize the query
+    const requiredFields = 'id, channel_url, channel_title';
+    
     // More precise query to find channels that are missing important stats
     // Using explicit NULL checks for more accuracy and improved performance
     const { data, error, count } = await supabase
       .from('youtube_channels')
-      .select('id, channel_url, channel_title', { count: 'exact' })
+      .select(requiredFields, { count: 'exact' })
       .or('total_subscribers.is.null,total_views.is.null,video_count.is.null,description.is.null')
       .order('updated_at', { ascending: true });
     
@@ -37,6 +43,9 @@ export const fetchChannelsForStatsUpdate = async (): Promise<{ channels: Channel
   }
 };
 
+/**
+ * Updates stats for a channel with timeout protection
+ */
 export const updateStatsForChannel = async (
   channelId: string, 
   channelUrl: string, 
@@ -50,9 +59,22 @@ export const updateStatsForChannel = async (
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
     try {
-      // Remove the signal property from the options object
+      // Specify the fields we want to fetch to optimize the API call
+      const requiredFields = [
+        'title',
+        'subscriberCount',
+        'viewCount',
+        'videoCount',
+        'startDate',
+        'description',
+        'country'
+      ];
+      
       const { data, error } = await supabase.functions.invoke<any>('fetch-channel-stats-apify', {
-        body: { channelUrl }
+        body: { 
+          channelUrl,
+          fields: requiredFields 
+        }
       });
       
       clearTimeout(timeoutId);
@@ -75,7 +97,7 @@ export const updateStatsForChannel = async (
 
       console.log(`Received stats for ${channelTitle}:`, data);
 
-      // Prepare data for update
+      // Prepare data for update, only including fields that actually have values
       const updateData: Record<string, any> = {};
       
       if (data.title) updateData.channel_title = data.title;
