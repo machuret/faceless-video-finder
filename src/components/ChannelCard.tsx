@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -14,8 +15,7 @@ const ChannelCard: React.FC<ChannelCardProps> = ({ channel }) => {
   const { id, channel_title, total_subscribers, screenshot_url, is_featured, is_editor_verified, niche } = channel;
 
   // Create SEO-friendly URL
-  const channelSlug = getChannelSlug(channel_title);
-  const seoUrl = `/channel/${channelSlug}-${id}`;
+  const seoUrl = `/channel/${getChannelSlug({ channel_title, id })}`;
 
   // Format subscriber count (e.g., 1,500,000 -> 1.5M)
   const formatSubscriberCount = (count?: number | null) => {
