@@ -11,7 +11,24 @@ export const fetchChannelDetails = async (id: string) => {
   console.log(`Fetching channel details for ID: ${id}`);
   
   try {
-    // Try direct query first with error handling
+    // Try edge function first as it's more reliable with RLS issues
+    const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-by-id', {
+      body: { channelId: id }
+    });
+    
+    if (edgeError) {
+      console.error("Edge function error:", edgeError.message);
+      // Fall back to direct query if edge function fails
+    } else if (edgeData?.channel) {
+      console.log("Successfully fetched channel using edge function");
+      
+      return {
+        channel: edgeData.channel as Channel,
+        videoStats: edgeData.videoStats || []
+      };
+    }
+    
+    // Try direct query as fallback
     const { data: channelData, error: channelError } = await supabase
       .from("youtube_channels")
       .select("*")
@@ -20,26 +37,7 @@ export const fetchChannelDetails = async (id: string) => {
 
     if (channelError) {
       console.error("Error fetching channel details:", channelError);
-      
-      // Try using our fixed edge function
-      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-by-id', {
-        body: { channelId: id }
-      });
-      
-      if (edgeError) {
-        throw new Error(`Edge function error: ${edgeError.message}`);
-      }
-      
-      if (edgeData?.channel) {
-        console.log("Successfully fetched channel using edge function");
-        
-        return {
-          channel: edgeData.channel as Channel,
-          videoStats: edgeData.videoStats || []
-        };
-      }
-      
-      throw channelError;
+      throw new Error(channelError.message);
     }
     
     if (!channelData) {

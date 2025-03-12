@@ -13,7 +13,24 @@ export function useFeaturedChannels() {
       try {
         console.log("Fetching featured channels");
         
-        // Simplified query with minimal fields needed
+        // Try edge function first as it's more reliable with RLS
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
+          body: { 
+            limit: 3,
+            offset: 0,
+            featured: true
+          }
+        });
+        
+        if (edgeError) {
+          console.error("Edge function error for featured channels:", edgeError);
+          // Fall through to direct query
+        } else if (edgeData?.channels && Array.isArray(edgeData.channels)) {
+          console.log(`Successfully fetched ${edgeData.channels.length} featured channels using edge function`);
+          return edgeData.channels as Channel[];
+        }
+        
+        // Fall back to direct query
         const { data, error } = await supabase
           .from('youtube_channels')
           .select('id, channel_title, description, total_subscribers, total_views, screenshot_url, niche, is_featured')
@@ -21,36 +38,18 @@ export function useFeaturedChannels() {
           .limit(3);
           
         if (error) {
-          console.error("Error fetching featured channels:", error);
-          
-          // Try a fallback using our edge function
-          try {
-            const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
-              body: { 
-                limit: 3,
-                offset: 0,
-                featured: true
-              }
-            });
-              
-            if (edgeError) throw edgeError;
-            
-            console.log(`Successfully fetched ${edgeData?.channels?.length || 0} featured channels using edge function`);
-            return edgeData?.channels as Channel[] || [];
-          } catch (fallbackErr) {
-            console.error("Fallback featured channels error:", fallbackErr);
-            return [];
-          }
+          console.error("Error fetching featured channels via direct query:", error);
+          return []; // Return empty array on error
         }
         
-        console.log(`Successfully fetched ${data?.length || 0} featured channels`);
+        console.log(`Successfully fetched ${data?.length || 0} featured channels via direct query`);
         return data as Channel[] || [];
       } catch (err) {
         console.error('Error fetching featured channels:', err);
-        return [];
+        return []; // Return empty array on error for resilience
       }
     },
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 60 * 1000, // 1 minute
     retry: 2,
     retryDelay: 1000
   });

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { Channel } from "@/types/youtube";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,7 @@ export const useChannelOperations = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set());
 
-  const fetchChannels = useCallback(async (offset?: number, limit?: number = 10) => {
+  const fetchChannels = useCallback(async (offset: number = 0, limit: number = 10) => {
     try {
       console.log("fetchChannels called with offset:", offset, "limit:", limit);
       setLoading(true);
@@ -58,8 +59,8 @@ export const useChannelOperations = () => {
       setTotalCount(count);
       
       // Now try to fetch the actual data
-      const finalLimit = typeof limit === 'number' ? limit : 10;
-      const finalOffset = typeof offset === 'number' ? offset : 0;
+      const finalLimit = limit;
+      const finalOffset = offset;
       
       // First try direct query
       let channelData: Channel[] = [];

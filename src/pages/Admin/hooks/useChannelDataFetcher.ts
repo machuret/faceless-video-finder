@@ -25,6 +25,67 @@ export const useChannelDataFetcher = (
     successToastShown.current = false;
     
     try {
+      // Try edge function first as it's more reliable
+      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-by-id', {
+        body: { channelId }
+      });
+      
+      if (edgeError) {
+        console.error("Edge function error:", edgeError);
+        // Fall through to regular query
+      } else if (edgeData?.channel) {
+        console.log("Successfully fetched channel using edge function");
+        
+        // Map data from edge function to form data
+        const channelData = edgeData.channel;
+        
+        // Extract channel type from metadata if available
+        let channelType = channelData.channel_type || "";
+        if (channelData.metadata) {
+          // Safely access metadata properties by checking type
+          const metadata = typeof channelData.metadata === 'object' ? channelData.metadata : {};
+          if (metadata && 'ui_channel_type' in metadata) {
+            channelType = (metadata as ChannelMetadata).ui_channel_type || channelData.channel_type || "";
+          }
+        }
+        
+        // Map database data to form data with safe defaults for all fields
+        const formattedData: ChannelFormData = {
+          id: channelData.id || "",
+          video_id: channelData.video_id || "",
+          channel_title: channelData.channel_title || "",
+          channel_url: channelData.channel_url || "",
+          description: channelData.description || "",
+          screenshot_url: channelData.screenshot_url || "",
+          total_subscribers: channelData.total_subscribers ? String(channelData.total_subscribers) : "",
+          total_views: channelData.total_views ? String(channelData.total_views) : "",
+          start_date: channelData.start_date || "",
+          video_count: channelData.video_count ? String(channelData.video_count) : "",
+          cpm: channelData.cpm ? String(channelData.cpm) : "4",
+          channel_type: channelType,
+          country: channelData.country || "US",
+          channel_category: channelData.channel_category || "entertainment",
+          notes: channelData.notes || "",
+          keywords: Array.isArray(channelData.keywords) ? channelData.keywords : [],
+          niche: channelData.niche || "",
+          is_editor_verified: Boolean(channelData.is_editor_verified),
+          ai_description: channelData.ai_description || ""
+        };
+        
+        setFormData(formattedData);
+        console.log("Form data updated from edge function:", formattedData);
+        
+        // Only show the toast if we haven't shown it yet for this fetch
+        if (!successToastShown.current) {
+          toast.success("Channel data loaded successfully");
+          successToastShown.current = true;
+        }
+        
+        setLoading(false);
+        return;
+      }
+      
+      // Fall back to direct Supabase query if edge function didn't work
       const { data, error } = await supabase
         .from("youtube_channels")
         .select("*")
@@ -39,7 +100,7 @@ export const useChannelDataFetcher = (
         throw new Error("Channel not found");
       }
       
-      console.log("Channel data fetched:", data);
+      console.log("Channel data fetched via direct query:", data);
       
       // Extract channel type from metadata if available
       let channelType = data.channel_type || "";
@@ -75,7 +136,7 @@ export const useChannelDataFetcher = (
       };
       
       setFormData(formattedData);
-      console.log("Form data updated:", formattedData);
+      console.log("Form data updated from direct query:", formattedData);
       
       // Only show the toast if we haven't shown it yet for this fetch
       if (!successToastShown.current) {
