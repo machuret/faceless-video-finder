@@ -83,7 +83,7 @@ const VideoCardContent = memo(({
 
 VideoCardContent.displayName = "VideoCardContent";
 
-const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => {
+const FeaturedVideos = memo(({ videos, isFeatured = false }: FeaturedVideosProps) => {
   // Extract unique channel IDs for efficient querying
   const channelIds = useMemo(() => {
     return [...new Set(videos.filter(v => v.channel_id).map(v => v.channel_id))];
