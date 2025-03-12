@@ -17,6 +17,7 @@ const NicheManager = () => {
     uploading,
     nichesData,
     isLoading,
+    isDeleting,
     handleInputChange,
     handleRichTextChange,
     setEditingNiche,
@@ -80,6 +81,7 @@ const NicheManager = () => {
             onRefresh={refetchNiches}
             onEdit={handleEditNiche}
             onDelete={handleDeleteNiche}
+            isDeleting={isDeleting}
           />
         </TabsContent>
         

@@ -2,6 +2,45 @@
 // Web Worker for handling complex calculations
 // This file will be run in a separate thread from the main UI
 
+interface RevenueAdditionalFactors {
+  niche?: string;
+  nicheMultipliers?: Record<string, number>;
+  country?: string;
+  countryMultipliers?: Record<string, number>;
+  seasonalMultiplier?: number;
+  months?: number;
+  videoCount?: number;
+}
+
+interface RevenueCalculationParams {
+  views: number;
+  cpm?: number;
+  monetizedViewsPercentage?: number;
+  additionalFactors?: RevenueAdditionalFactors;
+}
+
+interface ViewsProjectionParams {
+  currentViews: number;
+  growthRate: number;
+  months: number;
+  videoUploadRate: number;
+}
+
+interface ViewsDataPoint {
+  date: string;
+  views: number;
+}
+
+interface SubscribersDataPoint {
+  date: string;
+  count: number;
+}
+
+interface GrowthRateParams {
+  viewsData: ViewsDataPoint[];
+  subscribersData?: SubscribersDataPoint[];
+}
+
 // Message handler
 self.onmessage = (event) => {
   const { type, data } = event.data;
@@ -36,7 +75,7 @@ function calculateChannelRevenue({
   cpm = 2.0, 
   monetizedViewsPercentage = 0.7, 
   additionalFactors = {}
-}) {
+}: RevenueCalculationParams) {
   try {
     // Basic calculation
     let revenue = (views * monetizedViewsPercentage * cpm) / 1000;
@@ -71,7 +110,7 @@ function calculateChannelRevenue({
       }
     };
   } catch (error) {
-    return { error: error.message || 'Calculation error' };
+    return { error: error instanceof Error ? error.message : 'Calculation error' };
   }
 }
 
@@ -81,7 +120,7 @@ function calculateViewsProjection({
   growthRate,
   months,
   videoUploadRate
-}) {
+}: ViewsProjectionParams) {
   try {
     const projections = [];
     let cumulativeViews = currentViews;
@@ -112,7 +151,7 @@ function calculateViewsProjection({
       averageMonthlyViews: Math.round(cumulativeViews / months)
     };
   } catch (error) {
-    return { error: error.message || 'Projection calculation error' };
+    return { error: error instanceof Error ? error.message : 'Projection calculation error' };
   }
 }
 
@@ -120,7 +159,7 @@ function calculateViewsProjection({
 function calculateGrowthRate({
   viewsData, // Array of { date, views } objects
   subscribersData // Array of { date, count } objects
-}) {
+}: GrowthRateParams) {
   try {
     // Sort data by date
     const sortedViews = [...viewsData].sort((a, b) => 
@@ -180,7 +219,7 @@ function calculateGrowthRate({
       }
     };
   } catch (error) {
-    return { error: error.message || 'Growth rate calculation error' };
+    return { error: error instanceof Error ? error.message : 'Growth rate calculation error' };
   }
 }
 
