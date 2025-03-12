@@ -14,20 +14,22 @@ export function useFeaturedChannels() {
         console.log("Fetching featured channels");
         
         // Try edge function first as it's more reliable with RLS
-        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
-          body: { 
-            limit: 3,
-            offset: 0,
-            featured: true
+        try {
+          const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
+            body: { 
+              limit: 3,
+              offset: 0,
+              featured: true
+            }
+          });
+          
+          if (!edgeError && edgeData?.channels && Array.isArray(edgeData.channels)) {
+            console.log(`Successfully fetched ${edgeData.channels.length} featured channels using edge function`);
+            return edgeData.channels as Channel[];
           }
-        });
-        
-        if (edgeError) {
-          console.error("Edge function error for featured channels:", edgeError);
+        } catch (edgeErr) {
+          console.error("Edge function error for featured channels:", edgeErr);
           // Fall through to direct query
-        } else if (edgeData?.channels && Array.isArray(edgeData.channels)) {
-          console.log(`Successfully fetched ${edgeData.channels.length} featured channels using edge function`);
-          return edgeData.channels as Channel[];
         }
         
         // Fall back to direct query

@@ -5,6 +5,7 @@ import HeroSection from '@/components/home/HeroSection';
 import ToolsSection from '@/components/home/ToolsSection';
 import PageFooter from '@/components/home/PageFooter';
 import { Loader2 } from 'lucide-react';
+import { ErrorState } from '@/components/youtube/channel-list/components/ErrorState';
 
 // Lazy load non-critical components
 const FeaturedVideos = lazy(() => import('@/components/home/FeaturedVideos'));
@@ -43,15 +44,14 @@ const Index = () => {
     window.location.reload();
   };
 
-  const errorMessage = error || (isError ? 'Failed to load channels. Please try again later.' : null);
-
-  console.log("Current state:", { 
+  console.log("Index page state:", { 
     channels: channels.length, 
     featuredChannels: featuredChannels.length,
+    totalChannels,
+    allVideos: allVideos.length,
     isLoading, 
     isError,
-    error,
-    errorMessage
+    error
   });
 
   return (
@@ -70,7 +70,7 @@ const Index = () => {
           channels={channels}
           featuredChannels={featuredChannels}
           loading={isLoading}
-          error={errorMessage}
+          error={error}
           totalChannels={totalChannels}
           currentPage={currentPage}
           showFeatured={true}

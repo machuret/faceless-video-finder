@@ -24,18 +24,11 @@ export function useHomePageChannels(page: number, channelsPerPage: number) {
         
         if (countError) {
           console.error("Error getting count from edge function:", countError);
-          throw new Error(countError.message || "Failed to get channel count");
+          // Don't throw - continue and try direct query as fallback
         }
         
         const totalCount = countData?.totalCount || 0;
         console.log("Total channel count from edge function:", totalCount);
-        
-        if (totalCount === 0) {
-          return { 
-            channels: [],
-            totalCount: 0
-          };
-        }
         
         // Now fetch the actual channels for this page
         const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
@@ -47,12 +40,35 @@ export function useHomePageChannels(page: number, channelsPerPage: number) {
         
         if (edgeError) {
           console.error("Edge function error:", edgeError);
-          throw new Error(edgeError.message || "Failed to fetch channels");
+          // Try fallback to direct query
+          const { data: directData, error: directError, count } = await supabase
+            .from("youtube_channels")
+            .select("*", { count: 'exact' })
+            .order("created_at", { ascending: false })
+            .range(offset, offset + channelsPerPage - 1);
+
+          if (directError) {
+            console.error("Direct query also failed:", directError);
+            // Return empty data instead of throwing
+            return { 
+              channels: [],
+              totalCount: 0
+            };
+          }
+          
+          console.log(`Successfully fetched ${directData?.length || 0} channels directly from Supabase`);
+          return { 
+            channels: directData as Channel[] || [],
+            totalCount: count || 0
+          };
         }
         
         if (!edgeData?.channels || !Array.isArray(edgeData.channels)) {
           console.error("Edge function returned invalid data:", edgeData);
-          throw new Error("Invalid data received from server");
+          return { 
+            channels: [],
+            totalCount: totalCount || 0
+          };
         }
         
         console.log(`Successfully fetched ${edgeData.channels.length} channels using edge function`);
@@ -63,11 +79,15 @@ export function useHomePageChannels(page: number, channelsPerPage: number) {
         };
       } catch (err: any) {
         console.error('Error fetching homepage channels:', err);
-        throw new Error(err.message || 'Failed to load channels. Please try again later.');
+        // Return empty data instead of throwing
+        return { 
+          channels: [],
+          totalCount: 0
+        };
       }
     },
     staleTime: 30 * 1000, // 30 seconds
-    retry: 3,
-    retryDelay: 1000
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff up to 5 seconds
+    retry: 2 // Retry failed requests up to 2 times
   });
 }

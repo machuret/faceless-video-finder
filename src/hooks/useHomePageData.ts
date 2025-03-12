@@ -18,15 +18,31 @@ export function useHomePageData(page: number, channelsPerPage: number) {
   // Extract all videos using memoization
   const allVideos = useVideosFromChannels(channelsQuery.data?.channels || []);
   
+  // Determine if we're in an error state
+  const hasError = 
+    (channelsQuery.isError && featuredQuery.isError) || // Both failed
+    (channelsQuery.isError && channelsQuery.data?.channels?.length === 0) || // Main channels failed critically
+    (channelsQuery.data?.channels?.length === 0 && !channelsQuery.isLoading && page === 1); // No channels on first page after loading
+  
+  // Generate appropriate error message if needed
+  let errorMessage = null;
+  if (hasError) {
+    if (channelsQuery.error instanceof Error) {
+      errorMessage = channelsQuery.error.message;
+    } else if (featuredQuery.error instanceof Error) {
+      errorMessage = featuredQuery.error.message;
+    } else {
+      errorMessage = 'Failed to load channels. Please try again later.';
+    }
+  }
+  
   return {
     channels: channelsQuery.data?.channels || [],
     featuredChannels: featuredQuery.data || [],
     totalChannels: channelsQuery.data?.totalCount || 0,
     allVideos,
     isLoading: channelsQuery.isLoading || featuredQuery.isLoading,
-    isError: channelsQuery.isError || featuredQuery.isError,
-    error: channelsQuery.error ? 
-      (channelsQuery.error instanceof Error ? channelsQuery.error.message : 'Failed to load channels') 
-      : featuredQuery.error ? 'Failed to load featured channels' : null
+    isError: hasError,
+    error: errorMessage
   };
 }
