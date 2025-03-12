@@ -1,107 +1,145 @@
 
-// Service Worker for caching assets and enabling offline support
+// Service Worker for YTFaceless - Offline caching and performance boost
+const CACHE_NAME = 'ytfaceless-cache-v1';
 
-const CACHE_NAME = 'faceless-finder-cache-v1';
-const RUNTIME = 'runtime';
-
-// Resources to cache immediately on install
-const PRECACHE_URLS = [
+const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/placeholder.svg',
   '/favicon.ico',
+  '/og-image.png',
+  '/placeholder.svg'
 ];
 
-// Install event
+// Install event - cache static assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(PRECACHE_URLS))
-      .then(self.skipWaiting())
+      .then(cache => {
+        console.log('Service worker pre-caching assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .catch(error => {
+        console.error('Pre-caching failed:', error);
+      })
   );
+  
+  // Force the waiting service worker to become the active service worker
+  self.skipWaiting();
 });
 
-// Activation event: clean up old caches
+// Activate event - clean up old caches
 self.addEventListener('activate', event => {
-  const currentCaches = [CACHE_NAME, RUNTIME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
-      return cacheNames.filter(cacheName => !currentCaches.includes(cacheName));
-    }).then(cachesToDelete => {
-      return Promise.all(cachesToDelete.map(cacheToDelete => {
-        return caches.delete(cacheToDelete);
-      }));
-    }).then(() => self.clients.claim())
-  );
-});
-
-// Fetch event: serve from cache, falling back to network
-self.addEventListener('fetch', event => {
-  // Skip cross-origin requests
-  if (event.request.url.startsWith(self.location.origin)) {
-    // Strategy for images: cache-first with stale-while-revalidate behavior
-    if (event.request.url.match(/\.(jpg|jpeg|png|gif|webp|svg|ico)$/)) {
-      return event.respondWith(
-        caches.match(event.request).then(cachedResponse => {
-          const fetchPromise = fetch(event.request).then(response => {
-            // Don't cache non-successful responses
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            
-            // Clone the response as it can only be consumed once
-            const responseToCache = response.clone();
-            
-            // Add response to cache
-            caches.open(RUNTIME).then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-            
-            return response;
-          });
-          
-          // Return cached response immediately if available, while fetching in the background
-          return cachedResponse || fetchPromise;
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Service worker removing old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
         })
       );
-    }
-    
-    // Default network-first strategy for other requests
+    })
+  );
+  
+  // Take control of all clients immediately
+  self.clients.claim();
+});
+
+// Fetch event - serve from cache, then network with cache update
+self.addEventListener('fetch', event => {
+  // Skip non-GET requests and browser extensions
+  if (event.request.method !== 'GET' || 
+      event.request.url.startsWith('chrome-extension') ||
+      event.request.url.includes('extension') ||
+      // Skip supabase API requests - they're handled by React Query
+      event.request.url.includes('supabase.co')) {
+    return;
+  }
+  
+  // For page navigations (HTML requests), use network-first strategy
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const clonedResponse = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, clonedResponse);
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request)
+            .then(cachedResponse => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              return caches.match('/index.html');
+            });
+        })
+    );
+    return;
+  }
+  
+  // For static assets (JS, CSS, images), use cache-first strategy
+  if (
+    event.request.url.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)
+  ) {
     event.respondWith(
       caches.match(event.request).then(cachedResponse => {
         if (cachedResponse) {
-          // For API requests, use stale-while-revalidate
-          if (event.request.url.includes('/api/') || event.request.url.includes('supabase')) {
-            fetch(event.request).then(response => {
-              if (!response || response.status !== 200 || response.type !== 'basic') {
-                return response;
-              }
-              
-              const responseToCache = response.clone();
-              caches.open(RUNTIME).then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-            }).catch(() => {
-              // Network request failed, but we already have a cached response
+          // Update cache in the background (cache-then-network)
+          fetch(event.request).then(response => {
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, response.clone());
             });
-          }
+          }).catch(() => {/* swallow error */});
           
           return cachedResponse;
         }
         
+        // If not in cache, fetch from network and cache
         return fetch(event.request).then(response => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          
-          const responseToCache = response.clone();
-          caches.open(RUNTIME).then(cache => {
-            cache.put(event.request, responseToCache);
+          const clonedResponse = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, clonedResponse);
           });
-          
           return response;
         });
       })
     );
+    return;
+  }
+  
+  // For all other requests, use network-first strategy
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        // Cache successful responses
+        if (response.status === 200) {
+          const clonedResponse = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, clonedResponse);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // Fallback to cache if network fails
+        return caches.match(event.request);
+      })
+  );
+});
+
+// Handle messages from clients
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    caches.delete(CACHE_NAME).then(() => {
+      console.log('Cache cleared by application');
+      event.ports[0].postMessage({ status: 'success' });
+    }).catch(error => {
+      console.error('Failed to clear cache:', error);
+      event.ports[0].postMessage({ status: 'error', message: error.message });
+    });
   }
 });

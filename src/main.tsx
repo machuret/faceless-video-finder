@@ -5,8 +5,8 @@ import App from './App'
 import './index.css'
 import { QueryProvider } from './providers/QueryProvider'
 
-// Register service worker for caching - with safer error handling
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Register service worker for caching and offline support
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then(registration => {

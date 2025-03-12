@@ -9,10 +9,10 @@ const createQueryClient = () => {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // Optimized caching strategy
-        staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
-        gcTime: 10 * 60 * 1000, // 10 minutes - how long to keep inactive data
-        refetchOnWindowFocus: false,
+        // Optimized caching strategy with longer cache lifetimes
+        staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh (increased from default)
+        gcTime: 30 * 60 * 1000, // 30 minutes - how long to keep inactive data in cache (increased)
+        refetchOnWindowFocus: import.meta.env.PROD, // Only refetch on window focus in production
         retry: (failureCount, error) => {
           // Don't retry on 404s or authorization errors
           if (
@@ -41,7 +41,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
         {children}
-        {process.env.NODE_ENV !== 'production' && 
+        {import.meta.env.DEV && 
           <ReactQueryDevtools 
             initialIsOpen={false}
             position="bottom"

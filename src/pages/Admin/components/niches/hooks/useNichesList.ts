@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { niches as defaultNiches } from "@/data/niches";
 import { toast } from "sonner";
+import { getCache, setCache } from "@/utils/cacheUtils";
 
 interface NicheDetails {
   name: string;
@@ -16,9 +17,22 @@ export interface NichesData {
   nicheDetails: Record<string, NicheDetails>;
 }
 
-// Function to fetch niches data from Supabase with timeout protection
+// Cache settings
+const CACHE_KEY = 'niches_data';
+const CACHE_VERSION = '1.0';
+const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours
+
+// Function to fetch niches data from Supabase with timeout protection and caching
 const fetchNiches = async (): Promise<NichesData> => {
-  console.log("Fetching niches from Supabase...");
+  console.log("Fetching niches data...");
+  
+  // Try to get from cache first
+  const cachedData = getCache<NichesData>(CACHE_KEY, { version: CACHE_VERSION });
+  if (cachedData) {
+    console.log("Using cached niches data");
+    return cachedData;
+  }
+  
   try {
     // Add timeout protection for the edge function call
     const edgeFunctionPromise = supabase.functions.invoke("get-niches");
@@ -36,10 +50,18 @@ const fetchNiches = async (): Promise<NichesData> => {
     console.log("Niches response:", data);
     
     if (data?.niches && Array.isArray(data.niches) && data.niches.length > 0) {
-      return {
+      const result = {
         niches: data.niches,
         nicheDetails: data.nicheDetails || {}
       };
+      
+      // Cache the successful response
+      setCache(CACHE_KEY, result, { 
+        expiry: CACHE_DURATION,
+        version: CACHE_VERSION
+      });
+      
+      return result;
     }
     
     // Fallback to direct database query with timeout protection
@@ -74,7 +96,15 @@ const fetchNiches = async (): Promise<NichesData> => {
         };
       });
       
-      return { niches, nicheDetails };
+      const result = { niches, nicheDetails };
+      
+      // Cache the successful database response
+      setCache(CACHE_KEY, result, { 
+        expiry: CACHE_DURATION,
+        version: CACHE_VERSION
+      });
+      
+      return result;
     }
     
     // Fallback to default niches if both approaches fail
@@ -99,8 +129,8 @@ export const useNichesList = () => {
   return useQuery({
     queryKey: ['niches'],
     queryFn: fetchNiches,
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000,   // Keep in cache for 10 minutes
+    staleTime: 12 * 60 * 60 * 1000, // 12 hours - niches change rarely
+    gcTime: 24 * 60 * 60 * 1000,    // 24 hours - keep in cache longer
     refetchOnWindowFocus: false,
     retry: 2, // Retry twice
     retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000), // Exponential backoff

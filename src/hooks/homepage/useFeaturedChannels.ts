@@ -4,6 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Channel } from '@/types/youtube';
 import { Json } from '@/integrations/supabase/types';
 import { transformChannelData } from '@/pages/Admin/components/dashboard/utils/channelMetadataUtils';
+import { getCache, setCache } from '@/utils/cacheUtils';
+
+// Cache settings
+const CACHE_KEY = 'featured_channels';
+const CACHE_VERSION = '1.0';
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 export function useFeaturedChannels() {
   // Minimum fields needed for featured channels display
@@ -22,6 +28,13 @@ export function useFeaturedChannels() {
     queryFn: async () => {
       console.log("Fetching featured channels");
       
+      // Try to get from cache first
+      const cachedData = getCache<Channel[]>(CACHE_KEY, { version: CACHE_VERSION });
+      if (cachedData) {
+        console.log("Using cached featured channels data");
+        return cachedData;
+      }
+      
       // Try edge function with optimized field selection and cache-control headers
       try {
         const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
@@ -32,7 +45,7 @@ export function useFeaturedChannels() {
             fields: requiredFields
           },
           headers: {
-            'Cache-Control': 'max-age=300' // 5 minute cache
+            'Cache-Control': 'max-age=900' // 15 minute cache
           }
         });
         
@@ -44,7 +57,15 @@ export function useFeaturedChannels() {
           if (isValidData) {
             console.log(`Successfully fetched ${edgeData.channels.length} featured channels using edge function`);
             // Type assertion with validation
-            return transformChannelData(edgeData.channels as { metadata?: Json }[]);
+            const channels = transformChannelData(edgeData.channels as { metadata?: Json }[]);
+            
+            // Cache the results
+            setCache(CACHE_KEY, channels, { 
+              expiry: CACHE_DURATION,
+              version: CACHE_VERSION
+            });
+            
+            return channels;
           } else {
             console.warn("Edge function returned invalid channel data format");
           }
@@ -66,10 +87,18 @@ export function useFeaturedChannels() {
         return [] as Channel[];
       }
       
-      return transformChannelData(data as { metadata?: Json }[]);
+      const channels = transformChannelData(data as { metadata?: Json }[]);
+      
+      // Cache the results
+      setCache(CACHE_KEY, channels, { 
+        expiry: CACHE_DURATION,
+        version: CACHE_VERSION
+      });
+      
+      return channels;
     },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000,   // Keep in cache for 10 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes - featured content updates infrequently
+    gcTime: 30 * 60 * 1000,    // 30 minutes - keep in cache longer
     retry: 2
   });
 }
