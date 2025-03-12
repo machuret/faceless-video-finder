@@ -96,17 +96,18 @@ export function isAvifSupported(): boolean {
  * Generate appropriate image formats based on browser support
  */
 export function getOptimalImageFormat(): string {
-  if (typeof window !== 'undefined') {
-    // Check for AVIF support first - using a safer approach
-    // since window.hasImageFormat doesn't exist in standard browsers
-    if (isAvifSupported()) {
-      return 'avif';
-    }
-    
-    // Then check WebP
-    if (isWebpSupported()) {
-      return 'webp';
-    }
+  if (typeof window === 'undefined') {
+    return 'jpg'; // Default for server-side rendering
+  }
+  
+  // Check for AVIF support first
+  if (isAvifSupported()) {
+    return 'avif';
+  }
+  
+  // Then check WebP
+  if (isWebpSupported()) {
+    return 'webp';
   }
   
   // Fallback to traditional formats

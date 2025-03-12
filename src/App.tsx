@@ -11,16 +11,25 @@ import MainLoader from './components/MainLoader';
 
 function App() {
   React.useEffect(() => {
-    // Initialize storage buckets on app startup
-    initializeStorage()
-      .then(result => {
-        if (result.success) {
-          console.log("Storage buckets initialized successfully");
-        }
-      })
-      .catch(error => {
-        console.error("Failed to initialize storage buckets:", error);
-      });
+    // Initialize storage buckets on app startup with better error handling
+    try {
+      initializeStorage()
+        .then(result => {
+          if (result.success) {
+            console.log("Storage buckets initialized successfully");
+          } else {
+            console.warn("Storage initialization warning:", result.error);
+            // Continue even if storage init fails
+          }
+        })
+        .catch(error => {
+          console.error("Failed to initialize storage buckets:", error);
+          // Continue even if storage init fails
+        });
+    } catch (e) {
+      console.error("Critical error in storage initialization:", e);
+      // Continue despite errors
+    }
   }, []);
 
   const router = createBrowserRouter(routes);
@@ -28,7 +37,7 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <AuthProvider>
-        <RouterProvider router={router} />
+        <RouterProvider router={router} fallbackElement={<MainLoader />} />
         <Toaster />
       </AuthProvider>
     </ThemeProvider>

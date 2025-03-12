@@ -5,7 +5,7 @@ import App from './App'
 import './index.css'
 import { QueryProvider } from './providers/QueryProvider'
 
-// Register service worker for caching
+// Register service worker for caching - with safer error handling
 if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
@@ -14,6 +14,7 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       })
       .catch(error => {
         console.log('ServiceWorker registration failed: ', error);
+        // Continue application execution despite service worker failure
       });
   });
 }

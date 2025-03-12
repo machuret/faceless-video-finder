@@ -3,11 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useState } from 'react';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-// Custom error handler that can be globally modified
-const defaultErrorHandler = (error: Error) => {
-  console.error('Query error:', error);
-};
-
 // Create a singleton instance outside component to prevent recreation on rerenders
 // This helps maintain cache between route changes
 const createQueryClient = () => {
@@ -32,6 +27,11 @@ const createQueryClient = () => {
           return failureCount < 2;
         },
         retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+        // Add global onError handling to prevent application crashes
+        onError: (error) => {
+          console.error('Query error:', error);
+          // Log but don't crash the app
+        }
       },
     },
   });
@@ -41,15 +41,22 @@ export function QueryProvider({ children }: { children: ReactNode }) {
   // Use lazy initialization to create the client only once
   const [queryClient] = useState(() => createQueryClient());
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-      {process.env.NODE_ENV !== 'production' && 
-        <ReactQueryDevtools 
-          initialIsOpen={false}
-          position="bottom"
-        />
-      }
-    </QueryClientProvider>
-  );
+  // Error boundary for React Query
+  try {
+    return (
+      <QueryClientProvider client={queryClient}>
+        {children}
+        {process.env.NODE_ENV !== 'production' && 
+          <ReactQueryDevtools 
+            initialIsOpen={false}
+            position="bottom"
+          />
+        }
+      </QueryClientProvider>
+    );
+  } catch (error) {
+    console.error('React Query provider error:', error);
+    // Fallback rendering without query features
+    return <>{children}</>;
+  }
 }
