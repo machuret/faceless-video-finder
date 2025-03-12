@@ -49,17 +49,39 @@ const ChannelTypeDetailsPage = () => {
           console.log("Found type info in database or local constants:", dbTypeInfo);
           setTypeInfo(dbTypeInfo);
         } else {
-          console.warn("Channel type not found:", typeId);
-          setTypeInfo(null);
+          // If not found in database, try local constants as a fallback
+          const localTypeInfo = channelTypes.find(type => type.id === typeId);
+          
+          if (localTypeInfo) {
+            console.log("Found type info in local constants:", localTypeInfo);
+            setTypeInfo({
+              id: localTypeInfo.id,
+              label: localTypeInfo.label,
+              description: localTypeInfo.description,
+              production: localTypeInfo.production,
+              example: localTypeInfo.example,
+              image_url: null
+            });
+          } else {
+            console.warn("Channel type not found:", typeId);
+            setTypeInfo(null);
+          }
         }
       } catch (error) {
         console.error("Error fetching type info:", error);
         
-        // Try fallback to local constants on error
+        // Always try fallback to local constants on error
         const localTypeInfo = channelTypes.find(type => type.id === typeId);
         if (localTypeInfo) {
           console.log("Using local fallback for type info:", localTypeInfo);
-          setTypeInfo(localTypeInfo);
+          setTypeInfo({
+            id: localTypeInfo.id,
+            label: localTypeInfo.label,
+            description: localTypeInfo.description,
+            production: localTypeInfo.production,
+            example: localTypeInfo.example,
+            image_url: null
+          });
         } else {
           setTypeInfo(null);
         }
@@ -78,7 +100,10 @@ const ChannelTypeDetailsPage = () => {
             .from("youtube_channels")
             .select("*");
             
-          if (error) throw error;
+          if (error) {
+            console.error("Database error fetching channels:", error);
+            throw error;
+          }
           
           if (data && Array.isArray(data)) {
             const typedData = data as unknown as SupabaseChannelData[];

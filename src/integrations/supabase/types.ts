@@ -336,6 +336,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_is_admin_safe: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: {
           uid: string
