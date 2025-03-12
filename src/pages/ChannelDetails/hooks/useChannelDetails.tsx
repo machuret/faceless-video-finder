@@ -18,142 +18,67 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
   });
 
   useEffect(() => {
-    // Reset state when channelId or slug changes
-    setState(prev => ({
-      ...prev,
-      loading: true,
-      error: null,
-      topVideosLoading: true,
-      topVideosError: false
-    }));
-
-    // Use a flag to prevent state updates if the component unmounts
     let isMounted = true;
     
-    const loadChannel = async () => {
-      let idToLoad = null;
+    const loadData = async () => {
+      let idToLoad = channelId || (slug ? extractIdFromSlug(slug) : null);
       
-      if (channelId) {
-        // Direct ID lookup
-        console.log(`Using direct channelId: ${channelId}`);
-        idToLoad = channelId;
-      } else if (slug) {
-        // Extract ID from slug (format: title-id)
-        console.log(`Extracting ID from slug: ${slug}`);
-        idToLoad = extractIdFromSlug(slug);
-        console.log(`Extracted ID: ${idToLoad}`);
-        
-        if (!idToLoad && isMounted) {
-          setState(prev => ({
-            ...prev,
-            error: "Invalid channel URL",
-            loading: false,
-            topVideosLoading: false
-          }));
-          return;
-        }
-      }
-      
-      if (!idToLoad) return;
-      
-      try {
-        // Add timeout protection
-        const fetchPromise = fetchChannelDetails(idToLoad);
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error("Channel details request timeout")), 10000)
-        );
-        
-        // Fetch basic channel data and video stats with timeout protection
-        const result = await Promise.race([fetchPromise, timeoutPromise]);
-        
+      if (!idToLoad) {
         if (isMounted) {
           setState(prev => ({
             ...prev,
-            channel: result.channel,
-            videoStats: result.videoStats,
-            loading: false
-          }));
-          
-          // After basic channel data is loaded, fetch top performing videos if possible
-          const youtubeChannelId = extractYouTubeChannelId(result.channel.channel_url);
-          if (youtubeChannelId) {
-            loadTopPerformingVideos(youtubeChannelId);
-          } else {
-            // Set top videos loading to false since we can't fetch them
-            setState(prev => ({
-              ...prev,
-              topVideosLoading: false
-            }));
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching channel details:", err);
-        
-        if (isMounted) {
-          toast.error("Failed to load channel details");
-          setState(prev => ({
-            ...prev,
-            error: err instanceof Error ? err.message : "Unknown error",
+            error: "Invalid channel ID or URL",
             loading: false,
             topVideosLoading: false
           }));
         }
+        return;
       }
-    };
 
-    const loadTopPerformingVideos = async (youtubeChannelId: string) => {
-      if (!isMounted) return;
-      
-      setState(prev => ({ ...prev, topVideosLoading: true, topVideosError: false }));
-      
       try {
-        // Add timeout protection
-        const fetchPromise = fetchTopPerformingVideos(youtubeChannelId);
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error("Top videos request timeout")), 8000)
-        );
-        
-        const result = await Promise.race([fetchPromise, timeoutPromise]);
+        // Fetch channel details and video stats in parallel
+        const [channelResult, videoStatsResult] = await Promise.all([
+          fetchChannelDetails(idToLoad),
+          fetchTopPerformingVideos(idToLoad)
+        ]).catch(error => {
+          throw new Error(`Failed to fetch channel data: ${error.message}`);
+        });
+
+        if (!isMounted) return;
+
+        // Update state with channel data
+        setState(prev => ({
+          ...prev,
+          channel: channelResult.channel,
+          videoStats: channelResult.videoStats || [],
+          loading: false,
+          error: null,
+          mostViewedVideo: videoStatsResult?.mostViewedVideo || null,
+          mostEngagingVideo: videoStatsResult?.mostEngagingVideo || null,
+          topVideosLoading: false,
+          topVideosError: false
+        }));
+
+      } catch (error) {
+        console.error("Error loading channel details:", error);
         
         if (isMounted) {
           setState(prev => ({
             ...prev,
-            mostViewedVideo: result.mostViewedVideo,
-            mostEngagingVideo: result.mostEngagingVideo,
-            topVideosLoading: false,
-            topVideosError: false
-          }));
-        }
-      } catch (err) {
-        console.error("Error fetching top performing videos:", err);
-        
-        if (isMounted) {
-          setState(prev => ({
-            ...prev,
+            error: error instanceof Error ? error.message : "Failed to load channel details",
+            loading: false,
             topVideosLoading: false,
             topVideosError: true
           }));
+          
+          toast.error("Failed to load channel details");
         }
       }
     };
 
-    // Start loading
-    loadChannel();
-
-    // Cleanup function to prevent state updates after unmount
-    return () => {
-      isMounted = false;
-    };
+    loadData();
+    return () => { isMounted = false; };
   }, [channelId, slug]);
 
-  return {
-    channel: state.channel,
-    videoStats: state.videoStats,
-    loading: state.loading,
-    error: state.error,
-    topVideosLoading: state.topVideosLoading,
-    mostViewedVideo: state.mostViewedVideo,
-    mostEngagingVideo: state.mostEngagingVideo,
-    topVideosError: state.topVideosError
-  };
+  return state;
 };

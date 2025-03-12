@@ -1,30 +1,27 @@
 
 import { useFeaturedChannels, useHomePageChannels, usePrefetchNextPage, useVideosFromChannels } from './homepage';
 
-/**
- * Main hook for fetching homepage data
- * This has been refactored into smaller, more focused components
- */
 export function useHomePageData(page: number, channelsPerPage: number) {
-  // Prefetch next page
+  // Prefetch next page early
   usePrefetchNextPage(page, channelsPerPage);
   
-  // Get featured channels
+  // Get featured channels with optimized caching
   const featuredQuery = useFeaturedChannels();
   
-  // Get main channel data for current page
+  // Get main channel data for current page with parallel loading
   const channelsQuery = useHomePageChannels(page, channelsPerPage);
   
-  // Extract all videos using memoization
+  // Extract videos using memoization for performance
   const allVideos = useVideosFromChannels(channelsQuery.data?.channels || []);
   
-  // Determine if we're in an error state
-  const hasError = 
-    (channelsQuery.isError && featuredQuery.isError) || // Both failed
-    (channelsQuery.isError && channelsQuery.data?.channels?.length === 0) || // Main channels failed critically
-    (channelsQuery.data?.channels?.length === 0 && !channelsQuery.isLoading && page === 1); // No channels on first page after loading
+  // Determine error state with improved error handling
+  const hasError = (
+    (channelsQuery.isError && featuredQuery.isError) ||
+    (channelsQuery.isError && channelsQuery.data?.channels?.length === 0) ||
+    (channelsQuery.data?.channels?.length === 0 && !channelsQuery.isLoading && page === 1)
+  );
   
-  // Generate appropriate error message if needed
+  // Generate appropriate error message
   let errorMessage = null;
   if (hasError) {
     if (channelsQuery.error instanceof Error) {
@@ -43,6 +40,9 @@ export function useHomePageData(page: number, channelsPerPage: number) {
     allVideos,
     isLoading: channelsQuery.isLoading || featuredQuery.isLoading,
     isError: hasError,
-    error: errorMessage
+    error: errorMessage,
+    // Add loading states for better UI handling
+    isFeaturedLoading: featuredQuery.isLoading,
+    isChannelsLoading: channelsQuery.isLoading,
   };
 }
