@@ -9,6 +9,7 @@ import { niches as defaultNiches } from "@/data/niches";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import LazyImage from "@/components/ui/lazy-image";
 
 const backgroundImages = [
   "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80",
@@ -161,14 +162,12 @@ const Niches = () => {
                 <Card key={niche} className="hover:shadow-lg transition-shadow h-full">
                   {details.image_url && (
                     <div className="w-full h-40 overflow-hidden">
-                      <img 
+                      <LazyImage 
                         src={details.image_url} 
                         alt={niche}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        width={320}
+                        height={160}
                       />
                     </div>
                   )}

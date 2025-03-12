@@ -1,106 +1,99 @@
+// Shared IntersectionObserver utility
+// This improves performance by reusing observers across the application
 
-// Shared IntersectionObserver service to reduce redundant observer instances
-type ObserverCallback = (entry: IntersectionObserverEntry) => void;
-type ObserverInstance = {
-  observer: IntersectionObserver;
-  elements: Map<Element, ObserverCallback[]>;
+// Store of all active observers, keyed by option string
+const observers: Record<string, { 
+  observer: IntersectionObserver; 
+  elements: Map<Element, (entry: IntersectionObserverEntry) => void>;
+}> = {};
+
+// Convert options to a string key for caching
+const getOptionsKey = (options?: IntersectionObserverInit): string => {
+  if (!options) return 'default';
+  return JSON.stringify({
+    root: options.root ? 'custom' : null,
+    rootMargin: options.rootMargin || '0px',
+    threshold: options.threshold || 0,
+  });
 };
 
-// Observer options with reasonable defaults
-const defaultOptions: IntersectionObserverInit = {
-  rootMargin: '200px',
-  threshold: 0.01,
-};
-
-// Store observers by their option signature to reuse them
-const observers = new Map<string, ObserverInstance>();
-
-// Helper to generate a unique key for observer options
-const getOptionsKey = (options: IntersectionObserverInit): string => {
-  return `${options.rootMargin || '0px'}_${
-    Array.isArray(options.threshold) 
-      ? options.threshold.join('_') 
-      : options.threshold || '0'
-  }_${options.root ? 'custom' : 'window'}`;
-};
-
-// Get or create an observer with the given options
-const getObserver = (options: IntersectionObserverInit = defaultOptions): ObserverInstance => {
+// Get or create an observer with given options
+const getObserver = (
+  callback: (entries: IntersectionObserverEntry[]) => void,
+  options?: IntersectionObserverInit
+): IntersectionObserver => {
   const key = getOptionsKey(options);
   
-  if (!observers.has(key)) {
-    const callback: IntersectionObserverCallback = (entries) => {
-      entries.forEach((entry) => {
-        const element = entry.target;
-        const callbacks = observers.get(key)?.elements.get(element) || [];
-        callbacks.forEach((cb) => cb(entry));
-      });
-    };
-    
+  if (!observers[key]) {
     const observer = new IntersectionObserver(callback, options);
-    observers.set(key, {
+    observers[key] = {
       observer,
-      elements: new Map(),
-    });
+      elements: new Map()
+    };
   }
   
-  return observers.get(key)!;
+  return observers[key].observer;
 };
 
-// Observe an element with the given callback
+// Observe an element with a given options
 export const observe = (
   element: Element,
-  callback: ObserverCallback,
-  options: IntersectionObserverInit = defaultOptions
+  callback: (entry: IntersectionObserverEntry) => void,
+  options?: IntersectionObserverInit
 ): void => {
-  const instance = getObserver(options);
+  if (!element || typeof window === 'undefined') return;
   
-  if (!instance.elements.has(element)) {
-    instance.elements.set(element, []);
-    instance.observer.observe(element);
-  }
-  
-  const callbacks = instance.elements.get(element)!;
-  callbacks.push(callback);
-};
-
-// Unobserve an element
-export const unobserve = (
-  element: Element,
-  callback?: ObserverCallback,
-  options: IntersectionObserverInit = defaultOptions
-): void => {
   const key = getOptionsKey(options);
-  const instance = observers.get(key);
   
-  if (!instance) return;
-  
-  if (callback) {
-    // Remove specific callback
-    const callbacks = instance.elements.get(element);
-    if (callbacks) {
-      const index = callbacks.indexOf(callback);
-      if (index !== -1) {
-        callbacks.splice(index, 1);
-      }
-      
-      // If no more callbacks, remove the element entirely
-      if (callbacks.length === 0) {
-        instance.elements.delete(element);
-        instance.observer.unobserve(element);
-      }
-    }
-  } else {
-    // Remove all callbacks for this element
-    instance.elements.delete(element);
-    instance.observer.unobserve(element);
+  if (!observers[key]) {
+    observers[key] = {
+      observer: new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          // Call the specific callback for this element
+          const elementCallback = observers[key].elements.get(entry.target);
+          if (elementCallback) {
+            elementCallback(entry);
+          }
+        });
+      }, options),
+      elements: new Map()
+    };
   }
+  
+  // Store the callback for this element
+  observers[key].elements.set(element, callback);
+  
+  // Start observing
+  observers[key].observer.observe(element);
 };
 
-// Clean up all observers
-export const disconnectAll = (): void => {
-  observers.forEach((instance) => {
-    instance.observer.disconnect();
+// Stop observing an element
+export const unobserve = (element: Element, optionsOverride?: IntersectionObserverInit): void => {
+  if (!element || typeof window === 'undefined') return;
+  
+  // If options are provided, only unobserve from that specific observer
+  if (optionsOverride) {
+    const key = getOptionsKey(optionsOverride);
+    if (observers[key]) {
+      observers[key].observer.unobserve(element);
+      observers[key].elements.delete(element);
+    }
+    return;
+  }
+  
+  // Otherwise, unobserve from all observers
+  Object.keys(observers).forEach(key => {
+    if (observers[key].elements.has(element)) {
+      observers[key].observer.unobserve(element);
+      observers[key].elements.delete(element);
+    }
   });
-  observers.clear();
+};
+
+// Clean up all observers (useful for page transitions)
+export const disconnectAll = (): void => {
+  Object.keys(observers).forEach(key => {
+    observers[key].observer.disconnect();
+    observers[key].elements.clear();
+  });
 };

@@ -1,43 +1,34 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import NicheForm from "./NicheForm";
-import { useNicheForm } from "./hooks/useNicheForm";
-import { useNichesList } from "./hooks/useNichesList";
-import { useNicheOperations } from "./hooks/useNicheOperations";
 import AddNicheForm from "./components/AddNicheForm";
 import NichesList from "./components/NichesList";
+import { NicheProvider, useNicheContext } from "./context/NicheContext";
 
-const ManageNiches = () => {
-  const [activeTab, setActiveTab] = useState("list");
-  
-  // Use React Query for data fetching with caching
-  const { 
-    data: nichesData,
-    isLoading,
-    refetch
-  } = useNichesList();
-  
-  const {
-    isDeleting,
-    handleDeleteNiche
-  } = useNicheOperations(refetch);
+// Component that consumes the context
+const NicheManager = () => {
+  const [activeTab, setActiveTab] = React.useState("list");
   
   const {
     isEditing,
     formData,
     submitting,
     uploading,
+    nichesData,
+    isLoading,
     handleInputChange,
     handleRichTextChange,
     setEditingNiche,
     cancelEditing,
     saveNicheDetails,
     handleImageUpload,
-    handleDeleteImage
-  } = useNicheForm();
+    handleDeleteImage,
+    handleDeleteNiche,
+    refetchNiches
+  } = useNicheContext();
 
-  const handleEditNiche = (niche: string) => {
+  const handleEditNiche = React.useCallback((niche: string) => {
     const details = nichesData?.nicheDetails[niche] || { 
       name: niche, 
       description: null, 
@@ -51,22 +42,21 @@ const ManageNiches = () => {
       details.image_url
     );
     setActiveTab("edit");
-  };
+  }, [nichesData, setEditingNiche]);
   
-  const handleCancelEdit = () => {
+  const handleCancelEdit = React.useCallback(() => {
     cancelEditing();
     setActiveTab("list");
-  };
+  }, [cancelEditing]);
   
-  const handleSaveNicheDetails = async () => {
+  const handleSaveNicheDetails = React.useCallback(async () => {
     try {
       await saveNicheDetails();
-      await refetch();
       setActiveTab("list");
     } catch (error) {
       console.error("Error saving niche details:", error);
     }
-  };
+  }, [saveNicheDetails]);
 
   return (
     <div className="space-y-6">
@@ -80,17 +70,16 @@ const ManageNiches = () => {
         
         <TabsContent value="list">
           <AddNicheForm 
-            niches={nichesData?.niches || []} 
-            onNicheAdded={async () => { await refetch(); }}
+            onNicheAdded={refetchNiches}
+            niches={nichesData?.niches || []}
           />
 
           <NichesList
             isLoading={isLoading}
             nichesData={nichesData}
-            onRefresh={async () => { await refetch(); }}
+            onRefresh={refetchNiches}
             onEdit={handleEditNiche}
             onDelete={handleDeleteNiche}
-            isDeleting={isDeleting}
           />
         </TabsContent>
         
@@ -112,6 +101,15 @@ const ManageNiches = () => {
         </TabsContent>
       </Tabs>
     </div>
+  );
+};
+
+// Wrapper component that provides the context
+const ManageNiches = () => {
+  return (
+    <NicheProvider>
+      <NicheManager />
+    </NicheProvider>
   );
 };
 
