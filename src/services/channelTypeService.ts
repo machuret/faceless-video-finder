@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { channelTypes as localChannelTypes } from "@/components/youtube/channel-list/constants";
@@ -13,22 +14,46 @@ export interface ChannelTypeInfo {
 
 export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
   try {
-    const { data, error } = await supabase
-      .from('channel_types')
-      .select('*')
-      .order('label');
-    
-    if (error) {
-      console.error('Error fetching channel types:', error);
-      // Return local types as fallback
-      return localChannelTypes as ChannelTypeInfo[];
+    // First try to get from database with error handling
+    try {
+      const { data, error } = await supabase
+        .from('channel_types')
+        .select('*')
+        .order('label');
+      
+      if (error) {
+        console.error('Database error fetching channel types:', error);
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        return data;
+      }
+    } catch (dbError) {
+      console.warn('Falling back to local channel types due to database error:', dbError);
     }
     
-    return data || [];
+    // Return local types as fallback
+    console.info('Using local channel types fallback');
+    return localChannelTypes.map(type => ({
+      id: type.id,
+      label: type.label,
+      description: type.description,
+      production: type.production,
+      example: type.example,
+      image_url: null
+    }));
   } catch (err) {
     console.error('Exception fetching channel types:', err);
     // Return local types as fallback
-    return localChannelTypes as ChannelTypeInfo[];
+    return localChannelTypes.map(type => ({
+      id: type.id,
+      label: type.label,
+      description: type.description,
+      production: type.production,
+      example: type.example,
+      image_url: null
+    }));
   }
 };
 
