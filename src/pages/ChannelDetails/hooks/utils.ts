@@ -1,10 +1,21 @@
 
 /**
  * Extract ID from a channel slug in the format "title-UC12345"
+ * or "title-f391996b-581e-4dc7-aa22-8778d263a1e4"
  */
 export const extractIdFromSlug = (slug: string) => {
   if (!slug) return null;
   
+  // Check if the slug contains a UUID pattern
+  const uuidPattern = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i;
+  const uuidMatch = slug.match(uuidPattern);
+  
+  if (uuidMatch && uuidMatch[0]) {
+    // If we found a UUID pattern, return it
+    return uuidMatch[0];
+  }
+  
+  // Fallback to the old method of using the last part after the dash
   const parts = slug.split('-');
   if (parts.length === 0) return null;
   

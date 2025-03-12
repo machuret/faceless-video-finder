@@ -11,6 +11,7 @@ import ChannelVideos from "./components/ChannelVideos";
 import TopPerformingVideos from "./components/TopPerformingVideos";
 import RelatedChannels from "./components/RelatedChannels";
 import { useEffect } from "react";
+import { getChannelSlug } from "@/utils/channelUtils";
 
 const ChannelDetails = () => {
   const { channelId, slug } = useParams();
@@ -28,8 +29,9 @@ const ChannelDetails = () => {
 
   useEffect(() => {
     if (!loading && channel && channelId && !slug) {
-      const channelSlug = generateChannelSlug(channel.channel_title);
-      navigate(`/channel/${channelSlug}-${channel.id}`, { replace: true });
+      // Use the consistent getChannelSlug function
+      const channelSlug = getChannelSlug(channel);
+      navigate(`/channel/${channelSlug}`, { replace: true });
     }
   }, [loading, channel, channelId, slug, navigate]);
 
@@ -48,6 +50,24 @@ const ChannelDetails = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainNavbar />
+        <div className="container mx-auto px-4 py-16">
+          <div className="bg-white p-8 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Error Loading Channel</h2>
+            <p className="text-gray-600 mb-4">We encountered an error while loading this channel.</p>
+            <p className="text-red-500 font-mono text-sm p-4 bg-red-50 rounded">
+              {error}
+            </p>
+          </div>
+        </div>
+        <PageFooter />
+      </div>
+    );
+  }
+
   if (!channel) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -56,6 +76,9 @@ const ChannelDetails = () => {
           <div className="bg-white p-8 rounded-lg shadow-md">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Channel not found</h2>
             <p className="text-gray-600">The channel you're looking for doesn't exist or has been removed.</p>
+            <p className="text-gray-500 mt-4 text-sm">
+              Requested: {slug || channelId}
+            </p>
           </div>
         </div>
         <PageFooter />
@@ -103,13 +126,7 @@ const ChannelDetails = () => {
   );
 };
 
-export const generateChannelSlug = (title: string): string => {
-  return title
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-')     // Replace spaces with hyphens
-    .replace(/-+/g, '-')      // Remove consecutive hyphens
-    .trim();                  // Trim leading/trailing spaces
-};
+// Using the utility function for consistency
+export { getChannelSlug } from "@/utils/channelUtils";
 
 export default ChannelDetails;

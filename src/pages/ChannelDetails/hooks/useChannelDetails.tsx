@@ -35,10 +35,14 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
       
       if (channelId) {
         // Direct ID lookup
+        console.log(`Using direct channelId: ${channelId}`);
         idToLoad = channelId;
       } else if (slug) {
         // Extract ID from slug (format: title-id)
+        console.log(`Extracting ID from slug: ${slug}`);
         idToLoad = extractIdFromSlug(slug);
+        console.log(`Extracted ID: ${idToLoad}`);
+        
         if (!idToLoad && isMounted) {
           setState(prev => ({
             ...prev,
