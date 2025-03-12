@@ -1,49 +1,37 @@
 
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { Channel } from "@/types/youtube";
-import { supabase } from "@/integrations/supabase/client";
 import ChannelCard from "@/components/home/ChannelCard";
 import { Loader2 } from "lucide-react";
-import { getChannelSlug } from "@/utils/channelUtils";
+import { fetchRelatedChannels } from "@/services/channelApi";
 
 interface RelatedChannelsProps {
   currentChannelId: string;
+  niche?: string;
 }
 
-const RelatedChannels = ({ currentChannelId }: RelatedChannelsProps) => {
+const RelatedChannels = ({ currentChannelId, niche }: RelatedChannelsProps) => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchRandomChannels = async () => {
+    const loadRelatedChannels = async () => {
       setLoading(true);
+      setError(null);
       try {
-        // Fetch 9 random channels that are not the current one
-        const { data, error } = await supabase
-          .from("youtube_channels")
-          .select("*")
-          .neq("id", currentChannelId)
-          .order("created_at", { ascending: false })
-          .limit(50); // Fetch more than we need so we can randomize
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          // Shuffle and take first 9
-          const shuffled = [...data].sort(() => 0.5 - Math.random());
-          const randomChannels = shuffled.slice(0, 9);
-          setChannels(randomChannels as Channel[]);
-        }
-      } catch (error) {
-        console.error("Error fetching random channels:", error);
+        const relatedChannels = await fetchRelatedChannels(currentChannelId, niche);
+        setChannels(relatedChannels);
+      } catch (err) {
+        console.error("Error loading related channels:", err);
+        setError("Failed to load related channels");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRandomChannels();
-  }, [currentChannelId]);
+    loadRelatedChannels();
+  }, [currentChannelId, niche]);
 
   if (loading) {
     return (
@@ -51,6 +39,10 @@ const RelatedChannels = ({ currentChannelId }: RelatedChannelsProps) => {
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
+  }
+
+  if (error) {
+    return <div className="text-red-500 py-4">{error}</div>;
   }
 
   if (channels.length === 0) {
