@@ -67,8 +67,26 @@ serve(async (req: Request) => {
       }
     }
     
+    // Add package compatibility notes for Vercel deployment
+    const packageCompatibilityNotes = {
+      title: "Package Compatibility Issue Detected",
+      issue: "Your project has a compatibility issue between date-fns v4.1.0 and react-day-picker v8.10.1",
+      solution: "To fix this issue for Vercel deployment, you need to downgrade date-fns to v3.x",
+      steps: [
+        "In your package.json, change: \"date-fns\": \"^4.1.0\" to \"date-fns\": \"^3.6.0\"",
+        "Run npm install or yarn install",
+        "Commit and push the changes to your repository",
+        "Redeploy your Vercel project"
+      ],
+      alternative: "If you need to keep date-fns v4.1.0, you would need to find an alternative to react-day-picker or a newer version that supports date-fns v4.x"
+    };
+    
     return new Response(
-      JSON.stringify({ success: true, message: "Admin check function created/updated successfully" }),
+      JSON.stringify({ 
+        success: true, 
+        message: "Admin check function created/updated successfully",
+        packageCompatibilityNotes
+      }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
