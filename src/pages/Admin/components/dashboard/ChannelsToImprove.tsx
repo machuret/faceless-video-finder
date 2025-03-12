@@ -12,6 +12,7 @@ import { useBulkStatsFetcher } from "@/components/youtube/channel-list/component
 import { useBulkTypeGenerator } from "@/components/youtube/channel-list/components/hooks/useBulkTypeGenerator";
 import { useBulkKeywordsGenerator } from "@/components/youtube/channel-list/components/hooks/useBulkKeywordsGenerator";
 import TopVideosPreview from "../channel-videos/TopVideosPreview";
+import { transformChannelData } from "./utils/channelMetadataUtils";
 
 const ChannelsToImprove = () => {
   const navigate = useNavigate();
@@ -56,11 +57,7 @@ const ChannelsToImprove = () => {
         
         if (data && data.channels && Array.isArray(data.channels)) {
           // Transform the data to make it compatible with Channel type
-          const typedChannels: Channel[] = data.channels.map(channel => ({
-            ...channel,
-            // Ensure metadata is properly typed
-            metadata: channel.metadata || {}
-          }));
+          const typedChannels: Channel[] = transformChannelData(data.channels);
           
           setChannels(typedChannels);
           if (typedChannels.length > 0) {
@@ -85,11 +82,7 @@ const ChannelsToImprove = () => {
       if (error) throw error;
       
       // Transform the data to make it compatible with Channel type
-      const typedChannels: Channel[] = (data || []).map(channel => ({
-        ...channel,
-        // Ensure metadata is properly typed
-        metadata: channel.metadata || {}
-      }));
+      const typedChannels: Channel[] = transformChannelData(data || []);
       
       setChannels(typedChannels);
       if (typedChannels.length > 0) {
@@ -123,11 +116,7 @@ const ChannelsToImprove = () => {
         
         if (data && data.channels && Array.isArray(data.channels)) {
           // Transform the data to make it compatible with Channel type
-          const typedChannels: Channel[] = data.channels.map(channel => ({
-            ...channel,
-            // Ensure metadata is properly typed
-            metadata: channel.metadata || {}
-          }));
+          const typedChannels: Channel[] = transformChannelData(data.channels);
           
           setChannels(typedChannels);
           if (typedChannels.length > 0) {
@@ -152,11 +141,7 @@ const ChannelsToImprove = () => {
       if (error) throw error;
       
       // Transform the data to make it compatible with Channel type
-      const typedChannels: Channel[] = (data || []).map(channel => ({
-        ...channel,
-        // Ensure metadata is properly typed
-        metadata: channel.metadata || {}
-      }));
+      const typedChannels: Channel[] = transformChannelData(data || []);
       
       setChannels(typedChannels);
       if (typedChannels.length > 0) {
@@ -190,11 +175,7 @@ const ChannelsToImprove = () => {
         
         if (data && data.channels && Array.isArray(data.channels)) {
           // Transform the data to make it compatible with Channel type
-          const typedChannels: Channel[] = data.channels.map(channel => ({
-            ...channel,
-            // Ensure metadata is properly typed
-            metadata: channel.metadata || {}
-          }));
+          const typedChannels: Channel[] = transformChannelData(data.channels);
           
           setChannels(typedChannels);
           if (typedChannels.length > 0) {
@@ -219,11 +200,7 @@ const ChannelsToImprove = () => {
       if (error) throw error;
       
       // Transform the data to make it compatible with Channel type
-      const typedChannels: Channel[] = (data || []).map(channel => ({
-        ...channel,
-        // Ensure metadata is properly typed
-        metadata: channel.metadata || {}
-      }));
+      const typedChannels: Channel[] = transformChannelData(data || []);
       
       setChannels(typedChannels);
       if (typedChannels.length > 0) {
@@ -257,11 +234,7 @@ const ChannelsToImprove = () => {
         
         if (data && data.channels && Array.isArray(data.channels)) {
           // Transform the data to make it compatible with Channel type
-          const typedChannels: Channel[] = data.channels.map(channel => ({
-            ...channel,
-            // Ensure metadata is properly typed
-            metadata: channel.metadata || {}
-          }));
+          const typedChannels: Channel[] = transformChannelData(data.channels);
           
           setChannels(typedChannels);
           if (typedChannels.length > 0) {
@@ -286,11 +259,7 @@ const ChannelsToImprove = () => {
       if (error) throw error;
       
       // Transform the data to make it compatible with Channel type
-      const typedChannels: Channel[] = (data || []).map(channel => ({
-        ...channel,
-        // Ensure metadata is properly typed
-        metadata: channel.metadata || {}
-      }));
+      const typedChannels: Channel[] = transformChannelData(data || []);
       
       setChannels(typedChannels);
       if (typedChannels.length > 0) {
@@ -324,11 +293,7 @@ const ChannelsToImprove = () => {
         
         if (data && data.channels && Array.isArray(data.channels)) {
           // Transform the data to make it compatible with Channel type
-          const typedChannels: Channel[] = data.channels.map(channel => ({
-            ...channel,
-            // Ensure metadata is properly typed
-            metadata: channel.metadata || {}
-          }));
+          const typedChannels: Channel[] = transformChannelData(data.channels);
           
           setChannels(typedChannels);
           if (typedChannels.length > 0) {
@@ -353,11 +318,7 @@ const ChannelsToImprove = () => {
       if (error) throw error;
       
       // Transform the data to make it compatible with Channel type
-      const typedChannels: Channel[] = (data || []).map(channel => ({
-        ...channel,
-        // Ensure metadata is properly typed
-        metadata: channel.metadata || {}
-      }));
+      const typedChannels: Channel[] = transformChannelData(data || []);
       
       setChannels(typedChannels);
       if (typedChannels.length > 0) {

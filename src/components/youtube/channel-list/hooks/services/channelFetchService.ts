@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Channel } from "@/types/youtube";
+import { transformChannelData } from "@/pages/Admin/components/dashboard/utils/channelMetadataUtils";
 
 /**
  * Fetches channels with pagination
@@ -53,7 +54,7 @@ export const fetchChannelData = async (offset: number = 0, limit: number = 10): 
   const finalOffset = offset;
   
   // First try direct query
-  let channelData: Channel[] = [];
+  let channelData: any[] = [];
   let directQuerySucceeded = false;
   
   try {
@@ -66,7 +67,7 @@ export const fetchChannelData = async (offset: number = 0, limit: number = 10): 
     if (error) {
       console.error("Supabase direct query error:", error);
     } else if (data && data.length > 0) {
-      channelData = data as Channel[];
+      channelData = data;
       directQuerySucceeded = true;
       console.log(`Fetched ${channelData.length} channels from direct Supabase query`);
     }
@@ -89,7 +90,7 @@ export const fetchChannelData = async (offset: number = 0, limit: number = 10): 
       }
       
       if (edgeData?.channels && Array.isArray(edgeData.channels)) {
-        channelData = edgeData.channels as Channel[];
+        channelData = edgeData.channels;
         console.log(`Fetched ${channelData.length} channels from edge function`);
         
         // Update count if it seems more accurate
@@ -107,11 +108,8 @@ export const fetchChannelData = async (offset: number = 0, limit: number = 10): 
     console.log("No channels found in database");
   }
   
-  // Map the metadata to ensure proper typing
-  const typedChannels: Channel[] = channelData.map(channel => ({
-    ...channel,
-    metadata: channel.metadata as Channel['metadata']
-  }));
+  // Transform the channel data to ensure proper typing of metadata
+  const typedChannels: Channel[] = transformChannelData(channelData);
   
   return {
     channels: typedChannels,

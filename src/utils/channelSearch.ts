@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Channel, ChannelMetadata } from "@/types/youtube";
+import { transformChannelData } from "@/pages/Admin/components/dashboard/utils/channelMetadataUtils";
 
 export const searchChannel = async (channelInput: string): Promise<Channel[]> => {
   if (!channelInput || !channelInput.trim()) {
@@ -91,42 +91,9 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
       return [];
     }
     
-    // Convert the data to the correct Channel type
-    const channels: Channel[] = data.map(item => {
-      // Ensure metadata is properly typed
-      let typedMetadata: ChannelMetadata | undefined;
-      if (item.metadata) {
-        try {
-          // If metadata is already an object, use it directly
-          // If it's a string, parse it
-          typedMetadata = typeof item.metadata === 'string' 
-            ? JSON.parse(item.metadata) as ChannelMetadata 
-            : item.metadata as unknown as ChannelMetadata;
-        } catch (e) {
-          console.error("Error parsing metadata:", e);
-          typedMetadata = {}; // Fallback to empty object
-        }
-      } else {
-        typedMetadata = {};
-      }
-      
-      return {
-        ...item,
-        metadata: typedMetadata,
-        // Ensure numeric fields are numbers
-        total_subscribers: typeof item.total_subscribers === 'string' 
-          ? parseInt(item.total_subscribers) 
-          : item.total_subscribers || 0,
-        total_views: typeof item.total_views === 'string' 
-          ? parseInt(item.total_views) 
-          : item.total_views || 0,
-        video_count: typeof item.video_count === 'string' 
-          ? parseInt(item.video_count) 
-          : item.video_count || 0,
-      } as Channel;
-    });
+    // Use the utility function to transform the data to the correct Channel type
+    return transformChannelData(data);
     
-    return channels;
   } catch (err) {
     console.error("Search execution error:", err);
     throw err;
