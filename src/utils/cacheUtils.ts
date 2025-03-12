@@ -101,3 +101,95 @@ export function invalidateCache(key: string): void {
     console.warn('Failed to invalidate cache:', error);
   }
 }
+
+/**
+ * Check if cache exists and is valid (not expired)
+ */
+export function hasCacheValid(key: string, options: { version?: string } = {}): boolean {
+  try {
+    return getCache(key, options) !== null;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Get cache expiry time in milliseconds from now
+ * Returns negative value if cache is expired or does not exist
+ */
+export function getCacheTimeRemaining(key: string): number {
+  try {
+    const cacheKey = `${CACHE_PREFIX}${key}`;
+    const cachedItem = localStorage.getItem(cacheKey);
+    
+    if (!cachedItem) return -1;
+    
+    const parsedItem = JSON.parse(cachedItem) as CacheItem<any>;
+    const now = new Date().getTime();
+    
+    return parsedItem.expiry - now;
+  } catch (error) {
+    return -1;
+  }
+}
+
+/**
+ * Extend expiry time of existing cache
+ */
+export function extendCacheExpiry(key: string, additionalTime: number): boolean {
+  try {
+    const cacheKey = `${CACHE_PREFIX}${key}`;
+    const cachedItem = localStorage.getItem(cacheKey);
+    
+    if (!cachedItem) return false;
+    
+    const parsedItem = JSON.parse(cachedItem) as CacheItem<any>;
+    const now = new Date().getTime();
+    
+    // Don't extend if already expired
+    if (parsedItem.expiry < now) return false;
+    
+    // Extend expiry
+    parsedItem.expiry += additionalTime;
+    localStorage.setItem(cacheKey, JSON.stringify(parsedItem));
+    
+    return true;
+  } catch (error) {
+    console.warn('Failed to extend cache expiry:', error);
+    return false;
+  }
+}
+
+/**
+ * Update part of cached data without changing expiry
+ * Useful for merging new data with existing cached data
+ */
+export function updateCacheData<T>(
+  key: string,
+  updateFn: (oldData: T) => T
+): boolean {
+  try {
+    const cacheKey = `${CACHE_PREFIX}${key}`;
+    const cachedItem = localStorage.getItem(cacheKey);
+    
+    if (!cachedItem) return false;
+    
+    const parsedItem = JSON.parse(cachedItem) as CacheItem<T>;
+    const now = new Date().getTime();
+    
+    // Don't update if expired
+    if (parsedItem.expiry < now) {
+      localStorage.removeItem(cacheKey);
+      return false;
+    }
+    
+    // Update data using provided function
+    parsedItem.data = updateFn(parsedItem.data);
+    localStorage.setItem(cacheKey, JSON.stringify(parsedItem));
+    
+    return true;
+  } catch (error) {
+    console.warn('Failed to update cache data:', error);
+    return false;
+  }
+}
