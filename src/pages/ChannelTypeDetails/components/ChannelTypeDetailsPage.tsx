@@ -1,5 +1,6 @@
 
-import React, { useParams } from "react-router-dom";
+import React from "react";
+import { useParams } from "react-router-dom";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Channel, ChannelMetadata } from "@/types/youtube";
