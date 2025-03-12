@@ -29,12 +29,27 @@ const fetchChannelTypes = async (): Promise<ChannelTypeData[]> => {
   try {
     console.log("Fetching channel types...");
     
+    // Try using the edge function first for better reliability
+    try {
+      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-types');
+      
+      if (!edgeError && edgeData?.channelTypes && Array.isArray(edgeData.channelTypes) && edgeData.channelTypes.length > 0) {
+        console.log(`Fetched ${edgeData.channelTypes.length} channel types via edge function`);
+        return edgeData.channelTypes;
+      }
+    } catch (edgeCallError) {
+      console.warn("Edge function fallback failed:", edgeCallError);
+      // Continue to direct DB query
+    }
+    
+    // Direct database query as fallback
     const { data, error } = await supabase
       .from('channel_types')
       .select('*')
       .order('label');
       
     if (error) {
+      console.error("Database query error:", error);
       throw error;
     }
     

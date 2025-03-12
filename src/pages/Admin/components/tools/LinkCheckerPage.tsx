@@ -114,15 +114,34 @@ const LinkCheckerPage: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Site-wide Link Check</CardTitle>
                   <CardDescription>
-                    Comprehensive scan of the entire site (Coming Soon)
+                    Comprehensive scan of the entire site
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="p-12 text-center">
-                    <p className="text-gray-500 mb-4">This feature is coming soon.</p>
-                    <p className="text-sm">
-                      The site-wide link checker will crawl all pages of the site and generate a comprehensive report.
+                  <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6">
+                    <p className="text-amber-700 mb-2 font-medium">Coming Soon: Full Site Scanner</p>
+                    <p className="text-sm text-amber-600">
+                      The comprehensive site-wide link checker is currently in development and will be available soon.
+                      Until then, you can use the Current Page checker on individual pages.
                     </p>
+                  </div>
+                  
+                  <div className="rounded-lg border border-dashed p-6 text-center bg-gray-50">
+                    <h3 className="text-lg font-medium mb-2">Manual Site Scan</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      To check your entire site, start with the current page and then check these important pages:
+                    </p>
+                    <div className="space-y-2 text-left max-w-md mx-auto">
+                      <Button variant="outline" className="w-full justify-start" onClick={() => window.open('/', '_blank')}>
+                        Homepage
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start" onClick={() => window.open('/admin/dashboard', '_blank')}>
+                        Admin Dashboard
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start" onClick={() => window.open('/channel-types', '_blank')}>
+                        Channel Types
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

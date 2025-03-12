@@ -23,19 +23,47 @@ export function useBulkKeywordsGenerator() {
       setCurrentChannel(channel.title);
       
       // Get channel description and category for better keyword generation
-      const { data: channelData, error: channelError } = await supabase
-        .from('youtube_channels')
-        .select('description, channel_category')
-        .eq('id', channel.id)
-        .single();
+      let description = "";
+      let category = "";
       
-      if (channelError) {
-        console.error(`Error fetching description for ${channel.title}:`, channelError);
-        return false;
+      try {
+        // First try using the edge function for better reliability
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-data', {
+          body: { channelId: channel.id }
+        });
+        
+        if (edgeError) {
+          console.warn(`Edge function error for ${channel.title}:`, edgeError);
+        } else if (edgeData?.channel) {
+          description = edgeData.channel.description || "";
+          category = edgeData.channel.channel_category || "";
+          console.log(`Got channel data from edge function for ${channel.title}`);
+        }
+      } catch (edgeFetchError) {
+        console.warn(`Edge function fetch failed for ${channel.title}:`, edgeFetchError);
       }
       
-      const description = channelData?.description || "";
-      const category = channelData?.channel_category || "";
+      // Fallback to direct query if edge function didn't work
+      if (!description || !category) {
+        try {
+          const { data: channelData, error: channelError } = await supabase
+            .from('youtube_channels')
+            .select('description, channel_category')
+            .eq('id', channel.id)
+            .single();
+          
+          if (channelError) {
+            console.error(`Error fetching description for ${channel.title}:`, channelError);
+            // Continue with empty values rather than failing completely
+          } else if (channelData) {
+            description = channelData.description || "";
+            category = channelData.channel_category || "";
+          }
+        } catch (dbError) {
+          console.error(`Database error for ${channel.title}:`, dbError);
+          // Continue with empty values rather than failing completely
+        }
+      }
       
       console.log(`Calling generate-channel-keywords for ${channel.title} with:`, {
         title: channel.title, 
@@ -147,13 +175,14 @@ export function useBulkKeywordsGenerator() {
         }
       }
 
-      const successfulCount = channels.length - errorCount;
+      const successfulCount = successCount;
+      const failedCount = errorCount;
       
       if (successfulCount === channels.length) {
         toast.success(`Successfully generated keywords for all ${channels.length} channels!`);
       } else if (successfulCount > 0) {
         toast.warning(
-          `Keywords generation completed: ${successfulCount} successful, ${errorCount} failed.`
+          `Keywords generation completed: ${successfulCount} successful, ${failedCount} failed.`
         );
       } else {
         toast.error(
