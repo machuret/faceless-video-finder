@@ -58,7 +58,7 @@ const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => 
               priority={isPriority}
               width={640}
               height={360}
-              fetchpriority={isPriority ? "high" : "auto"} // Fixed attribute name
+              fetchPriority={isPriority ? "high" : "auto"} // Fixed attribute name
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-gray-100">

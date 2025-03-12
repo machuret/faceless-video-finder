@@ -8,8 +8,12 @@ interface OptimizedImageProps {
   width?: number;
   height?: number;
   priority?: boolean;
-  fetchpriority?: 'high' | 'low' | 'auto'; // Using lowercase for HTML attribute
+  fetchPriority?: 'high' | 'low' | 'auto'; // Changed to uppercase P for fetchPriority
   loading?: 'eager' | 'lazy';
+  onLoad?: () => void;
+  onError?: () => void;
+  placeholder?: 'blur' | 'empty';
+  blurDataURL?: string;
 }
 
 const OptimizedImage: React.FC<OptimizedImageProps> = ({
@@ -19,15 +23,31 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   width,
   height,
   priority = false,
-  fetchpriority = 'auto',
-  loading = 'lazy'
+  fetchPriority = 'auto',
+  loading = 'lazy',
+  onLoad,
+  onError,
+  placeholder,
+  blurDataURL
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
 
   // Determine correct loading strategy
   const actualLoading = priority ? 'eager' : loading;
-  const actualFetchPriority = priority ? 'high' : fetchpriority;
+  const actualFetchPriority = priority ? 'high' : fetchPriority;
+
+  // Handle load event
+  const handleLoad = () => {
+    setIsLoaded(true);
+    if (onLoad) onLoad();
+  };
+
+  // Handle error event
+  const handleError = () => {
+    setError(true);
+    if (onError) onError();
+  };
 
   // If there's an error, show a placeholder
   if (error) {
@@ -49,10 +69,10 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
         width={width}
         height={height}
         loading={actualLoading}
-        fetchpriority={actualFetchPriority}
+        fetchPriority={actualFetchPriority} // Corrected to fetchPriority
         className={`${className} ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
-        onLoad={() => setIsLoaded(true)}
-        onError={() => setError(true)}
+        onLoad={handleLoad}
+        onError={handleError}
         style={{
           objectFit: 'cover',
           transition: 'opacity 0.3s ease-in-out',
