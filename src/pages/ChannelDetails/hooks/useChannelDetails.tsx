@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ChannelDetailsState } from "./types";
 import { extractIdFromSlug, extractYouTubeChannelId } from "./utils";
-import { fetchChannelDetails, fetchTopPerformingVideos } from "./api";
+import { fetchChannelDetails, fetchTopPerformingVideos } from "@/services/channelApi";
 
 export const useChannelDetails = (channelId?: string, slug?: string) => {
   const [state, setState] = useState<ChannelDetailsState>({

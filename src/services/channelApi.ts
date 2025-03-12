@@ -1,7 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Channel, TopVideo } from "./types";
+import { Channel, TopVideo } from "@/pages/ChannelDetails/hooks/types";
 
 /**
  * Fetches a channel's details from Supabase
