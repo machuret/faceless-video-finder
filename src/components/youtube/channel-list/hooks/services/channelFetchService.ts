@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Channel } from "@/types/youtube";
 import { transformChannelData } from "@/pages/Admin/components/dashboard/utils/channelMetadataUtils";
+import { Json } from "@/integrations/supabase/types";
 
 /**
  * Fetches channels with pagination and optimized field selection
@@ -82,19 +83,27 @@ export const fetchChannelData = async (offset: number = 0, limit: number = 10): 
     if (edgeError) {
       console.error("Edge function error:", edgeError);
     } else if (edgeData?.channels && Array.isArray(edgeData.channels)) {
-      // Transform the channel data to ensure proper typing of metadata
-      const typedChannels = transformChannelData(edgeData.channels);
-      console.log(`Fetched ${typedChannels.length} channels from edge function`);
+      // Validate the data returned to ensure it's not an error array
+      const isValidData = edgeData.channels.length === 0 || 
+        (edgeData.channels[0] && 'id' in edgeData.channels[0]);
       
-      // Update count if it seems more accurate
-      if (edgeData.totalCount && edgeData.totalCount > count) {
-        count = edgeData.totalCount;
+      if (isValidData) {
+        // Transform the channel data to ensure proper typing of metadata
+        const typedChannels = transformChannelData(edgeData.channels as { metadata?: Json }[]);
+        console.log(`Fetched ${typedChannels.length} channels from edge function`);
+        
+        // Update count if it seems more accurate
+        if (edgeData.totalCount && edgeData.totalCount > count) {
+          count = edgeData.totalCount;
+        }
+        
+        return {
+          channels: typedChannels,
+          totalCount: count
+        };
+      } else {
+        console.warn("Edge function returned invalid data format:", edgeData.channels);
       }
-      
-      return {
-        channels: typedChannels,
-        totalCount: count
-      };
     }
   } catch (edgeErr) {
     console.error("Error in edge function call:", edgeErr);
@@ -122,7 +131,7 @@ export const fetchChannelData = async (offset: number = 0, limit: number = 10): 
     }
     
     // Transform the channel data to ensure proper typing of metadata
-    const typedChannels = transformChannelData(data);
+    const typedChannels = transformChannelData(data as { metadata?: Json }[]);
     console.log(`Fetched ${typedChannels.length} channels from direct Supabase query`);
     
     return {

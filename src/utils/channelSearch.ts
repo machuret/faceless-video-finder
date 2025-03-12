@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Channel, ChannelMetadata } from "@/types/youtube";
 import { transformChannelData } from "@/pages/Admin/components/dashboard/utils/channelMetadataUtils";
+import { Json } from "@/integrations/supabase/types";
 
 export const searchChannel = async (channelInput: string): Promise<Channel[]> => {
   if (!channelInput || !channelInput.trim()) {
@@ -109,8 +110,16 @@ export const searchChannel = async (channelInput: string): Promise<Channel[]> =>
       return [];
     }
     
+    // Validate that the data has the expected shape before transformation
+    const hasValidStructure = data.length === 0 || (data[0] && 'id' in data[0]);
+    
+    if (!hasValidStructure) {
+      console.warn("Data returned from query does not have expected structure");
+      return [];
+    }
+    
     // Use the utility function to transform the data to the correct Channel type
-    return transformChannelData(data);
+    return transformChannelData(data as { metadata?: Json }[]);
     
   } catch (err) {
     console.error("Search execution error:", err);

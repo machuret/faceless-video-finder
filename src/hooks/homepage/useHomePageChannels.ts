@@ -2,6 +2,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Channel } from '@/types/youtube';
+import { Json } from '@/integrations/supabase/types';
+import { transformChannelData } from '@/pages/Admin/components/dashboard/utils/channelMetadataUtils';
 
 /**
  * Hook to fetch the main channels for the homepage with optimized field selection
@@ -68,14 +70,22 @@ export function useHomePageChannels(page: number, channelsPerPage: number) {
             console.error("Direct query also failed:", directError);
             // Return empty data instead of throwing
             return { 
-              channels: [],
+              channels: [] as Channel[],
               totalCount: 0
             };
           }
           
           console.log(`Successfully fetched ${directData?.length || 0} channels directly from Supabase`);
+          
+          if (!directData || !Array.isArray(directData)) {
+            return {
+              channels: [] as Channel[],
+              totalCount: count || 0 
+            };
+          }
+          
           return { 
-            channels: directData as Channel[] || [],
+            channels: transformChannelData(directData as { metadata?: Json }[]),
             totalCount: count || 0
           };
         }
@@ -83,7 +93,19 @@ export function useHomePageChannels(page: number, channelsPerPage: number) {
         if (!edgeData?.channels || !Array.isArray(edgeData.channels)) {
           console.error("Edge function returned invalid data:", edgeData);
           return { 
-            channels: [],
+            channels: [] as Channel[],
+            totalCount: totalCount || 0
+          };
+        }
+        
+        // Validate the returned data has the expected structure
+        const isValidData = edgeData.channels.length === 0 || 
+          (edgeData.channels[0] && 'id' in edgeData.channels[0]);
+          
+        if (!isValidData) {
+          console.warn("Edge function returned invalid channel data format");
+          return { 
+            channels: [] as Channel[],
             totalCount: totalCount || 0
           };
         }
@@ -91,14 +113,14 @@ export function useHomePageChannels(page: number, channelsPerPage: number) {
         console.log(`Successfully fetched ${edgeData.channels.length} channels using edge function`);
         
         return { 
-          channels: edgeData.channels as Channel[],
+          channels: transformChannelData(edgeData.channels as { metadata?: Json }[]),
           totalCount: edgeData.totalCount || totalCount
         };
       } catch (err: any) {
         console.error('Error fetching homepage channels:', err);
         // Return empty data instead of throwing
         return { 
-          channels: [],
+          channels: [] as Channel[],
           totalCount: 0
         };
       }
