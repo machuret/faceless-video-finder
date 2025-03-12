@@ -3,8 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Channel } from "@/types/youtube";
 import ChannelCard from "./ChannelCard";
 import { OptimizedList } from "@/components/ui/optimized-list";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 
 interface ChannelsOfTypeProps {
   loading: boolean;
@@ -66,6 +68,9 @@ const ChannelsOfType = ({
     };
   }, [hasMoreChannels, loading, loadMoreChannels]);
 
+  // Memoize channels to prevent unnecessary re-renders
+  const memoizedChannels = useMemo(() => channels, [channels]);
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -78,11 +83,11 @@ const ChannelsOfType = ({
       </div>
       
       {loading && channels.length === 0 ? (
-        <div className="text-center py-8 font-lato">Loading channels...</div>
+        <ChannelsSkeletonLoader />
       ) : channels.length > 0 ? (
         <div className="mb-8">
           <OptimizedList
-            items={channels}
+            items={memoizedChannels}
             keyExtractor={(channel) => channel.id}
             itemHeight={itemHeight}
             containerClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -107,7 +112,14 @@ const ChannelsOfType = ({
                 onClick={loadMoreChannels}
                 disabled={loading}
               >
-                {loading ? "Loading..." : "Load more channels"}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load more channels"
+                )}
               </Button>
             </div>
           )}
@@ -118,6 +130,28 @@ const ChannelsOfType = ({
         </Card>
       )}
     </>
+  );
+};
+
+// Skeleton loader for channels
+const ChannelsSkeletonLoader = () => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <Card key={index} className="overflow-hidden">
+          <Skeleton className="w-full h-40" />
+          <div className="p-4">
+            <Skeleton className="h-6 w-3/4 mb-3" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-1/2 mb-4" />
+            <div className="flex justify-between mt-4">
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-6 w-16" />
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
   );
 };
 

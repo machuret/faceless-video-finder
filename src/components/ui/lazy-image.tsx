@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from './skeleton';
 
 export interface LazyImageProps {
   src: string;
@@ -118,8 +119,8 @@ const LazyImage = ({
       
       {/* Loading skeleton */}
       {!isLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-transparent animate-pulse">
-          <div className="w-6 h-6 border-t-2 border-b-2 border-primary rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+          <Skeleton className="w-full h-full opacity-50" />
         </div>
       )}
       
@@ -137,7 +138,8 @@ const LazyImage = ({
           loading={priority ? "eager" : "lazy"}
           width={width}
           height={height}
-          fetchPriority={priority ? "high" : "auto"}
+          // Fix fetchPriority attribute error by using proper lowercase attribute
+          fetchpriority={priority ? "high" : "auto"}
         />
       )}
     </div>
