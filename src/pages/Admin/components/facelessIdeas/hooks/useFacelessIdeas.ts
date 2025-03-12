@@ -1,4 +1,5 @@
 
+import { useCallback, useMemo } from "react";
 import { FacelessIdeaInfo } from "@/services/facelessIdeas";
 import { useDataFetching } from "./useDataFetching";
 import { useTabState } from "./useTabState";
@@ -9,15 +10,17 @@ import { useCsvImport } from "./useCsvImport";
 import useIdeaSelection from "./useIdeaSelection";
 
 export const useFacelessIdeas = () => {
-  const initialFormState: FacelessIdeaInfo = {
+  // Memoize initial form state to prevent recreating on each render
+  const initialFormState = useMemo(() => ({
     id: "",
     label: "",
     description: null,
     production: null,
     example: null,
     image_url: null
-  };
+  }), []);
 
+  // Data fetching hook
   const { 
     facelessIdeas, 
     setFacelessIdeas, 
@@ -26,8 +29,10 @@ export const useFacelessIdeas = () => {
     loadFacelessIdeas 
   } = useDataFetching();
   
+  // Tab state hook
   const { activeTab, setActiveTab } = useTabState();
   
+  // Form state and handlers
   const {
     formData,
     setFormData,
@@ -46,11 +51,13 @@ export const useFacelessIdeas = () => {
     initialFormState
   });
   
+  // Deletion operations
   const { handleDelete, handleDeleteMultiple } = useIdeaDeletion(
     setFacelessIdeas, 
     setLoading
   );
   
+  // Enhancement operations
   const { handleEnhanceDescription, handleEnhanceMultiple } = useIdeaEnhancement(
     facelessIdeas, 
     setFacelessIdeas, 
@@ -58,21 +65,23 @@ export const useFacelessIdeas = () => {
     setFormData
   );
   
+  // CSV import
   const { handleCsvUpload } = useCsvImport(loadFacelessIdeas);
   
-  // Create utility functions to handle selection and new idea creation
-  const handleSelectIdea = async (id: string) => {
+  // Memoize selection and creation handlers to prevent unnecessary recreations
+  const handleSelectIdea = useCallback(async (id: string) => {
     const selectedIdea = await useIdeaSelection().selectIdea(id);
     if (selectedIdea) {
       selectIdea(selectedIdea);
     }
-  };
+  }, [selectIdea]);
   
-  const handleCreateNew = () => {
+  const handleCreateNew = useCallback(() => {
     useIdeaSelection().clearSelection();
     createNewIdea();
-  };
+  }, [createNewIdea]);
   
+  // Return memoized API to prevent unnecessary re-renders in consuming components
   return {
     facelessIdeas,
     loading,

@@ -1,17 +1,44 @@
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useMemo } from "react";
 import { Channel } from "@/types/youtube";
 
 export type BulkOperationType = 'stats' | 'type' | 'keywords' | 'screenshot' | null;
 
-interface BulkOperationsContextType {
+// Progress state interface
+interface OperationProgress {
+  progress: number;
+  currentChannel: string | null;
+  successCount: number;
+  errorCount: number;
+  totalCount: number;
+}
+
+// State shape
+interface BulkOperationsState {
   currentOperation: BulkOperationType;
-  setCurrentOperation: (type: BulkOperationType) => void;
   showBulkDialog: boolean;
+  operationProgress: {
+    stats: OperationProgress;
+    type: OperationProgress;
+    keywords: OperationProgress;
+    screenshot: OperationProgress;
+  };
+}
+
+// Context value type
+interface BulkOperationsContextType {
+  // Main state access selectors
+  currentOperation: BulkOperationType;
+  showBulkDialog: boolean;
+  isAnyProcessing: boolean;
+  
+  // Action methods
+  setCurrentOperation: (type: BulkOperationType) => void;
   setShowBulkDialog: (show: boolean) => void;
   handleBulkDialogDone: () => void;
   closeBulkDialog: () => void;
-  isAnyProcessing: boolean;
+  
+  // Selectors
   getCurrentProgress: () => number;
   getCurrentChannel: () => string | null;
   getSuccessCount: () => number;
@@ -29,12 +56,22 @@ export const useBulkOperations = () => {
   return context;
 };
 
+// Default progress state
+const defaultProgressState: OperationProgress = {
+  progress: 0,
+  currentChannel: null,
+  successCount: 0,
+  errorCount: 0,
+  totalCount: 0
+};
+
 interface BulkOperationsProviderProps {
   children: React.ReactNode;
   fetchChannels: (offset?: number, pageSize?: number) => void;
   currentPage: number;
   pageSize: number;
   clearSelection: () => void;
+  // Separate props by operation type to avoid excessive re-renders
   isStatsProcessing: boolean;
   isTypeProcessing: boolean;
   isKeywordsProcessing: boolean;
@@ -95,56 +132,70 @@ export const BulkOperationsProvider: React.FC<BulkOperationsProviderProps> = ({
   const [currentOperation, setCurrentOperation] = useState<BulkOperationType>(null);
   const [showBulkDialog, setShowBulkDialog] = useState(false);
 
+  // Derive progress state from props
+  const operationProgress = useMemo(() => ({
+    stats: {
+      progress: statsProgress,
+      currentChannel: statsCurrentChannel,
+      successCount: statsSuccessCount,
+      errorCount: statsErrorCount,
+      totalCount: statsTotalCount
+    },
+    type: {
+      progress: typeProgress,
+      currentChannel: typeCurrentChannel,
+      successCount: typeSuccessCount,
+      errorCount: typeErrorCount,
+      totalCount: typeTotalCount
+    },
+    keywords: {
+      progress: keywordsProgress,
+      currentChannel: keywordsCurrentChannel,
+      successCount: keywordsSuccessCount,
+      errorCount: keywordsErrorCount,
+      totalCount: keywordsTotalCount
+    },
+    screenshot: {
+      progress: screenshotProgress,
+      currentChannel: screenshotCurrentChannel,
+      successCount: screenshotSuccessCount,
+      errorCount: screenshotErrorCount,
+      totalCount: screenshotTotalCount
+    }
+  }), [
+    statsProgress, statsCurrentChannel, statsSuccessCount, statsErrorCount, statsTotalCount,
+    typeProgress, typeCurrentChannel, typeSuccessCount, typeErrorCount, typeTotalCount,
+    keywordsProgress, keywordsCurrentChannel, keywordsSuccessCount, keywordsErrorCount, keywordsTotalCount,
+    screenshotProgress, screenshotCurrentChannel, screenshotSuccessCount, screenshotErrorCount, screenshotTotalCount
+  ]);
+
+  // Compute derived state
   const isAnyProcessing = isStatsProcessing || isTypeProcessing || isKeywordsProcessing || isScreenshotProcessing;
   
+  // Selector methods
   const getCurrentProgress = () => {
-    switch (currentOperation) {
-      case 'stats': return statsProgress;
-      case 'type': return typeProgress;
-      case 'keywords': return keywordsProgress;
-      case 'screenshot': return screenshotProgress;
-      default: return 0;
-    }
+    if (!currentOperation) return 0;
+    return operationProgress[currentOperation].progress;
   };
   
   const getCurrentChannel = () => {
-    switch (currentOperation) {
-      case 'stats': return statsCurrentChannel;
-      case 'type': return typeCurrentChannel;
-      case 'keywords': return keywordsCurrentChannel;
-      case 'screenshot': return screenshotCurrentChannel;
-      default: return null;
-    }
+    if (!currentOperation) return null;
+    return operationProgress[currentOperation].currentChannel;
   };
   
   const getSuccessCount = () => {
-    switch (currentOperation) {
-      case 'stats': return statsSuccessCount;
-      case 'type': return typeSuccessCount;
-      case 'keywords': return keywordsSuccessCount;
-      case 'screenshot': return screenshotSuccessCount;
-      default: return 0;
-    }
+    if (!currentOperation) return 0;
+    return operationProgress[currentOperation].successCount;
   };
   
   const getErrorCount = () => {
-    switch (currentOperation) {
-      case 'stats': return statsErrorCount;
-      case 'type': return typeErrorCount;
-      case 'keywords': return keywordsErrorCount;
-      case 'screenshot': return screenshotErrorCount;
-      default: return 0;
-    }
+    if (!currentOperation) return 0;
+    return operationProgress[currentOperation].errorCount;
   };
   
   const getTotalCount = () => {
-    switch (currentOperation) {
-      case 'stats': return statsTotalCount;
-      case 'type': return typeTotalCount;
-      case 'keywords': return keywordsTotalCount;
-      case 'screenshot': return screenshotTotalCount;
-      default: return 0;
-    }
+    if (!currentOperation) return 0;
+    return operationProgress[currentOperation].totalCount;
   };
 
   const closeBulkDialog = () => {
@@ -161,7 +212,8 @@ export const BulkOperationsProvider: React.FC<BulkOperationsProviderProps> = ({
     fetchChannels((currentPage - 1) * pageSize, pageSize);
   };
 
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     currentOperation,
     setCurrentOperation,
     showBulkDialog,
@@ -174,7 +226,12 @@ export const BulkOperationsProvider: React.FC<BulkOperationsProviderProps> = ({
     getSuccessCount,
     getErrorCount,
     getTotalCount
-  };
+  }), [
+    currentOperation, 
+    showBulkDialog, 
+    isAnyProcessing, 
+    operationProgress
+  ]);
 
   return (
     <BulkOperationsContext.Provider value={value}>

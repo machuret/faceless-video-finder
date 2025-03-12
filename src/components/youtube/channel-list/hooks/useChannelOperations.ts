@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Channel } from "@/types/youtube";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -10,18 +10,19 @@ import {
   toggleFeaturedStatus,
   deleteMultipleChannels
 } from "./services/channelMutationService";
-import { useChannelSelection } from "./useChannelSelection";
 
 export const useChannelOperations = () => {
   const navigate = useNavigate();
+  // Use useRef for values that don't trigger re-renders
+  const selectedChannelsRef = useRef<Record<string, boolean>>({});
+  
+  // Primary state
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
-  
-  // Use the channel selection hook
-  const selection = useChannelSelection(channels);
 
+  // Fetch channels with optimized data handling
   const fetchChannels = useCallback(async (offset: number = 0, limit: number = 10) => {
     try {
       setLoading(true);
@@ -40,6 +41,7 @@ export const useChannelOperations = () => {
     }
   }, []);
 
+  // Channel operations
   const handleEdit = (channelId: string) => {
     navigateToChannelEdit(channelId, navigate);
   };
@@ -54,6 +56,7 @@ export const useChannelOperations = () => {
   const toggleFeatured = async (channelId: string, currentStatus: boolean) => {
     const success = await toggleFeaturedStatus(channelId, currentStatus);
     if (success) {
+      // Update local state to avoid refetching
       setChannels(prev => 
         prev.map(channel => 
           channel.id === channelId 
@@ -64,6 +67,45 @@ export const useChannelOperations = () => {
     }
   };
 
+  // Selection management
+  const isChannelSelected = useCallback((channelId: string): boolean => {
+    return !!selectedChannelsRef.current[channelId];
+  }, []);
+
+  const toggleChannelSelection = useCallback((channelId: string) => {
+    selectedChannelsRef.current = {
+      ...selectedChannelsRef.current,
+      [channelId]: !selectedChannelsRef.current[channelId]
+    };
+    // Force a re-render
+    setChannels(prev => [...prev]);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    selectedChannelsRef.current = {};
+    // Force a re-render
+    setChannels(prev => [...prev]);
+  }, []);
+
+  const selectAllChannels = useCallback(() => {
+    const newSelection: Record<string, boolean> = {};
+    channels.forEach(channel => {
+      newSelection[channel.id] = true;
+    });
+    selectedChannelsRef.current = newSelection;
+    // Force a re-render
+    setChannels(prev => [...prev]);
+  }, [channels]);
+
+  const getSelectedCount = useCallback((): number => {
+    return Object.values(selectedChannelsRef.current).filter(Boolean).length;
+  }, []);
+
+  const getSelectedChannels = useCallback((): Channel[] => {
+    return channels.filter(channel => selectedChannelsRef.current[channel.id]);
+  }, [channels]);
+
+  // Bulk operations
   const handleChannelAction = async (action: string, channelIds: string[], options = {}) => {
     try {
       if (action === 'edit' && channelIds.length === 1) {
@@ -85,17 +127,16 @@ export const useChannelOperations = () => {
     loading,
     error,
     totalCount,
-    selectedChannels: selection.selectedChannels,
     fetchChannels,
     handleEdit,
     handleDelete,
     toggleFeatured,
-    toggleChannelSelection: selection.toggleChannelSelection,
-    clearSelection: selection.clearSelection,
-    selectAllChannels: selection.selectAllChannels,
-    isChannelSelected: selection.isChannelSelected,
-    getSelectedCount: selection.getSelectedCount,
-    getSelectedChannels: selection.getSelectedChannels,
+    toggleChannelSelection,
+    clearSelection,
+    selectAllChannels,
+    isChannelSelected,
+    getSelectedCount,
+    getSelectedChannels,
     handleChannelAction
   };
 }

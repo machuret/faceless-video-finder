@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, createContext, useContext } from "react";
 import AdminHeader from "./components/AdminHeader";
 import DashboardHeader from "./components/dashboard/DashboardHeader";
 import FeaturedChannels from "./components/dashboard/FeaturedChannels";
@@ -15,6 +15,19 @@ import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Database, Layers, BookOpen, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+
+// Create a dashboard context to avoid prop drilling
+interface DashboardContextType {
+  checkForSavedProgress: () => void;
+}
+
+const DashboardContext = createContext<DashboardContextType | null>(null);
+
+export const useDashboard = () => {
+  const context = useContext(DashboardContext);
+  if (!context) throw new Error("useDashboard must be used within DashboardProvider");
+  return context;
+}
 
 // Using memo to prevent unnecessary re-renders
 const AdminLinks = React.memo(() => (
@@ -43,70 +56,78 @@ const AdminLinks = React.memo(() => (
 
 // Main Dashboard component optimized
 const Dashboard = () => {
-  // Check for any in-progress operations on mount, using useEffect for side effects only
+  // Memoize context functions to prevent unnecessary re-renders
+  const dashboardContext = useMemo(() => ({
+    checkForSavedProgress: () => {
+      try {
+        const savedStatsProgress = localStorage.getItem("mass_stats_update_progress");
+        if (savedStatsProgress) {
+          const parsedProgress = JSON.parse(savedStatsProgress);
+          if (parsedProgress.isActive) {
+            toast.info(`You have a paused stats update (${parsedProgress.processedCount}/${parsedProgress.totalCount}). You can resume it in the Mass Stats Updater section.`);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking for saved progress:", error);
+      }
+    }
+  }), []);
+
   useEffect(() => {
     // Only check once on mount
-    try {
-      const savedStatsProgress = localStorage.getItem("mass_stats_update_progress");
-      if (savedStatsProgress) {
-        const parsedProgress = JSON.parse(savedStatsProgress);
-        if (parsedProgress.isActive) {
-          toast.info(`You have a paused stats update (${parsedProgress.processedCount}/${parsedProgress.totalCount}). You can resume it in the Mass Stats Updater section.`);
-        }
-      }
-    } catch (error) {
-      console.error("Error checking for saved progress:", error);
-    }
+    dashboardContext.checkForSavedProgress();
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminHeader title="Admin Dashboard" />
-      
-      <div className="container mx-auto px-4 pt-8 pb-16">
-        <DashboardHeader />
-        <AdminActionCards />
+    <DashboardContext.Provider value={dashboardContext}>
+      <div className="min-h-screen bg-gray-50">
+        <AdminHeader title="Admin Dashboard" />
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2">
-            <FeaturedChannels />
+        <div className="container mx-auto px-4 pt-8 pb-16">
+          <DashboardHeader />
+          <AdminActionCards />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2">
+              <FeaturedChannels />
+            </div>
+            <div className="lg:col-span-1 space-y-6">
+              <AdminLinks />
+            </div>
           </div>
-          <div className="lg:col-span-1 space-y-6">
-            <AdminLinks />
+          
+          {/* Mass updaters grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-1">
+              <MassScreenshotUpdater />
+            </div>
+            <div className="lg:col-span-1">
+              <MassStatsUpdater />
+            </div>
+            <div className="lg:col-span-1">
+              <MassRevenueStatsUpdater />
+            </div>
           </div>
-        </div>
-        
-        {/* Mass updaters grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-1">
-            <MassScreenshotUpdater />
+          
+          <div className="grid grid-cols-1 gap-6 mb-8">
+            <BulkChannelUploader />
           </div>
-          <div className="lg:col-span-1">
-            <MassStatsUpdater />
+          
+          <div className="grid grid-cols-1 gap-6 mb-8">
+            <CsvChannelUploader />
           </div>
-          <div className="lg:col-span-1">
-            <MassRevenueStatsUpdater />
+          
+          <div className="grid grid-cols-1 gap-6 mb-8">
+            <ChannelsToImprove />
           </div>
-        </div>
-        
-        <div className="grid grid-cols-1 gap-6 mb-8">
-          <BulkChannelUploader />
-        </div>
-        
-        <div className="grid grid-cols-1 gap-6 mb-8">
-          <CsvChannelUploader />
-        </div>
-        
-        <div className="grid grid-cols-1 gap-6 mb-8">
-          <ChannelsToImprove />
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-6">All Channels</h2>
-          <ChannelList isAdmin={true} showAll={true} />
+          
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-6">All Channels</h2>
+            <ChannelList isAdmin={true} showAll={true} />
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardContext.Provider>
   );
 };
 
