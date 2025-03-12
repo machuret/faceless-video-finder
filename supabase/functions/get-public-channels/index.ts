@@ -33,7 +33,7 @@ serve(async (req) => {
       missingKeywords = false,
       hasStats = false,
       featured = false,
-      fields = [], // NEW: Support for field selection
+      fields = [], // Support for field selection
     } = requestData;
     
     console.log("Request parameters:", { 
