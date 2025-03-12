@@ -22,13 +22,11 @@ const ChannelsToImprove = () => {
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Initialize bulk operation hooks
   const screenshotGenerator = useBulkScreenshotGenerator();
   const statsFetcher = useBulkStatsFetcher();
   const typeGenerator = useBulkTypeGenerator();
   const keywordsGenerator = useBulkKeywordsGenerator();
 
-  // Extract youtube channel ID if available in channel_url
   const extractYoutubeChannelId = (url: string) => {
     if (!url) return null;
     const channelMatch = url.match(/\/channel\/(UC[\w-]{22})/);
@@ -44,7 +42,6 @@ const ChannelsToImprove = () => {
     setLoading(true);
     setError(null);
     try {
-      // First try edge function approach
       try {
         const { data, error } = await supabase.functions.invoke('get-public-channels', {
           body: {
@@ -53,11 +50,17 @@ const ChannelsToImprove = () => {
           }
         });
         
-        if (error) throw error;
+        if (error) {
+          console.error("Edge function error:", error);
+          throw error;
+        }
+        
+        console.log("Response from get-public-channels:", data);
         
         if (data && data.channels && Array.isArray(data.channels)) {
-          // Transform the data to make it compatible with Channel type
           const typedChannels: Channel[] = transformChannelData(data.channels);
+          
+          console.log("Transformed channels:", typedChannels);
           
           setChannels(typedChannels);
           if (typedChannels.length > 0) {
@@ -71,7 +74,6 @@ const ChannelsToImprove = () => {
         console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
       }
       
-      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
@@ -79,10 +81,16 @@ const ChannelsToImprove = () => {
         .order('created_at', { ascending: false })
         .limit(20);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Direct query error:", error);
+        throw error;
+      }
       
-      // Transform the data to make it compatible with Channel type
+      console.log("Direct query result:", data);
+      
       const typedChannels: Channel[] = transformChannelData(data || []);
+      
+      console.log("Transformed channels from direct query:", typedChannels);
       
       setChannels(typedChannels);
       if (typedChannels.length > 0) {
@@ -103,7 +111,6 @@ const ChannelsToImprove = () => {
     setLoading(true);
     setError(null);
     try {
-      // First try edge function approach
       try {
         const { data, error } = await supabase.functions.invoke('get-public-channels', {
           body: {
@@ -115,7 +122,6 @@ const ChannelsToImprove = () => {
         if (error) throw error;
         
         if (data && data.channels && Array.isArray(data.channels)) {
-          // Transform the data to make it compatible with Channel type
           const typedChannels: Channel[] = transformChannelData(data.channels);
           
           setChannels(typedChannels);
@@ -130,7 +136,6 @@ const ChannelsToImprove = () => {
         console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
       }
       
-      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
@@ -140,7 +145,6 @@ const ChannelsToImprove = () => {
       
       if (error) throw error;
       
-      // Transform the data to make it compatible with Channel type
       const typedChannels: Channel[] = transformChannelData(data || []);
       
       setChannels(typedChannels);
@@ -162,7 +166,6 @@ const ChannelsToImprove = () => {
     setLoading(true);
     setError(null);
     try {
-      // First try edge function approach
       try {
         const { data, error } = await supabase.functions.invoke('get-public-channels', {
           body: {
@@ -174,7 +177,6 @@ const ChannelsToImprove = () => {
         if (error) throw error;
         
         if (data && data.channels && Array.isArray(data.channels)) {
-          // Transform the data to make it compatible with Channel type
           const typedChannels: Channel[] = transformChannelData(data.channels);
           
           setChannels(typedChannels);
@@ -189,7 +191,6 @@ const ChannelsToImprove = () => {
         console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
       }
       
-      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
@@ -199,7 +200,6 @@ const ChannelsToImprove = () => {
       
       if (error) throw error;
       
-      // Transform the data to make it compatible with Channel type
       const typedChannels: Channel[] = transformChannelData(data || []);
       
       setChannels(typedChannels);
@@ -221,7 +221,6 @@ const ChannelsToImprove = () => {
     setLoading(true);
     setError(null);
     try {
-      // First try edge function approach
       try {
         const { data, error } = await supabase.functions.invoke('get-public-channels', {
           body: {
@@ -233,7 +232,6 @@ const ChannelsToImprove = () => {
         if (error) throw error;
         
         if (data && data.channels && Array.isArray(data.channels)) {
-          // Transform the data to make it compatible with Channel type
           const typedChannels: Channel[] = transformChannelData(data.channels);
           
           setChannels(typedChannels);
@@ -248,7 +246,6 @@ const ChannelsToImprove = () => {
         console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
       }
       
-      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
@@ -258,7 +255,6 @@ const ChannelsToImprove = () => {
       
       if (error) throw error;
       
-      // Transform the data to make it compatible with Channel type
       const typedChannels: Channel[] = transformChannelData(data || []);
       
       setChannels(typedChannels);
@@ -280,11 +276,10 @@ const ChannelsToImprove = () => {
     setLoading(true);
     setError(null);
     try {
-      // First try edge function approach
       try {
         const { data, error } = await supabase.functions.invoke('get-public-channels', {
           body: {
-            hasStats: true, // Only get channels with video count
+            hasStats: true,
             limit: 20
           }
         });
@@ -292,7 +287,6 @@ const ChannelsToImprove = () => {
         if (error) throw error;
         
         if (data && data.channels && Array.isArray(data.channels)) {
-          // Transform the data to make it compatible with Channel type
           const typedChannels: Channel[] = transformChannelData(data.channels);
           
           setChannels(typedChannels);
@@ -307,17 +301,15 @@ const ChannelsToImprove = () => {
         console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
       }
       
-      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
-        .not('video_count', 'is', null) // Ensure we only get channels with video count
+        .not('video_count', 'is', null)
         .order('created_at', { ascending: false })
         .limit(20);
       
       if (error) throw error;
       
-      // Transform the data to make it compatible with Channel type
       const typedChannels: Channel[] = transformChannelData(data || []);
       
       setChannels(typedChannels);

@@ -37,38 +37,73 @@ export function useBulkKeywordsGenerator() {
       const description = channelData?.description || "";
       const category = channelData?.channel_category || "";
       
-      // Call the edge function to generate keywords
-      const { data, error } = await supabase.functions.invoke<any>('generate-channel-keywords', {
-        body: {
-          title: channel.title,
-          description: description,
-          category: category
-        }
+      console.log(`Calling generate-channel-keywords for ${channel.title} with:`, {
+        title: channel.title, 
+        description, 
+        category
       });
+      
+      // Call the edge function to generate keywords with retry mechanism
+      let retryCount = 0;
+      const maxRetries = 2;
+      let success = false;
+      
+      while (retryCount <= maxRetries && !success) {
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-channel-keywords', {
+            body: {
+              title: channel.title,
+              description: description,
+              category: category
+            }
+          });
+          
+          console.log(`Keywords generation attempt ${retryCount + 1} result:`, data);
 
-      if (error) {
-        console.error(`Error generating keywords for ${channel.title}:`, error);
-        return false;
-      }
+          if (error) {
+            console.error(`Error (attempt ${retryCount + 1}) generating keywords for ${channel.title}:`, error);
+            retryCount++;
+            if (retryCount <= maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+              continue;
+            }
+            return false;
+          }
 
-      if (!data || !data.keywords || !Array.isArray(data.keywords)) {
-        console.error(`Failed to generate keywords for ${channel.title}:`, data?.error || "Unknown error");
-        return false;
-      }
+          if (!data || !data.keywords || !Array.isArray(data.keywords)) {
+            console.error(`Failed (attempt ${retryCount + 1}) to generate keywords for ${channel.title}:`, data?.error || "Invalid response format");
+            retryCount++;
+            if (retryCount <= maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+              continue;
+            }
+            return false;
+          }
 
-      // Update the channel with the new keywords
-      const { error: updateError } = await supabase
-        .from('youtube_channels')
-        .update({ keywords: data.keywords })
-        .eq('id', channel.id);
+          // Update the channel with the new keywords
+          const { error: updateError } = await supabase
+            .from('youtube_channels')
+            .update({ keywords: data.keywords })
+            .eq('id', channel.id);
 
-      if (updateError) {
-        console.error(`Error updating keywords for ${channel.title}:`, updateError);
-        return false;
+          if (updateError) {
+            console.error(`Error updating keywords for ${channel.title}:`, updateError);
+            return false;
+          }
+          
+          console.log(`Successfully updated keywords for ${channel.title}:`, data.keywords);
+          success = true;
+          return true;
+        } catch (attemptError) {
+          console.error(`Exception (attempt ${retryCount + 1}) when generating keywords for ${channel.title}:`, attemptError);
+          retryCount++;
+          if (retryCount <= maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+        }
       }
       
-      console.log(`Successfully updated keywords for ${channel.title}`);
-      return true;
+      return success;
     } catch (error) {
       console.error(`Exception when generating keywords for ${channel.title}:`, error);
       return false;
@@ -108,15 +143,21 @@ export function useBulkKeywordsGenerator() {
         
         // Add a small delay between requests to avoid rate limiting
         if (i < channels.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
-      if (successCount === channels.length) {
+      const successfulCount = channels.length - errorCount;
+      
+      if (successfulCount === channels.length) {
         toast.success(`Successfully generated keywords for all ${channels.length} channels!`);
-      } else {
+      } else if (successfulCount > 0) {
         toast.warning(
-          `Keywords generation completed: ${successCount} successful, ${channels.length - successCount} failed.`
+          `Keywords generation completed: ${successfulCount} successful, ${errorCount} failed.`
+        );
+      } else {
+        toast.error(
+          `Keywords generation failed for all channels. Please try again later.`
         );
       }
     } catch (error) {

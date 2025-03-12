@@ -36,8 +36,26 @@ export const convertToChannelMetadata = (metadata: Json | null): ChannelMetadata
 export const transformChannelData = <T extends { metadata?: Json | null }>(channels: T[]): Channel[] => {
   return channels.map(channel => {
     // First ensure all required Channel properties are present
-    if (!('id' in channel) || !('video_id' in channel) || !('channel_title' in channel) || !('channel_url' in channel)) {
+    const hasRequiredProps = 'id' in channel && 
+                           'video_id' in channel && 
+                           'channel_title' in channel && 
+                           'channel_url' in channel;
+    
+    if (!hasRequiredProps) {
       console.error("Missing required Channel properties:", channel);
+      // Add default values for required properties if missing
+      const defaultChannel = {
+        id: (channel as any).id || '',
+        video_id: (channel as any).video_id || '',
+        channel_title: (channel as any).channel_title || 'Unnamed Channel',
+        channel_url: (channel as any).channel_url || '',
+        ...channel
+      };
+      
+      return {
+        ...defaultChannel as any,
+        metadata: convertToChannelMetadata(channel.metadata)
+      } as Channel;
     }
     
     // Convert to Channel type with properly typed metadata
