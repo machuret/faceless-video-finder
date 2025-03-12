@@ -3,16 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { useLinkChecker } from '@/hooks/useLinkChecker';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, AlertCircle, Globe } from 'lucide-react';
+import { Loader2, AlertCircle, Globe, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 interface LinkCheckerProps {
   autoScan?: boolean;
 }
 
-export const LinkChecker: React.FC<LinkCheckerProps> = ({ autoScan = false }) => {
+const LinkChecker: React.FC<LinkCheckerProps> = ({ autoScan = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("page");
   const { 
@@ -51,12 +52,12 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ autoScan = false }) =>
       ["URL", "Link Text", "Status", "Error"],
       ...brokenLinks.map(link => [
         link.url,
-        link.text,
+        link.text || "",
         String(link.status),
         link.error || ""
       ])
     ]
-      .map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
       .join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -77,7 +78,21 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ autoScan = false }) =>
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     if (value === "site" && !isChecking) {
-      toast.info("Site-wide link checking is initiated from the page view. Check all links on this page first.");
+      toast.info("Site-wide link checking will be available soon. For now, check individual pages.");
+    }
+  };
+
+  const getStatusBadge = (status: number) => {
+    if (status === 404) {
+      return <Badge variant="destructive">Not Found (404)</Badge>;
+    } else if (status >= 500) {
+      return <Badge variant="destructive">Server Error ({status})</Badge>;
+    } else if (status >= 400) {
+      return <Badge variant="destructive">Client Error ({status})</Badge>;
+    } else if (status === 302) {
+      return <Badge variant="warning">Redirect (302)</Badge>;
+    } else {
+      return <Badge variant="destructive">Error ({status})</Badge>;
     }
   };
 
@@ -138,6 +153,9 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ autoScan = false }) =>
                           All links checked! No broken links found.
                         </p>
                       )}
+                      <p className="text-gray-500 mt-1">
+                        Checked {totalLinks} links on this page.
+                      </p>
                     </div>
                     
                     {brokenLinks.length > 0 && (
@@ -153,12 +171,22 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ autoScan = false }) =>
                             {brokenLinks.map((link, index) => (
                               <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                                 <td className="px-3 py-2 whitespace-nowrap text-sm">
-                                  <div className="font-medium text-gray-900 truncate max-w-xs">{link.url}</div>
+                                  <div className="font-medium text-gray-900 truncate max-w-xs flex items-center">
+                                    {link.url}
+                                    <a 
+                                      href={link.url.startsWith('http') ? link.url : `${window.location.origin}${link.url.startsWith('/') ? '' : '/'}${link.url}`}
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="ml-1 text-blue-500 hover:text-blue-700"
+                                    >
+                                      <ExternalLink size={12} />
+                                    </a>
+                                  </div>
                                   <div className="text-gray-500 truncate max-w-xs">{link.text}</div>
                                 </td>
-                                <td className="px-3 py-2 whitespace-nowrap text-sm text-red-500">
-                                  {link.status || "Error"}
-                                  {link.error && <div className="text-xs text-gray-500">{link.error}</div>}
+                                <td className="px-3 py-2 whitespace-nowrap text-sm">
+                                  {getStatusBadge(link.status)}
+                                  {link.error && <div className="text-xs text-gray-500 mt-1">{link.error}</div>}
                                 </td>
                               </tr>
                             ))}
@@ -213,15 +241,19 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ autoScan = false }) =>
                   This feature checks all links across your site by scanning each page.
                 </p>
               </div>
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 text-left max-w-md">
+                <p className="text-amber-700 text-sm">
+                  Coming Soon: Our site-wide scanner is under development. For now, use the Current Page checker to scan individual pages.
+                </p>
+              </div>
               <Button 
                 onClick={() => {
                   setActiveTab("page");
                   setTimeout(() => {
                     handleScanClick();
-                    toast.info("Scanning current page. Site-wide scanning will be available in a future update.");
                   }, 100);
                 }}
-                className="mt-4"
+                className="mt-2"
               >
                 Start with Current Page
               </Button>

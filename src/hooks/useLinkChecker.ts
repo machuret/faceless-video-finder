@@ -25,8 +25,8 @@ export function useLinkChecker() {
 
   const checkLink = useCallback(async (url: string, linkText: string): Promise<BrokenLink | null> => {
     try {
-      // Only check internal links
-      if (!url.startsWith('/') && !url.includes(window.location.hostname)) {
+      // Skip anchor links (they don't need external checking)
+      if (url.startsWith('#')) {
         return null;
       }
 
@@ -38,11 +38,21 @@ export function useLinkChecker() {
       // Use fetch to check if the link is valid
       const response = await fetch(fullUrl, { 
         method: 'HEAD', 
-        // Don't follow redirects to catch them as potential issues
         redirect: 'manual',
-        // Cache busting to ensure we're testing the current state
         cache: 'no-store',
+      }).catch(error => {
+        console.error(`Network error fetching ${url}:`, error);
+        return null;
       });
+
+      if (!response) {
+        return {
+          url,
+          text: linkText,
+          status: 0,
+          error: 'Network error or CORS issue'
+        };
+      }
 
       if (response.status >= 400) {
         return {
@@ -64,7 +74,6 @@ export function useLinkChecker() {
 
       return null;
     } catch (error) {
-      // Network errors or CORS issues
       console.error(`Error checking link ${url}:`, error);
       return {
         url,
@@ -83,15 +92,9 @@ export function useLinkChecker() {
     try {
       // Get all links in the current page
       const linkElements = document.querySelectorAll('a[href]');
-      const links = Array.from(linkElements).filter(link => {
-        const href = link.getAttribute('href');
-        // Only check internal links - either relative or same domain
-        return href && (
-          href.startsWith('/') || 
-          href.includes(window.location.hostname)
-        );
-      });
-
+      const links = Array.from(linkElements);
+      
+      console.log(`Found ${links.length} links on the page to check`);
       setTotalLinks(links.length);
 
       if (links.length === 0) {
@@ -101,15 +104,24 @@ export function useLinkChecker() {
 
       const broken: BrokenLink[] = [];
       
-      // Check links one by one to avoid overloading the browser
+      // Check links one by one
       for (let i = 0; i < links.length; i++) {
         const link = links[i];
         const url = link.getAttribute('href') || '';
         const linkText = link.textContent || url;
         
+        // Skip empty links
+        if (!url) {
+          setCheckedCount(i + 1);
+          setProgress(Math.round(((i + 1) / links.length) * 100));
+          continue;
+        }
+        
+        console.log(`Checking link ${i+1}/${links.length}: ${url}`);
         const result = await checkLink(url, linkText);
         
         if (result) {
+          console.log(`Found broken link: ${url} - Status: ${result.status}`);
           broken.push(result);
         }
         
@@ -117,6 +129,7 @@ export function useLinkChecker() {
         setProgress(Math.round(((i + 1) / links.length) * 100));
       }
 
+      console.log(`Link checking complete. Found ${broken.length} broken links`);
       setBrokenLinks(broken);
     } catch (error) {
       console.error('Error scanning links:', error);

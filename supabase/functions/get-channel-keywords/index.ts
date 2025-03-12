@@ -9,6 +9,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const { channelId } = await req.json();
+    
+    if (!channelId) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Channel ID is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -18,26 +27,29 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch channel types from database
-    const { data: channelTypes, error } = await supabase
-      .from('channel_types')
-      .select('*')
-      .order('label');
+    console.log(`Fetching keywords for channel ID: ${channelId}`);
+    
+    // Get the channel data
+    const { data: channel, error: channelError } = await supabase
+      .from('youtube_channels')
+      .select('keywords')
+      .eq('id', channelId)
+      .single();
 
-    if (error) {
-      console.error('Error fetching channel types:', error);
-      throw error;
+    if (channelError) {
+      console.error('Error fetching channel:', channelError);
+      throw channelError;
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        channelTypes: channelTypes || []
+        keywords: channel?.keywords || []
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error in get-channel-types function:', error);
+    console.error('Error in get-channel-keywords function:', error);
     
     return new Response(
       JSON.stringify({

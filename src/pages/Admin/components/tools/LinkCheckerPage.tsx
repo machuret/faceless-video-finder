@@ -7,11 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const LinkCheckerPage: React.FC = () => {
   const [customUrl, setCustomUrl] = useState('');
   const [urlToCheck, setUrlToCheck] = useState('');
   const [iframeKey, setIframeKey] = useState(0);
+  const [iframeError, setIframeError] = useState<string | null>(null);
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +31,13 @@ const LinkCheckerPage: React.FC = () => {
     }
     
     setUrlToCheck(formattedUrl);
+    setIframeError(null);
     // Force iframe refresh
     setIframeKey(prev => prev + 1);
+  };
+
+  const handleIframeError = () => {
+    setIframeError("Failed to load the page. Please check if the URL is correct and accessible.");
   };
 
   return (
@@ -84,6 +92,14 @@ const LinkCheckerPage: React.FC = () => {
                     </p>
                   </form>
                   
+                  {iframeError && (
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{iframeError}</AlertDescription>
+                    </Alert>
+                  )}
+                  
                   {urlToCheck && (
                     <div className="space-y-4">
                       <div className="p-4 bg-blue-50 rounded-md">
@@ -93,15 +109,15 @@ const LinkCheckerPage: React.FC = () => {
                       <div className="border rounded-md overflow-hidden h-[500px]">
                         <iframe 
                           key={iframeKey}
-                          src={`${urlToCheck}?linkChecker=true`} 
+                          src={urlToCheck} 
                           className="w-full h-full"
                           title="Link Checker"
+                          onError={handleIframeError}
                         />
                       </div>
                       
                       <div className="italic text-sm text-gray-500">
-                        Note: The iframe above doesn't have Link Checker functionality. 
-                        Add the LinkChecker component to the page you want to check.
+                        Note: Use the current page checker on the page you want to check for the most accurate results.
                       </div>
                     </div>
                   )}
