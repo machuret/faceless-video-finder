@@ -33,43 +33,6 @@ function cors(req: Request, options: ResponseInit = {}): Response {
   });
 }
 
-// Shared function to fetch public channel data
-async function getPublicChannels(req: Request, { limit = 10, offset = 0 }) {
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing required environment variables");
-      return { error: "Server configuration error" };
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Fetch channels with service role, bypassing RLS
-    const { data, error, count } = await supabase
-      .from("youtube_channels")
-      .select('id, channel_title, description, total_subscribers, total_views, screenshot_url, niche', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-      
-    if (error) {
-      console.error("Error fetching channels:", error);
-      return { error: error.message };
-    }
-    
-    console.log(`Successfully fetched ${data?.length || 0} channels via Edge Function`);
-    
-    return {
-      channels: data || [],
-      totalCount: count || 0
-    };
-  } catch (err) {
-    console.error("Error in getPublicChannels:", err);
-    return { error: "Failed to fetch channels" };
-  }
-}
-
 serve(async (req: Request) => {
   // Handle CORS for OPTIONS requests
   if (req.method === "OPTIONS") {
@@ -78,18 +41,82 @@ serve(async (req: Request) => {
   
   try {
     // Get parameters from the request
-    const { limit, offset } = await req.json();
+    const requestBody = await req.json();
+    const { 
+      limit = 10, 
+      offset = 0, 
+      featured = false,
+      countOnly = false
+    } = requestBody;
     
-    // Call the shared function to get public channels
-    const result = await getPublicChannels(req, { 
-      limit: Number(limit) || 10, 
-      offset: Number(offset) || 0 
-    });
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     
-    // Return the result
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing required environment variables");
+      return cors(req, {
+        status: 500,
+        body: JSON.stringify({ error: "Server configuration error" }),
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Handle count-only requests efficiently
+    if (countOnly) {
+      const { count, error: countError } = await supabase
+        .from("youtube_channels")
+        .select('id', { count: 'exact', head: true });
+      
+      if (countError) {
+        console.error("Error getting count:", countError);
+        return cors(req, {
+          status: 400,
+          body: JSON.stringify({ error: countError.message }),
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      
+      return cors(req, {
+        status: 200,
+        body: JSON.stringify({ totalCount: count || 0 }),
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    // Build the query
+    let query = supabase
+      .from("youtube_channels")
+      .select('id, channel_title, description, total_subscribers, total_views, screenshot_url, niche, channel_type, is_featured, videoStats:youtube_video_stats(*)', { count: 'exact' });
+    
+    // Add featured filter if requested
+    if (featured) {
+      query = query.eq('is_featured', true);
+    }
+    
+    // Add ordering and pagination
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+      
+    if (error) {
+      console.error("Error fetching channels:", error);
+      return cors(req, {
+        status: 400,
+        body: JSON.stringify({ error: error.message }),
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    console.log(`Successfully fetched ${data?.length || 0} channels via Edge Function`);
+    
     return cors(req, {
-      status: result.error ? 400 : 200,
-      body: JSON.stringify(result),
+      status: 200,
+      body: JSON.stringify({
+        channels: data || [],
+        totalCount: count || 0
+      }),
       headers: { "Content-Type": "application/json" }
     });
   } catch (error) {
