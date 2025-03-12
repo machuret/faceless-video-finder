@@ -4,6 +4,7 @@ import { Channel } from "@/types/youtube";
 import ChannelCard from "@/components/home/ChannelCard";
 import { Loader2 } from "lucide-react";
 import { fetchRelatedChannels } from "@/services/channelApi";
+import { toast } from "sonner";
 
 interface RelatedChannelsProps {
   currentChannelId: string;
@@ -17,20 +18,30 @@ const RelatedChannels = ({ currentChannelId, niche }: RelatedChannelsProps) => {
 
   useEffect(() => {
     const loadRelatedChannels = async () => {
-      setLoading(true);
-      setError(null);
       try {
+        setLoading(true);
+        setError(null);
+        
         const relatedChannels = await fetchRelatedChannels(currentChannelId, niche);
+        
+        if (relatedChannels.length === 0) {
+          // No results, but not an error
+          console.log("No related channels found");
+        }
+        
         setChannels(relatedChannels);
       } catch (err) {
         console.error("Error loading related channels:", err);
         setError("Failed to load related channels");
+        toast.error("Failed to load related channels");
       } finally {
         setLoading(false);
       }
     };
 
-    loadRelatedChannels();
+    if (currentChannelId) {
+      loadRelatedChannels();
+    }
   }, [currentChannelId, niche]);
 
   if (loading) {
