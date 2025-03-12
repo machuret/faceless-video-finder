@@ -16,13 +16,14 @@ const RelatedChannels = ({ currentChannelId, niche }: RelatedChannelsProps) => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const loadRelatedChannels = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log(`Loading related channels for ID: ${currentChannelId}, niche: ${niche || 'any'}`);
+      console.log(`Loading related channels for ID: ${currentChannelId}, niche: ${niche || 'any'}, retry: ${retryCount}`);
       const relatedChannels = await fetchRelatedChannels(currentChannelId, niche);
       
       if (relatedChannels.length === 0) {
@@ -36,7 +37,11 @@ const RelatedChannels = ({ currentChannelId, niche }: RelatedChannelsProps) => {
     } catch (err) {
       console.error("Error loading related channels:", err);
       setError("Failed to load related channels");
-      toast.error("Failed to load related channels");
+      
+      // Only show toast on first error to avoid spamming
+      if (retryCount === 0) {
+        toast.error("Failed to load related channels");
+      }
     } finally {
       setLoading(false);
     }
@@ -46,7 +51,11 @@ const RelatedChannels = ({ currentChannelId, niche }: RelatedChannelsProps) => {
     if (currentChannelId) {
       loadRelatedChannels();
     }
-  }, [currentChannelId, niche]);
+  }, [currentChannelId, niche, retryCount]);
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
 
   if (loading) {
     return (
@@ -64,7 +73,7 @@ const RelatedChannels = ({ currentChannelId, niche }: RelatedChannelsProps) => {
         <p className="text-red-600 mb-4">{error}</p>
         <Button 
           variant="outline" 
-          onClick={loadRelatedChannels}
+          onClick={handleRetry}
           className="border-red-300 text-red-700 hover:bg-red-50"
         >
           Try Again
@@ -74,12 +83,17 @@ const RelatedChannels = ({ currentChannelId, niche }: RelatedChannelsProps) => {
   }
 
   if (channels.length === 0) {
-    return null;
+    return (
+      <div className="mt-8 mb-12 p-6 bg-gray-50 border border-gray-200 rounded-lg text-center">
+        <h2 className="text-2xl font-semibold mb-2">No Related Channels Found</h2>
+        <p className="text-gray-600 mb-4">We couldn't find any other channels similar to this one at the moment.</p>
+      </div>
+    );
   }
 
   return (
     <div className="mt-8 mb-12">
-      <h2 className="text-2xl font-semibold mb-6">Explore more Faceless Youtube Channels</h2>
+      <h2 className="text-2xl font-semibold mb-6">Explore more Faceless YouTube Channels</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {channels.map((channel) => (
           <ChannelCard 

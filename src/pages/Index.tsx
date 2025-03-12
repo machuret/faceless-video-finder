@@ -28,7 +28,8 @@ const Index = () => {
     allVideos, 
     totalChannels, 
     isLoading, 
-    isError 
+    isError,
+    error
   } = useHomePageData(currentPage, channelsPerPage);
 
   // Handle page change
@@ -38,7 +39,20 @@ const Index = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const error = isError ? 'Failed to load channels. Please try again later.' : null;
+  const handleRefetch = () => {
+    window.location.reload();
+  };
+
+  const errorMessage = error || (isError ? 'Failed to load channels. Please try again later.' : null);
+
+  console.log("Current state:", { 
+    channels: channels.length, 
+    featuredChannels: featuredChannels.length,
+    isLoading, 
+    isError,
+    error,
+    errorMessage
+  });
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -56,7 +70,7 @@ const Index = () => {
           channels={channels}
           featuredChannels={featuredChannels}
           loading={isLoading}
-          error={error}
+          error={errorMessage}
           totalChannels={totalChannels}
           currentPage={currentPage}
           showFeatured={true}

@@ -2,7 +2,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
-import { lazyLoad } from './loaders';
 
 // Import components directly instead of using dynamic imports within the routes
 import AdminLogin from '../pages/Admin/AdminLogin';
@@ -23,13 +22,17 @@ export const adminRoutes = [
     path: "/admin",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        <AdminDashboard />
+        <Navigate to="/admin/dashboard" replace />
       </ProtectedRoute>
     ),
   },
   {
     path: "/admin/dashboard",
-    element: <Navigate to="/admin" replace />,
+    element: (
+      <ProtectedRoute requireAdmin={true}>
+        <AdminDashboard />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/admin/channels/add",

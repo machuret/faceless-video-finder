@@ -22,6 +22,9 @@ export const ProtectedRoute = ({
   const verificationAttemptsRef = useRef(0);
   const maxVerificationAttempts = 3;
 
+  // Store the admin status
+  const adminVerifiedRef = useRef(false);
+  
   // Show loader after a delay to prevent flash
   useEffect(() => {
     let loaderTimer: NodeJS.Timeout | null = null;
@@ -34,13 +37,18 @@ export const ProtectedRoute = ({
       setShowLoader(false);
       if (user) {
         setHasVerifiedOnce(true);
+        
+        // If user is admin, store it
+        if (isAdmin) {
+          adminVerifiedRef.current = true;
+        }
       }
     }
 
     return () => {
       if (loaderTimer) clearTimeout(loaderTimer);
     };
-  }, [loading, user]);
+  }, [loading, user, isAdmin]);
 
   // Add a timeout to prevent infinite loading
   useEffect(() => {
@@ -76,6 +84,7 @@ export const ProtectedRoute = ({
       hasVerifiedOnce,
       user: user ? user.email : null,
       isAdmin,
+      adminVerified: adminVerifiedRef.current,
       path: location.pathname,
       verificationAttempts: verificationAttemptsRef.current
     });
@@ -83,17 +92,17 @@ export const ProtectedRoute = ({
 
   // If we've already verified the user once and they're present, 
   // allow rendering the children while re-checking
-  if (hasVerifiedOnce && user && (requireAdmin ? isAdmin : true)) {
+  if (hasVerifiedOnce && user && (requireAdmin ? (isAdmin || adminVerifiedRef.current) : true)) {
     return <>{children}</>;
   }
 
   // Verification attempts exceeded max or auth loading timeout reached, take best guess
   if (verificationAttemptsRef.current >= maxVerificationAttempts) {
-    if (user && (requireAdmin ? isAdmin : true)) {
+    if (user && (requireAdmin ? (isAdmin || adminVerifiedRef.current) : true)) {
       return <>{children}</>;
     } else if (!user) {
       return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />;
-    } else if (requireAdmin && !isAdmin) {
+    } else if (requireAdmin && !isAdmin && !adminVerifiedRef.current) {
       return <Navigate to="/" replace />;
     }
   }
@@ -115,7 +124,7 @@ export const ProtectedRoute = ({
   }
 
   // User found but not admin and admin required
-  if (requireAdmin && !isAdmin) {
+  if (requireAdmin && !isAdmin && !adminVerifiedRef.current) {
     console.log("User is not admin, redirecting to home");
     return <Navigate to="/" replace />;
   }

@@ -21,16 +21,21 @@ export function useHomePageData(page: number, channelsPerPage: number) {
             try {
               console.log(`Prefetching page ${nextPage} with offset ${offset}`);
               
-              // Basic query approach - attempt to avoid RLS issues
-              const { data, count, error } = await supabase
+              // Use a more direct query approach with error handling
+              let query = supabase
                 .from('youtube_channels')
-                .select('*, videoStats:youtube_video_stats(id, title, thumbnail_url, views, likes, channel_id, video_id)', { count: 'exact' })
+                .select('id, channel_title, description, total_subscribers, total_views, screenshot_url, niche', { count: 'exact' })
+                .order('created_at', { ascending: false })
                 .range(offset, offset + channelsPerPage - 1);
               
+              const { data, count, error } = await query;
+              
               if (error) {
-                console.error("Error prefetching channels:", error);
+                console.error("Error prefetching next page channels:", error);
                 return { channels: [], totalCount: 0 };
               }
+              
+              console.log(`Successfully prefetched ${data?.length || 0} channels for next page`);
               
               return { 
                 channels: data as Channel[] || [], 
@@ -52,7 +57,7 @@ export function useHomePageData(page: number, channelsPerPage: number) {
     prefetchNextPage();
   }, [page, channelsPerPage, queryClient]);
 
-  // Simplified query for featured channels - reduce permissions needed
+  // Simplified query for featured channels - reduce permissions needed and handle errors
   const featuredQuery = useQuery({
     queryKey: ['channels', 'featured'],
     queryFn: async () => {
@@ -62,22 +67,28 @@ export function useHomePageData(page: number, channelsPerPage: number) {
         // Simplified query with minimal fields needed
         const { data, error } = await supabase
           .from('youtube_channels')
-          .select(`
-            id, 
-            channel_title, 
-            description, 
-            total_subscribers, 
-            total_views, 
-            screenshot_url,
-            niche,
-            is_featured
-          `)
+          .select('id, channel_title, description, total_subscribers, total_views, screenshot_url, niche, is_featured')
           .eq('is_featured', true)
           .limit(3);
           
         if (error) {
           console.error("Error fetching featured channels:", error);
-          return [];
+          
+          // Try a fallback direct query with fewer fields if we get an error
+          try {
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('youtube_channels')
+              .select('id, channel_title, screenshot_url')
+              .limit(3);
+              
+            if (fallbackError) throw fallbackError;
+            
+            console.log(`Successfully fetched ${fallbackData?.length || 0} featured channels using fallback`);
+            return fallbackData as Channel[] || [];
+          } catch (fallbackErr) {
+            console.error("Fallback featured channels error:", fallbackErr);
+            return [];
+          }
         }
         
         console.log(`Successfully fetched ${data?.length || 0} featured channels`);
@@ -88,10 +99,11 @@ export function useHomePageData(page: number, channelsPerPage: number) {
       }
     },
     staleTime: 30 * 1000, // 30 seconds
-    retry: 1
+    retry: 2,
+    retryDelay: 1000
   });
   
-  // Main query for current page - simplified to reduce permissions needed
+  // Main query for current page - simplified and with error handling
   const channelsQuery = useQuery({
     queryKey: ['channels', 'homepage', page, channelsPerPage],
     queryFn: async () => {
@@ -100,23 +112,35 @@ export function useHomePageData(page: number, channelsPerPage: number) {
         
         console.log(`Fetching channels for homepage, page ${page}, offset ${offset}, limit ${channelsPerPage}`);
         
-        // Simplified query with only essential fields
+        // Use a simpler query approach to avoid complex permissions issues
         const { data, error, count } = await supabase
           .from("youtube_channels")
-          .select(`
-            id, 
-            channel_title, 
-            description, 
-            total_subscribers, 
-            total_views, 
-            screenshot_url,
-            niche
-          `, { count: 'exact' })
+          .select('id, channel_title, description, total_subscribers, total_views, screenshot_url, niche', { count: 'exact' })
           .order('created_at', { ascending: false })
           .range(offset, offset + channelsPerPage - 1);
           
         if (error) {
           console.error("Error fetching channels:", error);
+          
+          // Try a fallback approach
+          try {
+            const { data: fallbackData } = await supabase.rpc('get_public_channels', {
+              p_limit: channelsPerPage,
+              p_offset: offset
+            });
+            
+            if (fallbackData && Array.isArray(fallbackData)) {
+              console.log(`Successfully fetched ${fallbackData.length} channels using fallback RPC`);
+              return { 
+                channels: fallbackData as Channel[],
+                totalCount: fallbackData.length * 3 // Approximate count for pagination
+              };
+            }
+          } catch (rpcError) {
+            console.error("RPC fallback error:", rpcError);
+            // Continue to throw the original error
+          }
+          
           throw new Error("Failed to load channels. Please try again later.");
         }
         
@@ -136,7 +160,7 @@ export function useHomePageData(page: number, channelsPerPage: number) {
       }
     },
     staleTime: 10 * 1000, // 10 seconds - shorter for testing
-    retry: 1,
+    retry: 2,
     retryDelay: 1000
   });
   
@@ -159,6 +183,8 @@ export function useHomePageData(page: number, channelsPerPage: number) {
     allVideos,
     isLoading: channelsQuery.isLoading || featuredQuery.isLoading,
     isError: channelsQuery.isError || featuredQuery.isError,
-    error: channelsQuery.error || featuredQuery.error
+    error: channelsQuery.error ? 
+      (channelsQuery.error instanceof Error ? channelsQuery.error.message : 'Failed to load channels') 
+      : featuredQuery.error ? 'Failed to load featured channels' : null
   };
 }
