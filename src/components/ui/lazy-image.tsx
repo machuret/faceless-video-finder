@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './skeleton';
@@ -130,7 +129,7 @@ const LazyImage = ({
           src={imgSrc}
           alt={alt}
           className={cn(
-            'w-full h-auto transition-opacity duration-300',
+            'w-full h-full transition-opacity duration-300',
             isLoaded ? 'opacity-100' : 'opacity-0'
           )}
           onLoad={handleImageLoad}
@@ -138,8 +137,8 @@ const LazyImage = ({
           loading={priority ? "eager" : "lazy"}
           width={width}
           height={height}
-          // Fix fetchPriority attribute error by using proper lowercase attribute
-          fetchpriority={priority ? "high" : "auto"}
+          // Fix fetchPriority attribute - using proper capitalization
+          fetchPriority={priority ? "high" : "auto"}
         />
       )}
     </div>
