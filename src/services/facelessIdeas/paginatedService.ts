@@ -283,18 +283,23 @@ export const invalidateFacelessIdeasCache = (): void => {
   }
 };
 
+// Type for retry options without making it recursive
+type RetryErrorFilter = (error: any) => boolean;
+
+interface RetryOptions {
+  maxRetries?: number;
+  initialDelay?: number;
+  maxDelay?: number;
+  factor?: number;
+  errorFilter?: RetryErrorFilter;
+}
+
 /**
  * Retry a function with exponential backoff and circuit breaker pattern
  */
 export const retryWithBackoff = async <T>(
   fn: () => Promise<T>,
-  options: {
-    maxRetries?: number;
-    initialDelay?: number;
-    maxDelay?: number;
-    factor?: number;
-    errorFilter?: (error: any) => boolean;
-  } = {}
+  options: RetryOptions = {}
 ): Promise<T> => {
   const {
     maxRetries = 3,
