@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Channel } from "@/types/youtube";
@@ -6,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateChannelSlug } from "@/pages/ChannelDetails";
 import ChannelCard from "@/components/home/ChannelCard";
 import { Loader2 } from "lucide-react";
+import { getChannelSlug } from "@/utils/channelUtils";
 
 interface RelatedChannelsProps {
   currentChannelId: string;
