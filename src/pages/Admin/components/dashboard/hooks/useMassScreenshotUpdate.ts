@@ -16,7 +16,7 @@ export const useMassScreenshotUpdate = () => {
   
   const fetchChannelsForScreenshotUpdate = async () => {
     try {
-      // Use the edge function to bypass RLS issues
+      // Always use the edge function to bypass RLS issues
       const { data: countData, error: countError } = await supabase.functions.invoke('get-public-channels', {
         body: { 
           countOnly: true,
@@ -25,11 +25,16 @@ export const useMassScreenshotUpdate = () => {
       });
       
       if (countError) {
+        console.error("Error fetching count of channels without screenshots:", countError);
         throw new Error(`Error fetching count: ${countError.message}`);
       }
       
       const count = countData?.totalCount || 0;
       console.log(`Found ${count} channels missing screenshots (count via edge function)`);
+      
+      if (count === 0) {
+        return { channels: [], count: 0 };
+      }
       
       // Now fetch the actual channel data
       const { data: channelsData, error: channelsError } = await supabase.functions.invoke('get-public-channels', {
@@ -41,6 +46,7 @@ export const useMassScreenshotUpdate = () => {
       });
       
       if (channelsError) {
+        console.error("Error fetching channels missing screenshots:", channelsError);
         throw new Error(`Error fetching channels: ${channelsError.message}`);
       }
       

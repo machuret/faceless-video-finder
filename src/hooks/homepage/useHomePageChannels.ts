@@ -62,12 +62,12 @@ export function useHomePageChannels(page: number, channelsPerPage: number) {
           totalCount: edgeData.totalCount || totalCount
         };
       } catch (err: any) {
-        console.error('Error fetching channels:', err);
+        console.error('Error fetching homepage channels:', err);
         throw new Error(err.message || 'Failed to load channels. Please try again later.');
       }
     },
     staleTime: 30 * 1000, // 30 seconds
-    retry: 3, // Increase retry attempts
+    retry: 3,
     retryDelay: 1000
   });
 }
