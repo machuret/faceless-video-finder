@@ -12,21 +12,37 @@ interface ChannelCardProps {
   isFeatured?: boolean;
 }
 
+// Use custom equality function to prevent unnecessary rerenders
+function arePropsEqual(prevProps: ChannelCardProps, nextProps: ChannelCardProps) {
+  // Only rerender if important props change
+  return prevProps.channel.id === nextProps.channel.id &&
+    prevProps.channel.channel_title === nextProps.channel.channel_title &&
+    prevProps.channel.total_subscribers === nextProps.channel.total_subscribers &&
+    prevProps.channel.total_views === nextProps.channel.total_views &&
+    prevProps.channel.screenshot_url === nextProps.channel.screenshot_url &&
+    prevProps.channel.is_featured === nextProps.channel.is_featured &&
+    prevProps.isFeatured === nextProps.isFeatured;
+}
+
 const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => {
-  // Create SEO-friendly URL
+  // Create SEO-friendly URL - cached derivation
   const seoUrl = `/channel/${getChannelSlug(channel)}`;
 
   // Check if this is a featured card for priority loading
   const isPriority = isFeatured || channel.is_featured;
   
-  // Format subscriber and view counts for better performance
-  const formattedSubscribers = channel.total_subscribers 
-    ? parseInt(channel.total_subscribers.toString()).toLocaleString()
-    : '0';
-    
-  const formattedViews = channel.total_views 
-    ? parseInt(channel.total_views.toString()).toLocaleString()
-    : '0';
+  // Format subscriber and view counts (memoized calculation)
+  const formattedStats = (() => {
+    const formattedSubscribers = channel.total_subscribers 
+      ? parseInt(channel.total_subscribers.toString()).toLocaleString()
+      : '0';
+      
+    const formattedViews = channel.total_views 
+      ? parseInt(channel.total_views.toString()).toLocaleString()
+      : '0';
+      
+    return { formattedSubscribers, formattedViews };
+  })();
   
   return (
     <Card 
@@ -42,6 +58,7 @@ const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => 
               priority={isPriority}
               width={640}
               height={360}
+              fetchpriority={isPriority ? "high" : "auto"} // Fixed attribute name
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-gray-100">
@@ -59,11 +76,11 @@ const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => 
           <h3 className="font-crimson text-lg font-semibold mb-2 line-clamp-1">{channel.channel_title}</h3>
           <div className="flex items-center gap-x-4 text-sm text-gray-500 mb-3 font-montserrat">
             <div className="flex items-center">
-              <span className="font-medium">{formattedSubscribers}</span>
+              <span className="font-medium">{formattedStats.formattedSubscribers}</span>
               <span className="ml-1">subscribers</span>
             </div>
             <div>
-              <span className="font-medium">{formattedViews}</span>
+              <span className="font-medium">{formattedStats.formattedViews}</span>
               <span className="ml-1">views</span>
             </div>
           </div>
@@ -86,7 +103,7 @@ const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => 
       </Link>
     </Card>
   );
-});
+}, arePropsEqual);
 
 // Add display name for debugging
 ChannelCard.displayName = "ChannelCard";

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -8,24 +8,27 @@ import { Calculator as CalculatorIcon } from "lucide-react";
 import MainNavbar from "@/components/MainNavbar";
 import { useToast } from "@/components/ui/use-toast";
 import PageFooter from "@/components/home/PageFooter";
+import { useDebounce } from "@/utils/hooks/useDebounce";
 
 export default function Calculator() {
   const { toast } = useToast();
   const [yearlyViews, setYearlyViews] = useState<number>(0);
   const [musicTracks, setMusicTracks] = useState<number>(0);
-  const [dailyRevenue, setDailyRevenue] = useState<number>(0);
-  const [monthlyRevenue, setMonthlyRevenue] = useState<number>(0);
-  const [yearlyRevenue, setYearlyRevenue] = useState<number>(0);
+  
+  // Debounce inputs to prevent excessive recalculations
+  const debouncedYearlyViews = useDebounce(yearlyViews, 300);
+  const debouncedMusicTracks = useDebounce(musicTracks, 300);
 
-  const calculateRevenue = () => {
+  // Memoize revenue calculations to avoid recalculation when unrelated state changes
+  const { dailyRevenue, monthlyRevenue, yearlyRevenue } = useMemo(() => {
     // Average YouTube Shorts RPM (Revenue per 1000 views)
     const baseRpm = 0.05; // $0.05 per 1000 views is a conservative estimate
     
     // Calculate creator's share based on music tracks
     let creatorShare = 1; // 100% if no music
-    if (musicTracks === 1) {
+    if (debouncedMusicTracks === 1) {
       creatorShare = 0.5; // 50% if one music track
-    } else if (musicTracks >= 2) {
+    } else if (debouncedMusicTracks >= 2) {
       creatorShare = 0.33; // 33% if two or more music tracks
     }
     
@@ -33,27 +36,26 @@ export default function Calculator() {
     const platformShareMultiplier = 0.45;
     
     // Calculate yearly revenue first
-    const viewsInThousands = yearlyViews / 1000;
+    const viewsInThousands = debouncedYearlyViews / 1000;
     const calculatedYearlyRevenue = viewsInThousands * baseRpm * creatorShare * platformShareMultiplier;
     
     // Derive daily and monthly from yearly
     const calculatedDailyRevenue = calculatedYearlyRevenue / 365;
     const calculatedMonthlyRevenue = calculatedYearlyRevenue / 12;
     
-    setYearlyRevenue(calculatedYearlyRevenue);
-    setMonthlyRevenue(calculatedMonthlyRevenue);
-    setDailyRevenue(calculatedDailyRevenue);
-    
+    return {
+      dailyRevenue: calculatedDailyRevenue,
+      monthlyRevenue: calculatedMonthlyRevenue,
+      yearlyRevenue: calculatedYearlyRevenue
+    };
+  }, [debouncedYearlyViews, debouncedMusicTracks]);
+
+  const calculateRevenue = () => {
     toast({
       title: "Revenue Calculated",
-      description: `Estimated yearly revenue: $${calculatedYearlyRevenue.toFixed(2)}`,
+      description: `Estimated yearly revenue: $${yearlyRevenue.toFixed(2)}`,
     });
   };
-
-  useEffect(() => {
-    // Optional: Auto-calculate revenue whenever inputs change
-    calculateRevenue();
-  }, [yearlyViews, musicTracks]);
 
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
