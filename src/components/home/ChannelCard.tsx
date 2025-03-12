@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
 import OptimizedImage from "@/components/ui/optimized-image";
-import { generateChannelSlug } from "@/pages/ChannelDetails";
+import { getChannelSlug } from "@/utils/channelUtils";
 import { memo } from "react";
 import { Channel } from "@/types/youtube";
 
@@ -14,8 +14,7 @@ interface ChannelCardProps {
 
 const ChannelCard = memo(({ channel, isFeatured = false }: ChannelCardProps) => {
   // Create SEO-friendly URL
-  const channelSlug = generateChannelSlug(channel.channel_title);
-  const seoUrl = `/channel/${channelSlug}-${channel.id}`;
+  const seoUrl = `/channel/${getChannelSlug(channel)}`;
 
   // Check if this is a featured card for priority loading
   const isPriority = isFeatured || channel.is_featured;

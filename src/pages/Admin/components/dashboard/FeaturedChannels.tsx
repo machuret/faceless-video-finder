@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { generateChannelSlug } from "@/pages/ChannelDetails";
+import { getChannelSlug } from "@/utils/channelUtils";
 
 interface Channel {
   id: string;
@@ -78,8 +78,7 @@ const FeaturedChannels = () => {
       <h2 className="text-xl font-semibold mb-4">Featured Channels</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {featuredChannels.map((channel) => {
-          const channelSlug = generateChannelSlug(channel.channel_title);
-          const seoUrl = `/channel/${channelSlug}-${channel.id}`;
+          const seoUrl = `/channel/${getChannelSlug(channel)}`;
           
           return (
             <Link key={channel.id} to={seoUrl}>

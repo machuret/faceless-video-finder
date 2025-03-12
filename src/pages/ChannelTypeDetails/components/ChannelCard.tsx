@@ -2,16 +2,14 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Channel } from "@/types/youtube";
-import { formatDate } from "@/utils/channelUtils";
-import { generateChannelSlug } from "@/pages/ChannelDetails";
+import { formatDate, getChannelSlug } from "@/utils/channelUtils";
 
 interface ChannelCardProps {
   channel: Channel;
 }
 
 const ChannelCard = ({ channel }: ChannelCardProps) => {
-  const channelSlug = generateChannelSlug(channel.channel_title);
-  const seoUrl = `/channel/${channelSlug}-${channel.id}`;
+  const seoUrl = `/channel/${getChannelSlug(channel)}`;
   
   return (
     <Card className="overflow-hidden h-full flex flex-col">

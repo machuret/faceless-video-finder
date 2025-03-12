@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { VideoStats } from "@/types/youtube";
 import { Play } from "lucide-react";
 import OptimizedImage from "@/components/ui/optimized-image";
-import { generateChannelSlug } from "@/pages/ChannelDetails";
+import { getChannelSlug } from "@/utils/channelUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { memo, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -135,9 +135,14 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
           // Get channel title from our state
           const channelTitle = channelTitles[channelId] || "Unknown channel";
           
+          // Create channel object for slug generation
+          const channel = {
+            id: channelId,
+            channel_title: channelTitle
+          };
+          
           // Create SEO-friendly channel URL with actual channel title
-          const channelSlug = generateChannelSlug(channelTitle);
-          const seoUrl = `/channel/${channelSlug}-${channelId}`;
+          const seoUrl = `/channel/${getChannelSlug(channel)}`;
           
           // Direct link to YouTube video if available
           const videoUrl = video.video_id ? 
@@ -176,6 +181,6 @@ const FeaturedVideos = ({ videos, isFeatured = false }: FeaturedVideosProps) => 
       </div>
     </div>
   );
-};
+});
 
 export default memo(FeaturedVideos);
