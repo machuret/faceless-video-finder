@@ -1,8 +1,7 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ImageOff, FileText, BarChart, Tag, Video } from "lucide-react";
+import { ImageOff, FileText, BarChart, Tag, Video, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +19,7 @@ const ChannelsToImprove = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeTab, setActiveTab] = useState("no-screenshot");
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   // Initialize bulk operation hooks
   const screenshotGenerator = useBulkScreenshotGenerator();
@@ -41,12 +41,46 @@ const ChannelsToImprove = () => {
 
   const fetchChannelsWithNoScreenshot = async () => {
     setLoading(true);
+    setError(null);
     try {
+      // First try edge function approach
+      try {
+        const { data, error } = await supabase.functions.invoke('get-public-channels', {
+          body: {
+            missingScreenshot: true,
+            limit: 20
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data && data.channels && Array.isArray(data.channels)) {
+          // Transform the data to make it compatible with Channel type
+          const typedChannels: Channel[] = data.channels.map(channel => ({
+            ...channel,
+            // Ensure metadata is properly typed
+            metadata: channel.metadata || {}
+          }));
+          
+          setChannels(typedChannels);
+          if (typedChannels.length > 0) {
+            setSelectedChannel(typedChannels[0]);
+          } else {
+            setSelectedChannel(null);
+          }
+          return;
+        }
+      } catch (edgeFunctionError) {
+        console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
+      }
+      
+      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
         .is('screenshot_url', null)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
       
       if (error) throw error;
       
@@ -54,7 +88,7 @@ const ChannelsToImprove = () => {
       const typedChannels: Channel[] = (data || []).map(channel => ({
         ...channel,
         // Ensure metadata is properly typed
-        metadata: channel.metadata as Channel['metadata']
+        metadata: channel.metadata || {}
       }));
       
       setChannels(typedChannels);
@@ -65,6 +99,7 @@ const ChannelsToImprove = () => {
       }
     } catch (error) {
       console.error("Error fetching channels with no screenshot:", error);
+      setError("Failed to fetch channels with no screenshot. Please try again later.");
       toast.error("Failed to fetch channels with no screenshot");
     } finally {
       setLoading(false);
@@ -73,12 +108,46 @@ const ChannelsToImprove = () => {
 
   const fetchChannelsWithNoType = async () => {
     setLoading(true);
+    setError(null);
     try {
+      // First try edge function approach
+      try {
+        const { data, error } = await supabase.functions.invoke('get-public-channels', {
+          body: {
+            missingType: true,
+            limit: 20
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data && data.channels && Array.isArray(data.channels)) {
+          // Transform the data to make it compatible with Channel type
+          const typedChannels: Channel[] = data.channels.map(channel => ({
+            ...channel,
+            // Ensure metadata is properly typed
+            metadata: channel.metadata || {}
+          }));
+          
+          setChannels(typedChannels);
+          if (typedChannels.length > 0) {
+            setSelectedChannel(typedChannels[0]);
+          } else {
+            setSelectedChannel(null);
+          }
+          return;
+        }
+      } catch (edgeFunctionError) {
+        console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
+      }
+      
+      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
         .or('channel_type.is.null,channel_type.eq.other')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
       
       if (error) throw error;
       
@@ -86,7 +155,7 @@ const ChannelsToImprove = () => {
       const typedChannels: Channel[] = (data || []).map(channel => ({
         ...channel,
         // Ensure metadata is properly typed
-        metadata: channel.metadata as Channel['metadata']
+        metadata: channel.metadata || {}
       }));
       
       setChannels(typedChannels);
@@ -97,6 +166,7 @@ const ChannelsToImprove = () => {
       }
     } catch (error) {
       console.error("Error fetching channels with no type:", error);
+      setError("Failed to fetch channels with no type. Please try again later.");
       toast.error("Failed to fetch channels with no type");
     } finally {
       setLoading(false);
@@ -105,12 +175,46 @@ const ChannelsToImprove = () => {
 
   const fetchChannelsWithNoStats = async () => {
     setLoading(true);
+    setError(null);
     try {
+      // First try edge function approach
+      try {
+        const { data, error } = await supabase.functions.invoke('get-public-channels', {
+          body: {
+            missingStats: true,
+            limit: 20
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data && data.channels && Array.isArray(data.channels)) {
+          // Transform the data to make it compatible with Channel type
+          const typedChannels: Channel[] = data.channels.map(channel => ({
+            ...channel,
+            // Ensure metadata is properly typed
+            metadata: channel.metadata || {}
+          }));
+          
+          setChannels(typedChannels);
+          if (typedChannels.length > 0) {
+            setSelectedChannel(typedChannels[0]);
+          } else {
+            setSelectedChannel(null);
+          }
+          return;
+        }
+      } catch (edgeFunctionError) {
+        console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
+      }
+      
+      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
         .or('total_subscribers.is.null,total_views.is.null,video_count.is.null')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
       
       if (error) throw error;
       
@@ -118,7 +222,7 @@ const ChannelsToImprove = () => {
       const typedChannels: Channel[] = (data || []).map(channel => ({
         ...channel,
         // Ensure metadata is properly typed
-        metadata: channel.metadata as Channel['metadata']
+        metadata: channel.metadata || {}
       }));
       
       setChannels(typedChannels);
@@ -129,6 +233,7 @@ const ChannelsToImprove = () => {
       }
     } catch (error) {
       console.error("Error fetching channels with no stats:", error);
+      setError("Failed to fetch channels with no stats. Please try again later.");
       toast.error("Failed to fetch channels with no stats");
     } finally {
       setLoading(false);
@@ -137,12 +242,46 @@ const ChannelsToImprove = () => {
 
   const fetchChannelsWithNoKeywords = async () => {
     setLoading(true);
+    setError(null);
     try {
+      // First try edge function approach
+      try {
+        const { data, error } = await supabase.functions.invoke('get-public-channels', {
+          body: {
+            missingKeywords: true,
+            limit: 20
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data && data.channels && Array.isArray(data.channels)) {
+          // Transform the data to make it compatible with Channel type
+          const typedChannels: Channel[] = data.channels.map(channel => ({
+            ...channel,
+            // Ensure metadata is properly typed
+            metadata: channel.metadata || {}
+          }));
+          
+          setChannels(typedChannels);
+          if (typedChannels.length > 0) {
+            setSelectedChannel(typedChannels[0]);
+          } else {
+            setSelectedChannel(null);
+          }
+          return;
+        }
+      } catch (edgeFunctionError) {
+        console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
+      }
+      
+      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
         .or('keywords.is.null,keywords.eq.{}')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
       
       if (error) throw error;
       
@@ -150,7 +289,7 @@ const ChannelsToImprove = () => {
       const typedChannels: Channel[] = (data || []).map(channel => ({
         ...channel,
         // Ensure metadata is properly typed
-        metadata: channel.metadata as Channel['metadata']
+        metadata: channel.metadata || {}
       }));
       
       setChannels(typedChannels);
@@ -161,6 +300,7 @@ const ChannelsToImprove = () => {
       }
     } catch (error) {
       console.error("Error fetching channels with no keywords:", error);
+      setError("Failed to fetch channels with no keywords. Please try again later.");
       toast.error("Failed to fetch channels with no keywords");
     } finally {
       setLoading(false);
@@ -169,13 +309,46 @@ const ChannelsToImprove = () => {
 
   const fetchChannelsWithNoVideos = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // Here we're looking for channels without video stats
+      // First try edge function approach
+      try {
+        const { data, error } = await supabase.functions.invoke('get-public-channels', {
+          body: {
+            hasStats: true, // Only get channels with video count
+            limit: 20
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data && data.channels && Array.isArray(data.channels)) {
+          // Transform the data to make it compatible with Channel type
+          const typedChannels: Channel[] = data.channels.map(channel => ({
+            ...channel,
+            // Ensure metadata is properly typed
+            metadata: channel.metadata || {}
+          }));
+          
+          setChannels(typedChannels);
+          if (typedChannels.length > 0) {
+            setSelectedChannel(typedChannels[0]);
+          } else {
+            setSelectedChannel(null);
+          }
+          return;
+        }
+      } catch (edgeFunctionError) {
+        console.warn("Edge function failed, falling back to direct query:", edgeFunctionError);
+      }
+      
+      // Fall back to direct query
       const { data, error } = await supabase
         .from('youtube_channels')
         .select('*')
         .not('video_count', 'is', null) // Ensure we only get channels with video count
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
       
       if (error) throw error;
       
@@ -183,7 +356,7 @@ const ChannelsToImprove = () => {
       const typedChannels: Channel[] = (data || []).map(channel => ({
         ...channel,
         // Ensure metadata is properly typed
-        metadata: channel.metadata as Channel['metadata']
+        metadata: channel.metadata || {}
       }));
       
       setChannels(typedChannels);
@@ -194,6 +367,7 @@ const ChannelsToImprove = () => {
       }
     } catch (error) {
       console.error("Error fetching channels for video fetching:", error);
+      setError("Failed to fetch channels for video fetching. Please try again later.");
       toast.error("Failed to fetch channels for video fetching");
     } finally {
       setLoading(false);
@@ -203,6 +377,7 @@ const ChannelsToImprove = () => {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setSelectedChannel(null);
+    setError(null);
     switch (value) {
       case "no-screenshot":
         fetchChannelsWithNoScreenshot();
@@ -226,12 +401,32 @@ const ChannelsToImprove = () => {
     setSelectedChannel(channel);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchChannelsWithNoScreenshot();
   }, []);
 
   const navigateToEdit = (channelId: string) => {
     navigate(`/admin/edit-channel/${channelId}`);
+  };
+
+  const retryFetch = () => {
+    switch (activeTab) {
+      case "no-screenshot":
+        fetchChannelsWithNoScreenshot();
+        break;
+      case "no-type":
+        fetchChannelsWithNoType();
+        break;
+      case "no-stats":
+        fetchChannelsWithNoStats();
+        break;
+      case "no-keywords":
+        fetchChannelsWithNoKeywords();
+        break;
+      case "videos":
+        fetchChannelsWithNoVideos();
+        break;
+    }
   };
 
   const generateScreenshot = (channel: Channel) => {
@@ -288,7 +483,19 @@ const ChannelsToImprove = () => {
 
   return (
     <Card className="p-6">
-      <h2 className="text-xl font-semibold mb-4">Channels To Improve</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Channels To Improve</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={retryFetch} 
+          disabled={loading}
+          className="flex items-center gap-1"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
       
       <Tabs defaultValue="no-screenshot" value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="mb-6 w-full justify-start">
@@ -409,6 +616,18 @@ const ChannelsToImprove = () => {
               <div className="max-h-96 overflow-auto space-y-2 pr-2">
                 {loading ? (
                   <div className="text-gray-500 py-4">Loading channels...</div>
+                ) : error ? (
+                  <div className="text-red-500 py-4">
+                    <p>{error}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={retryFetch} 
+                      className="mt-2"
+                    >
+                      Try Again
+                    </Button>
+                  </div>
                 ) : channels.length === 0 ? (
                   <div className="text-gray-500 py-4">No channels found in this category.</div>
                 ) : (
@@ -443,6 +662,22 @@ const ChannelsToImprove = () => {
   function renderChannelList(renderActions: (channel: Channel) => React.ReactNode) {
     if (loading) {
       return <div className="text-gray-500 py-4">Loading channels...</div>;
+    }
+
+    if (error) {
+      return (
+        <div className="text-red-500 py-4">
+          <p>{error}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={retryFetch} 
+            className="mt-2"
+          >
+            Try Again
+          </Button>
+        </div>
+      );
     }
 
     if (channels.length === 0) {

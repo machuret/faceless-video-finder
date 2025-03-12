@@ -1,149 +1,131 @@
+// Follow this setup guide to integrate the Deno runtime into your application:
+// https://deno.land/manual/examples/deploy_node_server
 
-import { serve } from "https://deno.land/std@0.182.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
-// Define cors function directly since import isn't working
-function cors(req: Request, options: ResponseInit = {}): Response {
-  // Get the origin from the request headers
-  const origin = req.headers.get("origin") || "*";
-  
-  // Default headers for CORS
-  const defaultHeaders = {
-    "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Max-Age": "86400",
-  };
-  
-  // If this is an OPTIONS request, return a response with CORS headers
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: defaultHeaders,
-    });
-  }
-  
-  // For all other requests, add CORS headers to the response
-  return new Response(options.body, {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
-  });
-}
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
-serve(async (req: Request) => {
-  // Handle CORS for OPTIONS requests
-  if (req.method === "OPTIONS") {
-    return cors(req);
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
   
   try {
-    // Get parameters from the request
-    const requestBody = await req.json();
-    const { 
-      limit = 10, 
-      offset = 0, 
-      featured = false,
+    const { url, key } = getSupabaseCredentials();
+    const supabase = createClient(url, key);
+    
+    // Get request parameters
+    const requestData = await req.json();
+    
+    const {
+      limit = 50,
+      offset = 0,
       countOnly = false,
-      missingScreenshot = false
-    } = requestBody;
+      missingScreenshot = false,
+      missingType = false,
+      missingStats = false,
+      missingKeywords = false,
+      hasStats = false,
+    } = requestData;
     
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    console.log("Request parameters:", {
+      limit,
+      offset,
+      countOnly,
+      missingScreenshot,
+      missingType,
+      missingStats,
+      missingKeywords,
+      hasStats,
+    });
     
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing required environment variables");
-      return cors(req, {
-        status: 500,
-        body: JSON.stringify({ error: "Server configuration error" }),
-        headers: { "Content-Type": "application/json" }
-      });
-    }
+    // Build the query based on parameters
+    let query = supabase.from('youtube_channels').select(
+      countOnly ? 'id' : '*',
+      countOnly ? { count: 'exact', head: true } : { count: 'exact' }
+    );
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Handle count-only requests efficiently
-    if (countOnly) {
-      let countQuery = supabase
-        .from("youtube_channels")
-        .select('id', { count: 'exact', head: true });
-      
-      // Add missing screenshot filter if requested
-      if (missingScreenshot) {
-        countQuery = countQuery.is('screenshot_url', null);
-      }
-      
-      // Add featured filter if requested
-      if (featured) {
-        countQuery = countQuery.eq('is_featured', true);
-      }
-      
-      const { count, error: countError } = await countQuery;
-      
-      if (countError) {
-        console.error("Error getting count:", countError);
-        return cors(req, {
-          status: 400,
-          body: JSON.stringify({ error: countError.message }),
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      
-      return cors(req, {
-        status: 200,
-        body: JSON.stringify({ totalCount: count || 0 }),
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    
-    // Build the query
-    let query = supabase
-      .from("youtube_channels")
-      .select('id, channel_title, channel_url, description, total_subscribers, total_views, screenshot_url, niche, channel_type, is_featured, videoStats:youtube_video_stats(*)', { count: 'exact' });
-    
-    // Add featured filter if requested
-    if (featured) {
-      query = query.eq('is_featured', true);
-    }
-    
-    // Add missing screenshot filter if requested
+    // Apply filters based on parameters
     if (missingScreenshot) {
       query = query.is('screenshot_url', null);
     }
     
-    // Add ordering and pagination
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    if (missingType) {
+      query = query.or('channel_type.is.null,channel_type.eq.other');
+    }
+    
+    if (missingStats) {
+      query = query.or('total_subscribers.is.null,total_views.is.null,video_count.is.null');
+    }
+    
+    if (missingKeywords) {
+      query = query.or('keywords.is.null,keywords.eq.{}');
+    }
+    
+    if (hasStats) {
+      query = query.not('video_count', 'is', null);
+    }
+    
+    // Always sort by creation date descending
+    query = query.order('created_at', { ascending: false });
+    
+    // If just counting, return the count
+    if (countOnly) {
+      const { count, error } = await query;
       
-    if (error) {
-      console.error("Error fetching channels:", error);
-      return cors(req, {
-        status: 400,
-        body: JSON.stringify({ error: error.message }),
-        headers: { "Content-Type": "application/json" }
+      if (error) {
+        throw error;
+      }
+      
+      return new Response(JSON.stringify({ totalCount: count }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     
-    console.log(`Successfully fetched ${data?.length || 0} channels via Edge Function`);
+    // Otherwise get the actual data with pagination
+    const { data, count, error } = await query.range(offset, offset + limit - 1);
     
-    return cors(req, {
-      status: 200,
-      body: JSON.stringify({
+    if (error) {
+      throw error;
+    }
+    
+    return new Response(
+      JSON.stringify({
         channels: data || [],
-        totalCount: count || 0
+        totalCount: count,
       }),
-      headers: { "Content-Type": "application/json" }
-    });
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error) {
     console.error("Error in get-public-channels function:", error);
     
-    return cors(req, {
-      status: 500,
-      body: JSON.stringify({ error: "Internal Server Error" }),
-      headers: { "Content-Type": "application/json" }
-    });
+    return new Response(
+      JSON.stringify({
+        error: error.message || "An unexpected error occurred",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
+
+// Helper to get Supabase credentials from environment variables
+function getSupabaseCredentials() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  if (!url || !key) {
+    throw new Error("Missing Supabase credentials");
+  }
+  
+  return { url, key };
+}

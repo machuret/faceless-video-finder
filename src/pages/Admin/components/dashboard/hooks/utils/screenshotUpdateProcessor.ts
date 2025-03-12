@@ -32,26 +32,39 @@ export const useScreenshotUpdateProcessor = () => {
       updatedChannels: []
     }));
     
-    const newState = await initiateScreenshotUpdate({
-      onUpdateProgress: (processed, total, currentChannel) => {
-        setState(prev => ({
-          ...prev,
-          processedChannels: processed,
-          totalChannels: total,
-          currentChannel,
-          progress: Math.floor((processed / total) * 100)
-        }));
-      },
-      onUpdateResult: (success) => {
-        setState(prev => ({
-          ...prev,
-          successCount: success ? prev.successCount + 1 : prev.successCount,
-          errorCount: !success ? prev.errorCount + 1 : prev.errorCount
-        }));
-      }
-    });
-    
-    setState(newState);
+    try {
+      const newState = await initiateScreenshotUpdate({
+        onUpdateProgress: (processed, total, currentChannel) => {
+          setState(prev => ({
+            ...prev,
+            processedChannels: processed,
+            totalChannels: total,
+            currentChannel,
+            progress: total > 0 ? Math.floor((processed / total) * 100) : 0
+          }));
+        },
+        onUpdateResult: (success, channelTitle) => {
+          setState(prev => ({
+            ...prev,
+            successCount: success ? prev.successCount + 1 : prev.successCount,
+            errorCount: !success ? prev.errorCount + 1 : prev.errorCount,
+            updatedChannels: success && channelTitle ? [...prev.updatedChannels, channelTitle] : prev.updatedChannels
+          }));
+        }
+      });
+      
+      setState(prev => ({
+        ...prev,
+        ...newState
+      }));
+    } catch (error) {
+      console.error("Error in screenshot update process:", error);
+      setState(prev => ({
+        ...prev,
+        isProcessing: false,
+        errors: [...prev.errors, `Update process failed: ${error instanceof Error ? error.message : 'Unknown error'}`]
+      }));
+    }
   }, []);
   
   const cancelUpdate = useCallback(() => {

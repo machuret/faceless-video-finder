@@ -17,7 +17,7 @@ export const contentRoutes = [
     element: lazyLoad(ChannelTypes),
   },
   {
-    path: "/channel-type/:id",
+    path: "/channel-types/:id",
     element: lazyLoad(ChannelTypeDetails),
   },
   {
@@ -29,11 +29,19 @@ export const contentRoutes = [
     element: lazyLoad(NicheDetails),
   },
   {
+    path: "/niches/:slug",
+    element: lazyLoad(NicheDetails),
+  },
+  {
     path: "/faceless-ideas",
     element: lazyLoad(FacelessIdeas),
   },
   {
     path: "/faceless-idea/:id",
+    element: lazyLoad(FacelessIdeaDetails),
+  },
+  {
+    path: "/faceless-ideas/:ideaId",
     element: lazyLoad(FacelessIdeaDetails),
   },
   {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +10,9 @@ import { FacelessIdeaInfo } from "@/services/facelessIdeas/types";
 import { toast } from "sonner";
 
 const FacelessIdeaDetails = () => {
-  const { ideaId } = useParams<{ ideaId: string }>();
+  const params = useParams<{ ideaId?: string; id?: string }>();
+  const ideaId = params.ideaId || params.id;
+  
   const [idea, setIdea] = useState<FacelessIdeaInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();

@@ -1,14 +1,6 @@
 
-import { toast } from "sonner";
 import { fetchChannelsForScreenshotUpdate } from "../services/screenshotChannelService";
 import { updateScreenshotForChannel } from "../services/screenshotUpdateService";
-
-export interface ScreenshotUpdateOptions {
-  onUpdateStart?: () => void;
-  onUpdateProgress?: (processed: number, total: number, currentChannel: string | null) => void;
-  onUpdateResult?: (success: boolean, message: string, url?: string) => void;
-  onUpdateComplete?: (successCount: number, errorCount: number) => void;
-}
 
 export interface ScreenshotUpdateState {
   isProcessing: boolean;
@@ -22,91 +14,119 @@ export interface ScreenshotUpdateState {
   updatedChannels: string[];
 }
 
-export const initiateScreenshotUpdate = async (
-  options: ScreenshotUpdateOptions = {}
-): Promise<ScreenshotUpdateState> => {
-  const state: ScreenshotUpdateState = {
-    isProcessing: false,
-    progress: 0,
-    currentChannel: null,
-    processedChannels: 0,
-    totalChannels: 0,
-    errors: [],
-    successCount: 0,
-    errorCount: 0,
-    updatedChannels: []
-  };
+interface UpdateProgressCallback {
+  (processed: number, total: number, currentChannel: string | null): void;
+}
+
+interface UpdateResultCallback {
+  (success: boolean, channelTitle?: string): void;
+}
+
+interface ScreenshotUpdateOptions {
+  onUpdateProgress: UpdateProgressCallback;
+  onUpdateResult: UpdateResultCallback;
+}
+
+/**
+ * Initiates and manages the mass screenshot update process
+ */
+export const initiateScreenshotUpdate = async (options: ScreenshotUpdateOptions): Promise<ScreenshotUpdateState> => {
+  const { onUpdateProgress, onUpdateResult } = options;
+  const errors: string[] = [];
+  const updatedChannels: string[] = [];
+  let successCount = 0;
+  let errorCount = 0;
   
   try {
-    options.onUpdateStart?.();
-    state.isProcessing = true;
+    console.log("Initiating screenshot update process...");
     
+    // Step 1: Fetch channels that need screenshot updates
     const { channels, count } = await fetchChannelsForScreenshotUpdate();
     
+    console.log(`Found ${channels.length} channels to update (out of ${count} total)`);
+    
     if (channels.length === 0) {
-      toast.info("No channels found missing screenshots");
-      return { ...state, isProcessing: false };
+      return {
+        isProcessing: false,
+        progress: 100,
+        currentChannel: null,
+        processedChannels: 0,
+        totalChannels: 0,
+        errors: ["No channels found that need screenshot updates."],
+        successCount: 0,
+        errorCount: 0,
+        updatedChannels: []
+      };
     }
     
-    state.totalChannels = count;
-    toast.info(`Starting screenshot update for ${channels.length} channels. This may take a while.`);
-    
-    const errors: string[] = [];
-    const updatedList: string[] = [];
-    
+    // Step 2: Process each channel
     for (let i = 0; i < channels.length; i++) {
       const channel = channels[i];
-      const channelTitle = channel.channel_title || `Channel ${i+1}`;
+      const channelTitle = channel.channel_title || channel.channel_url;
       
-      state.currentChannel = channelTitle;
-      options.onUpdateProgress?.(i, channels.length, channelTitle);
+      // Update progress
+      onUpdateProgress(i, channels.length, channelTitle);
       
-      const result = await updateScreenshotForChannel(
-        channel.id,
-        channel.channel_url,
-        channelTitle
-      );
-      
-      options.onUpdateResult?.(result.success, result.message, result.screenshotUrl);
-      
-      if (result.success) {
-        state.successCount++;
-        updatedList.push(`${channelTitle} (${result.screenshotUrl || 'screenshot updated'})`);
-      } else {
-        state.errorCount++;
-        errors.push(result.message);
-      }
-      
-      state.processedChannels = i + 1;
-      state.progress = Math.floor((state.processedChannels / channels.length) * 100);
-      
-      if ((state.processedChannels % 5 === 0) || state.processedChannels === channels.length) {
-        toast.info(`Screenshot progress: ${state.processedChannels}/${channels.length} channels processed`);
-      }
-      
-      if (i < channels.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      try {
+        // Step 3: Update screenshot for current channel
+        const result = await updateScreenshotForChannel(
+          channel.id, 
+          channel.channel_url, 
+          channelTitle
+        );
+        
+        if (result.success) {
+          successCount++;
+          updatedChannels.push(channelTitle);
+          console.log(`Successfully updated screenshot for ${channelTitle}`);
+        } else {
+          errorCount++;
+          errors.push(result.message);
+          console.error(`Failed to update screenshot for ${channelTitle}: ${result.message}`);
+        }
+        
+        // Report result
+        onUpdateResult(result.success, channelTitle);
+        
+      } catch (error) {
+        errorCount++;
+        const errorMessage = `Error updating ${channelTitle}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        errors.push(errorMessage);
+        console.error(errorMessage);
+        
+        // Report failure
+        onUpdateResult(false);
       }
     }
     
-    state.errors = errors;
-    state.updatedChannels = updatedList;
+    // Update final progress
+    onUpdateProgress(channels.length, channels.length, null);
     
-    if (state.errorCount > 0) {
-      toast.warning(
-        `Screenshot update completed: ${state.successCount} successful, ${state.errorCount} failed.`
-      );
-    } else {
-      toast.success(`Successfully updated screenshots for all ${state.successCount} channels!`);
-    }
+    // Return final state
+    return {
+      isProcessing: false,
+      progress: 100,
+      currentChannel: null,
+      processedChannels: channels.length,
+      totalChannels: channels.length,
+      errors,
+      successCount,
+      errorCount,
+      updatedChannels
+    };
     
-    options.onUpdateComplete?.(state.successCount, state.errorCount);
-    console.log("Channels updated with screenshots:", updatedList);
-    
-    return { ...state, isProcessing: false, currentChannel: null };
   } catch (error) {
-    console.error("Error in mass screenshot update:", error);
-    toast.error(`Screenshot update process encountered an error: ${error instanceof Error ? error.message : String(error)}`);
-    return { ...state, isProcessing: false, currentChannel: null };
+    console.error("Screenshot update process failed:", error);
+    return {
+      isProcessing: false,
+      progress: 0,
+      currentChannel: null,
+      processedChannels: 0,
+      totalChannels: 0,
+      errors: [`Process failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
+      successCount,
+      errorCount,
+      updatedChannels
+    };
   }
 };

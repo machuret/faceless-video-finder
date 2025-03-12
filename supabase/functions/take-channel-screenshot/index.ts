@@ -1,79 +1,132 @@
 
+// Follow this setup guide to integrate the Deno runtime into your application:
+// https://deno.land/manual/examples/deploy_node_server
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
-import { initSupabaseClient, createErrorResponse, createSuccessResponse } from "../_shared/screenshot-utils.ts";
-import { validateRequestBody } from "./request-validator.ts";
-import { handleScreenshot } from "./screenshot-handler.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-
+  
   try {
-    console.log("Screenshot request received");
+    // Get request parameters
+    const { channelId, channelUrl } = await req.json();
     
-    // Parse the request body
-    let requestBody;
-    try {
-      requestBody = await req.json();
-      console.log("Request body:", JSON.stringify(requestBody));
-    } catch (parseError) {
-      console.error("Error parsing request body:", parseError);
-      return createErrorResponse("Invalid JSON in request body", 400);
-    }
-    
-    // Validate the request body
-    const validation = validateRequestBody(requestBody);
-    if (!validation.isValid) {
-      console.error(validation.error);
-      return createErrorResponse(validation.error, 400);
-    }
-    
-    const { channelUrl, channelId } = validation.data;
-    
-    // Initialize Supabase client
-    const { client: supabase, error: clientError } = initSupabaseClient();
-    if (clientError || !supabase) {
-      console.error("Error initializing Supabase client:", clientError);
-      return createErrorResponse(clientError || "Failed to initialize Supabase client", 500);
-    }
-    
-    // Handle screenshot processing
-    const result = await handleScreenshot(supabase, channelId, channelUrl);
-    
-    if (!result.success) {
-      console.error("Screenshot processing failed:", result.error);
-      // Return 200 status with error details instead of 500 to ensure the UI can display the error properly
+    if (!channelId || !channelUrl) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: result.error || "Screenshot processing failed",
-          message: "Unable to capture screenshot, please try again later"
+        JSON.stringify({
+          success: false,
+          error: "Missing required parameters: channelId and channelUrl are required",
         }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" }, 
-          status: 200 // Use 200 instead of 500 to allow the frontend to handle the error
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
     
-    return createSuccessResponse(result);
+    console.log(`Taking screenshot for channel: ${channelId} (${channelUrl})`);
     
+    // Ensure the URL is properly formatted
+    let formattedUrl = channelUrl;
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+    
+    // Use the screenshot API to get a screenshot
+    const apiKey = Deno.env.get("SCREENSHOT_API_KEY");
+    if (!apiKey) {
+      throw new Error("SCREENSHOT_API_KEY environment variable is not set");
+    }
+    
+    const screenshotApiUrl = `https://api.screenshotmachine.com/?key=${apiKey}&url=${encodeURIComponent(formattedUrl)}&dimension=1366x768&format=jpg&cacheLimit=0&delay=1000`;
+    
+    // Fetch the screenshot
+    const response = await fetch(screenshotApiUrl);
+    if (!response.ok) {
+      throw new Error(`Screenshot API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const imageBuffer = await response.arrayBuffer();
+    
+    // Upload to Supabase storage
+    const { url, key } = getSupabaseCredentials();
+    const supabase = createClient(url, key);
+    
+    const timestamp = new Date().getTime();
+    const filename = `channel-screenshots/${channelId}_${timestamp}.jpg`;
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('public')
+      .upload(filename, imageBuffer, {
+        contentType: 'image/jpeg',
+        upsert: true,
+      });
+    
+    if (uploadError) {
+      throw new Error(`Error uploading screenshot: ${uploadError.message}`);
+    }
+    
+    // Get the public URL of the uploaded image
+    const { data: publicUrlData } = supabase.storage
+      .from('public')
+      .getPublicUrl(filename);
+    
+    const screenshotUrl = publicUrlData.publicUrl;
+    
+    // Update the channel record with the screenshot URL
+    const { error: updateError } = await supabase
+      .from('youtube_channels')
+      .update({ screenshot_url: screenshotUrl })
+      .eq('id', channelId);
+    
+    if (updateError) {
+      throw new Error(`Error updating channel: ${updateError.message}`);
+    }
+    
+    console.log(`Successfully updated screenshot for channel ${channelId}: ${screenshotUrl}`);
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        screenshotUrl,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error) {
-    console.error("Unhandled error in screenshot function:", error);
-    // Return 200 status with error details instead of 500
+    console.error("Error in take-channel-screenshot function:", error);
+    
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || "An unexpected error occurred while taking the screenshot",
-        message: "Screenshot service encountered an error, please try again"
+        error: error.message || "An unexpected error occurred",
       }),
-      { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" }, 
-        status: 200 // Use 200 to allow the frontend to display the error message
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
 });
+
+// Helper to get Supabase credentials from environment variables
+function getSupabaseCredentials() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  if (!url || !key) {
+    throw new Error("Missing Supabase credentials");
+  }
+  
+  return { url, key };
+}
