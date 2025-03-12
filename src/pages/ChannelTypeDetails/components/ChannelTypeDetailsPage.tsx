@@ -1,8 +1,8 @@
 
-import { useParams } from "react-router-dom";
+import React, { useParams } from "react-router-dom";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Channel } from "@/types/youtube";
+import { Channel, ChannelMetadata } from "@/types/youtube";
 import MainNavbar from "@/components/MainNavbar";
 import { toast } from "sonner";
 import { channelTypes } from "@/components/youtube/channel-list/constants";
@@ -13,6 +13,7 @@ import ChannelsOfType from "./ChannelsOfType";
 import OtherChannelTypes from "./OtherChannelTypes";
 import PageFooter from "@/components/home/PageFooter";
 import { ErrorState } from "@/components/youtube/channel-list/components/ErrorState";
+import { convertToChannelMetadata } from "@/pages/Admin/components/dashboard/utils/channelMetadataUtils";
 
 const ChannelTypeDetailsPage = () => {
   const { typeId } = useParams<{ typeId: string }>();
@@ -94,6 +95,8 @@ const ChannelTypeDetailsPage = () => {
           const directMatch = channel.channel_type === typeId;
           const metadataMatch = channel.channel_type === "other" && 
                 channel.metadata && 
+                typeof channel.metadata === 'object' &&
+                'ui_channel_type' in channel.metadata &&
                 channel.metadata.ui_channel_type === typeId;
           
           return directMatch || metadataMatch;
