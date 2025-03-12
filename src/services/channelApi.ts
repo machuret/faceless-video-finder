@@ -21,27 +21,17 @@ export const fetchChannelDetails = async (id: string) => {
     if (channelError) {
       console.error("Error fetching channel details:", channelError);
       
-      // Try using edge function
+      // Try using edge function with proper invoke method
       try {
-        const response = await fetch(`${supabase.functions.url}/get-channel-by-id`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ channelId: id })
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-by-id', {
+          body: { channelId: id }
         });
         
-        if (!response.ok) {
-          throw new Error(`Edge function error: ${response.status}`);
+        if (edgeError) {
+          throw new Error(`Edge function error: ${edgeError.message}`);
         }
         
-        const result = await response.json();
-        
-        if (result.error) {
-          throw new Error(result.error);
-        }
-        
-        if (result.channel) {
+        if (edgeData.channel) {
           console.log("Successfully fetched channel using edge function");
           
           // Try to get video stats separately (it's ok if this fails)
@@ -58,8 +48,8 @@ export const fetchChannelDetails = async (id: string) => {
           }
           
           return {
-            channel: result.channel as Channel,
-            videoStats: result.videoStats || videoStats || []
+            channel: edgeData.channel as Channel,
+            videoStats: edgeData.videoStats || videoStats || []
           };
         }
       } catch (edgeFnError) {
@@ -169,27 +159,23 @@ export const fetchRelatedChannels = async (currentChannelId: string, niche?: str
   console.log(`Fetching related channels for ID: ${currentChannelId}, niche: ${niche || 'any'}`);
   
   try {
-    // First try using edge function
+    // First try using edge function with proper invoke method
     try {
-      const response = await fetch(`${supabase.functions.url}/get-related-channels`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-related-channels', {
+        body: {
           channelId: currentChannelId,
           niche: niche || null,
           limit: limit
-        })
+        }
       });
       
-      if (response.ok) {
-        const result = await response.json();
-        
-        if (Array.isArray(result) && result.length > 0) {
-          console.log(`Successfully fetched ${result.length} related channels via edge function`);
-          return result as Channel[];
-        }
+      if (edgeError) {
+        throw new Error(`Edge function error: ${edgeError.message}`);
+      }
+      
+      if (Array.isArray(edgeData) && edgeData.length > 0) {
+        console.log(`Successfully fetched ${edgeData.length} related channels via edge function`);
+        return edgeData as Channel[];
       }
     } catch (edgeFnErr) {
       console.warn("Edge function for related channels failed:", edgeFnErr);

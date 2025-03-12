@@ -124,30 +124,23 @@ export function useHomePageData(page: number, channelsPerPage: number) {
           
           // Try a fallback approach using edge function
           try {
-            // Use fetch to call the edge function directly
-            const response = await fetch(`${supabase.functions.url}/get-public-channels`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token || '')}`
-              },
-              body: JSON.stringify({
+            // Use supabase.functions.invoke instead of direct URL access
+            const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
+              body: {
                 limit: channelsPerPage,
                 offset: offset
-              })
+              }
             });
             
-            if (!response.ok) {
-              throw new Error(`Edge function error: ${response.status}`);
+            if (edgeError) {
+              throw new Error(`Edge function error: ${edgeError.message}`);
             }
             
-            const result = await response.json();
-            
-            if (result.channels && Array.isArray(result.channels)) {
-              console.log(`Successfully fetched ${result.channels.length} channels using edge function`);
+            if (edgeData.channels && Array.isArray(edgeData.channels)) {
+              console.log(`Successfully fetched ${edgeData.channels.length} channels using edge function`);
               return { 
-                channels: result.channels as Channel[],
-                totalCount: result.totalCount || 0
+                channels: edgeData.channels as Channel[],
+                totalCount: edgeData.totalCount || 0
               };
             }
           } catch (edgeFnError) {
