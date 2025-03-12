@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { FacelessIdeaInfo } from "./types";
 import { getCache, setCache, invalidateCache } from "@/utils/cacheUtils";
@@ -32,7 +31,8 @@ export class ValidationError extends FacelessIdeasError {
   }
 }
 
-interface FetchIdeasOptions {
+// Explicitly define the options interface without recursive types
+export interface FetchIdeasOptions {
   page?: number;
   pageSize?: number;
   search?: string;
@@ -43,7 +43,7 @@ interface FetchIdeasOptions {
   cacheTTL?: number; // in milliseconds
 }
 
-interface PaginatedResponse<T> {
+export interface PaginatedResponse<T> {
   data: T[];
   count: number;
   page: number;
@@ -283,10 +283,11 @@ export const invalidateFacelessIdeasCache = (): void => {
   }
 };
 
-// Type for retry options without making it recursive
-type RetryErrorFilter = (error: any) => boolean;
+// Define error filter type independently to avoid recursive definitions
+export type RetryErrorFilter = (error: any) => boolean;
 
-interface RetryOptions {
+// Define the retry options without recursive type references
+export interface RetryOptions {
   maxRetries?: number;
   initialDelay?: number;
   maxDelay?: number;
