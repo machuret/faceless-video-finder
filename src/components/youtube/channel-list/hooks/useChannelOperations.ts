@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { Channel } from "@/types/youtube";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,48 +13,112 @@ export function useChannelOperations() {
   const [totalCount, setTotalCount] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set());
 
-  const fetchChannels = useCallback(async (offset?: number, limit?: number) => {
+  const fetchChannels = useCallback(async (offset?: number, limit?: number = 10) => {
     try {
       console.log("fetchChannels called with offset:", offset, "limit:", limit);
       setLoading(true);
       setError(null);
       
-      const { count, error: countError } = await supabase
-        .from("youtube_channels")
-        .select("*", { count: 'exact', head: true });
-      
-      if (countError) {
-        console.error("Error fetching channel count:", countError);
-        throw countError;
+      // First try getting the count using the edge function for consistency
+      let count = 0;
+      try {
+        const { data: countData, error: countError } = await supabase.functions.invoke('get-public-channels', {
+          body: { 
+            limit: 1,
+            offset: 0,
+            countOnly: true
+          }
+        });
+        
+        if (!countError && countData?.totalCount) {
+          count = countData.totalCount;
+          console.log("Total channel count from edge function:", count);
+        }
+      } catch (err) {
+        console.warn("Error fetching count from edge function, will try direct query");
       }
       
-      setTotalCount(count || 0);
-      console.log("Total channel count:", count);
-      
-      let query = supabase
-        .from("youtube_channels")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (typeof offset === 'number') {
-        console.log("Applying offset to query:", offset);
-        query = query.range(offset, (offset + (limit || 10)) - 1);
+      // If edge function count failed, try direct query
+      if (count === 0) {
+        try {
+          const { count: directCount, error: countError } = await supabase
+            .from("youtube_channels")
+            .select("*", { count: 'exact', head: true });
+          
+          if (countError) {
+            console.error("Error fetching channel count:", countError);
+          } else {
+            count = directCount || 0;
+            console.log("Total channel count from direct query:", count);
+          }
+        } catch (countErr) {
+          console.error("Error getting count:", countErr);
+        }
       }
-      else if (limit && typeof limit === 'number') {
-        console.log("Applying limit to query:", limit);
-        query = query.limit(limit);
-      }
+      
+      setTotalCount(count);
+      
+      // Now try to fetch the actual data
+      const finalLimit = typeof limit === 'number' ? limit : 10;
+      const finalOffset = typeof offset === 'number' ? offset : 0;
+      
+      // First try direct query
+      let channelData: Channel[] = [];
+      let directQuerySucceeded = false;
+      
+      try {
+        const { data, error } = await supabase
+          .from("youtube_channels")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(finalOffset, finalOffset + finalLimit - 1);
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
+        if (error) {
+          console.error("Supabase direct query error:", error);
+        } else if (data && data.length > 0) {
+          channelData = data as Channel[];
+          directQuerySucceeded = true;
+          console.log(`Fetched ${channelData.length} channels from direct Supabase query`);
+        }
+      } catch (directErr) {
+        console.error("Error in direct query:", directErr);
       }
       
-      console.log(`Fetched ${data?.length || 0} channels from Supabase`);
+      // If direct query failed, try edge function
+      if (!directQuerySucceeded) {
+        try {
+          const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
+            body: { 
+              limit: finalLimit,
+              offset: finalOffset
+            }
+          });
+          
+          if (edgeError) {
+            throw new Error(`Edge function error: ${edgeError.message}`);
+          }
+          
+          if (edgeData?.channels && Array.isArray(edgeData.channels)) {
+            channelData = edgeData.channels as Channel[];
+            console.log(`Fetched ${channelData.length} channels from edge function`);
+            
+            // Update count if it seems more accurate
+            if (edgeData.totalCount && edgeData.totalCount > count) {
+              setTotalCount(edgeData.totalCount);
+            }
+          }
+        } catch (edgeErr) {
+          console.error("Edge function error:", edgeErr);
+          throw edgeErr;
+        }
+      }
       
-      const typedChannels: Channel[] = (data || []).map(channel => ({
+      if (channelData.length === 0) {
+        console.log("No channels found in database");
+      }
+      
+      // Map the metadata to ensure proper typing
+      const typedChannels: Channel[] = channelData.map(channel => ({
         ...channel,
         metadata: channel.metadata as Channel['metadata']
       }));

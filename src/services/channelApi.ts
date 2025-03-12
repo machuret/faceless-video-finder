@@ -21,39 +21,22 @@ export const fetchChannelDetails = async (id: string) => {
     if (channelError) {
       console.error("Error fetching channel details:", channelError);
       
-      // Try using edge function with proper invoke method
-      try {
-        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-by-id', {
-          body: { channelId: id }
-        });
+      // Try using our fixed edge function
+      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-by-id', {
+        body: { channelId: id }
+      });
+      
+      if (edgeError) {
+        throw new Error(`Edge function error: ${edgeError.message}`);
+      }
+      
+      if (edgeData?.channel) {
+        console.log("Successfully fetched channel using edge function");
         
-        if (edgeError) {
-          throw new Error(`Edge function error: ${edgeError.message}`);
-        }
-        
-        if (edgeData.channel) {
-          console.log("Successfully fetched channel using edge function");
-          
-          // Try to get video stats separately (it's ok if this fails)
-          let videoStats = [];
-          try {
-            const { data: videoData } = await supabase
-              .from("youtube_video_stats")
-              .select("*")
-              .eq("channel_id", id);
-              
-            if (videoData) videoStats = videoData;
-          } catch (videoErr) {
-            console.warn("Could not fetch video stats:", videoErr);
-          }
-          
-          return {
-            channel: edgeData.channel as Channel,
-            videoStats: edgeData.videoStats || videoStats || []
-          };
-        }
-      } catch (edgeFnError) {
-        console.error("Edge function error:", edgeFnError);
+        return {
+          channel: edgeData.channel as Channel,
+          videoStats: edgeData.videoStats || []
+        };
       }
       
       throw channelError;
@@ -121,7 +104,7 @@ export const fetchTopPerformingVideos = async (youtubeChannelId: string) => {
       const items = directResponse.value.items;
       const mostViewed = items[0];
       
-      // Properly format the data to match TopVideo interface
+      // Fix the TopVideo type issue by ensuring data matches the interface
       return {
         mostViewedVideo: {
           id: mostViewed.id?.videoId || '',
@@ -159,27 +142,21 @@ export const fetchRelatedChannels = async (currentChannelId: string, niche?: str
   console.log(`Fetching related channels for ID: ${currentChannelId}, niche: ${niche || 'any'}`);
   
   try {
-    // First try using edge function with proper invoke method
-    try {
-      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-related-channels', {
-        body: {
-          channelId: currentChannelId,
-          niche: niche || null,
-          limit: limit
-        }
-      });
-      
-      if (edgeError) {
-        throw new Error(`Edge function error: ${edgeError.message}`);
+    // First try using our fixed edge function
+    const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-related-channels', {
+      body: {
+        channelId: currentChannelId,
+        niche: niche || null,
+        limit: limit
       }
-      
-      if (Array.isArray(edgeData) && edgeData.length > 0) {
-        console.log(`Successfully fetched ${edgeData.length} related channels via edge function`);
-        return edgeData as Channel[];
-      }
-    } catch (edgeFnErr) {
-      console.warn("Edge function for related channels failed:", edgeFnErr);
+    });
+    
+    if (edgeError) {
+      console.warn("Edge function error:", edgeError.message);
       // Continue to fallback
+    } else if (Array.isArray(edgeData) && edgeData.length > 0) {
+      console.log(`Successfully fetched ${edgeData.length} related channels via edge function`);
+      return edgeData as Channel[];
     }
     
     // If edge function failed, try direct query with careful error handling

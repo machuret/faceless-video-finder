@@ -21,25 +21,24 @@ export function useHomePageData(page: number, channelsPerPage: number) {
             try {
               console.log(`Prefetching page ${nextPage} with offset ${offset}`);
               
-              // Use a more direct query approach with error handling
-              let query = supabase
-                .from('youtube_channels')
-                .select('id, channel_title, description, total_subscribers, total_views, screenshot_url, niche', { count: 'exact' })
-                .order('created_at', { ascending: false })
-                .range(offset, offset + channelsPerPage - 1);
-              
-              const { data, count, error } = await query;
+              // Use the properly fixed edge function
+              const { data, error } = await supabase.functions.invoke('get-public-channels', {
+                body: { 
+                  limit: channelsPerPage,
+                  offset: offset
+                }
+              });
               
               if (error) {
                 console.error("Error prefetching next page channels:", error);
                 return { channels: [], totalCount: 0 };
               }
               
-              console.log(`Successfully prefetched ${data?.length || 0} channels for next page`);
+              console.log(`Successfully prefetched ${data?.channels?.length || 0} channels for next page`);
               
               return { 
-                channels: data as Channel[] || [], 
-                totalCount: count || 0 
+                channels: data?.channels as Channel[] || [], 
+                totalCount: data?.totalCount || 0 
               };
             } catch (err) {
               console.error('Error prefetching next page:', err);
@@ -74,17 +73,20 @@ export function useHomePageData(page: number, channelsPerPage: number) {
         if (error) {
           console.error("Error fetching featured channels:", error);
           
-          // Try a fallback direct query with fewer fields if we get an error
+          // Try a fallback using our edge function
           try {
-            const { data: fallbackData, error: fallbackError } = await supabase
-              .from('youtube_channels')
-              .select('id, channel_title, screenshot_url')
-              .limit(3);
+            const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
+              body: { 
+                limit: 3,
+                offset: 0,
+                featured: true
+              }
+            });
               
-            if (fallbackError) throw fallbackError;
+            if (edgeError) throw edgeError;
             
-            console.log(`Successfully fetched ${fallbackData?.length || 0} featured channels using fallback`);
-            return fallbackData as Channel[] || [];
+            console.log(`Successfully fetched ${edgeData?.channels?.length || 0} featured channels using edge function`);
+            return edgeData?.channels as Channel[] || [];
           } catch (fallbackErr) {
             console.error("Fallback featured channels error:", fallbackErr);
             return [];
@@ -103,7 +105,7 @@ export function useHomePageData(page: number, channelsPerPage: number) {
     retryDelay: 1000
   });
   
-  // Main query for current page - simplified and with error handling
+  // Main query for current page - now using our fixed edge function
   const channelsQuery = useQuery({
     queryKey: ['channels', 'homepage', page, channelsPerPage],
     queryFn: async () => {
@@ -112,7 +114,7 @@ export function useHomePageData(page: number, channelsPerPage: number) {
         
         console.log(`Fetching channels for homepage, page ${page}, offset ${offset}, limit ${channelsPerPage}`);
         
-        // Use a simpler query approach to avoid complex permissions issues
+        // Use direct query first as attempt
         const { data, error, count } = await supabase
           .from("youtube_channels")
           .select('id, channel_title, description, total_subscribers, total_views, screenshot_url, niche', { count: 'exact' })
@@ -122,30 +124,24 @@ export function useHomePageData(page: number, channelsPerPage: number) {
         if (error) {
           console.error("Error fetching channels:", error);
           
-          // Try a fallback approach using edge function
-          try {
-            // Use supabase.functions.invoke instead of direct URL access
-            const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
-              body: {
-                limit: channelsPerPage,
-                offset: offset
-              }
-            });
-            
-            if (edgeError) {
-              throw new Error(`Edge function error: ${edgeError.message}`);
+          // Use our fixed edge function
+          const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
+            body: { 
+              limit: channelsPerPage,
+              offset: offset
             }
-            
-            if (edgeData.channels && Array.isArray(edgeData.channels)) {
-              console.log(`Successfully fetched ${edgeData.channels.length} channels using edge function`);
-              return { 
-                channels: edgeData.channels as Channel[],
-                totalCount: edgeData.totalCount || 0
-              };
-            }
-          } catch (edgeFnError) {
-            console.error("Edge function error:", edgeFnError);
-            // Continue to throw the original error
+          });
+          
+          if (edgeError) {
+            throw new Error(`Edge function error: ${edgeError.message}`);
+          }
+          
+          if (edgeData?.channels && Array.isArray(edgeData.channels)) {
+            console.log(`Successfully fetched ${edgeData.channels.length} channels using edge function`);
+            return { 
+              channels: edgeData.channels as Channel[],
+              totalCount: edgeData.totalCount || 0
+            };
           }
           
           throw new Error("Failed to load channels. Please try again later.");
