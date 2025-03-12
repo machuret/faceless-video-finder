@@ -22,11 +22,14 @@ const RelatedChannels = ({ currentChannelId, niche }: RelatedChannelsProps) => {
         setLoading(true);
         setError(null);
         
+        console.log(`Loading related channels for ID: ${currentChannelId}, niche: ${niche || 'any'}`);
         const relatedChannels = await fetchRelatedChannels(currentChannelId, niche);
         
         if (relatedChannels.length === 0) {
           // No results, but not an error
           console.log("No related channels found");
+        } else {
+          console.log(`Found ${relatedChannels.length} related channels`);
         }
         
         setChannels(relatedChannels);

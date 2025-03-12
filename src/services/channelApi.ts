@@ -93,51 +93,60 @@ export const fetchRelatedChannels = async (currentChannelId: string, niche?: str
   console.log(`Fetching related channels for ID: ${currentChannelId}, niche: ${niche || 'any'}`);
   
   try {
-    // Create a base query that excludes the current channel
-    let query = supabase
-      .from("youtube_channels")
-      .select("*")
-      .neq("id", currentChannelId)
-      .order("created_at", { ascending: false });
+    let nicheChannels: Channel[] = [];
     
-    // If niche is provided, first try to fetch channels with the same niche
+    // If niche is provided, try to fetch channels with the same niche first
     if (niche) {
-      const { data: nicheData, error: nicheError } = await query
+      const { data: nicheData, error: nicheError } = await supabase
+        .from("youtube_channels")
+        .select("*")
+        .neq("id", currentChannelId)
         .eq("niche", niche)
+        .order("created_at", { ascending: false })
         .limit(limit);
       
       if (nicheError) {
         console.error("Error fetching niche-specific channels:", nicheError);
-      } else if (nicheData && nicheData.length >= limit) {
+      } else if (nicheData && nicheData.length > 0) {
+        nicheChannels = nicheData as Channel[];
+        
         // If we have enough channels from the same niche, return them
-        return nicheData as Channel[];
+        if (nicheChannels.length >= limit) {
+          return nicheChannels;
+        }
       }
-      
-      // If we don't have enough channels with the specified niche,
-      // we'll fall back to random channels below
     }
     
-    // Fetch random channels (either as fallback or primary if no niche specified)
+    // We need more channels or no niche was specified
+    // Get random channels to fill or as a complete set
+    const remainingLimit = limit - nicheChannels.length;
+    
     const { data: randomData, error: randomError } = await supabase
       .from("youtube_channels")
       .select("*")
       .neq("id", currentChannelId)
-      .limit(50); // Fetch more than we need so we can randomize
+      .not("id", "in", `(${nicheChannels.map(c => `'${c.id}'`).join(',')})`)
+      .order("created_at", { ascending: false })
+      .limit(remainingLimit > 0 ? remainingLimit * 2 : limit * 2); // Get more than needed for randomization
     
     if (randomError) {
       console.error("Error fetching random channels:", randomError);
-      throw randomError;
+      // Still return any niche channels we might have found
+      return nicheChannels;
     }
     
     if (!randomData || randomData.length === 0) {
-      return [];
+      return nicheChannels; // Return just the niche channels or empty array
     }
     
-    // Shuffle and take up to 'limit' channels
+    // Shuffle and take the needed amount
     const shuffled = [...randomData].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, limit) as Channel[];
+    const randomChannels = shuffled.slice(0, remainingLimit > 0 ? remainingLimit : limit) as Channel[];
+    
+    // Combine niche-specific and random channels
+    return [...nicheChannels, ...randomChannels];
   } catch (error) {
-    console.error("Error fetching related channels:", error);
-    return [];
+    console.error("Error in fetchRelatedChannels:", error);
+    return []; // Return empty array on error
   }
 };

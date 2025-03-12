@@ -15,13 +15,23 @@ export function useHomePageData(page: number, channelsPerPage: number) {
       await queryClient.prefetchQuery({
         queryKey: ['channels', 'homepage', nextPage, channelsPerPage],
         queryFn: async () => {
-          const { data, count } = await supabase
-            .from('youtube_channels')
-            .select('*, videoStats:youtube_video_stats(*)', { count: 'exact' })
-            .order('created_at', { ascending: false })
-            .range(offset, offset + channelsPerPage - 1);
-          
-          return { channels: data as Channel[] || [], totalCount: count || 0 };
+          try {
+            const { data, count, error } = await supabase
+              .from('youtube_channels')
+              .select('*, videoStats:youtube_video_stats(*)', { count: 'exact' })
+              .order('created_at', { ascending: false })
+              .range(offset, offset + channelsPerPage - 1);
+            
+            if (error) throw error;
+            
+            return { 
+              channels: data as Channel[] || [], 
+              totalCount: count || 0 
+            };
+          } catch (err) {
+            console.error('Error prefetching next page:', err);
+            return { channels: [], totalCount: 0 };
+          }
         },
         staleTime: 2 * 60 * 1000, // 2 minutes
       });
@@ -37,9 +47,11 @@ export function useHomePageData(page: number, channelsPerPage: number) {
       try {
         const offset = (page - 1) * channelsPerPage;
         
+        console.log(`Fetching channels for homepage, page ${page}, offset ${offset}, limit ${channelsPerPage}`);
+        
         // Only select necessary fields to reduce payload size
         const { data: channelsData, error: channelsError, count } = await supabase
-          .from('youtube_channels')
+          .from("youtube_channels")
           .select(`
             id, 
             channel_title, 
@@ -55,7 +67,12 @@ export function useHomePageData(page: number, channelsPerPage: number) {
           .order('created_at', { ascending: false })
           .range(offset, offset + channelsPerPage - 1);
           
-        if (channelsError) throw channelsError;
+        if (channelsError) {
+          console.error("Error fetching channels:", channelsError);
+          throw channelsError;
+        }
+        
+        console.log(`Successfully fetched ${channelsData?.length || 0} channels, total count: ${count || 0}`);
         
         return { 
           channels: channelsData as Channel[] || [],
@@ -63,10 +80,11 @@ export function useHomePageData(page: number, channelsPerPage: number) {
         };
       } catch (err: any) {
         console.error('Error fetching channels:', err);
-        throw err;
+        throw new Error(err.message || 'Failed to load channels. Please try again later.');
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
   });
   
   // Separate optimized query for featured channels
@@ -74,6 +92,8 @@ export function useHomePageData(page: number, channelsPerPage: number) {
     queryKey: ['channels', 'featured'],
     queryFn: async () => {
       try {
+        console.log("Fetching featured channels");
+        
         // Only select fields we need to display for featured channels
         const { data: featuredData, error: featuredError } = await supabase
           .from('youtube_channels')
@@ -92,7 +112,12 @@ export function useHomePageData(page: number, channelsPerPage: number) {
           .eq('is_featured', true)
           .limit(3);
           
-        if (featuredError) throw featuredError;
+        if (featuredError) {
+          console.error("Error fetching featured channels:", featuredError);
+          throw featuredError;
+        }
+        
+        console.log(`Successfully fetched ${featuredData?.length || 0} featured channels`);
         
         return featuredData as Channel[] || [];
       } catch (err: any) {
@@ -101,6 +126,7 @@ export function useHomePageData(page: number, channelsPerPage: number) {
       }
     },
     staleTime: 10 * 60 * 1000, // 10 minutes - longer cache for featured content
+    retry: 2,
   });
   
   // Extract all videos for the FeaturedVideos component using memoization
