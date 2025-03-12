@@ -2,6 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import OptimizedImage from "@/components/ui/optimized-image";
 import { useState, useMemo } from "react";
+import { generateLowQualityPlaceholder } from "@/utils/imageUtils";
 
 interface ChannelScreenshotProps {
   screenshotUrl: string;
@@ -14,14 +15,7 @@ const ChannelScreenshot = ({ screenshotUrl, channelTitle }: ChannelScreenshotPro
   // Generate low quality placeholder URL
   const blurDataURL = useMemo(() => {
     if (!screenshotUrl) return '';
-    
-    // For URLs that support quality parameters
-    if (!screenshotUrl.includes('supabase')) {
-      const separator = screenshotUrl.includes('?') ? '&' : '?';
-      return `${screenshotUrl}${separator}quality=10&width=50`;
-    }
-    
-    return '';
+    return generateLowQualityPlaceholder(screenshotUrl, 30);
   }, [screenshotUrl]);
   
   if (!screenshotUrl || imageError) return null;
