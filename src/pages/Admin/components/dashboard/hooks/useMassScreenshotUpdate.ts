@@ -16,19 +16,41 @@ export const useMassScreenshotUpdate = () => {
   
   const fetchChannelsForScreenshotUpdate = async () => {
     try {
-      const { data, error, count } = await supabase
-        .from('youtube_channels')
-        .select('id, channel_url, channel_title', { count: 'exact' })
-        .is('screenshot_url', null)
-        .order('created_at', { ascending: false });
+      // Use the edge function to bypass RLS issues
+      const { data: countData, error: countError } = await supabase.functions.invoke('get-public-channels', {
+        body: { 
+          countOnly: true,
+          missingScreenshot: true
+        }
+      });
       
-      if (error) throw error;
-      console.log(`Found ${count || 0} channels missing screenshots`);
+      if (countError) {
+        throw new Error(`Error fetching count: ${countError.message}`);
+      }
       
-      return { channels: data || [], count: count || 0 };
+      const count = countData?.totalCount || 0;
+      console.log(`Found ${count} channels missing screenshots (count via edge function)`);
+      
+      // Now fetch the actual channel data
+      const { data: channelsData, error: channelsError } = await supabase.functions.invoke('get-public-channels', {
+        body: { 
+          limit: 100, // Increase limit to process more channels
+          offset: 0,
+          missingScreenshot: true
+        }
+      });
+      
+      if (channelsError) {
+        throw new Error(`Error fetching channels: ${channelsError.message}`);
+      }
+      
+      const channels = channelsData?.channels || [];
+      console.log(`Fetched ${channels.length} channels missing screenshots (via edge function)`);
+      
+      return { channels, count };
     } catch (error) {
       console.error("Error fetching channels for screenshot update:", error);
-      return { channels: [], count: 0 };
+      throw error; // Re-throw to handle in caller
     }
   };
   

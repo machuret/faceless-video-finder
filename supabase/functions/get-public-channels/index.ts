@@ -46,7 +46,8 @@ serve(async (req: Request) => {
       limit = 10, 
       offset = 0, 
       featured = false,
-      countOnly = false
+      countOnly = false,
+      missingScreenshot = false
     } = requestBody;
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -65,9 +66,21 @@ serve(async (req: Request) => {
     
     // Handle count-only requests efficiently
     if (countOnly) {
-      const { count, error: countError } = await supabase
+      let countQuery = supabase
         .from("youtube_channels")
         .select('id', { count: 'exact', head: true });
+      
+      // Add missing screenshot filter if requested
+      if (missingScreenshot) {
+        countQuery = countQuery.is('screenshot_url', null);
+      }
+      
+      // Add featured filter if requested
+      if (featured) {
+        countQuery = countQuery.eq('is_featured', true);
+      }
+      
+      const { count, error: countError } = await countQuery;
       
       if (countError) {
         console.error("Error getting count:", countError);
@@ -88,11 +101,16 @@ serve(async (req: Request) => {
     // Build the query
     let query = supabase
       .from("youtube_channels")
-      .select('id, channel_title, description, total_subscribers, total_views, screenshot_url, niche, channel_type, is_featured, videoStats:youtube_video_stats(*)', { count: 'exact' });
+      .select('id, channel_title, channel_url, description, total_subscribers, total_views, screenshot_url, niche, channel_type, is_featured, videoStats:youtube_video_stats(*)', { count: 'exact' });
     
     // Add featured filter if requested
     if (featured) {
       query = query.eq('is_featured', true);
+    }
+    
+    // Add missing screenshot filter if requested
+    if (missingScreenshot) {
+      query = query.is('screenshot_url', null);
     }
     
     // Add ordering and pagination
