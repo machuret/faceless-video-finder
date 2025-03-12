@@ -7,6 +7,7 @@ interface BrokenLink {
   url: string;
   text: string;
   status: number;
+  pageUrl?: string;
   error?: string;
 }
 
@@ -54,6 +55,11 @@ const BrokenLinksTable: React.FC<BrokenLinksTableProps> = ({ brokenLinks }) => {
                   </a>
                 </div>
                 <div className="text-gray-500 truncate max-w-xs">{link.text}</div>
+                {link.pageUrl && (
+                  <div className="text-gray-400 text-xs truncate max-w-xs mt-1">
+                    Found on: {link.pageUrl}
+                  </div>
+                )}
               </td>
               <td className="px-3 py-2 whitespace-nowrap text-sm">
                 {getStatusBadge(link.status)}

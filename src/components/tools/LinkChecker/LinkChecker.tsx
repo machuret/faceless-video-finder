@@ -32,9 +32,6 @@ const LinkChecker: React.FC<LinkCheckerProps> = ({ autoScan = false }) => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    if (value === "site" && !linkChecker.isChecking) {
-      toast.info("Site-wide link checking will be available soon. For now, check individual pages.");
-    }
   };
 
   return (
@@ -79,6 +76,11 @@ const LinkChecker: React.FC<LinkCheckerProps> = ({ autoScan = false }) => {
         
         <TabsContent value="site">
           <SiteScanner 
+            linkChecker={linkChecker}
+            onReset={() => {
+              linkChecker.reset();
+              setIsExpanded(false);
+            }}
             onStartPageScan={() => {
               setActiveTab("page");
               setTimeout(() => {
