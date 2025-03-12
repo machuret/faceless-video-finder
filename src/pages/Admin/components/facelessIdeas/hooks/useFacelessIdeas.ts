@@ -2,9 +2,7 @@
 import { FacelessIdeaInfo } from "@/services/facelessIdeas";
 import { useDataFetching } from "./useDataFetching";
 import { useTabState } from "./useTabState";
-import { useFacelessIdeaFormState } from "./useFacelessIdeaFormState";
-import { useFormInputHandlers } from "./useFormInputHandlers";
-import { useFormSubmission } from "./useFormSubmission";
+import { useFacelessIdeaForm } from "./useFacelessIdeaForm";
 import { useIdeaDeletion } from "./useIdeaDeletion";
 import { useIdeaEnhancement } from "./useIdeaEnhancement";
 import { useCsvImport } from "./useCsvImport";
@@ -30,11 +28,23 @@ export const useFacelessIdeas = () => {
   
   const { activeTab, setActiveTab } = useTabState();
   
-  const { formData, setFormData, selectedIdea, setSelectedIdea } = 
-    useFacelessIdeaFormState(initialFormState);
-    
-  const { handleInputChange, handleRichTextChange } = 
-    useFormInputHandlers<FacelessIdeaInfo>(setFormData);
+  const {
+    formData,
+    setFormData,
+    selectedIdea,
+    setSelectedIdea,
+    submitting,
+    handleInputChange,
+    handleRichTextChange,
+    handleSubmit,
+    handleCancel,
+    selectIdea,
+    createNewIdea
+  } = useFacelessIdeaForm({
+    refreshFacelessIdeas: loadFacelessIdeas,
+    setActiveTab,
+    initialFormState
+  });
   
   const { handleDelete, handleDeleteMultiple } = useIdeaDeletion(
     setFacelessIdeas, 
@@ -50,30 +60,18 @@ export const useFacelessIdeas = () => {
   
   const { handleCsvUpload } = useCsvImport(loadFacelessIdeas);
   
-  const { selectIdea, clearSelection } = useIdeaSelection();
-  
   // Create utility functions to handle selection and new idea creation
   const handleSelectIdea = async (id: string) => {
-    const selectedIdea = await selectIdea(id);
-    setSelectedIdea(selectedIdea);
-    setFormData(selectedIdea || initialFormState);
-    setActiveTab("edit");
+    const selectedIdea = await useIdeaSelection().selectIdea(id);
+    if (selectedIdea) {
+      selectIdea(selectedIdea);
+    }
   };
   
   const handleCreateNew = () => {
-    clearSelection();
-    setSelectedIdea(null);
-    setFormData(initialFormState);
-    setActiveTab("edit");
+    useIdeaSelection().clearSelection();
+    createNewIdea();
   };
-  
-  const { submitting, handleSubmit, handleCancel } = useFormSubmission(
-    loadFacelessIdeas,
-    setActiveTab,
-    setFormData,
-    setSelectedIdea,
-    initialFormState
-  );
   
   return {
     facelessIdeas,
