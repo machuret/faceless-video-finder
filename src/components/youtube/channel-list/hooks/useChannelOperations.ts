@@ -1,11 +1,10 @@
-
 import { useState, useCallback } from "react";
 import { Channel } from "@/types/youtube";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
-export function useChannelOperations() {
+export const useChannelOperations = () => {
   const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,6 +220,34 @@ export function useChannelOperations() {
       }));
   };
 
+  const handleChannelAction = async (action: string, channelIds: string[], options = {}) => {
+    try {
+      if (action === 'edit') {
+        navigate(`/admin/channels/edit/${channelIds[0]}`);
+      } else if (action === 'delete') {
+        if (!confirm("Are you sure you want to delete these channels?")) return;
+        
+        try {
+          const { error } = await supabase
+            .from("youtube_channels")
+            .delete()
+            .in("id", channelIds);
+          
+          if (error) throw error;
+          
+          toast.success("Channels deleted successfully");
+          fetchChannels();
+        } catch (error: any) {
+          console.error("Error deleting channels:", error);
+          toast.error("Failed to delete channels: " + error.message);
+        }
+      }
+    } catch (error: any) {
+      console.error("Error handling channel action:", error);
+      toast.error("Failed to handle channel action: " + error.message);
+    }
+  };
+
   return {
     channels,
     loading,
@@ -236,6 +263,7 @@ export function useChannelOperations() {
     selectAllChannels,
     isChannelSelected,
     getSelectedCount,
-    getSelectedChannels
+    getSelectedChannels,
+    handleChannelAction
   };
 }
