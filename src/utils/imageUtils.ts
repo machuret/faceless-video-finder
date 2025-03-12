@@ -84,12 +84,22 @@ export function isWebpSupported(): boolean {
 }
 
 /**
+ * Check if AVIF is supported in the current browser
+ */
+export function isAvifSupported(): boolean {
+  // Currently there's no direct detection method like for WebP
+  // This could be feature-detected with an image load test in a real implementation
+  return false;
+}
+
+/**
  * Generate appropriate image formats based on browser support
  */
 export function getOptimalImageFormat(): string {
   if (typeof window !== 'undefined') {
-    // Check AVIF support first (most efficient format)
-    if (window.hasImageFormat?.avif) {
+    // Check for AVIF support first - using a safer approach
+    // since window.hasImageFormat doesn't exist in standard browsers
+    if (isAvifSupported()) {
       return 'avif';
     }
     
