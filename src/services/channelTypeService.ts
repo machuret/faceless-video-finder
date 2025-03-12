@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { channelTypes as localChannelTypes } from "@/components/youtube/channel-list/constants";
 
 export interface ChannelTypeInfo {
   id: string;
@@ -12,32 +12,80 @@ export interface ChannelTypeInfo {
 }
 
 export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
-  const { data, error } = await supabase
-    .from('channel_types')
-    .select('*')
-    .order('label');
-  
-  if (error) {
-    console.error('Error fetching channel types:', error);
-    throw new Error(error.message);
+  try {
+    const { data, error } = await supabase
+      .from('channel_types')
+      .select('*')
+      .order('label');
+    
+    if (error) {
+      console.error('Error fetching channel types:', error);
+      // Return local types as fallback
+      return localChannelTypes as ChannelTypeInfo[];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching channel types:', err);
+    // Return local types as fallback
+    return localChannelTypes as ChannelTypeInfo[];
   }
-  
-  return data || [];
 };
 
 export const fetchChannelTypeById = async (id: string): Promise<ChannelTypeInfo | null> => {
-  const { data, error } = await supabase
-    .from('channel_types')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  
-  if (error) {
-    console.error(`Error fetching channel type with id ${id}:`, error);
-    throw new Error(error.message);
+  try {
+    // First try to get from database
+    try {
+      const { data, error } = await supabase
+        .from('channel_types')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error(`Error fetching channel type with id ${id}:`, error);
+        throw error;
+      }
+      
+      if (data) return data;
+    } catch (dbError) {
+      console.warn("Database error, falling back to local channel types:", dbError);
+    }
+    
+    // If not found in database or if there was an error, check local constants
+    const localType = localChannelTypes.find(type => type.id === id);
+    if (localType) {
+      // Convert to match ChannelTypeInfo interface
+      return {
+        id: localType.id,
+        label: localType.label,
+        description: localType.description,
+        production: localType.production,
+        example: localType.example,
+        image_url: null
+      };
+    }
+    
+    // If not found in either place, return null
+    return null;
+  } catch (error) {
+    console.error(`Error in fetchChannelTypeById for id ${id}:`, error);
+    
+    // Final fallback to local types
+    const localType = localChannelTypes.find(type => type.id === id);
+    if (localType) {
+      return {
+        id: localType.id,
+        label: localType.label,
+        description: localType.description,
+        production: localType.production,
+        example: localType.example,
+        image_url: null
+      };
+    }
+    
+    return null;
   }
-  
-  return data;
 };
 
 export const createChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {

@@ -4,7 +4,7 @@ import { lazyLoad } from './loaders';
 
 // Lazy load content-related components
 const ChannelTypes = lazy(() => import('../pages/ChannelTypes'));
-const ChannelTypeDetails = lazy(() => import('../pages/ChannelTypeDetails'));
+const ChannelTypeDetailsPage = lazy(() => import('../pages/ChannelTypeDetails/components/ChannelTypeDetailsPage'));
 const Niches = lazy(() => import('../pages/Niches'));
 const NicheDetails = lazy(() => import('../pages/NicheDetails'));
 const FacelessIdeas = lazy(() => import('../pages/FacelessIdeas'));
@@ -17,8 +17,8 @@ export const contentRoutes = [
     element: lazyLoad(ChannelTypes),
   },
   {
-    path: "/channel-types/:id",
-    element: lazyLoad(ChannelTypeDetails),
+    path: "/channel-types/:typeId",
+    element: lazyLoad(ChannelTypeDetailsPage),
   },
   {
     path: "/niches",

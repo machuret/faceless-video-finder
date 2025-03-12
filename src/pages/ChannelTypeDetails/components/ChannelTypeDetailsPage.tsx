@@ -40,17 +40,33 @@ const ChannelTypeDetailsPage = () => {
     
     const fetchTypeInfo = async () => {
       try {
+        console.log("Fetching type info for:", typeId);
         const dbTypeInfo = await fetchChannelTypeById(typeId);
+        
         if (dbTypeInfo) {
+          console.log("Found type info in database:", dbTypeInfo);
           setTypeInfo(dbTypeInfo);
         } else {
+          console.log("Type not found in database, checking local constants");
           const localTypeInfo = channelTypes.find(type => type.id === typeId);
-          setTypeInfo(localTypeInfo);
+          
+          if (localTypeInfo) {
+            console.log("Found type info in local constants:", localTypeInfo);
+            setTypeInfo(localTypeInfo);
+          } else {
+            console.warn("Channel type not found:", typeId);
+            setTypeInfo(null);
+          }
         }
       } catch (error) {
         console.error("Error fetching type info:", error);
+        // Try fallback to local constants on error
         const localTypeInfo = channelTypes.find(type => type.id === typeId);
-        setTypeInfo(localTypeInfo);
+        if (localTypeInfo) {
+          setTypeInfo(localTypeInfo);
+        } else {
+          setTypeInfo(null);
+        }
       }
     };
     
@@ -72,15 +88,17 @@ const ChannelTypeDetailsPage = () => {
         
         const typedData = data as unknown as SupabaseChannelData[];
         
+        // Filter channels based on type - check both direct type and metadata
         const filteredData = typedData.filter(channel => {
-          return channel.channel_type === "other" && 
+          const directMatch = channel.channel_type === typeId;
+          const metadataMatch = channel.channel_type === "other" && 
                  channel.metadata && 
                  channel.metadata.ui_channel_type === typeId;
+          
+          return directMatch || metadataMatch;
         });
         
-        console.log("Fetched channels:", data);
-        console.log("Filtered channels for type:", typeId, filteredData);
-        
+        console.log(`Found ${filteredData.length} channels for type: ${typeId}`);
         setChannels(filteredData as unknown as Channel[]);
       } catch (error) {
         console.error("Error fetching channels by type:", error);
