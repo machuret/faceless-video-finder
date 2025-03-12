@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Channel, TopVideo } from "@/pages/ChannelDetails/hooks/types";
 
@@ -10,38 +11,7 @@ export const fetchChannelDetails = async (id: string) => {
   console.log(`Fetching channel details for ID: ${id}`);
   
   try {
-    // Try to fetch using RPC to avoid permission issues
-    const { data: rpcData, error: rpcError } = await supabase.rpc('get_channel_by_id', {
-      p_channel_id: id
-    });
-    
-    // If RPC succeeded, use that data
-    if (!rpcError && rpcData) {
-      console.log("Successfully fetched channel using RPC");
-      
-      // Try to get video stats separately (it's ok if this fails)
-      let videoStats = [];
-      try {
-        const { data: videoData } = await supabase
-          .from("youtube_video_stats")
-          .select("*")
-          .eq("channel_id", id);
-          
-        if (videoData) videoStats = videoData;
-      } catch (videoErr) {
-        console.warn("Could not fetch video stats:", videoErr);
-      }
-      
-      return {
-        channel: rpcData as unknown as Channel,
-        videoStats: videoStats
-      };
-    }
-    
-    // Otherwise fall back to normal query
-    console.log("RPC failed or not available, falling back to direct query");
-    
-    // Fetch channel details
+    // Try direct query first with error handling
     const { data: channelData, error: channelError } = await supabase
       .from("youtube_channels")
       .select("*")
@@ -50,6 +20,52 @@ export const fetchChannelDetails = async (id: string) => {
 
     if (channelError) {
       console.error("Error fetching channel details:", channelError);
+      
+      // Try using edge function
+      try {
+        const response = await fetch(`${supabase.functions.url}/get-channel-by-id`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ channelId: id })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Edge function error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        
+        if (result.channel) {
+          console.log("Successfully fetched channel using edge function");
+          
+          // Try to get video stats separately (it's ok if this fails)
+          let videoStats = [];
+          try {
+            const { data: videoData } = await supabase
+              .from("youtube_video_stats")
+              .select("*")
+              .eq("channel_id", id);
+              
+            if (videoData) videoStats = videoData;
+          } catch (videoErr) {
+            console.warn("Could not fetch video stats:", videoErr);
+          }
+          
+          return {
+            channel: result.channel as Channel,
+            videoStats: result.videoStats || videoStats || []
+          };
+        }
+      } catch (edgeFnError) {
+        console.error("Edge function error:", edgeFnError);
+      }
+      
       throw channelError;
     }
     
@@ -115,14 +131,16 @@ export const fetchTopPerformingVideos = async (youtubeChannelId: string) => {
       const items = directResponse.value.items;
       const mostViewed = items[0];
       
+      // Properly format the data to match TopVideo interface
       return {
         mostViewedVideo: {
-          id: mostViewed.id.videoId,
-          title: mostViewed.snippet.title,
-          thumbnail: mostViewed.snippet.thumbnails?.high?.url || '',
-          views: "Unknown",
-          likes: "Unknown",
-          comments: "Unknown"
+          id: mostViewed.id?.videoId || '',
+          title: mostViewed.snippet?.title || '',
+          thumbnailUrl: mostViewed.snippet?.thumbnails?.high?.url || '',
+          viewCount: 0,
+          likeCount: 0,
+          commentCount: 0,
+          publishedAt: mostViewed.snippet?.publishedAt || new Date().toISOString()
         } as TopVideo,
         mostEngagingVideo: null
       };
@@ -151,24 +169,34 @@ export const fetchRelatedChannels = async (currentChannelId: string, niche?: str
   console.log(`Fetching related channels for ID: ${currentChannelId}, niche: ${niche || 'any'}`);
   
   try {
-    // First try an RPC call which might bypass RLS issues
+    // First try using edge function
     try {
-      const { data: rpcData, error: rpcError } = await supabase.rpc('get_related_channels', {
-        p_channel_id: currentChannelId,
-        p_niche: niche || null,
-        p_limit: limit
+      const response = await fetch(`${supabase.functions.url}/get-related-channels`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          channelId: currentChannelId,
+          niche: niche || null,
+          limit: limit
+        })
       });
       
-      if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
-        console.log(`Successfully fetched ${rpcData.length} related channels via RPC`);
-        return rpcData as Channel[];
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (Array.isArray(result) && result.length > 0) {
+          console.log(`Successfully fetched ${result.length} related channels via edge function`);
+          return result as Channel[];
+        }
       }
-    } catch (rpcErr) {
-      console.warn("RPC for related channels failed:", rpcErr);
+    } catch (edgeFnErr) {
+      console.warn("Edge function for related channels failed:", edgeFnErr);
       // Continue to fallback
     }
     
-    // If RPC failed, try direct query with careful error handling
+    // If edge function failed, try direct query with careful error handling
     // First, if we have a niche, try that specifically
     if (niche) {
       try {

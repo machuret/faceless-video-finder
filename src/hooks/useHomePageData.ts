@@ -122,22 +122,36 @@ export function useHomePageData(page: number, channelsPerPage: number) {
         if (error) {
           console.error("Error fetching channels:", error);
           
-          // Try a fallback approach
+          // Try a fallback approach using edge function
           try {
-            const { data: fallbackData } = await supabase.rpc('get_public_channels', {
-              p_limit: channelsPerPage,
-              p_offset: offset
+            // Use fetch to call the edge function directly
+            const response = await fetch(`${supabase.functions.url}/get-public-channels`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabase.auth.getSession().then(res => res.data.session?.access_token || '')}`
+              },
+              body: JSON.stringify({
+                limit: channelsPerPage,
+                offset: offset
+              })
             });
             
-            if (fallbackData && Array.isArray(fallbackData)) {
-              console.log(`Successfully fetched ${fallbackData.length} channels using fallback RPC`);
+            if (!response.ok) {
+              throw new Error(`Edge function error: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.channels && Array.isArray(result.channels)) {
+              console.log(`Successfully fetched ${result.channels.length} channels using edge function`);
               return { 
-                channels: fallbackData as Channel[],
-                totalCount: fallbackData.length * 3 // Approximate count for pagination
+                channels: result.channels as Channel[],
+                totalCount: result.totalCount || 0
               };
             }
-          } catch (rpcError) {
-            console.error("RPC fallback error:", rpcError);
+          } catch (edgeFnError) {
+            console.error("Edge function error:", edgeFnError);
             // Continue to throw the original error
           }
           
