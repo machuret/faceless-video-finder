@@ -27,11 +27,6 @@ const createQueryClient = () => {
           return failureCount < 2;
         },
         retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-        // Add global onError handling to prevent application crashes
-        onError: (error) => {
-          console.error('Query error:', error);
-          // Log but don't crash the app
-        }
       },
     },
   });
@@ -40,6 +35,16 @@ const createQueryClient = () => {
 export function QueryProvider({ children }: { children: ReactNode }) {
   // Use lazy initialization to create the client only once
   const [queryClient] = useState(() => createQueryClient());
+
+  // Set up a global error handler for React Query
+  queryClient.setDefaultOptions({
+    queries: {
+      onError: (error) => {
+        console.error('Query error:', error);
+        // Log but don't crash the app
+      }
+    }
+  });
 
   // Error boundary for React Query
   try {
