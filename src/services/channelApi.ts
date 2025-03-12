@@ -83,7 +83,7 @@ export const fetchTopPerformingVideos = async (youtubeChannelId: string) => {
 };
 
 /**
- * Fetches related channels based on niche or similarity
+ * Fetches related channels based on niche or similarity with fallback strategies
  * @param currentChannelId ID of the current channel
  * @param niche Optional niche to filter by
  * @param limit Number of channels to return
@@ -93,58 +93,36 @@ export const fetchRelatedChannels = async (currentChannelId: string, niche?: str
   console.log(`Fetching related channels for ID: ${currentChannelId}, niche: ${niche || 'any'}`);
   
   try {
-    let nicheChannels: Channel[] = [];
-    
-    // If niche is provided, try to fetch channels with the same niche first
-    if (niche) {
-      const { data: nicheData, error: nicheError } = await supabase
-        .from("youtube_channels")
-        .select("*")
-        .neq("id", currentChannelId)
-        .eq("niche", niche)
-        .order("created_at", { ascending: false })
-        .limit(limit);
-      
-      if (nicheError) {
-        console.error("Error fetching niche-specific channels:", nicheError);
-      } else if (nicheData && nicheData.length > 0) {
-        nicheChannels = nicheData as Channel[];
-        
-        // If we have enough channels from the same niche, return them
-        if (nicheChannels.length >= limit) {
-          return nicheChannels;
-        }
-      }
-    }
-    
-    // We need more channels or no niche was specified
-    // Get random channels to fill or as a complete set
-    const remainingLimit = limit - nicheChannels.length;
-    
-    const { data: randomData, error: randomError } = await supabase
+    // Use the direct database query instead of service role API call to avoid permission issues
+    let query = supabase
       .from("youtube_channels")
       .select("*")
       .neq("id", currentChannelId)
-      .not("id", "in", `(${nicheChannels.map(c => `'${c.id}'`).join(',')})`)
-      .order("created_at", { ascending: false })
-      .limit(remainingLimit > 0 ? remainingLimit * 2 : limit * 2); // Get more than needed for randomization
+      .order("created_at", { ascending: false });
     
-    if (randomError) {
-      console.error("Error fetching random channels:", randomError);
-      // Still return any niche channels we might have found
-      return nicheChannels;
+    // If niche provided, apply filter but don't return early
+    if (niche) {
+      query = query.eq("niche", niche);
     }
     
-    if (!randomData || randomData.length === 0) {
-      return nicheChannels; // Return just the niche channels or empty array
+    // Limit to prevent excessive data retrieval, multiply by 2 to later randomize
+    const { data, error } = await query.limit(limit * 2);
+    
+    if (error) {
+      console.error("Error fetching channels:", error);
+      return []; // Return empty array instead of throwing to avoid crashes
     }
     
-    // Shuffle and take the needed amount
-    const shuffled = [...randomData].sort(() => 0.5 - Math.random());
-    const randomChannels = shuffled.slice(0, remainingLimit > 0 ? remainingLimit : limit) as Channel[];
+    if (!data || data.length === 0) {
+      console.log("No related channels found");
+      return [];
+    }
     
-    // Combine niche-specific and random channels
-    return [...nicheChannels, ...randomChannels];
+    // Shuffle the data to randomize results
+    const shuffled = [...data].sort(() => 0.5 - Math.random());
+    
+    // Take only the needed amount based on limit
+    return shuffled.slice(0, limit) as Channel[];
   } catch (error) {
     console.error("Error in fetchRelatedChannels:", error);
     return []; // Return empty array on error

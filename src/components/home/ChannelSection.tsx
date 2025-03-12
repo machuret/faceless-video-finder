@@ -2,7 +2,6 @@
 import { useState, useEffect, useMemo } from "react";
 import ChannelGrid from "./ChannelGrid";
 import ChannelPagination from "./ChannelPagination";
-import { ChannelCategory } from "@/types/youtube";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 
@@ -51,7 +50,7 @@ const ChannelSection = ({
   };
 
   // Only show featured channels if they exist and showFeatured is true
-  const shouldShowFeatured = featuredChannels.length > 0 && showFeatured && !loading;
+  const shouldShowFeatured = featuredChannels.length > 0 && showFeatured && !loading && !error;
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -63,38 +62,35 @@ const ChannelSection = ({
           <ChannelGrid 
             channels={featuredChannels}
             loading={false}
+            error={null}
             resetFilters={() => {}}
             isFeatured={true}
           />
         </div>
       )}
 
-      <div className="flex justify-end mb-6">
-        <Button 
-          variant="outline" 
-          onClick={toggleAlphabeticalSort}
-          className="flex items-center gap-2"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-          {sortAlphabetically ? "Original Order" : "Sort A-Z"}
-        </Button>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-          <p className="font-medium">Error loading channels</p>
-          <p className="text-sm">{error}</p>
+      {!loading && !error && channels.length > 0 && (
+        <div className="flex justify-end mb-6">
+          <Button 
+            variant="outline" 
+            onClick={toggleAlphabeticalSort}
+            className="flex items-center gap-2"
+          >
+            <ArrowUpDown className="h-4 w-4" />
+            {sortAlphabetically ? "Original Order" : "Sort A-Z"}
+          </Button>
         </div>
       )}
 
       <ChannelGrid 
         channels={sortedChannels}
         loading={loading}
+        error={error}
         resetFilters={resetFilters}
         isFeatured={false}
       />
       
-      {!loading && totalChannels > channelsPerPage && (
+      {!loading && !error && totalChannels > channelsPerPage && (
         <ChannelPagination 
           currentPage={currentPage}
           totalChannels={totalChannels}
