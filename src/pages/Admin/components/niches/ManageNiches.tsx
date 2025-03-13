@@ -1,118 +1,121 @@
 
-import React from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import NicheForm from "./NicheForm";
-import AddNicheForm from "./components/AddNicheForm";
-import NichesList from "./components/NichesList";
+import React, { useState, useEffect } from "react";
+import { useNichesList } from "./hooks/useNichesList";
+import { NichesList } from "./components/NichesList";
+import { NicheForm } from "./NicheForm";
 import { NicheProvider, useNicheContext } from "./context/NicheContext";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
-// Component that consumes the context
-const NicheManager = () => {
-  const [activeTab, setActiveTab] = React.useState("list");
-  
+const ManageNichesContent = () => {
+  const { data, isLoading, error, refetch } = useNichesList();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("list");
   const {
-    isEditing,
-    formData,
-    submitting,
-    uploading,
-    nichesData,
-    isLoading,
-    isDeleting,
-    handleInputChange,
-    handleRichTextChange,
-    setEditingNiche,
-    cancelEditing,
-    saveNicheDetails,
-    handleImageUpload,
-    handleDeleteImage,
-    handleDeleteNiche,
-    refetchNiches
+    selectedNiche,
+    setSelectedNiche,
+    isFormOpen,
+    setIsFormOpen,
+    nicheDetails,
+    setNicheDetails,
+    setRefreshNiches,
   } = useNicheContext();
 
-  const handleEditNiche = React.useCallback((niche: string) => {
-    const details = nichesData?.nicheDetails[niche] || { 
-      name: niche, 
-      description: null, 
-      example: null,
-      image_url: null,
-      cpm: 4
-    };
-    setEditingNiche(
-      details.name, 
-      details.description, 
-      details.example,
-      details.image_url,
-      details.cpm
-    );
-    setActiveTab("edit");
-  }, [nichesData, setEditingNiche]);
-  
-  const handleCancelEdit = React.useCallback(() => {
-    cancelEditing();
-    setActiveTab("list");
-  }, [cancelEditing]);
-  
-  const handleSaveNicheDetails = React.useCallback(async () => {
-    try {
-      await saveNicheDetails();
-      setActiveTab("list");
-    } catch (error) {
-      console.error("Error saving niche details:", error);
+  useEffect(() => {
+    if (data) {
+      setNicheDetails(data.nicheDetails || {});
     }
-  }, [saveNicheDetails]);
+  }, [data, setNicheDetails]);
+
+  useEffect(() => {
+    setRefreshNiches(() => refetch);
+  }, [refetch, setRefreshNiches]);
+
+  const handleOpenForm = (niche: string) => {
+    setSelectedNiche(niche);
+    setIsFormOpen(true);
+    setActiveTab("edit");
+  };
+
+  const handleCreateNew = () => {
+    setSelectedNiche(null);
+    setIsFormOpen(true);
+    setActiveTab("edit");
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setSelectedNiche(null);
+    setActiveTab("list");
+  };
+
+  const filteredNiches = data?.niches
+    ? data.niches.filter((niche) =>
+        niche.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
 
   return (
-    <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="list">Niches List</TabsTrigger>
-          <TabsTrigger value="edit" disabled={!isEditing}>
-            Edit Niche
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="list">
-          <AddNicheForm 
-            onNicheAdded={refetchNiches}
-            niches={nichesData?.niches || []}
-          />
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <TabsList className="mb-6 w-full sm:w-auto">
+        <TabsTrigger value="list">Niches List</TabsTrigger>
+        <TabsTrigger value="edit">
+          {selectedNiche ? "Edit Niche" : "Create New Niche"}
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="list" className="mt-6">
+        <Card className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold">Manage Niches</h2>
+            <div className="flex gap-4">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search niches..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Button onClick={handleCreateNew}>Add New Niche</Button>
+            </div>
+          </div>
 
           <NichesList
-            isLoading={isLoading}
-            nichesData={nichesData}
-            onRefresh={refetchNiches}
-            onEdit={handleEditNiche}
-            onDelete={handleDeleteNiche}
-            isDeleting={isDeleting}
+            niches={filteredNiches}
+            loading={isLoading}
+            error={error}
+            onEdit={handleOpenForm}
+            nicheDetails={nicheDetails}
           />
-        </TabsContent>
-        
-        <TabsContent value="edit">
-          {isEditing && (
-            <NicheForm
-              formData={formData}
-              isEditing={isEditing}
-              submitting={submitting}
-              uploading={uploading}
-              onInputChange={handleInputChange}
-              onRichTextChange={handleRichTextChange}
-              onCancel={handleCancelEdit}
-              onSubmit={handleSaveNicheDetails}
-              onImageUpload={handleImageUpload}
-              onDeleteImage={handleDeleteImage}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="edit" className="mt-6">
+        <Card className="p-6">
+          <NicheForm
+            niche={selectedNiche}
+            description={selectedNiche ? nicheDetails[selectedNiche]?.description || null : null}
+            example={selectedNiche ? nicheDetails[selectedNiche]?.example || null : null}
+            image_url={selectedNiche ? nicheDetails[selectedNiche]?.image_url || null : null}
+            cpm={selectedNiche ? nicheDetails[selectedNiche]?.cpm || 4 : 4}
+            onCancel={handleCloseForm}
+          />
+        </Card>
+      </TabsContent>
+    </Tabs>
   );
 };
 
-// Wrapper component that provides the context
 const ManageNiches = () => {
   return (
     <NicheProvider>
-      <NicheManager />
+      <ManageNichesContent />
     </NicheProvider>
   );
 };
