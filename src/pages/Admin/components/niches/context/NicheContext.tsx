@@ -8,6 +8,7 @@ export interface NicheInfo {
   description: string | null;
   example: string | null;
   image_url: string | null;
+  cpm: number | null;
 }
 
 interface NicheContextType {
@@ -21,7 +22,7 @@ interface NicheContextType {
   uploadError: string | null;
   
   // Actions
-  setEditingNiche: (niche: string, description?: string | null, example?: string | null, image_url?: string | null) => void;
+  setEditingNiche: (niche: string, description?: string | null, example?: string | null, image_url?: string | null, cpm?: number | null) => void;
   cancelEditing: () => void;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRichTextChange: (name: string, value: string) => void;
@@ -41,7 +42,8 @@ export const NicheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     name: "",
     description: null,
     example: null,
-    image_url: null
+    image_url: null,
+    cpm: 4
   });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -76,7 +78,7 @@ export const NicheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Fallback to direct query
       const { data, error } = await supabase
         .from('niches')
-        .select('name, description, image_url')
+        .select('name, description, image_url, example, cpm')
         .order('name');
         
       if (error) {
@@ -91,8 +93,9 @@ export const NicheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           nicheDetails[niche.name] = {
             name: niche.name,
             description: niche.description,
-            example: null,
-            image_url: niche.image_url
+            example: niche.example,
+            image_url: niche.image_url,
+            cpm: niche.cpm
           };
         });
         
@@ -116,12 +119,13 @@ export const NicheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchNiches]);
 
   // Set editing state
-  const setEditingNiche = useCallback((niche: string, description?: string | null, example?: string | null, image_url?: string | null) => {
+  const setEditingNiche = useCallback((niche: string, description?: string | null, example?: string | null, image_url?: string | null, cpm?: number | null) => {
     setFormData({
       name: niche,
       description: description || null,
       example: example || null,
-      image_url: image_url || null
+      image_url: image_url || null,
+      cpm: cpm !== undefined ? cpm : 4
     });
     setIsEditing(true);
   }, []);
@@ -132,17 +136,18 @@ export const NicheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       name: "",
       description: null,
       example: null,
-      image_url: null
+      image_url: null,
+      cpm: 4
     });
     setIsEditing(false);
   }, []);
 
   // Handle form input changes
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'number' ? (value ? parseFloat(value) : null) : value
     }));
   }, []);
 
@@ -182,7 +187,9 @@ export const NicheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .from('niches')
           .update({
             description: formData.description,
-            image_url: formData.image_url
+            image_url: formData.image_url,
+            example: formData.example,
+            cpm: formData.cpm
           })
           .eq('name', formData.name);
       } else {
@@ -192,7 +199,9 @@ export const NicheProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .insert({
             name: formData.name,
             description: formData.description,
-            image_url: formData.image_url
+            image_url: formData.image_url,
+            example: formData.example,
+            cpm: formData.cpm
           });
       }
       

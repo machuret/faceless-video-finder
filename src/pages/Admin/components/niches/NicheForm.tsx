@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
-import { NicheInfo } from "./hooks/useNicheForm";
+import { NicheInfo } from "./hooks/types";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 
 interface NicheFormProps {
@@ -50,6 +50,24 @@ const NicheForm: React.FC<NicheFormProps> = ({
             className="mt-1"
             placeholder="Enter niche name"
           />
+        </div>
+        
+        <div>
+          <Label htmlFor="cpm">CPM (Cost Per Mille)</Label>
+          <Input
+            id="cpm"
+            name="cpm"
+            type="number"
+            value={formData.cpm !== null && formData.cpm !== undefined ? formData.cpm : 4}
+            onChange={onInputChange}
+            className="mt-1"
+            placeholder="Enter CPM value"
+            step="0.1"
+            min="0"
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Default CPM is $4.00. Channels with this niche will use this CPM for revenue calculations.
+          </p>
         </div>
         
         {onImageUpload && (

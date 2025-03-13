@@ -29,7 +29,10 @@ const ChannelStats = ({ channel, showOnlyRevenue = false, showOnlyScreenshot = f
       
       {/* Revenue Card - Shown when showOnlyRevenue is true */}
       {channel.revenue_per_month && showOnlyRevenue && (
-        <MonthlyRevenueCard revenuePerMonth={channel.revenue_per_month} />
+        <MonthlyRevenueCard 
+          revenuePerMonth={channel.revenue_per_month} 
+          cpm={channel.cpm}
+        />
       )}
     </div>
   );

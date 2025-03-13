@@ -157,6 +157,7 @@ export type Database = {
       }
       niches: {
         Row: {
+          cpm: number | null
           created_at: string | null
           description: string | null
           id: string
@@ -165,6 +166,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          cpm?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -173,6 +175,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          cpm?: number | null
           created_at?: string | null
           description?: string | null
           id?: string

@@ -22,7 +22,8 @@ export const useNicheSubmission = (
           niche: formData.name,
           description: formData.description || "",
           example: formData.example || "",
-          image_url: formData.image_url || ""
+          image_url: formData.image_url || "",
+          cpm: formData.cpm !== null && formData.cpm !== undefined ? formData.cpm : 4
         }
       });
       
