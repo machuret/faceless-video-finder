@@ -1,3 +1,19 @@
 
 project_id = "dhbuaffdzhjzsqjfkesg"
-serve_dir = "."
+[functions."get-channel-types"]
+verify_jwt = false
+
+[functions."get-public-channels"]
+verify_jwt = false
+
+[functions."enhance-faceless-idea"]
+verify_jwt = false
+
+[functions."get-niches"]
+verify_jwt = false
+
+[functions."generate-channel-type"]
+verify_jwt = false
+
+[functions."test-apify-connection"]
+verify_jwt = false

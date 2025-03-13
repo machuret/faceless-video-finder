@@ -1,6 +1,7 @@
+
 import { validateQueryParams } from './validation';
 import { buildQuery, buildCountQuery } from './queryBuilder';
-import { getCachedResults, setCachedResults } from './cacheUtils';
+import { getCachedFacelessIdeas, setCachedFacelessIdeas, getFacelessIdeasCacheKey } from './cacheUtils';
 import { 
   FetchIdeasOptions, 
   PaginatedResponse, 
@@ -34,7 +35,8 @@ export const fetchPaginatedIdeas = async (
     
     // Try to get from cache first for faster responses
     if (useCache) {
-      const cachedData = getCachedResults<FacelessIdeaInfo>(validatedOptions);
+      const cacheKey = getFacelessIdeasCacheKey(validatedOptions);
+      const cachedData = getCachedFacelessIdeas<PaginatedResponse<FacelessIdeaInfo>>(cacheKey);
       
       if (cachedData) {
         console.log(`Cache hit for faceless ideas: ${JSON.stringify(validatedOptions)}`);
@@ -126,7 +128,8 @@ export const fetchPaginatedIdeas = async (
     
     // Cache the result if caching is enabled
     if (useCache) {
-      setCachedResults(validatedOptions, response, cacheTTL);
+      const cacheKey = getFacelessIdeasCacheKey(validatedOptions);
+      setCachedFacelessIdeas(cacheKey, response, cacheTTL);
     }
     
     return response;

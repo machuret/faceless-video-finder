@@ -7,7 +7,7 @@ import {
   NetworkError, 
   ServerError, 
   ValidationError 
-} from '@/services/facelessIdeas/paginatedService';
+} from '@/services/facelessIdeas/pagination/fetchService';
 import { FacelessIdeaInfo } from '@/services/facelessIdeas';
 import { IdeasPaginationOptions, RetryTypeCategory } from './types';
 
