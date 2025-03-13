@@ -12,6 +12,7 @@ const FacelessIdeaDetails = lazy(() => import('../pages/FacelessIdeaDetails'));
 const FacelessChannelIdeas = lazy(() => import('../pages/FacelessChannelIdeas'));
 
 export const contentRoutes = [
+  // Channel Types
   {
     path: "/channel-types",
     element: lazyLoad(ChannelTypes),
@@ -20,6 +21,12 @@ export const contentRoutes = [
     path: "/channel-types/:typeId",
     element: lazyLoad(ChannelTypeDetailsPage),
   },
+  {
+    path: "/channel-type/:typeId",
+    element: lazyLoad(ChannelTypeDetailsPage),
+  },
+  
+  // Niches
   {
     path: "/niches",
     element: lazyLoad(Niches),
@@ -32,6 +39,8 @@ export const contentRoutes = [
     path: "/niches/:slug",
     element: lazyLoad(NicheDetails),
   },
+  
+  // Faceless Ideas
   {
     path: "/faceless-ideas",
     element: lazyLoad(FacelessIdeas),

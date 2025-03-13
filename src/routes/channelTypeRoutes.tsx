@@ -1,3 +1,4 @@
+
 import { lazy } from 'react';
 import { lazyLoad } from './loaders';
 
@@ -5,11 +6,15 @@ import { lazyLoad } from './loaders';
 const ChannelTypeRedirect = lazy(() => import('../pages/ChannelTypeDetails'));
 const ChannelTypes = lazy(() => import('../pages/ChannelTypes'));
 
-// Keeping this file for backward compatibility but using consistent paths with contentRoutes
+// Improved routing with additional type-specific path
 export const channelTypeRoutes = [
   {
     path: "channel-types",
     element: lazyLoad(ChannelTypes),
+  },
+  {
+    path: "channel-type/:typeId",
+    element: lazyLoad(ChannelTypeRedirect),
   },
   {
     path: "channel-types/:typeId",
