@@ -24,19 +24,14 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // SOLUTION 1: Use .match() method for a cleaner filter application
-  // This prevents TypeScript from creating recursive type chains
+  // Apply filters using multiple individual filter operations
+  // This approach avoids TypeScript recursion depth issues
   if (Object.keys(filter).length > 0) {
-    // Create a clean object with only valid filters
-    const cleanFilter: Record<string, any> = {};
-    Object.entries(filter).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(filter)) {
       if (value !== undefined && value !== null && value !== '') {
-        cleanFilter[key] = value;
+        // Use type assertion to avoid TypeScript recursion errors
+        query = query.filter(key, 'eq', value);
       }
-    });
-    
-    if (Object.keys(cleanFilter).length > 0) {
-      query = query.match(cleanFilter);
     }
   }
   
@@ -69,18 +64,13 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // SOLUTION 1: Use .match() method for the count query as well
+  // Apply filters using the same approach as in the main query
   if (Object.keys(filter).length > 0) {
-    // Create a clean object with only valid filters
-    const cleanFilter: Record<string, any> = {};
-    Object.entries(filter).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(filter)) {
       if (value !== undefined && value !== null && value !== '') {
-        cleanFilter[key] = value;
+        // Use type assertion to avoid TypeScript recursion errors
+        query = query.filter(key, 'eq', value);
       }
-    });
-    
-    if (Object.keys(cleanFilter).length > 0) {
-      query = query.match(cleanFilter);
     }
   }
   
