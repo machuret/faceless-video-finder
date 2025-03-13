@@ -145,7 +145,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     }
   }, [checkAdminStatus, fetchUserProfile, fetchUserRoles]);
-
+  
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -352,7 +352,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await initializeUserData(session.user);
         }
       } 
-      else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      else if (event === 'SIGNED_OUT') {
         setUser(null);
         setProfile(null);
         setUserRoles([]);
