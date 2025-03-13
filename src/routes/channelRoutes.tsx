@@ -18,7 +18,7 @@ export const channelRoutes = [
   },
   // Add an additional route for direct ID access
   {
-    path: "/channel/:id",
+    path: "/channels/:id",
     element: lazyLoad(ChannelDetails),
   }
 ];

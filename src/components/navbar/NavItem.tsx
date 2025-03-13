@@ -1,6 +1,6 @@
 
 import { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 interface NavItemProps {
   to: string;
@@ -13,9 +13,19 @@ interface NavItemProps {
 }
 
 const NavItem = ({ to, isActive, icon, label, onClick, isMobile = false, isExternal = false }: NavItemProps) => {
+  const location = useLocation();
+  
+  // Extra check to ensure active state works correctly
+  const checkIsActive = () => {
+    if (isActive) return true;
+    return location.pathname === to || location.pathname.startsWith(`${to}/`);
+  };
+  
+  const isActiveState = checkIsActive();
+  
   const commonClasses = isMobile
-    ? `block py-2 px-3 rounded-md ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`
-    : `font-montserrat text-xl font-medium flex items-center gap-1.5 ${isActive ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`;
+    ? `block py-2 px-3 rounded-md ${isActiveState ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`
+    : `font-montserrat text-xl font-medium flex items-center gap-1.5 ${isActiveState ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition-colors`;
 
   if (isExternal) {
     return (

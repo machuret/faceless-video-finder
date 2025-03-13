@@ -9,15 +9,15 @@ const ChannelTypes = lazy(() => import('../pages/ChannelTypes'));
 // Improved routing with additional type-specific path
 export const channelTypeRoutes = [
   {
-    path: "channel-types",
+    path: "/channel-types",
     element: lazyLoad(ChannelTypes),
   },
   {
-    path: "channel-type/:typeId",
+    path: "/channel-type/:typeId",
     element: lazyLoad(ChannelTypeRedirect),
   },
   {
-    path: "channel-types/:typeId",
+    path: "/channel-types/:typeId",
     element: lazyLoad(ChannelTypeRedirect),
   }
 ];

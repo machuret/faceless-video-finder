@@ -10,7 +10,7 @@ import AdminDashboard from '../pages/Admin/Dashboard';
 
 // Continue lazy loading other admin components
 const AddChannel = React.lazy(() => import('../pages/Admin/AddChannel'));
-const ManageNiches = React.lazy(() => import('../pages/Admin/ManageNiches'));
+const ManageNiches = React.lazy(() => import('../pages/Admin/components/niches/ManageNiches'));
 const ManageChannelTypes = React.lazy(() => import('../pages/Admin/ManageChannelTypes'));
 const ManageFacelessIdeas = React.lazy(() => import('../pages/Admin/ManageFacelessIdeas'));
 const ManageDidYouKnowFacts = React.lazy(() => import('../pages/Admin/ManageDidYouKnowFacts'));
@@ -18,9 +18,9 @@ const LinkCheckerPage = React.lazy(() => import('../pages/Admin/components/tools
 const ManageUsers = React.lazy(() => import('../pages/Admin/ManageUsers'));
 
 export const adminRoutes = [
-  // Rearranged and added catch-all routes to handle edge cases
+  // Redirect root admin path to dashboard
   {
-    path: "admin",
+    path: "/admin",
     element: (
       <ProtectedRoute requireAdmin={true}>
         <Navigate to="/admin/dashboard" replace />
@@ -28,11 +28,11 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "admin/login",
+    path: "/admin/login",
     element: <AdminLogin />
   },
   {
-    path: "admin/dashboard",
+    path: "/admin/dashboard",
     element: (
       <ProtectedRoute requireAdmin={true}>
         <AdminDashboard />
@@ -40,7 +40,7 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "admin/channels/add",
+    path: "/admin/channels/add",
     element: (
       <ProtectedRoute requireAdmin={true}>
         {lazyLoad(AddChannel)}
@@ -48,7 +48,7 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "admin/channels/edit/:channelId",
+    path: "/admin/channels/edit/:channelId",
     element: (
       <ProtectedRoute requireAdmin={true}>
         {lazyLoad(AddChannel)}
@@ -56,7 +56,7 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "admin/niches",
+    path: "/admin/niches",
     element: (
       <ProtectedRoute requireAdmin={true}>
         {lazyLoad(ManageNiches)}
@@ -64,7 +64,7 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "admin/channel-types",
+    path: "/admin/channel-types",
     element: (
       <ProtectedRoute requireAdmin={true}>
         {lazyLoad(ManageChannelTypes)}
@@ -72,7 +72,7 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "admin/faceless-ideas",
+    path: "/admin/faceless-ideas",
     element: (
       <ProtectedRoute requireAdmin={true}>
         {lazyLoad(ManageFacelessIdeas)}
@@ -80,7 +80,7 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "admin/did-you-know-facts",
+    path: "/admin/did-you-know-facts",
     element: (
       <ProtectedRoute requireAdmin={true}>
         {lazyLoad(ManageDidYouKnowFacts)}
@@ -88,7 +88,7 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "admin/tools/link-checker",
+    path: "/admin/tools/link-checker",
     element: (
       <ProtectedRoute requireAdmin={true}>
         {lazyLoad(LinkCheckerPage)}
@@ -96,16 +96,16 @@ export const adminRoutes = [
     ),
   },
   {
-    path: "admin/users",
+    path: "/admin/users",
     element: (
       <ProtectedRoute requireAdmin={true}>
         {lazyLoad(ManageUsers)}
       </ProtectedRoute>
     ),
   },
-  // Add catch-all route for admin to redirect to dashboard
+  // Catch-all route for admin to redirect to dashboard
   {
-    path: "admin/*",
+    path: "/admin/*",
     element: (
       <ProtectedRoute requireAdmin={true}>
         <Navigate to="/admin/dashboard" replace />
