@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useNicheForm } from "./hooks/useNicheForm";
+import { NicheInfo } from "./hooks/types";
 
 const ManageNichesContent = () => {
   const { data, isLoading, error, refetch } = useNichesList();
@@ -24,6 +26,20 @@ const ManageNichesContent = () => {
     setRefreshNiches,
   } = useNicheContext();
 
+  const {
+    isEditing,
+    formData,
+    submitting,
+    uploading,
+    handleInputChange,
+    handleRichTextChange,
+    setEditingNiche,
+    cancelEditing,
+    saveNicheDetails,
+    handleImageUpload,
+    handleDeleteImage
+  } = useNicheForm();
+
   useEffect(() => {
     if (data) {
       setNicheDetails(data.nicheDetails || {});
@@ -35,6 +51,22 @@ const ManageNichesContent = () => {
   }, [refetch, setRefreshNiches]);
 
   const handleOpenForm = (niche: string) => {
+    const details = nicheDetails[niche] || {
+      name: niche,
+      description: null,
+      example: null,
+      image_url: null,
+      cpm: 4
+    };
+    
+    setEditingNiche(
+      details.name,
+      details.description,
+      details.example,
+      details.image_url,
+      details.cpm
+    );
+    
     setSelectedNiche(niche);
     setIsFormOpen(true);
     setActiveTab("edit");
@@ -44,12 +76,26 @@ const ManageNichesContent = () => {
     setSelectedNiche(null);
     setIsFormOpen(true);
     setActiveTab("edit");
+    cancelEditing();
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setSelectedNiche(null);
     setActiveTab("list");
+    cancelEditing();
+  };
+
+  const handleSubmitForm = async () => {
+    try {
+      const success = await saveNicheDetails();
+      if (success) {
+        handleCloseForm();
+        refetch();
+      }
+    } catch (error) {
+      console.error("Error saving niche details:", error);
+    }
   };
 
   const filteredNiches = data?.niches
@@ -99,12 +145,16 @@ const ManageNichesContent = () => {
       <TabsContent value="edit" className="mt-6">
         <Card className="p-6">
           <NicheForm
-            niche={selectedNiche}
-            description={selectedNiche ? nicheDetails[selectedNiche]?.description || null : null}
-            example={selectedNiche ? nicheDetails[selectedNiche]?.example || null : null}
-            image_url={selectedNiche ? nicheDetails[selectedNiche]?.image_url || null : null}
-            cpm={selectedNiche ? nicheDetails[selectedNiche]?.cpm || 4 : 4}
+            formData={formData}
+            isEditing={isEditing}
+            submitting={submitting}
+            uploading={uploading}
+            onInputChange={handleInputChange}
+            onRichTextChange={handleRichTextChange}
             onCancel={handleCloseForm}
+            onSubmit={handleSubmitForm}
+            onImageUpload={handleImageUpload}
+            onDeleteImage={handleDeleteImage}
           />
         </Card>
       </TabsContent>
