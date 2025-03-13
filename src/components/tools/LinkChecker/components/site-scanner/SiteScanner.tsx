@@ -9,7 +9,7 @@ import ScanResults from './ScanResults';
 
 interface SiteScannerProps {
   linkChecker: LinkCheckerState & {
-    scanSiteLinks: () => void;
+    scanSite: () => void;
   };
   onReset: () => void;
   onStartPageScan: () => void;
@@ -56,7 +56,7 @@ const SiteScanner: React.FC<SiteScannerProps> = ({
 
   // Show the idle state when not scanning and no results
   if (!linkChecker.isChecking && linkChecker.brokenLinks.length === 0 && !linkChecker.isSiteScanning) {
-    return <ScannerIdle onStartScan={linkChecker.scanSiteLinks} onStartPageScan={onStartPageScan} />;
+    return <ScannerIdle onStartScan={linkChecker.scanSite} onStartPageScan={onStartPageScan} />;
   }
 
   return (
@@ -91,7 +91,7 @@ const SiteScanner: React.FC<SiteScannerProps> = ({
         )}
         
         <Button 
-          onClick={linkChecker.scanSiteLinks} 
+          onClick={linkChecker.scanSite} 
           disabled={linkChecker.isChecking}
           className="flex-1"
         >

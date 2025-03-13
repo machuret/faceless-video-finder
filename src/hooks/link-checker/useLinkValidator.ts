@@ -50,9 +50,8 @@ export const useLinkValidator = () => {
           text: linkText,
           pageUrl,
           status: response.status,
-          error: `HTTP error: ${response.status} ${response.statusText}`,
-          source: pageUrl,
-          statusText: response.statusText
+          statusText: response.statusText,
+          source: pageUrl
         };
       } catch (networkError) {
         // Handle network errors
@@ -61,9 +60,8 @@ export const useLinkValidator = () => {
           text: linkText,
           pageUrl,
           status: 0,
-          error: networkError?.toString() || 'Network error',
-          source: pageUrl,
-          statusText: 'Network Error'
+          statusText: 'Network Error',
+          source: pageUrl
         };
       }
     } catch (error) {
@@ -73,9 +71,8 @@ export const useLinkValidator = () => {
         text: linkText,
         pageUrl,
         status: 0,
-        error: error?.toString() || 'Unknown error',
-        source: pageUrl,
-        statusText: 'Unknown Error'
+        statusText: 'Unknown Error',
+        source: pageUrl
       };
     } finally {
       setIsValidating(false);

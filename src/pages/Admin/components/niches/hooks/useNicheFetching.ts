@@ -3,6 +3,7 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { niches as defaultNiches } from "@/data/niches";
+import { NicheInfo } from "./types";
 
 export const useNicheFetching = () => {
   const [nichesData, setNichesData] = useState<{ niches: string[], nicheDetails: Record<string, any> } | null>(null);
@@ -40,13 +41,13 @@ export const useNicheFetching = () => {
       }
       
       if (nichesData && nichesData.length > 0) {
-        const niches = nichesData.map(niche => niche.name);
+        const niches = nichesData.map(niche => niche.name as string);
         const nicheDetails: Record<string, any> = {};
         
         nichesData.forEach(niche => {
           if (niche && typeof niche === 'object') {
-            const { name, description, example, image_url, cpm } = niche;
-            nicheDetails[name as string] = {
+            const { name, description, example, image_url, cpm } = niche as NicheInfo;
+            nicheDetails[name] = {
               name,
               description,
               example,
