@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useNichesList } from "./hooks/useNichesList";
-import { NichesList } from "./components/NichesList";
-import { NicheForm } from "./NicheForm";
+import NichesList from "./components/NichesList";
+import NicheForm from "./NicheForm";
 import { NicheProvider, useNicheContext } from "./context/NicheContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

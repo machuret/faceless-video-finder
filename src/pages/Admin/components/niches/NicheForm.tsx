@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +31,7 @@ const NicheForm: React.FC<NicheFormProps> = ({
   onImageUpload,
   onDeleteImage
 }) => {
+  
   return (
     <div className="p-6 bg-white rounded-lg shadow-sm">
       <h2 className="text-xl font-semibold mb-6">
