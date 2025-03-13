@@ -26,15 +26,18 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - completely avoid TypeScript analysis
+  // Apply additional filters - Use primitive JavaScript to avoid TypeScript analysis
   let hasFilters = false;
   
-  // Create a simple array of entries to avoid TypeScript recursively analyzing the object
-  const filterEntries: [string, any][] = Object.entries(filter);
+  // Convert filter to a plain JavaScript object without any TypeScript type information
+  // This effectively breaks the type reference chain
+  const filterKeys = Object.keys(filter as object);
   
-  // Process filters directly from the entries array
-  for (let i = 0; i < filterEntries.length; i++) {
-    const [key, value] = filterEntries[i];
+  // Process each filter key manually
+  for (let i = 0; i < filterKeys.length; i++) {
+    const key = filterKeys[i];
+    // Use bracket notation and cast to any to completely bypass TypeScript
+    const value = (filter as any)[key];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
@@ -75,12 +78,14 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Use the same approach as above to avoid TypeScript analysis
-  const filterEntries: [string, any][] = Object.entries(filter);
+  // Use the same technique as above to avoid TypeScript analysis
+  const filterKeys = Object.keys(filter as object);
   
-  // Process filters directly from the entries array
-  for (let i = 0; i < filterEntries.length; i++) {
-    const [key, value] = filterEntries[i];
+  // Process each filter key manually
+  for (let i = 0; i < filterKeys.length; i++) {
+    const key = filterKeys[i];
+    // Use bracket notation and cast to any to completely bypass TypeScript
+    const value = (filter as any)[key];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
