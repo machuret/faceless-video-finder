@@ -9,6 +9,13 @@ type BrokenLink = {
   error?: string;
 };
 
+type ScannedPage = {
+  url: string;
+  linkCount: number;
+  brokenCount: number;
+  status: 'success' | 'error' | 'pending';
+};
+
 export function useLinkChecker() {
   const [isChecking, setIsChecking] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -18,6 +25,7 @@ export function useLinkChecker() {
   const [pagesScanned, setPagesScanned] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isSiteScanning, setIsSiteScanning] = useState(false);
+  const [scannedPages, setScannedPages] = useState<ScannedPage[]>([]);
 
   const reset = useCallback(() => {
     setBrokenLinks([]);
@@ -28,12 +36,28 @@ export function useLinkChecker() {
     setTotalPages(0);
     setIsChecking(false);
     setIsSiteScanning(false);
+    setScannedPages([]);
   }, []);
 
   const checkLink = useCallback(async (url: string, linkText: string, pageUrl?: string): Promise<BrokenLink | null> => {
     try {
       // Skip anchor links (they don't need external checking)
       if (url.startsWith('#')) {
+        return null;
+      }
+
+      // Skip javascript: links
+      if (url.startsWith('javascript:')) {
+        return null;
+      }
+
+      // Skip mailto: links
+      if (url.startsWith('mailto:')) {
+        return null;
+      }
+
+      // Skip tel: links
+      if (url.startsWith('tel:')) {
         return null;
       }
 
@@ -149,6 +173,31 @@ export function useLinkChecker() {
     }
   }, [checkLink, reset]);
 
+  const extractAllPagesFromSitemap = useCallback(async (): Promise<string[]> => {
+    try {
+      // Attempt to fetch the sitemap.xml if it exists
+      const sitemapResponse = await fetch('/sitemap.xml').catch(() => null);
+      
+      if (sitemapResponse && sitemapResponse.ok) {
+        const sitemapText = await sitemapResponse.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(sitemapText, "text/xml");
+        const urls = xmlDoc.getElementsByTagName("url");
+        
+        return Array.from(urls).map(url => {
+          const loc = url.getElementsByTagName("loc")[0];
+          return loc ? loc.textContent || "" : "";
+        }).filter(url => url !== "");
+      }
+      
+      // If no sitemap, return empty array
+      return [];
+    } catch (error) {
+      console.error("Error fetching sitemap:", error);
+      return [];
+    }
+  }, []);
+
   const scanSiteLinks = useCallback(async () => {
     // Reset state
     reset();
@@ -156,37 +205,63 @@ export function useLinkChecker() {
     setIsSiteScanning(true);
     
     try {
+      // Get pages from sitemap first
+      const sitemapPages = await extractAllPagesFromSitemap();
+      
       // Initial pages to scan (important site pages)
       const initialPages = [
         window.location.origin + '/',
         window.location.origin + '/admin/dashboard',
+        window.location.origin + '/admin/channel-types',
+        window.location.origin + '/admin/manage-niches',
+        window.location.origin + '/admin/manage-faceless-ideas',
         window.location.origin + '/channel-types',
         window.location.origin + '/niches',
         window.location.origin + '/calculators',
-        window.location.origin + '/channels', // Add channels page
-        window.location.origin + '/faceless-ideas', // Add faceless ideas page
-        window.location.origin + '/about-us', // Add about us page
-        window.location.origin + '/how-it-works', // Add how it works page
-        window.location.origin + '/admin/channel-types' // Add admin channel types page
+        window.location.origin + '/channels',
+        window.location.origin + '/faceless-ideas',
+        window.location.origin + '/about-us',
+        window.location.origin + '/how-it-works',
+        window.location.origin + '/training',
+        window.location.origin + '/contact-us',
+        ...sitemapPages
       ];
       
-      setTotalPages(initialPages.length);
+      // Remove duplicates
+      const uniquePages = Array.from(new Set(initialPages));
+      setTotalPages(uniquePages.length);
+      
       const visitedUrls = new Set<string>();
       const broken: BrokenLink[] = [];
       let totalLinksCount = 0;
       let checkedLinksCount = 0;
+      const scannedPagesData: ScannedPage[] = [];
       
       // Process each page
-      for (let i = 0; i < initialPages.length; i++) {
-        const pageUrl = initialPages[i];
+      for (let i = 0; i < uniquePages.length; i++) {
+        const pageUrl = uniquePages[i];
         if (visitedUrls.has(pageUrl)) continue;
         visitedUrls.add(pageUrl);
         
+        const pageResult: ScannedPage = {
+          url: pageUrl,
+          linkCount: 0,
+          brokenCount: 0,
+          status: 'pending'
+        };
+        
         try {
-          console.log(`Scanning page ${i+1}/${initialPages.length}: ${pageUrl}`);
+          console.log(`Scanning page ${i+1}/${uniquePages.length}: ${pageUrl}`);
           
           // Fetch the page HTML
-          const response = await fetch(pageUrl);
+          const response = await fetch(pageUrl, { cache: 'no-store' });
+          
+          if (!response.ok) {
+            pageResult.status = 'error';
+            scannedPagesData.push(pageResult);
+            continue;
+          }
+          
           const html = await response.text();
           
           // Create a DOM parser to extract links
@@ -195,9 +270,12 @@ export function useLinkChecker() {
           const linkElements = doc.querySelectorAll('a[href]');
           const links = Array.from(linkElements);
           
+          pageResult.linkCount = links.length;
           console.log(`Found ${links.length} links on ${pageUrl}`);
           totalLinksCount += links.length;
           setTotalLinks(totalLinksCount);
+          
+          let pageBrokenCount = 0;
           
           // Check each link on the current page
           for (let j = 0; j < links.length; j++) {
@@ -206,7 +284,8 @@ export function useLinkChecker() {
             const linkText = link.textContent || url;
             
             // Skip empty links, anchors, and javascript links
-            if (!url || url === '#' || url.startsWith('javascript:')) {
+            if (!url || url === '#' || url.startsWith('javascript:') || 
+                url.startsWith('mailto:') || url.startsWith('tel:')) {
               checkedLinksCount++;
               continue;
             }
@@ -223,14 +302,19 @@ export function useLinkChecker() {
             if (result) {
               console.log(`Found broken link: ${url} on page ${pageUrl} - Status: ${result.status}`);
               broken.push(result);
+              pageBrokenCount++;
             }
             
             checkedLinksCount++;
             setCheckedCount(checkedLinksCount);
             setProgress(Math.round((checkedLinksCount / totalLinksCount) * 100));
           }
+          
+          pageResult.brokenCount = pageBrokenCount;
+          pageResult.status = 'success';
         } catch (error) {
           console.error(`Error scanning page ${pageUrl}:`, error);
+          pageResult.status = 'error';
           broken.push({
             url: pageUrl,
             text: pageUrl,
@@ -239,17 +323,19 @@ export function useLinkChecker() {
           });
         }
         
+        scannedPagesData.push(pageResult);
+        setScannedPages([...scannedPagesData]);
         setPagesScanned(i + 1);
       }
       
-      console.log(`Site-wide scan complete. Checked ${visitedUrls.size} pages, found ${broken.length} broken links`);
+      console.log(`Site-wide scan complete. Checked ${visitedUrls.size} pages with ${totalLinksCount} links, found ${broken.length} broken links`);
       setBrokenLinks(broken);
     } catch (error) {
       console.error('Error during site-wide scan:', error);
     } finally {
       setIsChecking(false);
     }
-  }, [checkLink, reset]);
+  }, [checkLink, reset, extractAllPagesFromSitemap]);
 
   return {
     isChecking,
@@ -260,6 +346,7 @@ export function useLinkChecker() {
     pagesScanned,
     totalPages,
     isSiteScanning,
+    scannedPages,
     scanPageLinks,
     scanSiteLinks,
     reset,

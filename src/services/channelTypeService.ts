@@ -27,8 +27,8 @@ export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
       const timeoutPromise = new Promise<{data: null, error: Error}>((resolve) => 
         setTimeout(() => resolve({
           data: null, 
-          error: new Error('Database request timed out after 5 seconds')
-        }), 5000)
+          error: new Error('Database request timed out after 8 seconds')
+        }), 8000)
       );
       
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
@@ -42,10 +42,24 @@ export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
         console.log(`Successfully fetched ${data.length} channel types from database`);
         return data;
       } else {
-        console.log("No channel types found in database");
+        console.log("No channel types found in database or empty response");
+        throw new Error("No channel types found in database");
       }
     } catch (dbError) {
       console.warn('Falling back to local channel types due to database error:', dbError);
+      
+      // Try using the edge function as a fallback
+      try {
+        console.log("Attempting to fetch channel types via edge function");
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-types');
+        
+        if (!edgeError && edgeData?.channelTypes && Array.isArray(edgeData.channelTypes) && edgeData.channelTypes.length > 0) {
+          console.log(`Successfully fetched ${edgeData.channelTypes.length} channel types via edge function`);
+          return edgeData.channelTypes;
+        }
+      } catch (edgeError) {
+        console.warn("Edge function fallback failed:", edgeError);
+      }
     }
     
     // Return local types as fallback

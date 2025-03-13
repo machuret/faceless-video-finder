@@ -43,18 +43,19 @@ const fetchChannelTypes = async (): Promise<ChannelTypeData[]> => {
     }
     
     // Direct database query as fallback with explicit timeout
-    const { data, error } = await Promise.race([
-      supabase
-        .from('channel_types')
-        .select('*')
-        .order('label'),
-      new Promise<{data: null, error: Error}>((resolve) => 
-        setTimeout(() => resolve({
-          data: null, 
-          error: new Error('Database query timeout')
-        }), 5000)
-      )
-    ]);
+    const fetchPromise = supabase
+      .from('channel_types')
+      .select('*')
+      .order('label');
+    
+    const timeoutPromise = new Promise<{data: null, error: Error}>((resolve) => 
+      setTimeout(() => resolve({
+        data: null, 
+        error: new Error('Database query timeout')
+      }), 8000)
+    );
+    
+    const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       
     if (error) {
       console.error("Database query error:", error);
