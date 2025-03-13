@@ -153,7 +153,6 @@ export default function MainNavbar() {
   );
 }
 
-// Add a UserNavLinks component to show login/register or user profile links
 function UserNavLinks() {
   const { user, isAdmin, signOut } = useAuth();
   

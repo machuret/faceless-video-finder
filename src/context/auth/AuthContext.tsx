@@ -352,7 +352,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await initializeUserData(session.user);
         }
       } 
-      else if (event === 'SIGNED_OUT') {
+      else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
         setUser(null);
         setProfile(null);
         setUserRoles([]);

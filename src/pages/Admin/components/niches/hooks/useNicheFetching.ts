@@ -36,8 +36,8 @@ export const useNicheFetching = () => {
         .order('name');
         
       if (nichesError) {
-        // Fix the error type check - use message property directly
-        if (nichesError.message?.includes("column 'example' does not exist")) {
+        // Fix the error type check - correctly check error message
+        if (nichesError.message && nichesError.message.includes("column 'example' does not exist")) {
           // Try a simpler query without the missing columns
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('niches')
