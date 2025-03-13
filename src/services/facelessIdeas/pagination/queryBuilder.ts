@@ -26,15 +26,20 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - using any type to completely bypass TypeScript analysis
+  // Apply additional filters - avoid TypeScript's type analysis completely
   let hasFilters = false;
   
-  // Use a simple array of keys and access with plain JavaScript to avoid TypeScript analysis
-  const filterKeys = Object.keys(filter);
-  for (let i = 0; i < filterKeys.length; i++) {
-    const key = filterKeys[i];
-    // Use 'any' to completely bypass TypeScript's type checking
-    const value = (filter as any)[key];
+  // Convert filter to plain array of entries to bypass TypeScript's deep analysis
+  const entries: [string, any][] = [];
+  for (const key in filter) {
+    if (Object.prototype.hasOwnProperty.call(filter, key)) {
+      entries.push([key, filter[key as keyof typeof filter]]);
+    }
+  }
+  
+  // Process entries directly with no complex type analysis
+  for (let i = 0; i < entries.length; i++) {
+    const [key, value] = entries[i];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
@@ -75,12 +80,17 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters using the same approach as above - with 'any' type
-  const filterKeys = Object.keys(filter);
-  for (let i = 0; i < filterKeys.length; i++) {
-    const key = filterKeys[i];
-    // Use 'any' type to completely bypass TypeScript analysis
-    const value = (filter as any)[key];
+  // Apply additional filters using the same approach as above to avoid TypeScript analysis
+  const entries: [string, any][] = [];
+  for (const key in filter) {
+    if (Object.prototype.hasOwnProperty.call(filter, key)) {
+      entries.push([key, filter[key as keyof typeof filter]]);
+    }
+  }
+  
+  // Process entries directly
+  for (let i = 0; i < entries.length; i++) {
+    const [key, value] = entries[i];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
