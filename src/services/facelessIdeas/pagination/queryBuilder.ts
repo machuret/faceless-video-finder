@@ -24,18 +24,21 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply individual filters one by one instead of using the raw SQL approach
-  // This addresses the TypeScript issue by using the proper filter method signature
-  Object.entries(filter).forEach(([key, value]) => {
-    // Skip undefined, null or empty values
-    if (value === undefined || value === null || value === '') {
-      return;
-    }
+  // SOLUTION 1: Use .match() method for a cleaner filter application
+  // This prevents TypeScript from creating recursive type chains
+  if (Object.keys(filter).length > 0) {
+    // Create a clean object with only valid filters
+    const cleanFilter: Record<string, any> = {};
+    Object.entries(filter).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        cleanFilter[key] = value;
+      }
+    });
     
-    // Use the standard column-operator-value format
-    // This matches the expected overload of the filter method
-    query = query.eq(key, value);
-  });
+    if (Object.keys(cleanFilter).length > 0) {
+      query = query.match(cleanFilter);
+    }
+  }
   
   // Add sorting and pagination
   query = query
@@ -66,15 +69,20 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply filters directly without using raw SQL
-  Object.entries(filter).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') {
-      return;
-    }
+  // SOLUTION 1: Use .match() method for the count query as well
+  if (Object.keys(filter).length > 0) {
+    // Create a clean object with only valid filters
+    const cleanFilter: Record<string, any> = {};
+    Object.entries(filter).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        cleanFilter[key] = value;
+      }
+    });
     
-    // Use standard filter method with column, operator, value format
-    query = query.eq(key, value);
-  });
+    if (Object.keys(cleanFilter).length > 0) {
+      query = query.match(cleanFilter);
+    }
+  }
   
   return query;
 };
