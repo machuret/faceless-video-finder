@@ -26,17 +26,21 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - using a simplified approach to prevent TypeScript recursion
-  if (Object.keys(filter).length > 0) {
-    // Use type assertion to avoid TypeScript analyzing the object structure recursively
-    const filterObj: Record<string, unknown> = filter as any;
-    
-    for (const key of Object.keys(filterObj)) {
-      const value = filterObj[key];
-      // Only apply the filter if it has a meaningful value
-      if (value !== undefined && value !== null && value !== '') {
-        query = query.eq(key, value);
+  // Apply additional filters - completely rewriting the approach
+  // We'll manually handle each possible filter key to avoid TypeScript recursion
+  const filterKeys = Object.keys(filter);
+  if (filterKeys.length > 0) {
+    for (let i = 0; i < filterKeys.length; i++) {
+      const key = filterKeys[i];
+      const value = filter[key as keyof typeof filter];
+      
+      // Skip empty values
+      if (value === undefined || value === null || value === '') {
+        continue;
       }
+      
+      // Apply the filter
+      query = query.eq(key, value);
     }
   }
   
@@ -48,7 +52,7 @@ export const buildQuery = (options: FetchIdeasOptions) => {
   // Metadata for debugging
   const queryMetadata = {
     table: 'faceless_ideas',
-    filterApplied: !!search || Object.keys(filter).length > 0,
+    filterApplied: !!search || filterKeys.length > 0,
     paginationRange: `${from}-${to}`,
     sortApplied: `${sortBy} ${sortOrder}`
   };
@@ -69,17 +73,21 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - using a simplified approach to prevent TypeScript recursion
-  if (Object.keys(filter).length > 0) {
-    // Use type assertion to avoid TypeScript analyzing the object structure recursively
-    const filterObj: Record<string, unknown> = filter as any;
-    
-    for (const key of Object.keys(filterObj)) {
-      const value = filterObj[key];
-      // Only apply the filter if it has a meaningful value
-      if (value !== undefined && value !== null && value !== '') {
-        query = query.eq(key, value);
+  // Apply additional filters - completely rewriting the approach
+  // We'll manually handle each possible filter key to avoid TypeScript recursion
+  const filterKeys = Object.keys(filter);
+  if (filterKeys.length > 0) {
+    for (let i = 0; i < filterKeys.length; i++) {
+      const key = filterKeys[i];
+      const value = filter[key as keyof typeof filter];
+      
+      // Skip empty values
+      if (value === undefined || value === null || value === '') {
+        continue;
       }
+      
+      // Apply the filter
+      query = query.eq(key, value);
     }
   }
   
