@@ -29,29 +29,31 @@ export const buildQuery = (options: FetchIdeasOptions) => {
   // Apply additional filters - avoid typescript deep analysis completely
   let hasFilters = false;
   
-  // Convert the filter to a simpler structure that TypeScript won't analyze deeply
-  // Use a raw JavaScript approach with no type inference
-  const filterEntries: [string, unknown][] = [];
+  // Use JavaScript array to completely avoid TypeScript type analysis
+  const filterArray: Array<[string, any]> = [];
   
-  // This approach completely breaks the type linkage that causes deep recursion
+  // Manually build an array of key-value pairs without TypeScript analyzing the types
+  // This method completely escapes TypeScript's recursion trap
   for (const key in filter) {
-    // Explicit prototype check to avoid inherited properties
     if (Object.prototype.hasOwnProperty.call(filter, key)) {
-      // We access properties using string indexing to avoid TypeScript's type analysis
-      filterEntries.push([key, (filter as Record<string, unknown>)[key]]);
+      // We completely bypass TypeScript typing
+      const obj = filter as Record<string, any>;
+      const value = obj[key];
+      filterArray.push([key, value]);
     }
   }
   
-  // Now apply each filter without TypeScript analyzing the relationship
-  for (let i = 0; i < filterEntries.length; i++) {
-    const [key, value] = filterEntries[i];
+  // Apply each filter by reading directly from our manually created array
+  for (let i = 0; i < filterArray.length; i++) {
+    const key = filterArray[i][0];
+    const value = filterArray[i][1];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
       continue;
     }
     
-    // Apply the filter - we know key is a string and value can be any valid filter value
+    // Apply the filter
     query = query.eq(key, value);
     hasFilters = true;
   }
@@ -85,20 +87,23 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - use the same pattern as above to avoid type analysis
-  // Convert the filter to a simpler structure
-  const filterEntries: [string, unknown][] = [];
+  // Use the same method as above that works completely outside TypeScript's typing system
+  const filterArray: Array<[string, any]> = [];
   
-  // Break the type linkage that causes recursion
+  // Manual construction of an array that TypeScript won't analyze
   for (const key in filter) {
     if (Object.prototype.hasOwnProperty.call(filter, key)) {
-      filterEntries.push([key, (filter as Record<string, unknown>)[key]]);
+      // Using any type to escape TypeScript's analysis
+      const obj = filter as Record<string, any>;
+      const value = obj[key];
+      filterArray.push([key, value]);
     }
   }
   
-  // Apply each filter
-  for (let i = 0; i < filterEntries.length; i++) {
-    const [key, value] = filterEntries[i];
+  // Apply each filter from our manually created array
+  for (let i = 0; i < filterArray.length; i++) {
+    const key = filterArray[i][0];
+    const value = filterArray[i][1];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
