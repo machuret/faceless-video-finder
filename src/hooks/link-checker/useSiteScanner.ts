@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { useLinkValidator } from './useLinkValidator';
 import { useSitemapExtractor } from './useSitemapExtractor';
 import { BrokenLink, ScannedPage } from './types';
+import routes from '@/routes';
 
 export function useSiteScanner() {
   const { checkLink } = useLinkValidator();
@@ -24,30 +25,64 @@ export function useSiteScanner() {
     setIsSiteScanning(true);
     
     try {
-      // Get pages from sitemap first
+      // Extract all routes from the application
+      const allAppRoutes = extractRoutePaths(routes);
+      console.log("Extracted app routes:", allAppRoutes.length, allAppRoutes);
+
+      // Get pages from sitemap first (if available)
       const sitemapPages = await extractAllPagesFromSitemap();
+      console.log("Extracted sitemap pages:", sitemapPages.length);
       
-      // Initial pages to scan (important site pages)
-      const initialPages = [
+      // Collect all possible pages to scan
+      const pagesFromRoutes = allAppRoutes.map(path => 
+        window.location.origin + (path.startsWith('/') ? path : `/${path}`)
+      );
+
+      // Basic site structure pages
+      const basicSitePages = [
+        // Homepage
         window.location.origin + '/',
+        
+        // Admin pages 
         window.location.origin + '/admin/dashboard',
         window.location.origin + '/admin/channel-types',
         window.location.origin + '/admin/manage-niches',
         window.location.origin + '/admin/manage-faceless-ideas',
+        window.location.origin + '/admin/did-you-know-facts',
+        window.location.origin + '/admin/channels/add',
+        window.location.origin + '/admin/tools/link-checker',
+        
+        // Content pages
         window.location.origin + '/channel-types',
         window.location.origin + '/niches',
         window.location.origin + '/calculators',
         window.location.origin + '/channels',
         window.location.origin + '/faceless-ideas',
+        window.location.origin + '/faceless-channel-ideas',
+        
+        // Calculator pages
+        window.location.origin + '/calculator',
+        window.location.origin + '/growth-rate-calculator',
+        window.location.origin + '/reach-calculator',
+        window.location.origin + '/channel-earnings',
+        
+        // Info pages
         window.location.origin + '/about-us',
         window.location.origin + '/how-it-works',
         window.location.origin + '/training',
         window.location.origin + '/contact-us',
+      ];
+      
+      // Combine all sources of URLs, remove duplicates
+      const allPages = [
+        ...basicSitePages,
+        ...pagesFromRoutes,
         ...sitemapPages
       ];
       
-      // Remove duplicates
-      const uniquePages = Array.from(new Set(initialPages));
+      const uniquePages = Array.from(new Set(allPages));
+      console.log(`Combined ${uniquePages.length} unique pages to scan`);
+      
       setTotalPages(uniquePages.length);
       
       const visitedUrls = new Set<string>();
@@ -73,7 +108,12 @@ export function useSiteScanner() {
           console.log(`Scanning page ${i+1}/${uniquePages.length}: ${pageUrl}`);
           
           // Fetch the page HTML
-          const response = await fetch(pageUrl, { cache: 'no-store' });
+          const response = await fetch(pageUrl, { 
+            cache: 'no-store',
+            headers: {
+              'Accept': 'text/html'
+            }
+          });
           
           if (!response.ok) {
             pageResult.status = 'error';
@@ -155,6 +195,38 @@ export function useSiteScanner() {
       setIsChecking(false);
     }
   }, [checkLink, extractAllPagesFromSitemap]);
+
+  /**
+   * Extract route paths from the React Router routes configuration
+   */
+  const extractRoutePaths = (routesConfig: any[]): string[] => {
+    const paths: string[] = [];
+
+    const processRoute = (route: any) => {
+      // Skip catch-all routes
+      if (route.path === "*") return;
+      
+      // Add the path if it exists
+      if (route.path) {
+        // Skip external links and API endpoints
+        if (!route.path.startsWith('http') && !route.path.includes('api/')) {
+          // Convert parametrized routes to actual examples
+          let path = route.path;
+          // Replace :id, :typeId, etc with dummy values for testing
+          path = path.replace(/:(\w+)/g, 'example-$1');
+          paths.push(path);
+        }
+      }
+      
+      // Process child routes
+      if (route.children) {
+        route.children.forEach(processRoute);
+      }
+    };
+
+    routesConfig.forEach(processRoute);
+    return paths;
+  };
 
   return { scanSiteLinks };
 }

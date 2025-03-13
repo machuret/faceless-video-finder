@@ -47,7 +47,7 @@ const SiteScanner: React.FC<SiteScannerProps> = ({
         
         {linkChecker.brokenLinks.length > 0 && (
           <Button 
-            onClick={() => {}} // This will be handled by ScanResults
+            onClick={() => {}} // This is handled by ScanResults
             disabled={linkChecker.isChecking}
             variant="secondary"
             className="flex-1"
@@ -61,7 +61,7 @@ const SiteScanner: React.FC<SiteScannerProps> = ({
           disabled={linkChecker.isChecking}
           className="flex-1"
         >
-          Scan Again
+          {linkChecker.isChecking ? 'Scanning...' : 'Scan Again'}
         </Button>
       </CardFooter>
     </>

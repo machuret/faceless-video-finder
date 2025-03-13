@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const LinkCheckerPage: React.FC = () => {
@@ -134,31 +134,16 @@ const LinkCheckerPage: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6">
-                    <p className="text-amber-700 mb-2 font-medium">Coming Soon: Full Site Scanner</p>
-                    <p className="text-sm text-amber-600">
-                      The comprehensive site-wide link checker is currently in development and will be available soon.
-                      Until then, you can use the Current Page checker on individual pages.
-                    </p>
-                  </div>
+                  <Alert className="mb-6">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Comprehensive Site Scanner</AlertTitle>
+                    <AlertDescription>
+                      This tool will scan all pages across the site including channel types, niches, 
+                      calculators, ideas, admin pages, and more. The scan may take several minutes to complete.
+                    </AlertDescription>
+                  </Alert>
                   
-                  <div className="rounded-lg border border-dashed p-6 text-center bg-gray-50">
-                    <h3 className="text-lg font-medium mb-2">Manual Site Scan</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      To check your entire site, start with the current page and then check these important pages:
-                    </p>
-                    <div className="space-y-2 text-left max-w-md mx-auto">
-                      <Button variant="outline" className="w-full justify-start" onClick={() => window.open('/', '_blank')}>
-                        Homepage
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start" onClick={() => window.open('/admin/dashboard', '_blank')}>
-                        Admin Dashboard
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start" onClick={() => window.open('/channel-types', '_blank')}>
-                        Channel Types
-                      </Button>
-                    </div>
-                  </div>
+                  <LinkChecker />
                 </CardContent>
               </Card>
             </TabsContent>
