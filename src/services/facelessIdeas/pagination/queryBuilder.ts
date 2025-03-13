@@ -40,7 +40,7 @@ export const buildQuery = (options: FetchIdeasOptions): QueryResult => {
   const hasSearch = Boolean(search && search.trim().length > 0);
   
   // Start building the query with optimized column selection
-  let query = supabase
+  let query: any = supabase
     .from("faceless_ideas")
     .select("*", { count: 'exact' });
   
@@ -99,14 +99,14 @@ export const buildQuery = (options: FetchIdeasOptions): QueryResult => {
  * Optimized query for counting total records that match certain criteria
  * This is more efficient than fetching the actual records with count
  */
-export const buildCountQuery = (options: Omit<FetchIdeasOptions, 'page' | 'pageSize' | 'sortBy' | 'sortOrder'>): ReturnType<typeof supabase.from> => {
+export const buildCountQuery = (options: Omit<FetchIdeasOptions, 'page' | 'pageSize' | 'sortBy' | 'sortOrder'>): any => {
   const {
     search = '',
     filter = {}
   } = options;
   
   // For count queries, we only need the id column
-  let query = supabase
+  let query: any = supabase
     .from("faceless_ideas")
     .select("id", { count: 'exact', head: true });
   
