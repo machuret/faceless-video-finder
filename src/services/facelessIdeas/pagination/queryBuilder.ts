@@ -26,27 +26,20 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - avoid typescript deep analysis completely
+  // Apply additional filters
   let hasFilters = false;
   
-  // Use JavaScript array to completely avoid TypeScript type analysis
-  const filterArray: Array<[string, any]> = [];
+  // Bypass TypeScript's type checking completely by treating filter as a plain object
+  // First convert to JSON and back to break any type references
+  const plainFilter = JSON.parse(JSON.stringify(filter));
   
-  // Manually build an array of key-value pairs without TypeScript analyzing the types
-  // This method completely escapes TypeScript's recursion trap
-  for (const key in filter) {
-    if (Object.prototype.hasOwnProperty.call(filter, key)) {
-      // We completely bypass TypeScript typing
-      const obj = filter as Record<string, any>;
-      const value = obj[key];
-      filterArray.push([key, value]);
-    }
-  }
+  // Now extract keys and iterate manually
+  const keys = Object.keys(plainFilter);
   
-  // Apply each filter by reading directly from our manually created array
-  for (let i = 0; i < filterArray.length; i++) {
-    const key = filterArray[i][0];
-    const value = filterArray[i][1];
+  // Apply each filter using the keys array to avoid TypeScript analyzing the object structure
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const value = plainFilter[key];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
@@ -87,23 +80,14 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Use the same method as above that works completely outside TypeScript's typing system
-  const filterArray: Array<[string, any]> = [];
+  // Use the same JSON trick to completely break type relationships
+  const plainFilter = JSON.parse(JSON.stringify(filter));
+  const keys = Object.keys(plainFilter);
   
-  // Manual construction of an array that TypeScript won't analyze
-  for (const key in filter) {
-    if (Object.prototype.hasOwnProperty.call(filter, key)) {
-      // Using any type to escape TypeScript's analysis
-      const obj = filter as Record<string, any>;
-      const value = obj[key];
-      filterArray.push([key, value]);
-    }
-  }
-  
-  // Apply each filter from our manually created array
-  for (let i = 0; i < filterArray.length; i++) {
-    const key = filterArray[i][0];
-    const value = filterArray[i][1];
+  // Apply each filter using the array of keys
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const value = plainFilter[key];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
