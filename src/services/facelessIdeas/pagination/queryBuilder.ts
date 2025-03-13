@@ -26,15 +26,15 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - avoid TypeScript recursion by using a very simple approach
+  // Apply additional filters - using any type to completely bypass TypeScript analysis
   let hasFilters = false;
   
-  // Get filter keys as string array and iterate with simple for loop
+  // Use a simple array of keys and access with plain JavaScript to avoid TypeScript analysis
   const filterKeys = Object.keys(filter);
   for (let i = 0; i < filterKeys.length; i++) {
     const key = filterKeys[i];
-    // Access value with indexing to avoid any complex type analysis
-    const value = filter[key as keyof typeof filter];
+    // Use 'any' to completely bypass TypeScript's type checking
+    const value = (filter as any)[key];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
@@ -75,12 +75,12 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters using the same simple approach as above
+  // Apply additional filters using the same approach as above - with 'any' type
   const filterKeys = Object.keys(filter);
   for (let i = 0; i < filterKeys.length; i++) {
     const key = filterKeys[i];
-    // Access value with indexing to avoid any complex type analysis
-    const value = filter[key as keyof typeof filter];
+    // Use 'any' type to completely bypass TypeScript analysis
+    const value = (filter as any)[key];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
