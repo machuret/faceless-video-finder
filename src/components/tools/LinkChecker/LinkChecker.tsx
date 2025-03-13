@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLinkChecker } from '@/hooks/useLinkChecker';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 import PageScanner from './components/PageScanner';
-import SiteScanner from './components/site-scanner';
+import SiteScanner from './components/SiteScanner';
 
 interface LinkCheckerProps {
   autoScan?: boolean;

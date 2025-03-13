@@ -1,61 +1,35 @@
 
-export interface BrokenLink {
+export type BrokenLink = {
   url: string;
   text: string;
-  pageUrl: string;
   status: number;
-  statusText: string;
-  source: string;
-  error?: string; // Add error property that was being used
-}
+  pageUrl?: string; // Add page URL to track where link was found
+  error?: string;
+};
 
-export interface ValidatedLink {
+export type ScannedPage = {
   url: string;
-  text: string;
-  pageUrl: string;
-  isValid: boolean;
-  status?: number;
-  statusText?: string;
-  source?: string;
-}
+  linkCount: number;
+  brokenCount: number;
+  status: 'success' | 'error' | 'pending';
+};
 
-export interface ScannedPage {
-  url: string;
-  brokenLinks: BrokenLink[];
-  totalLinks: number;
-  scanned: boolean;
-  linkCount?: number; // Add these properties used in ScannedPagesAccordion
-  brokenCount?: number;
-  status?: string; // Add status property used in component
-}
-
-export interface PageScannerState {
-  validationResults: BrokenLink[];
-  isValidating: boolean;
-}
-
-export interface SiteScannerState {
-  scannedPages: ScannedPage[];
-  pagesScanned: number;
-  totalPages: number;
-  brokenLinks: BrokenLink[];
-  totalLinks: number;
-  checkedLinks: number;
-  isSiteScanning: boolean;
-}
-
-// Add the missing LinkCheckerState interface
-export interface LinkCheckerState {
-  validationResults: BrokenLink[];
-  isValidating: boolean;
+export type LinkCheckerState = {
   isChecking: boolean;
-  brokenLinks: BrokenLink[];
   progress: number;
+  brokenLinks: BrokenLink[];
   checkedCount: number;
   totalLinks: number;
-  scannedPages?: ScannedPage[];
-  pagesScanned?: number;
-  totalPages?: number;
-  isSiteScanning?: boolean;
-  checkedLinks?: number;
-}
+  pagesScanned: number;
+  totalPages: number;
+  isSiteScanning: boolean;
+  scannedPages: ScannedPage[];
+};
+
+export type LinkCheckerActions = {
+  scanPageLinks: () => Promise<void>;
+  scanSiteLinks: () => Promise<void>;
+  reset: () => void;
+};
+
+export type LinkCheckerResult = LinkCheckerState & LinkCheckerActions;

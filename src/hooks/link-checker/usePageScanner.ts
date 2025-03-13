@@ -1,52 +1,69 @@
 
-import { useState, useCallback } from 'react';
-import { BrokenLink, ValidatedLink } from './types';
+import { useCallback } from 'react';
+import { useLinkValidator } from './useLinkValidator';
+import { BrokenLink } from './types';
 
-export const usePageScanner = (linkValidator: {
-  validateLink: (link: string, linkText: string, pageUrl: string) => Promise<BrokenLink | null>;
-  validateLinks: (links: { url: string; text: string; pageUrl: string }[]) => Promise<BrokenLink[]>;
-  isValidating: boolean;
-  validationResults: BrokenLink[];
-  clearResults: () => void;
-}) => {
-  const [isScanning, setIsScanning] = useState(false);
+export function usePageScanner() {
+  const { checkLink } = useLinkValidator();
 
-  // Scan links on a single page
-  const scanPageLinks = useCallback(async (url: string, links: { url: string; text: string }[]) => {
-    setIsScanning(true);
-    
+  const scanPageLinks = useCallback(async (
+    setIsChecking: (value: boolean) => void,
+    setTotalLinks: (value: number) => void,
+    setCheckedCount: (value: number) => void,
+    setProgress: (value: number) => void,
+    setBrokenLinks: (links: BrokenLink[]) => void
+  ) => {
+    // Reset state is handled by caller
+    setIsChecking(true);
+
     try {
-      // Map links to the format expected by validateLinks
-      const linksToValidate = links.map(link => ({
-        url: link.url,
-        text: link.text,
-        pageUrl: url
-      }));
+      // Get all links in the current page
+      const linkElements = document.querySelectorAll('a[href]');
+      const links = Array.from(linkElements);
       
-      // Validate all links
-      const brokenLinks = await linkValidator.validateLinks(linksToValidate);
-      
-      // Return found broken links along with the count of total links
-      return {
-        url,
-        brokenLinks,
-        totalLinks: links.length
-      };
-    } catch (error) {
-      console.error(`Error scanning page ${url}:`, error);
-      return {
-        url,
-        brokenLinks: [],
-        totalLinks: links.length,
-        error: error.message
-      };
-    } finally {
-      setIsScanning(false);
-    }
-  }, [linkValidator]);
+      console.log(`Found ${links.length} links on the page to check`);
+      setTotalLinks(links.length);
 
-  return {
-    scanPageLinks,
-    isScanning
-  };
-};
+      if (links.length === 0) {
+        setIsChecking(false);
+        return;
+      }
+
+      const broken: BrokenLink[] = [];
+      
+      // Check links one by one
+      for (let i = 0; i < links.length; i++) {
+        const link = links[i];
+        const url = link.getAttribute('href') || '';
+        const linkText = link.textContent || url;
+        
+        // Skip empty links
+        if (!url) {
+          setCheckedCount(i + 1);
+          setProgress(Math.round(((i + 1) / links.length) * 100));
+          continue;
+        }
+        
+        console.log(`Checking link ${i+1}/${links.length}: ${url}`);
+        const result = await checkLink(url, linkText);
+        
+        if (result) {
+          console.log(`Found broken link: ${url} - Status: ${result.status}`);
+          broken.push(result);
+        }
+        
+        setCheckedCount(i + 1);
+        setProgress(Math.round(((i + 1) / links.length) * 100));
+      }
+
+      console.log(`Link checking complete. Found ${broken.length} broken links`);
+      setBrokenLinks(broken);
+    } catch (error) {
+      console.error('Error scanning links:', error);
+    } finally {
+      setIsChecking(false);
+    }
+  }, [checkLink]);
+
+  return { scanPageLinks };
+}

@@ -1,108 +1,104 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { Channel } from '@/types/youtube';
 import { supabase } from '@/integrations/supabase/client';
+import { Channel } from '@/types/youtube';
+import { Json } from '@/integrations/supabase/types';
+import { transformChannelData } from '@/pages/Admin/components/dashboard/utils/channelMetadataUtils';
 import { getCache, setCache } from '@/utils/cacheUtils';
 
+// Cache settings
 const CACHE_KEY = 'featured_channels';
 const CACHE_VERSION = '1.0';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-/**
- * Fetches featured channels with improved fallback and caching strategy
- */
 export function useFeaturedChannels() {
+  // Minimum fields needed for featured channels display
+  const requiredFields = [
+    'id', 
+    'channel_title', 
+    'description', 
+    'total_subscribers', 
+    'total_views', 
+    'screenshot_url', 
+    'niche'
+  ];
+  
   return useQuery({
-    queryKey: ['featured-channels'],
-    queryFn: async (): Promise<Channel[]> => {
+    queryKey: ['channels', 'featured'],
+    queryFn: async () => {
+      console.log("Fetching featured channels");
+      
+      // Try to get from cache first
+      const cachedData = getCache<Channel[]>(CACHE_KEY, { version: CACHE_VERSION });
+      if (cachedData) {
+        console.log("Using cached featured channels data");
+        return cachedData;
+      }
+      
+      // Try edge function with optimized field selection and cache-control headers
       try {
-        // Try to get from cache first
-        const cachedData = getCache<Channel[]>(CACHE_KEY, { version: CACHE_VERSION });
-        if (cachedData) {
-          console.log("Using cached featured channels data");
-          return cachedData;
-        }
-        
-        console.log("Fetching featured channels");
-        
-        // Try direct query with optimized fields selection
-        const { data, error } = await supabase
-          .from('youtube_channels')
-          .select(`
-            id, channel_title, channel_url, description, 
-            screenshot_url, total_subscribers, total_views, niche, video_count
-          `)
-          .eq('is_featured', true)
-          .limit(3);
-          
-        if (error) {
-          console.error("Error fetching featured channels:", error);
-          throw error;
-        }
-        
-        if (data && data.length > 0) {
-          console.log(`Found ${data.length} featured channels`);
-          
-          // Cache successful result
-          setCache(CACHE_KEY, data, { 
-            expiry: CACHE_DURATION,
-            version: CACHE_VERSION
-          });
-          
-          return data as Channel[];
-        }
-        
-        // If no featured channels found, try the edge function
-        console.log("No featured channels found, trying edge function");
         const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
           body: { 
             limit: 3,
-            fields: ['id', 'channel_title', 'channel_url', 'description', 'screenshot_url', 'total_subscribers', 'total_views', 'niche']
+            offset: 0,
+            featured: true,
+            fields: requiredFields
+          },
+          headers: {
+            'Cache-Control': 'max-age=900' // 15 minute cache
           }
         });
         
-        if (edgeError) {
-          console.error("Edge function error for featured channels:", edgeError);
-          throw edgeError;
+        if (!edgeError && edgeData?.channels && Array.isArray(edgeData.channels)) {
+          // Check if the data is valid (has the expected structure)
+          const isValidData = edgeData.channels.length === 0 || 
+            (edgeData.channels[0] && 'id' in edgeData.channels[0]);
+            
+          if (isValidData) {
+            console.log(`Successfully fetched ${edgeData.channels.length} featured channels using edge function`);
+            // Type assertion with validation
+            const channels = transformChannelData(edgeData.channels as { metadata?: Json }[]);
+            
+            // Cache the results
+            setCache(CACHE_KEY, channels, { 
+              expiry: CACHE_DURATION,
+              version: CACHE_VERSION
+            });
+            
+            return channels;
+          } else {
+            console.warn("Edge function returned invalid channel data format");
+          }
         }
-        
-        if (edgeData?.channels && edgeData.channels.length > 0) {
-          // Take top 3 as featured
-          const featuredChannels = edgeData.channels.slice(0, 3);
-          
-          // Cache successful result
-          setCache(CACHE_KEY, featuredChannels, { 
-            expiry: CACHE_DURATION,
-            version: CACHE_VERSION
-          });
-          
-          return featuredChannels as Channel[];
-        }
-        
-        console.log("No featured channels available, returning empty array");
-        return [];
-      } catch (err) {
-        console.error("Error in featured channels fetch:", err);
-        
-        // Create some placeholder featured channels for better UX
-        const fallbackChannels = Array.from({ length: 3 }, (_, i) => ({
-          id: `fallback-${i}`,
-          channel_title: `Featured Channel ${i+1}`,
-          description: "This is a placeholder featured channel.",
-          channel_url: "#",
-          total_subscribers: Math.floor(Math.random() * 1000000),
-          total_views: Math.floor(Math.random() * 10000000),
-          screenshot_url: `https://source.unsplash.com/random/800x450?youtube,featured&sig=${i}`,
-          niche: ["Technology", "Entertainment", "Education"][i % 3],
-          created_at: new Date().toISOString(),
-          is_featured: true
-        })) as Channel[];
-        
-        return fallbackChannels;
+      } catch (edgeErr) {
+        console.error("Edge function error for featured channels:", edgeErr);
       }
+      
+      // Fallback to direct query with optimized field selection
+      const { data, error } = await supabase
+        .from('youtube_channels')
+        .select(requiredFields.join(','))
+        .eq('is_featured', true)
+        .limit(3);
+        
+      if (error) throw error;
+      
+      if (!data || !Array.isArray(data)) {
+        return [] as Channel[];
+      }
+      
+      const channels = transformChannelData(data as { metadata?: Json }[]);
+      
+      // Cache the results
+      setCache(CACHE_KEY, channels, { 
+        expiry: CACHE_DURATION,
+        version: CACHE_VERSION
+      });
+      
+      return channels;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes - featured content updates infrequently
+    gcTime: 30 * 60 * 1000,    // 30 minutes - keep in cache longer
     retry: 2
   });
 }

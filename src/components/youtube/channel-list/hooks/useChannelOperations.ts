@@ -22,39 +22,23 @@ export const useChannelOperations = () => {
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
 
-  // Fetch channels with optimized data handling and retry logic
+  // Fetch channels with optimized data handling
   const fetchChannels = useCallback(async (offset: number = 0, limit: number = 10) => {
-    let retries = 2; // Number of retry attempts
-    
-    const attemptFetch = async (): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const { channels: fetchedChannels, totalCount } = await fetchChannelData(offset, limit);
-        
-        setChannels(fetchedChannels);
-        setTotalCount(totalCount);
-      } catch (error: any) {
-        console.error("Error fetching channels:", error);
-        
-        if (retries > 0) {
-          retries--;
-          console.log(`Retrying fetch... (${2 - retries}/2)`);
-          
-          // Add a small delay before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          return attemptFetch();
-        }
-        
-        setError(error.message || "Failed to load channels");
-        toast.error("Failed to load channels. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    return attemptFetch();
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { channels: fetchedChannels, totalCount } = await fetchChannelData(offset, limit);
+      
+      setChannels(fetchedChannels);
+      setTotalCount(totalCount);
+    } catch (error: any) {
+      console.error("Error fetching channels:", error);
+      setError(error.message || "Failed to load channels");
+      toast.error("Failed to load channels. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Channel operations

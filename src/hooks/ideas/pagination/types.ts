@@ -4,8 +4,7 @@ import {
   NetworkError, 
   ServerError, 
   ValidationError,
-  SortOrder,
-  RetryTypeCategory as BaseRetryTypeCategory
+  SortOrder
 } from '@/services/facelessIdeas/paginatedService';
 
 export interface IdeasPaginationOptions {
@@ -46,4 +45,4 @@ export interface UseIdeasPaginationReturn extends UseIdeasPaginationState {
   pageSize: number;
 }
 
-export type RetryTypeCategory = BaseRetryTypeCategory;
+export type RetryTypeCategory = 'network' | 'server' | 'validation' | 'unknown' | null;

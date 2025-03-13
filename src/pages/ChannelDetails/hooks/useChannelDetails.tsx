@@ -36,27 +36,13 @@ export const useChannelDetails = (channelId?: string, slug?: string) => {
       }
 
       try {
-        console.log(`Loading channel data for ID: ${idToLoad}, slug: ${slug}`);
-        
-        // Fetch channel details and video stats in parallel with retry logic
-        const fetchDataWithRetry = async (attempts = 3) => {
-          try {
-            const [channelResult, videoStatsResult] = await Promise.all([
-              fetchChannelDetails(idToLoad!),
-              fetchTopPerformingVideos(idToLoad!)
-            ]);
-            return { channelResult, videoStatsResult };
-          } catch (error) {
-            if (attempts > 1) {
-              console.log(`Retrying data fetch. Attempts remaining: ${attempts - 1}`);
-              await new Promise(r => setTimeout(r, 1000)); // Wait 1 second before retrying
-              return fetchDataWithRetry(attempts - 1);
-            }
-            throw error;
-          }
-        };
-        
-        const { channelResult, videoStatsResult } = await fetchDataWithRetry();
+        // Fetch channel details and video stats in parallel
+        const [channelResult, videoStatsResult] = await Promise.all([
+          fetchChannelDetails(idToLoad),
+          fetchTopPerformingVideos(idToLoad)
+        ]).catch(error => {
+          throw new Error(`Failed to fetch channel data: ${error.message}`);
+        });
 
         if (!isMounted) return;
 

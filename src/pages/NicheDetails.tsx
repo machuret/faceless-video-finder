@@ -41,19 +41,15 @@ const NicheDetails = () => {
           .eq('name', decodedSlug)
           .single();
         
-        if (nichesError && nichesError.code !== 'PGRST116') {
+        if (nichesError) {
           console.error("Error fetching niche:", nichesError);
-          // Continue execution to show what we have instead of stopping with an error
+          setError("Failed to load niche details");
+          setLoading(false);
+          return;
         }
         
         if (!nichesData) {
-          // Create a default object with just the name instead of showing an error
-          setNicheData({
-            name: decodedSlug,
-            description: null,
-            image_url: null,
-            example: null
-          });
+          setError("Niche not found");
           setLoading(false);
           return;
         }
@@ -93,15 +89,7 @@ const NicheDetails = () => {
         
       } catch (err) {
         console.error("Error in niche details fetch:", err);
-        // Still show the page with the niche name instead of an error
-        if (slug) {
-          setNicheData({
-            name: decodeURIComponent(slug),
-            description: null,
-            image_url: null,
-            example: null
-          });
-        }
+        setError("An unexpected error occurred");
       } finally {
         setLoading(false);
       }
@@ -124,16 +112,15 @@ const NicheDetails = () => {
     );
   }
 
-  if (!nicheData) {
-    // This code should never execute with our new error handling approach
+  if (error || !nicheData) {
     return (
       <div className="min-h-screen bg-gray-50">
         <MainNavbar />
         <div className="container mx-auto px-4 py-16">
           <Card className="max-w-2xl mx-auto p-6">
             <CardContent>
-              <h1 className="text-2xl font-bold text-red-600 mb-4">Niche Not Found</h1>
-              <p className="mb-6">We couldn't find information for this niche.</p>
+              <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
+              <p className="mb-6">{error || "Niche not found"}</p>
               <Link to="/niches">
                 <Button variant="outline" className="flex items-center">
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back to Niches
@@ -195,7 +182,7 @@ const NicheDetails = () => {
           </div>
         </div>
         
-        {relatedChannels.length > 0 ? (
+        {relatedChannels.length > 0 && (
           <div className="mb-12">
             <h2 className="font-crimson text-2xl font-bold mb-6">Channels in this Niche</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -229,13 +216,6 @@ const NicheDetails = () => {
                 </Link>
               ))}
             </div>
-          </div>
-        ) : (
-          <div className="mb-12">
-            <h2 className="font-crimson text-2xl font-bold mb-6">Channels in this Niche</h2>
-            <Card className="p-6 text-center bg-gray-50">
-              <p className="text-gray-500">No channels found for this niche yet.</p>
-            </Card>
           </div>
         )}
       </div>

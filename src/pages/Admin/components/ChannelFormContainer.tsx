@@ -1,8 +1,6 @@
 
 import { useChannelForm } from "../hooks/useChannelForm";
 import ChannelForm from "./ChannelForm";
-import { toast } from "sonner";
-import { useEffect } from "react";
 
 const ChannelFormContainer = () => {
   const {
@@ -14,26 +12,8 @@ const ChannelFormContainer = () => {
     handleScreenshotChange,
     handleFieldChange,
     handleKeywordsChange,
-    handleBooleanFieldChange,
-    initializeFormWithChannel
+    handleBooleanFieldChange
   } = useChannelForm();
-
-  useEffect(() => {
-    // Check for URL parameters that might indicate we're in edit mode
-    const urlParams = new URLSearchParams(window.location.search);
-    const channelIdParam = urlParams.get('id');
-    
-    if (channelIdParam && !isEditMode) {
-      // This could indicate we have a channel ID but the form didn't load it properly
-      console.log("Channel ID parameter detected but form not in edit mode:", channelIdParam);
-      
-      // Try to initialize the form with the channel ID from the URL
-      if (initializeFormWithChannel) {
-        initializeFormWithChannel(channelIdParam);
-        toast.info("Loading channel data for editing...");
-      }
-    }
-  }, [isEditMode, initializeFormWithChannel]);
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-sm">

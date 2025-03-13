@@ -2,21 +2,8 @@
 import React from "react";
 import AdminHeader from "./components/AdminHeader";
 import ManageNiches from "./components/niches/ManageNiches";
-import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 
 const ManageNichesPage = () => {
-  const { isAdmin } = useAuth();
-  const navigate = useNavigate();
-  
-  // Redirect if not admin
-  useEffect(() => {
-    if (!isAdmin) {
-      navigate("/admin/login");
-    }
-  }, [isAdmin, navigate]);
-  
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminHeader 

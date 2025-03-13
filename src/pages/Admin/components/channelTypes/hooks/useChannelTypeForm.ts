@@ -10,9 +10,9 @@ export const initialFormState: ChannelTypeInfo = {
   id: "",
   label: "",
   description: "",
-  image_url: null,
   production: "",
-  example: ""
+  example: "",
+  image_url: null
 };
 
 export const useChannelTypeForm = (

@@ -45,15 +45,6 @@ export const useChannelForm = () => {
   // To prevent multiple calls to fetchChannelData
   const hasInitialized = useRef(false);
 
-  // Function to initialize the form with a channel ID
-  const initializeFormWithChannel = (channelId: string) => {
-    if (!channelId) return;
-    
-    console.log("Initializing form with channel ID:", channelId);
-    setIsEditMode(true);
-    fetchChannelData(channelId);
-  };
-
   // Use a more controlled approach with useEffect and add channelId dependency
   // to prevent multiple calls when params don't change
   useEffect(() => {
@@ -105,7 +96,6 @@ export const useChannelForm = () => {
     handleScreenshotChange,
     handleFieldChange,
     handleKeywordsChange,
-    handleBooleanFieldChange,
-    initializeFormWithChannel // Add the missing function to the return value
+    handleBooleanFieldChange
   };
 };

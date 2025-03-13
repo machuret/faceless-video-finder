@@ -1,52 +1,31 @@
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 
-export const useSitemapExtractor = () => {
-  const [isExtracting, setIsExtracting] = useState(false);
-  
-  // Extract all pages from a sitemap
-  const extractAllPagesFromSitemap = useCallback(async (domain: string): Promise<string[]> => {
-    setIsExtracting(true);
-    
+export function useSitemapExtractor() {
+  const extractAllPagesFromSitemap = useCallback(async (): Promise<string[]> => {
     try {
-      // Try to fetch the sitemap.xml
-      const sitemapUrl = `${domain}/sitemap.xml`;
-      const response = await fetch(sitemapUrl);
+      // Attempt to fetch the sitemap.xml if it exists
+      const sitemapResponse = await fetch('/sitemap.xml').catch(() => null);
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch sitemap: ${response.status} ${response.statusText}`);
+      if (sitemapResponse && sitemapResponse.ok) {
+        const sitemapText = await sitemapResponse.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(sitemapText, "text/xml");
+        const urls = xmlDoc.getElementsByTagName("url");
+        
+        return Array.from(urls).map(url => {
+          const loc = url.getElementsByTagName("loc")[0];
+          return loc ? loc.textContent || "" : "";
+        }).filter(url => url !== "");
       }
       
-      const text = await response.text();
-      
-      // Parse XML
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(text, "text/xml");
-      
-      // Extract URLs from the sitemap
-      const urls: string[] = [];
-      const locationNodes = xmlDoc.getElementsByTagName('loc');
-      
-      for (let i = 0; i < locationNodes.length; i++) {
-        const url = locationNodes[i].textContent;
-        if (url) {
-          urls.push(url);
-        }
-      }
-      
-      return urls;
+      // If no sitemap, return empty array
+      return [];
     } catch (error) {
-      console.error("Error extracting sitemap URLs:", error);
-      
-      // If sitemap.xml fails, return the domain as a fallback
-      return [domain];
-    } finally {
-      setIsExtracting(false);
+      console.error("Error fetching sitemap:", error);
+      return [];
     }
   }, []);
-  
-  return {
-    extractAllPagesFromSitemap,
-    isExtracting
-  };
-};
+
+  return { extractAllPagesFromSitemap };
+}

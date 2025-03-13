@@ -34,15 +34,13 @@ const NicheManager = () => {
       name: niche, 
       description: null, 
       example: null,
-      image_url: null,
-      cpm: 4
+      image_url: null 
     };
     setEditingNiche(
       details.name, 
       details.description, 
       details.example,
-      details.image_url,
-      details.cpm
+      details.image_url
     );
     setActiveTab("edit");
   }, [nichesData, setEditingNiche]);

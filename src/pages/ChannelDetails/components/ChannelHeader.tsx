@@ -90,12 +90,7 @@ const ChannelHeader = ({ channel }: ChannelHeaderProps) => {
                     <h4 className="text-sm text-gray-500 mb-1"><strong>Category</strong></h4>
                     <div className="flex items-center">
                       <Bookmark className="h-4 w-4 text-blue-600 mr-2" />
-                      <Link 
-                        to={`/channel-types/${channel.channel_category.toLowerCase()}`}
-                        className="text-blue-600 hover:text-blue-800 hover:underline capitalize"
-                      >
-                        {channel.channel_category}
-                      </Link>
+                      <span className="capitalize">{channel.channel_category}</span>
                     </div>
                   </div>
                 )}

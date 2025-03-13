@@ -1,35 +1,22 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 export interface FacelessIdeaInfo {
   id: string;
   label: string;
   description: string | null;
-  image_url: string | null;
   production: string | null;
   example: string | null;
+  image_url: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
-// Input types for create and update operations
-export interface FacelessIdeaCreateInput {
-  id: string;
-  label: string;
-  description?: string | null;
-  image_url?: string | null;
-  production?: string | null;
-  example?: string | null;
-}
+export type FacelessIdeaCreateInput = Omit<FacelessIdeaInfo, 'created_at' | 'updated_at'>;
+export type FacelessIdeaUpdateInput = Omit<FacelessIdeaInfo, 'created_at' | 'updated_at'>;
 
-export interface FacelessIdeaUpdateInput {
-  id: string;
-  label: string;
-  description?: string | null;
-  image_url?: string | null;
-  production?: string | null;
-  example?: string | null;
-}
-
-// CSV import types
-export interface CsvImportResult {
-  success: number;
-  failed: number;
-  errors?: string[];
-}
+// Validation helpers
+export const validateFacelessIdeaId = (id: string): boolean => {
+  const regex = /^[a-z0-9_]+$/;
+  return regex.test(id);
+};

@@ -28,7 +28,7 @@ const MobileMenu = ({ isOpen, isActive, onItemClick }: MobileMenuProps) => {
               item.label === "Niches" ? isNichesActive(location.pathname) :
               isActive(item.path)
             } 
-            icon={item.icon}
+            icon={React.cloneElement(item.icon as React.ReactElement, { className: "h-5 w-5 mr-2" })}
             label={item.label} 
             onClick={onItemClick}
             isMobile={true}

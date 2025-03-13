@@ -1,208 +1,187 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { getCache, setCache } from "@/utils/cacheUtils";
+import { toast } from "sonner";
+import { channelTypes as localChannelTypes } from "@/components/youtube/channel-list/constants";
 
 export interface ChannelTypeInfo {
   id: string;
   label: string;
   description: string | null;
-  image_url: string | null;
   production: string | null;
   example: string | null;
+  image_url: string | null;
 }
 
-const CACHE_KEY = "channel_types";
-const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutes
-
 export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
+  console.log("fetchChannelTypes service called");
   try {
-    // Try cache first
-    const cachedData = getCache<ChannelTypeInfo[]>(CACHE_KEY);
-    if (cachedData) {
-      console.log("Returning cached channel types");
-      return cachedData;
-    }
-
-    console.log("Fetching channel types from Supabase...");
-    
-    // First try edge function for better reliability with network issues
+    // First try to get from database with error handling and timeout
     try {
-      const { data, error } = await supabase.functions.invoke('get-channel-types');
+      console.log("Fetching channel types from database");
+      const fetchPromise = supabase
+        .from('channel_types')
+        .select('*')
+        .order('label');
+      
+      // Add a timeout to prevent hanging requests
+      const timeoutPromise = new Promise<{data: null, error: Error}>((resolve) => 
+        setTimeout(() => resolve({
+          data: null, 
+          error: new Error('Database request timed out after 8 seconds')
+        }), 8000)
+      );
+      
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       
       if (error) {
-        throw new Error(`Edge function error: ${error.message}`);
+        console.error('Database error fetching channel types:', error);
+        throw error;
       }
       
-      if (Array.isArray(data)) {
-        console.log(`Fetched ${data.length} channel types via edge function`);
-        
-        // Cache the result for future use
-        setCache(CACHE_KEY, data, { expiry: CACHE_EXPIRY });
-        
+      if (data && data.length > 0) {
+        console.log(`Successfully fetched ${data.length} channel types from database`);
         return data;
+      } else {
+        console.log("No channel types found in database or empty response");
+        throw new Error("No channel types found in database");
       }
+    } catch (dbError) {
+      console.warn('Falling back to local channel types due to database error:', dbError);
       
-      // If we get here, the edge function likely returned a malformed response
-      console.warn("Edge function returned invalid data format, falling back to direct query");
-    } catch (edgeError) {
-      console.warn("Edge function failed, trying direct query:", edgeError);
-    }
-    
-    // Fallback to direct query if edge function fails
-    const { data, error } = await supabase
-      .from("channel_types")
-      .select("id, label, description, image_url, production, example");
-
-    if (error) {
-      throw new Error(`Database error: ${error.message}`);
-    }
-
-    console.log(`Fetched ${data.length} channel types via direct query`);
-    
-    // Cache the result for future use
-    setCache(CACHE_KEY, data, { expiry: CACHE_EXPIRY });
-    
-    return data;
-  } catch (error) {
-    console.error("Error fetching channel types:", error);
-    
-    // Return default data when no types could be fetched
-    return [
-      {
-        id: "compilation",
-        label: "Compilation",
-        description: "Videos that compile interesting clips, facts, or moments around a specific theme",
-        image_url: null,
-        production: null,
-        example: null
-      },
-      {
-        id: "educational",
-        label: "Educational",
-        description: "Videos that teach viewers about specific topics or skills",
-        image_url: null,
-        production: null,
-        example: null
+      // Try using the edge function as a fallback
+      try {
+        console.log("Attempting to fetch channel types via edge function");
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-types');
+        
+        if (!edgeError && edgeData?.channelTypes && Array.isArray(edgeData.channelTypes) && edgeData.channelTypes.length > 0) {
+          console.log(`Successfully fetched ${edgeData.channelTypes.length} channel types via edge function`);
+          return edgeData.channelTypes;
+        }
+      } catch (edgeError) {
+        console.warn("Edge function fallback failed:", edgeError);
       }
-    ];
+    }
+    
+    // Return local types as fallback
+    console.info('Using local channel types fallback');
+    return localChannelTypes.map(type => ({
+      id: type.id,
+      label: type.label,
+      description: type.description,
+      production: type.production,
+      example: type.example,
+      image_url: null
+    }));
+  } catch (err) {
+    console.error('Exception fetching channel types:', err);
+    // Return local types as fallback
+    return localChannelTypes.map(type => ({
+      id: type.id,
+      label: type.label,
+      description: type.description,
+      production: type.production,
+      example: type.example,
+      image_url: null
+    }));
   }
 };
 
 export const fetchChannelTypeById = async (id: string): Promise<ChannelTypeInfo | null> => {
   try {
-    if (!id) return null;
-    
-    // Try cache first
-    const cachedData = getCache<ChannelTypeInfo[]>(CACHE_KEY);
-    if (cachedData) {
-      const cachedType = cachedData.find(type => type.id === id || type.id === id.toLowerCase());
-      if (cachedType) {
-        console.log(`Returning cached channel type for ID: ${id}`);
-        return cachedType;
-      }
-    }
-    
-    console.log(`Fetching channel type by ID: ${id}...`);
-    
-    // Try edge function first
+    // First try to get from database
     try {
-      const { data, error } = await supabase.functions.invoke('get-channel-types', { 
-        body: { typeId: id } 
-      });
+      const { data, error } = await supabase
+        .from('channel_types')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
       
       if (error) {
-        throw new Error(`Edge function error: ${error.message}`);
+        console.error(`Error fetching channel type with id ${id}:`, error);
+        throw error;
       }
       
-      if (data && typeof data === 'object' && 'id' in data) {
-        console.log(`Found channel type via edge function: ${data.label}`);
-        return data as ChannelTypeInfo;
-      }
-      
-      // If we get here but the data is an array, it might be all channel types
-      if (Array.isArray(data)) {
-        const foundType = data.find(type => type.id === id || type.id === id.toLowerCase());
-        if (foundType) {
-          console.log(`Found channel type in array: ${foundType.label}`);
-          return foundType;
-        }
-      }
-      
-      // If we get here, the edge function likely returned a malformed response
-      console.warn("Edge function returned invalid data format, falling back to direct query");
-    } catch (edgeError) {
-      console.warn("Edge function failed, trying direct query:", edgeError);
+      if (data) return data;
+    } catch (dbError) {
+      console.warn("Database error, falling back to local channel types:", dbError);
     }
     
-    // Fallback to direct query
-    const { data, error } = await supabase
-      .from("channel_types")
-      .select("id, label, description, image_url, production, example")
-      .eq("id", id)
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(`Database error: ${error.message}`);
+    // If not found in database or if there was an error, check local constants
+    const localType = localChannelTypes.find(type => type.id === id);
+    if (localType) {
+      // Convert to match ChannelTypeInfo interface
+      return {
+        id: localType.id,
+        label: localType.label,
+        description: localType.description,
+        production: localType.production,
+        example: localType.example,
+        image_url: null
+      };
     }
-
-    return data;
+    
+    // If not found in either place, return null
+    return null;
   } catch (error) {
-    console.error(`Error fetching channel type by ID ${id}:`, error);
+    console.error(`Error in fetchChannelTypeById for id ${id}:`, error);
+    
+    // Final fallback to local types
+    const localType = localChannelTypes.find(type => type.id === id);
+    if (localType) {
+      return {
+        id: localType.id,
+        label: localType.label,
+        description: localType.description,
+        production: localType.production,
+        example: localType.example,
+        image_url: null
+      };
+    }
+    
     return null;
   }
 };
 
 export const createChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
-  try {
-    const { data, error } = await supabase
-      .from("channel_types")
-      .insert(channelType)
-      .select()
-      .single();
-
-    if (error) throw error;
-    
-    return data;
-  } catch (error: any) {
-    console.error("Error creating channel type:", error.message);
-    throw error;
+  const { data, error } = await supabase
+    .from('channel_types')
+    .insert(channelType)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error creating channel type:', error);
+    throw new Error(error.message);
   }
+  
+  return data;
 };
 
 export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
-  try {
-    const { data, error } = await supabase
-      .from("channel_types")
-      .update({
-        label: channelType.label,
-        description: channelType.description,
-        production: channelType.production,
-        example: channelType.example,
-        image_url: channelType.image_url
-      })
-      .eq("id", channelType.id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    
-    return data;
-  } catch (error: any) {
-    console.error(`Error updating channel type with ID ${channelType.id}:`, error.message);
-    throw error;
+  const { data, error } = await supabase
+    .from('channel_types')
+    .update(channelType)
+    .eq('id', channelType.id)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error(`Error updating channel type with id ${channelType.id}:`, error);
+    throw new Error(error.message);
   }
+  
+  return data;
 };
 
 export const deleteChannelType = async (id: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from("channel_types")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
-  } catch (error: any) {
-    console.error(`Error deleting channel type with ID ${id}:`, error.message);
-    throw error;
+  const { error } = await supabase
+    .from('channel_types')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error(`Error deleting channel type with id ${id}:`, error);
+    throw new Error(error.message);
   }
 };
 
@@ -210,38 +189,3 @@ export const validateChannelTypeId = (id: string): boolean => {
   const regex = /^[a-z0-9_]+$/;
   return regex.test(id);
 };
-
-export const DEFAULT_CHANNEL_TYPES: ChannelTypeInfo[] = [
-  {
-    id: "compilation",
-    label: "Compilation",
-    description: "Videos that compile interesting clips, facts, or moments around a specific theme",
-    image_url: null,
-    production: "Source clips from stock footage or with proper permissions, edit them together with transitions, add background music and captions",
-    example: "Top 10 Movie Scenes, Amazing Animal Moments, Funniest Fails"
-  },
-  {
-    id: "educational",
-    label: "Educational",
-    description: "Videos that teach viewers about specific topics or skills",
-    image_url: null,
-    production: "Research thoroughly, create script, use visuals like slides or animations, record clear audio narration",
-    example: "How Things Work, Science Explained, History Mysteries"
-  },
-  {
-    id: "data_visualization",
-    label: "Data Visualization",
-    description: "Videos that present data, statistics, and facts in visually engaging ways",
-    image_url: null,
-    production: "Research topic thoroughly, create animations using tools like After Effects or Blender, add voiceover narration",
-    example: "Country GDP Comparisons, Population Growth Visualized, Climate Change Statistics"
-  },
-  {
-    id: "relaxation",
-    label: "Relaxation/Ambient",
-    description: "Calming videos with beautiful scenery, sounds, or ambient music to help viewers relax",
-    image_url: null,
-    production: "Record or source high-quality nature footage, add ambient sounds or gentle music, edit for smooth transitions",
-    example: "Thunderstorm Sounds, Fireplace with Crackling Sounds, Ocean Waves"
-  }
-];

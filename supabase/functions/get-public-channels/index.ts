@@ -1,25 +1,27 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+
+// Follow this setup guide to integrate the Deno runtime into your application:
+// https://deno.land/manual/examples/deploy_node_server
+
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
   
   try {
+    const { url, key } = getSupabaseCredentials();
+    const supabase = createClient(url, key);
+    
     // Get request parameters
-    let requestParams = {};
-    try {
-      requestParams = await req.json();
-    } catch (e) {
-      // If JSON parsing fails, use defaults
-      console.log("Failed to parse request JSON, using defaults");
-    }
+    const requestData = await req.json();
     
     const {
       limit = 50,
@@ -32,7 +34,7 @@ Deno.serve(async (req) => {
       hasStats = false,
       featured = false,
       fields = [], // Support for field selection
-    } = requestParams;
+    } = requestData;
     
     console.log("Request parameters:", { 
       limit, offset, countOnly, featured,
@@ -40,15 +42,7 @@ Deno.serve(async (req) => {
       filters: { missingScreenshot, missingType, missingStats, missingKeywords, hasStats }
     });
     
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Missing Supabase credentials");
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
+    // Build the query based on parameters
     // Determine select fields - performance optimization
     let selectClause = '*';
     if (fields && Array.isArray(fields) && fields.length > 0) {
@@ -143,3 +137,15 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Helper to get Supabase credentials from environment variables
+function getSupabaseCredentials() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  if (!url || !key) {
+    throw new Error("Missing Supabase credentials");
+  }
+  
+  return { url, key };
+}

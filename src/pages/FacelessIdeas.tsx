@@ -1,12 +1,11 @@
-
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, RefreshCcw, Search, X } from "lucide-react";
-import { Link } from "react-router-dom";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { OptimizedList } from "@/components/ui/optimized-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIdeasPagination } from "@/hooks/ideas/useIdeasPagination";
 import IdeaCard from "./components/ideas/IdeaCard";
@@ -155,47 +154,21 @@ const FacelessIdeas = () => {
               )}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {memoizedIdeas.map((idea) => (
-                <Link 
-                  key={idea.id}
-                  to={`/faceless-ideas/${idea.id}`}
-                  className="block h-full"
-                >
-                  <Card className="hover:shadow-lg transition-shadow h-full overflow-hidden">
-                    {idea.image_url ? (
-                      <div className="w-full h-48 overflow-hidden bg-gray-100">
-                        <img 
-                          src={idea.image_url} 
-                          alt={idea.label}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-full h-48 overflow-hidden bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
-                        <div className="text-xl font-semibold text-blue-600 px-4 text-center">
-                          {idea.label}
-                        </div>
-                      </div>
-                    )}
-                    <CardContent className="p-6">
-                      <h3 className="font-crimson text-xl mb-3 font-semibold">{idea.label}</h3>
-                      <p className="font-lato text-sm text-gray-600 mb-4">
-                        {idea.description ? (
-                          idea.description.length > 120 ? `${idea.description.substring(0, 120)}...` : idea.description
-                        ) : "No description available."}
-                      </p>
-                      <div className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-medium mt-2">
-                        View details <ArrowRight className="ml-1 h-4 w-4" />
-                      </div>
-                    </CardContent>
+            <div className="mb-8">
+              <OptimizedList
+                items={memoizedIdeas}
+                keyExtractor={(idea) => idea.id}
+                itemHeight={380}
+                containerClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                renderItem={(idea) => (
+                  <IdeaCard key={idea.id} idea={idea} />
+                )}
+                emptyElement={
+                  <Card className="p-6">
+                    <p className="font-lato">No faceless content ideas found.</p>
                   </Card>
-                </Link>
-              ))}
+                }
+              />
             </div>
             
             <IdeasPagination 

@@ -40,13 +40,15 @@ const ScannedPagesAccordion: React.FC<ScannedPagesAccordionProps> = ({ scannedPa
                       </div>
                     </td>
                     <td className="px-3 py-2 text-center">
-                      {page.totalLinks} {page.brokenLinks.length > 0 && (
-                        <span className="text-red-500 ml-1">({page.brokenLinks.length} broken)</span>
+                      {page.linkCount} {page.brokenCount > 0 && (
+                        <span className="text-red-500 ml-1">({page.brokenCount} broken)</span>
                       )}
                     </td>
                     <td className="px-3 py-2 text-center">
-                      {page.scanned ? (
+                      {page.status === 'success' ? (
                         <span className="text-green-600">✓</span>
+                      ) : page.status === 'error' ? (
+                        <span className="text-red-500">✕</span>
                       ) : (
                         <span className="text-yellow-500">...</span>
                       )}

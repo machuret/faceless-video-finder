@@ -1,26 +1,29 @@
-
+// Import types from Supabase
+import { PostgrestError } from "@supabase/supabase-js";
 import { FacelessIdeaInfo } from '../types';
 
+// Define sort order type separately
+export type SortOrder = 'asc' | 'desc';
+
+// Define filter object type explicitly
+export interface FilterObject {
+  [key: string]: any;
+}
+
+// Define options for fetching ideas without recursion
 export interface FetchIdeasOptions {
   page?: number;
   pageSize?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
   search?: string;
-  filter?: Record<string, any>;
+  sortBy?: string;
+  sortOrder?: SortOrder;
+  filter?: FilterObject;
   useCache?: boolean;
   cacheTTL?: number;
-  forceCountRefresh?: boolean;
+  forceCountRefresh?: boolean; // Added for conditional count fetching
 }
 
-export type SortOrder = 'asc' | 'desc';
-
-export interface QueryMetadata {
-  executionTimeMs?: number;
-  cacheHit?: boolean;
-  optimizationApplied?: string[];
-}
-
+// Define paginated response type
 export interface PaginatedResponse<T> {
   data: T[];
   count: number;
@@ -28,11 +31,16 @@ export interface PaginatedResponse<T> {
   pageSize: number;
   totalPages: number;
   executionTime?: number;
-  fromCache?: boolean;
-  queryInfo?: QueryMetadata;
+  fromCache?: boolean; // Added to indicate cache hits
+  queryInfo?: { // Added for query metadata
+    sortColumn?: string;
+    filterCount?: number;
+    hasSearch?: boolean;
+    executionTimeMs?: number;
+  };
 }
 
-// Error types for better error handling
+// Define error classes
 export class FacelessIdeasError extends Error {
   constructor(message: string) {
     super(message);
@@ -61,9 +69,13 @@ export class ServerError extends FacelessIdeasError {
   }
 }
 
-export type RetryTypeCategory = 'network' | 'server' | 'validation' | 'unknown';
+// Retry types for error handling
+export type RetryTypeCategory = 'network' | 'server' | 'validation' | 'unknown' | null;
 
-// Add retry types
+// Define error filter type independently to avoid recursive definitions
+export type RetryErrorFilter = (error: any) => boolean;
+
+// Define the retry options without recursive type references
 export interface RetryOptions {
   maxRetries?: number;
   initialDelay?: number;
@@ -72,4 +84,15 @@ export interface RetryOptions {
   errorFilter?: RetryErrorFilter;
 }
 
-export type RetryErrorFilter = (error: any) => boolean;
+// Options for pagination component
+export interface IdeasPaginationOptions {
+  pageSize?: number;
+  retryLimit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: SortOrder;
+  filter?: FilterObject;
+  useCache?: boolean;
+  cacheTTL?: number;
+  retryDelay?: number;
+}

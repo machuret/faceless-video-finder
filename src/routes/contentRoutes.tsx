@@ -1,40 +1,51 @@
 
-import FacelessIdeas from '../pages/FacelessIdeas';
-import Niches from '../pages/Niches';
-import NicheDetails from '../pages/NicheDetails';
-import FacelessIdeaDetails from '../pages/FacelessIdeaDetails';
-import FacelessChannelIdeas from '../pages/FacelessChannelIdeas';
+import { lazy } from 'react';
+import { lazyLoad } from './loaders';
+
+// Lazy load content-related components
+const ChannelTypes = lazy(() => import('../pages/ChannelTypes'));
+const ChannelTypeDetailsPage = lazy(() => import('../pages/ChannelTypeDetails/components/ChannelTypeDetailsPage'));
+const Niches = lazy(() => import('../pages/Niches'));
+const NicheDetails = lazy(() => import('../pages/NicheDetails'));
+const FacelessIdeas = lazy(() => import('../pages/FacelessIdeas'));
+const FacelessIdeaDetails = lazy(() => import('../pages/FacelessIdeaDetails'));
+const FacelessChannelIdeas = lazy(() => import('../pages/FacelessChannelIdeas'));
 
 export const contentRoutes = [
-  // Niches
+  {
+    path: "/channel-types",
+    element: lazyLoad(ChannelTypes),
+  },
+  {
+    path: "/channel-types/:typeId",
+    element: lazyLoad(ChannelTypeDetailsPage),
+  },
   {
     path: "/niches",
-    element: <Niches />,
+    element: lazyLoad(Niches),
   },
   {
     path: "/niche/:id",
-    element: <NicheDetails />,
+    element: lazyLoad(NicheDetails),
   },
   {
     path: "/niches/:slug",
-    element: <NicheDetails />,
+    element: lazyLoad(NicheDetails),
   },
-  
-  // Faceless Ideas
   {
     path: "/faceless-ideas",
-    element: <FacelessIdeas />,
+    element: lazyLoad(FacelessIdeas),
   },
   {
     path: "/faceless-idea/:id",
-    element: <FacelessIdeaDetails />,
+    element: lazyLoad(FacelessIdeaDetails),
   },
   {
     path: "/faceless-ideas/:ideaId",
-    element: <FacelessIdeaDetails />,
+    element: lazyLoad(FacelessIdeaDetails),
   },
   {
     path: "/faceless-channel-ideas",
-    element: <FacelessChannelIdeas />,
+    element: lazyLoad(FacelessChannelIdeas),
   },
 ];

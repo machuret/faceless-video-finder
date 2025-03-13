@@ -13,14 +13,14 @@ Deno.serve(async (req) => {
     
     // Parse the request body
     const requestData = await req.json();
-    const { niche, description, example, image_url, cpm } = requestData;
+    const { niche, description, example, image_url } = requestData;
     
     if (!niche) {
       throw new Error('Niche name is required');
     }
     
     console.log(`Updating details for niche: ${niche}`);
-    console.log(`Fields being updated: description=${!!description}, example=${!!example}, image_url=${!!image_url}, cpm=${cpm}`);
+    console.log(`Fields being updated: description=${!!description}, example=${!!example}, image_url=${!!image_url}`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -44,11 +44,10 @@ Deno.serve(async (req) => {
     }
     
     // Prepare the update data with only fields that are provided
-    const updateData: { description?: string; image_url?: string; example?: string; cpm?: number } = {};
+    const updateData: { description?: string; image_url?: string; example?: string } = {};
     if (description !== undefined) updateData.description = description;
     if (image_url !== undefined) updateData.image_url = image_url;
     if (example !== undefined) updateData.example = example;
-    if (cpm !== undefined) updateData.cpm = parseFloat(cpm);
     
     console.log('Update data:', updateData);
     

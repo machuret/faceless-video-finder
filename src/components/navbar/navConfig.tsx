@@ -1,60 +1,58 @@
 
-import React from "react";
+import { Home, Calculator, Lightbulb, Layers, GraduationCap, HelpCircle, Tag, Settings } from "lucide-react";
+import { matchPath } from "react-router-dom";
 
-// Define navigation items with emoji icons
+// Define navigation items
 export const navigationItems = [
   {
     path: "/",
-    icon: <span className="mr-1">🏠</span>,
+    icon: <Home className="h-4 w-4" />,
     label: "Home",
   },
   {
     path: "/calculators",
-    icon: <span className="mr-1">🧮</span>,
+    icon: <Calculator className="h-4 w-4" />,
     label: "Calculators",
   },
   {
     path: "/faceless-ideas",
-    icon: <span className="mr-1">💡</span>,
+    icon: <Lightbulb className="h-4 w-4" />,
     label: "Ideas",
   },
   {
     path: "/channel-types",
-    icon: <span className="mr-1">📺</span>,
+    icon: <Layers className="h-4 w-4" />,
     label: "Channel Types",
   },
   {
     path: "/niches",
-    icon: <span className="mr-1">🏷️</span>,
+    icon: <Tag className="h-4 w-4" />,
     label: "Niches",
   },
   {
     path: "https://facelesstraining.com/",
-    icon: <span className="mr-1">🎓</span>,
+    icon: <GraduationCap className="h-4 w-4" />,
     label: "Training",
     isExternal: true,
   },
   {
     path: "/how-it-works",
-    icon: <span className="mr-1">❓</span>,
+    icon: <HelpCircle className="h-4 w-4" />,
     label: "How It Works",
   },
 ];
 
 // Function to check if "Ideas" is active
 export const isIdeasActive = (pathname: string): boolean => {
-  return pathname.startsWith('/faceless-ideas') || 
-         pathname === '/faceless-ideas' || 
-         pathname.startsWith('/faceless-channel-ideas') || 
-         pathname === '/faceless-channel-ideas';
+  return !!matchPath({ path: "/faceless-ideas/*", end: false }, pathname) || pathname === '/faceless-ideas';
 };
 
 // Function to check if "Admin" is active
 export const isAdminActive = (pathname: string): boolean => {
-  return pathname.startsWith('/admin') || pathname === '/admin';
+  return !!matchPath({ path: "/admin/*", end: false }, pathname) || pathname === '/admin';
 };
 
 // Function to check if "Niches" is active
 export const isNichesActive = (pathname: string): boolean => {
-  return pathname.startsWith('/niches') || pathname === '/niches';
+  return !!matchPath({ path: "/niches/*", end: false }, pathname) || pathname === '/niches';
 };

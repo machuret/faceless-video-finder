@@ -1,112 +1,87 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { BrokenLink } from './types';
 
-export const useLinkValidator = () => {
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationResults, setValidationResults] = useState<BrokenLink[]>([]);
-
-  // Clear validation results
-  const clearResults = useCallback(() => {
-    setValidationResults([]);
-  }, []);
-
-  // Validate a single link
-  const validateLink = useCallback(async (link: string, linkText: string, pageUrl: string): Promise<BrokenLink | null> => {
+export function useLinkValidator() {
+  const checkLink = useCallback(async (url: string, linkText: string, pageUrl?: string): Promise<BrokenLink | null> => {
     try {
-      setIsValidating(true);
-      
-      // Handle mailto links
-      if (link.startsWith('mailto:')) {
-        return null;
-      }
-      
-      // Handle telephone links
-      if (link.startsWith('tel:')) {
-        return null;
-      }
-      
-      // Skip javascript: links
-      if (link.startsWith('javascript:')) {
-        return null;
-      }
-      
-      // Skip anchor links (internal page navigation)
-      if (link.startsWith('#')) {
+      // Skip anchor links (they don't need external checking)
+      if (url.startsWith('#')) {
         return null;
       }
 
-      // Try fetching the URL
-      try {
-        const response = await fetch(link, { method: 'HEAD', redirect: 'follow' });
-        
-        // Return null for successful status codes
-        if (response.ok) {
-          return null;
-        }
-        
+      // Skip javascript: links
+      if (url.startsWith('javascript:')) {
+        return null;
+      }
+
+      // Skip mailto: links
+      if (url.startsWith('mailto:')) {
+        return null;
+      }
+
+      // Skip tel: links
+      if (url.startsWith('tel:')) {
+        return null;
+      }
+
+      // Convert relative URLs to absolute URLs
+      const fullUrl = url.startsWith('/') 
+        ? `${window.location.origin}${url}` 
+        : url;
+
+      // Use fetch to check if the link is valid
+      const response = await fetch(fullUrl, { 
+        method: 'HEAD', 
+        redirect: 'manual',
+        cache: 'no-store',
+      }).catch(error => {
+        console.error(`Network error fetching ${url}:`, error);
+        return null;
+      });
+
+      if (!response) {
         return {
-          url: link,
-          text: linkText,
-          pageUrl,
-          status: response.status,
-          statusText: response.statusText,
-          source: pageUrl
-        };
-      } catch (networkError) {
-        // Handle network errors
-        return {
-          url: link,
+          url,
           text: linkText,
           pageUrl,
           status: 0,
-          statusText: 'Network Error',
-          source: pageUrl
+          error: 'Network error or CORS issue'
         };
       }
+
+      if (response.status >= 400) {
+        return {
+          url,
+          text: linkText,
+          pageUrl,
+          status: response.status,
+        };
+      }
+
+      // Check redirects as potential issues
+      if (response.type === 'opaqueredirect') {
+        return {
+          url,
+          text: linkText,
+          pageUrl,
+          status: 302,
+          error: 'Redirect detected',
+        };
+      }
+
+      return null;
     } catch (error) {
-      console.error('Error validating link:', error);
+      console.error(`Error checking link ${url}:`, error);
       return {
-        url: link,
+        url,
         text: linkText,
         pageUrl,
         status: 0,
-        statusText: 'Unknown Error',
-        source: pageUrl
+        error: error instanceof Error ? error.message : String(error),
       };
-    } finally {
-      setIsValidating(false);
     }
   }, []);
 
-  // Validate multiple links
-  const validateLinks = useCallback(async (links: Array<{ url: string, text: string, pageUrl: string }>) => {
-    setIsValidating(true);
-    setValidationResults([]);
-    
-    try {
-      const results = await Promise.all(
-        links.map(link => validateLink(link.url, link.text, link.pageUrl))
-      );
-      
-      // Filter out null results (successful validations) and set the broken links
-      const brokenLinks = results.filter(result => result !== null) as BrokenLink[];
-      setValidationResults(brokenLinks);
-      
-      return brokenLinks;
-    } catch (error) {
-      console.error('Error validating links:', error);
-      return [];
-    } finally {
-      setIsValidating(false);
-    }
-  }, [validateLink]);
-
-  return {
-    isValidating,
-    validationResults,
-    validateLink,
-    validateLinks,
-    clearResults
-  };
-};
+  return { checkLink };
+}

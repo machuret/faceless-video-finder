@@ -11,14 +11,8 @@ export const channelRoutes = [
     path: "/channels",
     element: lazyLoad(ChannelSearch),
   },
-  // Make sure we handle both the slug and direct ID patterns
   {
     path: "/channel/:slug",
     element: lazyLoad(ChannelDetails),
   },
-  // Add an additional route for direct ID access
-  {
-    path: "/channels/:id",
-    element: lazyLoad(ChannelDetails),
-  }
 ];

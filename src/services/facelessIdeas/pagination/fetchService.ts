@@ -1,7 +1,6 @@
-
 import { validateQueryParams } from './validation';
 import { buildQuery, buildCountQuery } from './queryBuilder';
-import { getCachedFacelessIdeas, setCachedFacelessIdeas, getFacelessIdeasCacheKey } from './cacheUtils';
+import { getCachedResults, setCachedResults } from './cacheUtils';
 import { 
   FetchIdeasOptions, 
   PaginatedResponse, 
@@ -12,9 +11,6 @@ import {
 } from './types';
 import { DEFAULT_CACHE_TTL, DEFAULT_PAGE_SIZE } from './constants';
 import { FacelessIdeaInfo } from '../types';
-
-// Export error classes for use in other modules
-export { NetworkError, ServerError, ValidationError, FacelessIdeasError };
 
 /**
  * Performance-optimized function to fetch faceless ideas with smart pagination, 
@@ -38,8 +34,7 @@ export const fetchPaginatedIdeas = async (
     
     // Try to get from cache first for faster responses
     if (useCache) {
-      const cacheKey = getFacelessIdeasCacheKey(validatedOptions);
-      const cachedData = getCachedFacelessIdeas<PaginatedResponse<FacelessIdeaInfo>>(cacheKey);
+      const cachedData = getCachedResults<FacelessIdeaInfo>(validatedOptions);
       
       if (cachedData) {
         console.log(`Cache hit for faceless ideas: ${JSON.stringify(validatedOptions)}`);
@@ -63,21 +58,10 @@ export const fetchPaginatedIdeas = async (
     const needsExactCount = page === 1 || forceCountRefresh;
     
     // Execute the query - with conditional count to improve performance
-    console.log(`Executing Supabase query...`);
     const { data, error, count } = await query;
-    
-    // Log the raw response
-    console.log(`Query response:`, {
-      dataReceived: !!data,
-      dataLength: data?.length || 0,
-      error: error ? error.message : null,
-      count
-    });
     
     // Handle server errors
     if (error) {
-      console.error("Supabase query error:", error);
-      
       if (error.code === 'PGRST116') {
         throw new ValidationError('Invalid query parameters');
       } else if (error.code?.startsWith('23')) { 
@@ -95,18 +79,12 @@ export const fetchPaginatedIdeas = async (
     // This happens when we have a cached response but need fresh count
     if (totalCount === null && forceCountRefresh) {
       try {
-        console.log(`Executing count query to get total records...`);
         const countQuery = buildCountQuery({
           search: validatedOptions.search,
           filter: validatedOptions.filter
         });
         
         const { count: exactCount, error: countError } = await countQuery;
-        
-        console.log(`Count query response:`, {
-          count: exactCount,
-          error: countError ? countError.message : null
-        });
         
         if (!countError && exactCount !== null) {
           totalCount = exactCount;
@@ -148,8 +126,7 @@ export const fetchPaginatedIdeas = async (
     
     // Cache the result if caching is enabled
     if (useCache) {
-      const cacheKey = getFacelessIdeasCacheKey(validatedOptions);
-      setCachedFacelessIdeas(cacheKey, response, cacheTTL);
+      setCachedResults(validatedOptions, response, cacheTTL);
     }
     
     return response;
