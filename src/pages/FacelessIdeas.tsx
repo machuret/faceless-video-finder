@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, RefreshCcw, Search, X } from "lucide-react";
@@ -42,30 +41,25 @@ const FacelessIdeas = () => {
     useCache: true
   });
 
-  // Set initial load state
   useEffect(() => {
     if (!isLoading && ideas.length > 0) {
       setIsInitialLoad(false);
     }
   }, [isLoading, ideas]);
 
-  // Optimize list rendering with memoization
   const memoizedIdeas = useMemo(() => ideas, [ideas]);
 
-  // Retry handler with cache busting
   const handleRetry = useCallback(() => {
     resetPagination();
-    refreshData(true); // True to bust cache
+    refreshData(true);
     toast.info("Refreshing ideas list...");
   }, [resetPagination, refreshData]);
 
-  // Clear search handler
   const handleClearSearch = useCallback(() => {
     setSearchInput("");
     resetPagination();
   }, [resetPagination]);
 
-  // Format the last update time
   const formattedUpdateTime = useMemo(() => {
     if (!dataUpdatedAt) return null;
     
@@ -253,7 +247,6 @@ const ErrorState = ({
   let errorTitle = "Error loading ideas";
   let errorClass = "bg-red-50 border-red-200";
   
-  // Customize error display based on error type
   if (retryType === 'network') {
     errorTitle = "Network Connection Error";
     errorClass = "bg-yellow-50 border-yellow-200";
