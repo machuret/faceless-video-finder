@@ -130,7 +130,8 @@ export function useIdeasQuery(
   // Track retry count
   useEffect(() => {
     if (query.isRefetching) {
-      setRetryCount(prev => prev + 1);
+      // Fix: Use a direct value instead of a callback function
+      setRetryCount(retryCount + 1);
       
       // Show toast on retry
       toast.info(`Retrying... (Attempt ${retryCount + 1}/${retryLimit})`, {
