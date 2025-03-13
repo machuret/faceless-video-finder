@@ -6,6 +6,7 @@ import { usePaginationState } from './pagination/usePaginationState';
 import { usePaginationHandlers } from './pagination/usePaginationHandlers';
 import { useIdeasQuery } from './pagination/useIdeasQuery';
 import { useDebounce } from '@/utils/hooks/useDebounce';
+import { fetchPaginatedIdeas } from '@/services/facelessIdeas/paginatedService';
 
 export function useIdeasPagination(options: IdeasPaginationOptions = {}): UseIdeasPaginationReturn {
   const queryClient = useQueryClient();
