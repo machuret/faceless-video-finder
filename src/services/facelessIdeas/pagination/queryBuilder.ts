@@ -7,7 +7,7 @@ import { DEFAULT_PAGE_SIZE } from './constants';
  * Result of the query builder with metadata for pagination
  */
 interface QueryResult {
-  // Using explicit SupabaseQueryType to avoid deep type instantiation
+  // Using explicit type to avoid deep type instantiation
   query: ReturnType<typeof supabase.from>;
   from: number;
   to: number;
