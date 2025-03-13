@@ -1,11 +1,11 @@
 
 export const siteConfig = {
-  name: "Creator Insights",
+  name: "Faceless Finder",
   description: "Analytics and insights for content creators",
-  url: "https://creatorinsights.com",
-  ogImage: "https://creatorinsights.com/og-image.png",
+  url: "https://facelessfinder.com",
+  ogImage: "https://facelessfinder.com/og-image.png",
   links: {
-    twitter: "https://twitter.com/creatorinsights",
-    github: "https://github.com/creatorinsights",
+    twitter: "https://twitter.com/facelessfinder",
+    github: "https://github.com/facelessfinder",
   },
 };

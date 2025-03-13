@@ -4,24 +4,28 @@ import { NavConfig } from './types';
 export const navConfig: NavConfig = {
   mainNavItems: [
     {
+      title: "About",
+      href: "/about",
+    },
+    {
       title: "Channels",
       href: "/channels",
     },
     {
-      title: "Calculators",
-      href: "/calculators",
+      title: "Ideas",
+      href: "/faceless-ideas",
     },
     {
-      title: "How it works",
-      href: "/how-it-works",
+      title: "Niches",
+      href: "/niches",
+    },
+    {
+      title: "Types",
+      href: "/channel-types",
     },
     {
       title: "Training",
       href: "/training",
-    },
-    {
-      title: "About",
-      href: "/about",
     },
   ]
 };
