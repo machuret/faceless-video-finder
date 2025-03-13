@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { FacelessIdeaInfo } from "@/services/facelessIdeas/types";
 import { fetchFacelessIdeaById } from "@/services/facelessIdeas";
+import { toast } from "sonner";
 
 const useIdeaSelection = () => {
   const [selectedIdea, setSelectedIdea] = useState<FacelessIdeaInfo | null>(null);
@@ -17,12 +18,16 @@ const useIdeaSelection = () => {
         setSelectedIdea(idea);
         return idea;
       } else {
-        setError(`Faceless idea with ID ${id} not found.`);
+        const errorMsg = `Faceless idea with ID ${id} not found.`;
+        setError(errorMsg);
+        toast.error(errorMsg);
         setSelectedIdea(null);
         return null;
       }
     } catch (e: any) {
-      setError(`Failed to fetch faceless idea: ${e.message}`);
+      const errorMsg = `Failed to fetch faceless idea: ${e.message}`;
+      setError(errorMsg);
+      toast.error(errorMsg);
       setSelectedIdea(null);
       return null;
     } finally {
@@ -32,6 +37,7 @@ const useIdeaSelection = () => {
 
   const clearSelection = () => {
     setSelectedIdea(null);
+    setError(null);
   };
 
   return {

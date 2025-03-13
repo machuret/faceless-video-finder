@@ -43,24 +43,42 @@ export async function getPublicChannels(req: Request, {
     
     console.log(`Fetching channels with select clause: ${selectClause}`);
     
-    // Fetch channels with service role, bypassing RLS with optimized field selection
-    const { data, error, count } = await supabase
-      .from("youtube_channels")
-      .select(selectClause, { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    const fetchWithRetry = async (attempts = 3) => {
+      try {
+        // Fetch channels with service role, bypassing RLS with optimized field selection
+        const { data, error, count } = await supabase
+          .from("youtube_channels")
+          .select(selectClause, { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+          
+        if (error) throw error;
+        
+        return { data, count };
+      } catch (error) {
+        if (attempts > 1) {
+          console.log(`Retrying public channels fetch. Attempts remaining: ${attempts - 1}`);
+          await new Promise(r => setTimeout(r, 800)); // Wait 800ms before retrying
+          return fetchWithRetry(attempts - 1);
+        }
+        throw error;
+      }
+    };
+    
+    try {
+      const { data, count } = await fetchWithRetry();
       
-    if (error) {
+      console.log(`Successfully fetched ${data?.length || 0} channels via Edge Function (total count: ${count})`);
+      
+      return {
+        channels: data || [],
+        totalCount: count || 0
+      };
+    } catch (error) {
       console.error("Error fetching channels:", error);
       return { error: error.message };
     }
     
-    console.log(`Successfully fetched ${data?.length || 0} channels via Edge Function (total count: ${count})`);
-    
-    return {
-      channels: data || [],
-      totalCount: count || 0
-    };
   } catch (err) {
     console.error("Error in getPublicChannels:", err);
     return { error: "Failed to fetch channels" };

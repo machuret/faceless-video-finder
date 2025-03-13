@@ -32,39 +32,45 @@ export const fetchChannelDetails = async (id: string) => {
       };
     }
     
-    // Try direct query as fallback - selecting specific fields for better performance
-    // Define the basic fields to select for the channel
-    const { data: channelData, error: channelError } = await supabase
-      .from("youtube_channels")
-      .select("*") // For full channel details, we need all fields
-      .eq("id", id)
-      .maybeSingle(); // Using maybeSingle() instead of single() to avoid errors if no records
-
-    if (channelError) {
-      console.error("Error fetching channel details:", channelError);
-      throw new Error(channelError.message);
-    }
-    
-    if (!channelData) {
-      console.error("No channel found with ID:", id);
-      throw new Error("Channel not found");
-    }
-    
-    // For video stats, select only necessary fields
-    const videoStatsFields = 'id, video_id, title, thumbnail_url, views, likes, channel_id';
-    
-    // Fetch video stats for this channel
-    const { data: videoData, error: videoError } = await supabase
-      .from("youtube_video_stats")
-      .select(videoStatsFields)
-      .eq("channel_id", id);
-      
-    if (videoError) throw videoError;
-
-    return {
-      channel: channelData as unknown as Channel,
-      videoStats: videoData || []
+    // Try direct query as fallback with retry mechanism
+    const fetchWithRetry = async (attempts = 3) => {
+      try {
+        // Define the basic fields to select for the channel
+        const { data: channelData, error: channelError } = await supabase
+          .from("youtube_channels")
+          .select("*") // For full channel details, we need all fields
+          .eq("id", id)
+          .maybeSingle(); // Using maybeSingle() instead of single() to avoid errors if no records
+          
+        if (channelError) throw channelError;
+        if (!channelData) throw new Error("Channel not found");
+        
+        // For video stats, select only necessary fields
+        const videoStatsFields = 'id, video_id, title, thumbnail_url, views, likes, channel_id';
+        
+        // Fetch video stats for this channel
+        const { data: videoData, error: videoError } = await supabase
+          .from("youtube_video_stats")
+          .select(videoStatsFields)
+          .eq("channel_id", id);
+          
+        if (videoError) throw videoError;
+        
+        return {
+          channel: channelData as unknown as Channel,
+          videoStats: videoData || []
+        };
+      } catch (error) {
+        if (attempts > 1) {
+          console.log(`Retrying channel details fetch. Attempts remaining: ${attempts - 1}`);
+          await new Promise(r => setTimeout(r, 800)); // Wait 800ms before retrying
+          return fetchWithRetry(attempts - 1);
+        }
+        throw error;
+      }
     };
+    
+    return await fetchWithRetry();
   } catch (error) {
     console.error("Error in fetchChannelDetails:", error);
     throw error;

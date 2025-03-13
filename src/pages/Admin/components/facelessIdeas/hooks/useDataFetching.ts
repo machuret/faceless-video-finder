@@ -14,7 +14,22 @@ export const useDataFetching = () => {
       setLoading(true);
       setError(null);
       console.log("Fetching faceless ideas...");
-      const data = await fetchFacelessIdeas();
+      
+      // Improved fetch with retry mechanism
+      const fetchWithRetry = async (attempts = 3): Promise<FacelessIdeaInfo[]> => {
+        try {
+          return await fetchFacelessIdeas();
+        } catch (error) {
+          if (attempts > 1) {
+            console.log(`Retrying faceless ideas fetch. Attempts remaining: ${attempts - 1}`);
+            await new Promise(r => setTimeout(r, 800)); // Wait 800ms before retrying
+            return fetchWithRetry(attempts - 1);
+          }
+          throw error;
+        }
+      };
+      
+      const data = await fetchWithRetry();
       console.log(`Fetched ${data.length} faceless ideas`);
       setFacelessIdeas(data);
     } catch (error) {

@@ -49,7 +49,11 @@ const ChannelCard: React.FC<ChannelCardProps> = ({ channel }) => {
         </CardTitle>
         <CardDescription className="flex flex-col">
           <span>{formatSubscriberCount(Number(total_subscribers))} subscribers</span>
-          {niche && <span className="text-xs mt-1 bg-gray-100 px-2 py-0.5 rounded-full inline-block w-fit">{niche}</span>}
+          {niche && (
+            <Link to={`/niches/${niche}`} className="text-xs mt-1 bg-gray-100 px-2 py-0.5 rounded-full inline-block w-fit hover:bg-gray-200">
+              {niche}
+            </Link>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
