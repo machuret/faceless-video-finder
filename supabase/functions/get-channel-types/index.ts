@@ -1,6 +1,11 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
-import { corsHeaders } from '../_shared/cors.ts';
+
+// Define CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -21,7 +26,7 @@ Deno.serve(async (req) => {
     // Fetch channel types from database
     const { data: channelTypes, error } = await supabase
       .from('channel_types')
-      .select('*')
+      .select('id, label, description, image_url, production, example')
       .order('label');
 
     if (error) {
@@ -29,6 +34,7 @@ Deno.serve(async (req) => {
       throw error;
     }
 
+    // Return a successful response with the channel types
     return new Response(
       JSON.stringify({
         success: true,

@@ -18,7 +18,6 @@ export const useChannelTypesData = () => {
     refetchOnWindowFocus: false,
     retry: 3,
     retryDelay: (attempt) => Math.min(attempt * 1000, 5000),
-    // Use onError in the correct location in the options
     meta: {
       onError: (err: Error) => {
         console.error("Error fetching channel types:", err);

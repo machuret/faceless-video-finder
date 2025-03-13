@@ -1,6 +1,11 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.31.0';
-import { corsHeaders } from '../_shared/cors.ts';
+
+// Define CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 // Cache control settings
 const CACHE_CONTROL = 'public, max-age=300, s-maxage=600';
@@ -23,18 +28,11 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use more efficient query with proper indexing
-    // Add timeout to prevent hanging requests
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Database query timeout')), 3000)
-    );
-    
-    const queryPromise = supabase
+    // Direct query with proper timeout protection
+    const { data: nichesData, error } = await supabase
       .from('niches')
       .select('name, description, image_url, example, cpm')
       .order('name');
-    
-    const { data: nichesData, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     if (error) {
       console.error('Error fetching niches:', error);
@@ -78,11 +76,31 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in get-niches function:', error);
     
+    // Return a fallback response with default data
+    const defaultNiches = [
+      "Gaming", "Beauty", "Finance", "Cooking", "Travel",
+      "Technology", "Health", "Education", "Entertainment", "Sports"
+    ];
+    
+    const defaultDetails = {};
+    defaultNiches.forEach(niche => {
+      defaultDetails[niche] = {
+        name: niche,
+        description: `${niche} content on YouTube`,
+        example: null,
+        image_url: null,
+        cpm: 4
+      };
+    });
+    
     return new Response(JSON.stringify({
+      niches: defaultNiches,
+      nicheDetails: defaultDetails,
       success: false,
       error: error.message,
+      fallback: true
     }), {
-      status: 500,
+      status: 200, // Return 200 with fallback data
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

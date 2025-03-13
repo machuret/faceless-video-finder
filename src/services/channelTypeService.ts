@@ -25,25 +25,33 @@ const DEFAULT_CHANNEL_TYPES: ChannelTypeInfo[] = [
     id: "compilation",
     label: "Compilation Channel",
     description: "Channels that compile content from various sources into themed videos",
-    image_url: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=1000"
+    image_url: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=1000",
+    production: "Production is typically simplified by collecting existing content and editing it together.",
+    example: "Example: MrBeast Compilations"
   },
   {
     id: "educational",
     label: "Educational Content",
     description: "Channels focused on teaching skills, concepts, or providing knowledge",
-    image_url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000"
+    image_url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000",
+    production: "Requires research and clear presentation of information.",
+    example: "Example: Khan Academy"
   },
   {
     id: "automation",
     label: "Automation Videos",
     description: "Videos showing automated processes, machines, or AI-generated content",
-    image_url: "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?q=80&w=1000"
+    image_url: "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?q=80&w=1000",
+    production: "Involves setting up systems that can generate content with minimal human intervention.",
+    example: "Example: Daily Dose of Internet"
   },
   {
     id: "shorts",
     label: "Shorts Channel",
     description: "Channels focused on short-form vertical video content",
-    image_url: "https://images.unsplash.com/photo-1611162616475-46b635cb6868?q=80&w=1000"
+    image_url: "https://images.unsplash.com/photo-1611162616475-46b635cb6868?q=80&w=1000",
+    production: "Quick, engaging content under 60 seconds.",
+    example: "Example: Mr Beast Shorts"
   }
 ];
 
@@ -52,28 +60,24 @@ export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
   
   try {
     console.log("Fetching channel types from database");
-    // Set up a timeout for the database request
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(new Error("Database request timed out after 8 seconds"));
-      }, 8000);
-    });
-
-    // Database query promise - update to select only fields that exist in the table
-    const dbQueryPromise = supabase
-      .from("channel_types")
-      .select("id, label, description, image_url");
-
-    // Race the database query against the timeout
-    const result = await Promise.race([dbQueryPromise, timeoutPromise]);
     
-    if ('data' in result && result.data && Array.isArray(result.data) && result.data.length > 0) {
-      console.log(`Successfully fetched ${result.data.length} channel types`);
-      return result.data as ChannelTypeInfo[];
+    // Direct database query first
+    const { data, error } = await supabase
+      .from("channel_types")
+      .select("id, label, description, image_url, production, example");
+      
+    if (error) {
+      console.error("Database query error:", error);
+      throw error;
     }
     
-    // If no data returned, try edge function
-    console.log("No data from direct query, attempting to fetch channel types via edge function");
+    if (data && Array.isArray(data) && data.length > 0) {
+      console.log(`Successfully fetched ${data.length} channel types from direct query`);
+      return data as ChannelTypeInfo[];
+    }
+    
+    // If direct query returns no results, try the edge function
+    console.log("No data from direct query, attempting edge function");
     const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('get-channel-types');
     
     if (edgeFunctionError) {
@@ -81,41 +85,43 @@ export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
       throw new Error(edgeFunctionError.message);
     }
     
-    if (edgeFunctionData && Array.isArray(edgeFunctionData) && edgeFunctionData.length > 0) {
-      console.log(`Successfully fetched ${edgeFunctionData.length} channel types via edge function`);
-      return edgeFunctionData as ChannelTypeInfo[];
+    // Check if the edge function returned properly structured channel types
+    if (edgeFunctionData && 
+        edgeFunctionData.channelTypes && 
+        Array.isArray(edgeFunctionData.channelTypes) && 
+        edgeFunctionData.channelTypes.length > 0) {
+      console.log(`Successfully fetched ${edgeFunctionData.channelTypes.length} channel types via edge function`);
+      return edgeFunctionData.channelTypes as ChannelTypeInfo[];
     }
     
-    // If all else fails, return default types
-    console.warn("Falling back to local channel types due to empty results");
+    // If we reach here, neither approach worked
+    console.warn("Falling back to default channel types due to empty results");
     return DEFAULT_CHANNEL_TYPES;
   } catch (error) {
-    console.error("Database error fetching channel types:", error);
-    console.warn("Falling back to local channel types due to database error:", error);
+    console.error("Error fetching channel types:", error);
+    console.warn("Falling back to default channel types due to error");
     
-    // Return default types if database query fails
+    // Return default types if all else fails
     return DEFAULT_CHANNEL_TYPES;
   }
 };
-
-// Add the missing functions that are being imported in other components
 
 // Fetch a single channel type by ID
 export const fetchChannelTypeById = async (id: string): Promise<ChannelTypeInfo | null> => {
   try {
     console.log(`Fetching channel type with ID: ${id}`);
     
-    // First try the database
+    // First try direct database query
     const { data, error } = await supabase
       .from("channel_types")
-      .select("id, label, description, image_url")
+      .select("id, label, description, image_url, production, example")
       .eq("id", id)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error("Error fetching channel type:", error);
       
-      // If not found in the database, check if it's in the default types
+      // Check if it's in the default types
       const defaultType = DEFAULT_CHANNEL_TYPES.find(type => type.id === id);
       if (defaultType) {
         return defaultType;
@@ -124,7 +130,17 @@ export const fetchChannelTypeById = async (id: string): Promise<ChannelTypeInfo 
       return null;
     }
     
-    return data as ChannelTypeInfo;
+    if (data) {
+      return data as ChannelTypeInfo;
+    }
+    
+    // Check if it's in the default types as fallback
+    const defaultType = DEFAULT_CHANNEL_TYPES.find(type => type.id === id);
+    if (defaultType) {
+      return defaultType;
+    }
+    
+    return null;
   } catch (error) {
     console.error(`Error fetching channel type with ID ${id}:`, error);
     
@@ -147,7 +163,9 @@ export const createChannelType = async (channelType: ChannelTypeInfo): Promise<C
         id: channelType.id,
         label: channelType.label,
         description: channelType.description || null,
-        image_url: channelType.image_url || null
+        image_url: channelType.image_url || null,
+        production: channelType.production || null,
+        example: channelType.example || null
       }])
       .select()
       .single();
@@ -171,7 +189,9 @@ export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<C
       .update({
         label: channelType.label,
         description: channelType.description || null,
-        image_url: channelType.image_url || null
+        image_url: channelType.image_url || null,
+        production: channelType.production || null,
+        example: channelType.example || null
       })
       .eq("id", channelType.id)
       .select()
