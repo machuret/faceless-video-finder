@@ -6,8 +6,19 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import routes from './routes';
 import { initializeStorage } from './integrations/supabase/initStorage';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/auth/AuthContext';
 import MainLoader from './components/MainLoader';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a client for React Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   React.useEffect(() => {
@@ -36,10 +47,12 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <AuthProvider>
-        <RouterProvider router={router} fallbackElement={<MainLoader />} />
-        <Toaster />
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <RouterProvider router={router} fallbackElement={<MainLoader />} />
+          <Toaster />
+        </AuthProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }
