@@ -72,6 +72,7 @@ export const useNicheFetching = () => {
           }
         } else {
           console.error("Error fetching niches from DB:", nichesError);
+          // Fix: Use error.message instead of error.name which doesn't exist on this type
           throw new Error(nichesError.message || "Error fetching niches");
         }
       }
