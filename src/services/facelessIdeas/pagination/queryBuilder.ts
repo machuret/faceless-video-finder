@@ -24,41 +24,18 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Instead of dynamically applying filters which causes TypeScript issues,
-  // we'll use a different approach with direct SQL text conditions
-  
-  // Extract filter conditions to an array of SQL fragments
-  const sqlConditions: string[] = [];
-  const params: Record<string, any> = {};
-  let paramIndex = 1;
-  
-  // Using Object.entries avoids TypeScript recursion issues
+  // Apply individual filters one by one instead of using the raw SQL approach
+  // This addresses the TypeScript issue by using the proper filter method signature
   Object.entries(filter).forEach(([key, value]) => {
     // Skip undefined, null or empty values
     if (value === undefined || value === null || value === '') {
       return;
     }
     
-    // Create a parameter name that won't conflict
-    const paramName = `p${paramIndex}`;
-    
-    // Add the condition using column = :paramName syntax
-    sqlConditions.push(`${key} = :${paramName}`);
-    
-    // Add the parameter value to our params object
-    params[paramName] = value;
-    
-    paramIndex++;
+    // Use the standard column-operator-value format
+    // This matches the expected overload of the filter method
+    query = query.eq(key, value);
   });
-  
-  // If we have SQL conditions, apply them using a raw SQL filter
-  if (sqlConditions.length > 0) {
-    // Join all conditions with AND
-    const filterText = sqlConditions.join(' AND ');
-    // Fix: The filter method expects 3 arguments - we need to provide the correct format
-    // The third parameter should be an object with a config property
-    query = query.filter(filterText, params, { foreignTable: null });
-  }
   
   // Add sorting and pagination
   query = query
@@ -68,10 +45,9 @@ export const buildQuery = (options: FetchIdeasOptions) => {
   // Metadata for debugging
   const queryMetadata = {
     table: 'faceless_ideas',
-    filterApplied: !!search || sqlConditions.length > 0,
+    filterApplied: !!search || Object.keys(filter).length > 0,
     paginationRange: `${from}-${to}`,
-    sortApplied: `${sortBy} ${sortOrder}`,
-    sqlConditions: sqlConditions.length > 0 ? sqlConditions : undefined
+    sortApplied: `${sortBy} ${sortOrder}`
   };
   
   return { query, from, to, queryMetadata };
@@ -90,27 +66,15 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Using the same SQL direct approach for filters
-  const sqlConditions: string[] = [];
-  const params: Record<string, any> = {};
-  let paramIndex = 1;
-  
+  // Apply filters directly without using raw SQL
   Object.entries(filter).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') {
       return;
     }
     
-    const paramName = `p${paramIndex}`;
-    sqlConditions.push(`${key} = :${paramName}`);
-    params[paramName] = value;
-    paramIndex++;
+    // Use standard filter method with column, operator, value format
+    query = query.eq(key, value);
   });
-  
-  if (sqlConditions.length > 0) {
-    const filterText = sqlConditions.join(' AND ');
-    // Fix: The filter method expects 3 arguments - add the third parameter
-    query = query.filter(filterText, params, { foreignTable: null });
-  }
   
   return query;
 };
