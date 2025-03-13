@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { 
@@ -35,19 +35,19 @@ export function useIdeasQuery(
   
   const abortControllerRef = useRef<AbortController | null>(null);
   
-  // Create a unique query key based on all pagination parameters
-  const queryKey = [
+  // Use stable query keys for better cache management and performance
+  const queryKey = useMemo(() => [
     'facelessIdeas', 
     currentPage, 
     pageSize, 
     search, 
     sortBy, 
     sortOrder,
-    // Convert filter object to string for stable query key
+    // Generate a stable key from the filter object
     JSON.stringify(filter)
-  ];
+  ], [currentPage, pageSize, search, sortBy, sortOrder, filter]);
   
-  // Use React Query for data fetching with automatic caching
+  // Use React Query for data fetching with optimized caching
   const query = useQuery({
     queryKey,
     queryFn: async () => {
@@ -58,6 +58,9 @@ export function useIdeasQuery(
         // Track start time for performance monitoring
         const startTime = performance.now();
         
+        // Only refresh count on page 1 or explicit force - better performance
+        const forceCountRefresh = currentPage === 1 || retryCount > 0;
+        
         const result = await fetchPaginatedIdeas({
           page: currentPage,
           pageSize,
@@ -66,12 +69,17 @@ export function useIdeasQuery(
           sortOrder,
           filter,
           useCache,
-          cacheTTL
+          cacheTTL,
+          forceCountRefresh
         });
         
         // Log performance metrics
         const fetchTime = performance.now() - startTime;
-        console.log(`Ideas fetch completed in ${fetchTime.toFixed(2)}ms, execution time: ${result.executionTime?.toFixed(2) || 'unknown'}ms`);
+        console.log(
+          `Ideas fetch completed in ${fetchTime.toFixed(2)}ms, ` +
+          `execution time: ${result.executionTime?.toFixed(2) || 'unknown'}ms, ` +
+          `from cache: ${result.fromCache ? 'yes' : 'no'}`
+        );
         
         return result;
       } catch (err) {
@@ -91,6 +99,7 @@ export function useIdeasQuery(
     },
     refetchOnWindowFocus: false,
     staleTime: useCache ? cacheTTL || 5 * 60 * 1000 : 0, // Use the provided TTL or 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep data in cache for 10 minutes for better performance
     retry: (failureCount, error) => {
       // Don't retry for validation errors
       if (error instanceof ValidationError) {
@@ -101,10 +110,8 @@ export function useIdeasQuery(
       return failureCount < retryLimit;
     },
     retryDelay: (attempt) => {
-      // Get the retry type that was set in the queryFn
+      // Exponential backoff with jitter to prevent thundering herd problem
       const baseDelay = retryDelay * Math.pow(1.5, attempt);
-        
-      // Add some jitter to prevent thundering herd problem
       return baseDelay * (0.8 + Math.random() * 0.4);
     }
   });
@@ -130,7 +137,7 @@ export function useIdeasQuery(
   // Track retry count
   useEffect(() => {
     if (query.isRefetching) {
-      // Fix: Use a direct value instead of a callback function
+      // Update retry count directly
       setRetryCount(retryCount + 1);
       
       // Show toast on retry

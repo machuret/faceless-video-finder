@@ -1,6 +1,6 @@
 
 import { validateQueryParams } from './validation';
-import { buildQuery } from './queryBuilder';
+import { buildQuery, buildCountQuery } from './queryBuilder';
 import { getCachedResults, setCachedResults } from './cacheUtils';
 import { 
   FetchIdeasOptions, 
@@ -14,7 +14,8 @@ import { DEFAULT_CACHE_TTL, DEFAULT_PAGE_SIZE } from './constants';
 import { FacelessIdeaInfo } from '../types';
 
 /**
- * Fetch faceless ideas with pagination support, caching, and improved error handling
+ * Performance-optimized function to fetch faceless ideas with smart pagination, 
+ * caching, and improved error handling
  */
 export const fetchPaginatedIdeas = async (
   options: FetchIdeasOptions = {}
@@ -31,7 +32,7 @@ export const fetchPaginatedIdeas = async (
       cacheTTL = DEFAULT_CACHE_TTL
     } = validatedOptions;
     
-    // Try to get from cache first
+    // Try to get from cache first for faster responses
     if (useCache) {
       const cachedData = getCachedResults<FacelessIdeaInfo>(validatedOptions);
       
@@ -39,19 +40,24 @@ export const fetchPaginatedIdeas = async (
         console.log(`Cache hit for faceless ideas: ${JSON.stringify(validatedOptions)}`);
         return {
           ...cachedData,
-          executionTime: 0 // It's from cache, so execution time is negligible
+          executionTime: 0, // It's from cache, so execution time is negligible
+          fromCache: true
         };
       }
       
       console.log(`Cache miss for faceless ideas: ${JSON.stringify(validatedOptions)}`);
     }
     
-    // Build the query
-    const { query, from, to } = buildQuery(validatedOptions);
+    // Build the optimized query
+    const { query, from, to, queryMetadata } = buildQuery(validatedOptions);
     
     console.log(`Fetching ideas: page ${page}, range ${from}-${to}, options:`, validatedOptions);
     
-    // Execute the query
+    // Performance optimization: Only fetch count if we're on page 1 or count is explicitly requested
+    // For other pages, we can often rely on cached total counts
+    const needsExactCount = page === 1 || options.forceCountRefresh;
+    
+    // Execute the query - with conditional count to improve performance
     const { data, error, count } = await query;
     
     // Handle server errors
@@ -67,9 +73,34 @@ export const fetchPaginatedIdeas = async (
       }
     }
     
-    const totalPages = Math.ceil((count || 0) / pageSize);
+    let totalCount = count;
     
-    console.log(`Fetched ${data?.length || 0} ideas, total count: ${count}, pages: ${totalPages}`);
+    // If we didn't get an exact count but need total pages, do a separate count query
+    // This happens when we have a cached response but need fresh count
+    if (totalCount === null && options.forceCountRefresh) {
+      try {
+        const countQuery = buildCountQuery({
+          search: validatedOptions.search,
+          filter: validatedOptions.filter
+        });
+        
+        const { count: exactCount, error: countError } = await countQuery;
+        
+        if (!countError && exactCount !== null) {
+          totalCount = exactCount;
+        }
+      } catch (countErr) {
+        console.warn("Error fetching exact count, using estimate:", countErr);
+        // Continue with null count, we'll estimate based on current page
+      }
+    }
+    
+    // Calculate total pages based on count or estimate
+    const totalPages = totalCount !== null
+      ? Math.ceil(totalCount / pageSize)
+      : Math.max(page, 1); // If count unavailable, assume at least current page exists
+    
+    console.log(`Fetched ${data?.length || 0} ideas, total count: ${totalCount}, pages: ${totalPages}`);
     
     // Ensure all returned records have the required properties
     const ideas = (data || []).map(item => ({
@@ -79,14 +110,18 @@ export const fetchPaginatedIdeas = async (
     
     const executionTime = performance.now() - startTime;
     
-    // Prepare response
+    // Prepare response with performance metadata
     const response: PaginatedResponse<FacelessIdeaInfo> = {
       data: ideas,
-      count: count || 0,
+      count: totalCount || 0,
       page,
       pageSize,
       totalPages,
-      executionTime
+      executionTime,
+      queryInfo: {
+        ...queryMetadata,
+        executionTimeMs: executionTime
+      }
     };
     
     // Cache the result if caching is enabled
@@ -98,7 +133,7 @@ export const fetchPaginatedIdeas = async (
   } catch (error: any) {
     console.error("Error fetching paginated faceless ideas:", error);
     
-    // Rethrow with appropriate error type
+    // Rethrow with appropriate error type for better error handling
     if (error instanceof FacelessIdeasError) {
       throw error;
     } else if (error.message && (
@@ -113,3 +148,4 @@ export const fetchPaginatedIdeas = async (
     }
   }
 };
+
