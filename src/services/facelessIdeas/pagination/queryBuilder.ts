@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { FetchIdeasOptions, SortOrder, FilterObject } from './types';
 import { DEFAULT_PAGE_SIZE } from './constants';
@@ -6,7 +7,8 @@ import { DEFAULT_PAGE_SIZE } from './constants';
  * Result of the query builder with metadata for pagination
  */
 interface QueryResult {
-  query: any; // Using any type to avoid TS2589 (type instantiation is excessively deep)
+  // Using explicit SupabaseQueryType to avoid deep type instantiation
+  query: ReturnType<typeof supabase.from>;
   from: number;
   to: number;
   queryMetadata?: {
@@ -97,7 +99,7 @@ export const buildQuery = (options: FetchIdeasOptions): QueryResult => {
  * Optimized query for counting total records that match certain criteria
  * This is more efficient than fetching the actual records with count
  */
-export const buildCountQuery = (options: Omit<FetchIdeasOptions, 'page' | 'pageSize' | 'sortBy' | 'sortOrder'>): any => {
+export const buildCountQuery = (options: Omit<FetchIdeasOptions, 'page' | 'pageSize' | 'sortBy' | 'sortOrder'>): ReturnType<typeof supabase.from> => {
   const {
     search = '',
     filter = {}
