@@ -1,8 +1,6 @@
 
 import React, { memo } from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { FacelessIdeaInfo } from '@/services/facelessIdeas';
 import LazyImage from '@/components/ui/lazy-image';
 
@@ -12,9 +10,9 @@ interface IdeaCardProps {
 
 const IdeaCard: React.FC<IdeaCardProps> = ({ idea }) => {
   return (
-    <Card className="hover:shadow-lg transition-shadow h-full overflow-hidden">
-      {idea.image_url ? (
-        <div className="w-full h-48 overflow-hidden bg-gray-100">
+    <Card className="hover:shadow-lg transition-shadow h-full">
+      {idea.image_url && (
+        <div className="w-full h-40 overflow-hidden">
           <LazyImage 
             src={idea.image_url} 
             alt={idea.label}
@@ -24,26 +22,16 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea }) => {
             lowQualityUrl={idea.image_url + '?quality=10&width=50'} 
           />
         </div>
-      ) : (
-        <div className="w-full h-48 overflow-hidden bg-gradient-to-r from-blue-100 to-indigo-100">
-          <div className="flex items-center justify-center h-full text-blue-600 text-xl font-semibold">
-            {idea.label}
-          </div>
-        </div>
       )}
-      <CardContent className="p-6 flex flex-col h-auto">
-        <CardTitle className="font-crimson text-xl mb-3">{idea.label}</CardTitle>
-        <p className="font-lato text-sm text-gray-600 mb-4 flex-grow">
-          {idea.description ? (
-            idea.description.length > 120 ? `${idea.description.substring(0, 120)}...` : idea.description
-          ) : "No description available."}
-        </p>
-        <Link 
-          to={`/faceless-ideas/${idea.id}`} 
-          className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-medium font-montserrat mt-auto"
-        >
-          View details <ArrowRight className="ml-1 h-4 w-4" />
-        </Link>
+      <CardContent className="p-6">
+        <h3 className="font-crimson text-xl font-semibold mb-2">{idea.label}</h3>
+        
+        {idea.description && (
+          <p className="font-lato text-sm text-gray-600 line-clamp-3">
+            {idea.description.substring(0, 100)}
+            {idea.description.length > 100 ? "..." : ""}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

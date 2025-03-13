@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
 import { toast } from "sonner";
-import { OptimizedList } from "@/components/ui/optimized-list";
 import { useIdeasPagination } from "@/hooks/ideas/useIdeasPagination";
 import IdeaCard from "./components/ideas/IdeaCard";
 import IdeasPagination from "./components/ideas/IdeasPagination";
@@ -14,13 +13,28 @@ import IdeasErrorState from "./components/ideas/IdeasErrorState";
 import IdeasHeader from "./components/ideas/IdeasHeader";
 import IdeasSearch from "./components/ideas/IdeasSearch";
 import IdeasStatus from "./components/ideas/IdeasStatus";
+import { Link } from "react-router-dom";
 
 const ITEMS_PER_PAGE = 12;
+
+// Array of background images for random selection
+const backgroundImages = [
+  "https://images.unsplash.com/photo-1472289065668-ce650ac443d2?auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1526378787940-576a539ba69d?auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80",
+];
 
 const FacelessIdeas = () => {
   const [searchInput, setSearchInput] = useState("");
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [backgroundImage, setBackgroundImage] = useState("");
   const debouncedSearch = useDebounce(searchInput, 500);
+  
+  // Select a random background image on component mount
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * backgroundImages.length);
+    setBackgroundImage(backgroundImages[randomIndex]);
+  }, []);
   
   const {
     currentPage,
@@ -66,9 +80,20 @@ const FacelessIdeas = () => {
     <div className="min-h-screen bg-gray-50">
       <MainNavbar />
       
+      <div 
+        className="bg-cover bg-center h-64 flex items-center justify-center mb-8"
+        style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${backgroundImage})` }}
+      >
+        <div className="text-center text-white max-w-3xl mx-auto px-4">
+          <h1 className="font-crimson text-4xl font-bold mb-4 text-center">Faceless Content Ideas</h1>
+          <p className="font-lato text-lg text-center">
+            Explore different types of faceless YouTube content ideas to inspire your next video creation.
+            These ideas require minimal on-camera presence and can be produced with basic equipment.
+          </p>
+        </div>
+      </div>
+      
       <div className="container mx-auto px-4 py-8">
-        <IdeasHeader dataUpdatedAt={dataUpdatedAt} />
-        
         <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="md:invisible md:h-0 md:w-0 md:overflow-hidden">
             {/* Placeholder for flex layout balance */}
@@ -107,19 +132,12 @@ const FacelessIdeas = () => {
               isLoading={isLoading}
             />
             
-            <div className="mb-8">
-              <OptimizedList
-                items={memoizedIdeas}
-                keyExtractor={(idea) => idea.id}
-                itemHeight={380}
-                containerClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6"
-                renderItem={(idea) => (
-                  <IdeaCard key={idea.id} idea={idea} />
-                )}
-                emptyElement={
-                  <p className="font-lato">No faceless content ideas found.</p>
-                }
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+              {memoizedIdeas.map((idea) => (
+                <Link key={idea.id} to={`/faceless-ideas/${idea.id}`}>
+                  <IdeaCard idea={idea} />
+                </Link>
+              ))}
             </div>
             
             <IdeasPagination 
