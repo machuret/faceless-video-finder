@@ -5,24 +5,10 @@ import { DesktopNav } from './DesktopNav';
 import { MobileNav } from './MobileNav';
 import { UserNavMenu } from './UserNavMenu';
 import { navConfig } from './config';
+import { useScrollPosition } from './hooks/useScrollPosition';
 
 export default function MainNavbar() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 10);
-    };
-    
-    // Add scroll event listener
-    window.addEventListener('scroll', handleScroll);
-    
-    // Clean up event listener on component unmount
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+  const isScrolled = useScrollPosition();
 
   return (
     <header 
