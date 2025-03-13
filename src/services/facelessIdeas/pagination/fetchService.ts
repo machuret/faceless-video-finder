@@ -1,3 +1,4 @@
+
 import { validateQueryParams } from './validation';
 import { buildQuery, buildCountQuery } from './queryBuilder';
 import { getCachedFacelessIdeas, setCachedFacelessIdeas, getFacelessIdeasCacheKey } from './cacheUtils';
@@ -62,10 +63,21 @@ export const fetchPaginatedIdeas = async (
     const needsExactCount = page === 1 || forceCountRefresh;
     
     // Execute the query - with conditional count to improve performance
+    console.log(`Executing Supabase query...`);
     const { data, error, count } = await query;
+    
+    // Log the raw response
+    console.log(`Query response:`, {
+      dataReceived: !!data,
+      dataLength: data?.length || 0,
+      error: error ? error.message : null,
+      count
+    });
     
     // Handle server errors
     if (error) {
+      console.error("Supabase query error:", error);
+      
       if (error.code === 'PGRST116') {
         throw new ValidationError('Invalid query parameters');
       } else if (error.code?.startsWith('23')) { 
@@ -83,12 +95,18 @@ export const fetchPaginatedIdeas = async (
     // This happens when we have a cached response but need fresh count
     if (totalCount === null && forceCountRefresh) {
       try {
+        console.log(`Executing count query to get total records...`);
         const countQuery = buildCountQuery({
           search: validatedOptions.search,
           filter: validatedOptions.filter
         });
         
         const { count: exactCount, error: countError } = await countQuery;
+        
+        console.log(`Count query response:`, {
+          count: exactCount,
+          error: countError ? countError.message : null
+        });
         
         if (!countError && exactCount !== null) {
           totalCount = exactCount;
