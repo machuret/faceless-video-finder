@@ -46,7 +46,7 @@ export const useNicheFetching = () => {
             
           if (fallbackError) {
             console.error("Error fetching niches with fallback query:", fallbackError);
-            throw new Error(fallbackError.message);
+            throw new Error(fallbackError.message || "Error with fallback query");
           }
           
           if (fallbackData && fallbackData.length > 0) {
