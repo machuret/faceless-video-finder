@@ -26,15 +26,16 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply any additional filters - using simpler type handling to prevent deep instantiation
+  // Apply any additional filters - using primitive approach to avoid TypeScript recursion
   if (filter) {
-    // Use a simple loop instead of complex chaining that could cause type recursion
-    Object.keys(filter).forEach(key => {
+    const filterKeys = Object.keys(filter);
+    for (let i = 0; i < filterKeys.length; i++) {
+      const key = filterKeys[i];
       const value = filter[key];
       if (value !== undefined && value !== null && value !== '') {
         query = query.eq(key, value);
       }
-    });
+    }
   }
   
   // Add sorting and pagination
@@ -66,15 +67,16 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply any additional filters - using simpler type handling
+  // Apply any additional filters - using primitive approach to avoid TypeScript recursion
   if (filter) {
-    // Using a simpler approach to avoid deep type instantiation
-    Object.keys(filter).forEach(key => {
+    const filterKeys = Object.keys(filter);
+    for (let i = 0; i < filterKeys.length; i++) {
+      const key = filterKeys[i];
       const value = filter[key];
       if (value !== undefined && value !== null && value !== '') {
         query = query.eq(key, value);
       }
-    });
+    }
   }
   
   return query;
