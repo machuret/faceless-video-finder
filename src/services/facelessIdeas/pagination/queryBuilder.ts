@@ -21,22 +21,21 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     .from('faceless_ideas')
     .select('*', { count: 'exact' });
   
-  // Apply filters
+  // Apply search filter
   if (search) {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply any additional filters - avoiding TypeScript recursion with simple loops
-  if (filter) {
-    // Cast filter to any to avoid TypeScript deep analysis
-    const filterObj = filter as Record<string, any>;
-    const keys = Object.keys(filterObj);
+  // Apply additional filters - using a simplified approach to prevent TypeScript recursion
+  if (Object.keys(filter).length > 0) {
+    // Use type assertion to avoid TypeScript analyzing the object structure recursively
+    const filterObj: Record<string, unknown> = filter as any;
     
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const val = filterObj[key];
-      if (val !== undefined && val !== null && val !== '') {
-        query = query.eq(key, val);
+    for (const key of Object.keys(filterObj)) {
+      const value = filterObj[key];
+      // Only apply the filter if it has a meaningful value
+      if (value !== undefined && value !== null && value !== '') {
+        query = query.eq(key, value);
       }
     }
   }
@@ -70,17 +69,16 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply any additional filters - avoiding TypeScript recursion with simple loops
-  if (filter) {
-    // Cast filter to any to avoid TypeScript deep analysis
-    const filterObj = filter as Record<string, any>;
-    const keys = Object.keys(filterObj);
+  // Apply additional filters - using a simplified approach to prevent TypeScript recursion
+  if (Object.keys(filter).length > 0) {
+    // Use type assertion to avoid TypeScript analyzing the object structure recursively
+    const filterObj: Record<string, unknown> = filter as any;
     
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const val = filterObj[key];
-      if (val !== undefined && val !== null && val !== '') {
-        query = query.eq(key, val);
+    for (const key of Object.keys(filterObj)) {
+      const value = filterObj[key];
+      // Only apply the filter if it has a meaningful value
+      if (value !== undefined && value !== null && value !== '') {
+        query = query.eq(key, value);
       }
     }
   }
