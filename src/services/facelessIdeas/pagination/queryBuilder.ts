@@ -2,10 +2,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { FetchIdeasOptions, SortOrder, FilterObject } from './types';
 import { DEFAULT_PAGE_SIZE } from './constants';
-import { PostgrestFilterBuilder } from "@supabase/supabase-js";
+import { PostgrestQueryBuilder } from "@supabase/supabase-js";
 
 interface QueryResult {
-  query: PostgrestFilterBuilder<any>;
+  query: ReturnType<typeof supabase.from>;
   from: number;
   to: number;
 }
