@@ -4,11 +4,11 @@ import { Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { lazyLoad } from './loaders';
 
-// Import AdminLogin directly instead of lazy loading it to fix the import error
+// Import components directly instead of lazy loading to fix import errors
 import AdminLogin from '../pages/Admin/AdminLogin';
+import AdminDashboard from '../pages/Admin/Dashboard';
 
 // Continue lazy loading other admin components
-const AdminDashboard = React.lazy(() => import('../pages/Admin/Dashboard'));
 const AddChannel = React.lazy(() => import('../pages/Admin/AddChannel'));
 const ManageNiches = React.lazy(() => import('../pages/Admin/ManageNiches'));
 const ManageChannelTypes = React.lazy(() => import('../pages/Admin/ManageChannelTypes'));
@@ -34,7 +34,7 @@ export const adminRoutes = [
     path: "/admin/dashboard",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(AdminDashboard)}
+        <AdminDashboard />
       </ProtectedRoute>
     ),
   },
