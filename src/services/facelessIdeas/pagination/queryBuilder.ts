@@ -8,7 +8,7 @@ import { DEFAULT_PAGE_SIZE } from './constants';
  */
 interface QueryResult {
   // Using explicit type to avoid deep type instantiation
-  query: ReturnType<typeof supabase.from>;
+  query: any; // Using 'any' here to prevent recursive type resolution
   from: number;
   to: number;
   queryMetadata?: {
