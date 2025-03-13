@@ -1,4 +1,3 @@
-
 import { validateQueryParams } from './validation';
 import { buildQuery, buildCountQuery } from './queryBuilder';
 import { getCachedFacelessIdeas, setCachedFacelessIdeas, getFacelessIdeasCacheKey } from './cacheUtils';
@@ -12,6 +11,9 @@ import {
 } from './types';
 import { DEFAULT_CACHE_TTL, DEFAULT_PAGE_SIZE } from './constants';
 import { FacelessIdeaInfo } from '../types';
+
+// Export error classes for use in other modules
+export { NetworkError, ServerError, ValidationError, FacelessIdeasError };
 
 /**
  * Performance-optimized function to fetch faceless ideas with smart pagination, 

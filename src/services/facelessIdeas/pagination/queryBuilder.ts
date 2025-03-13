@@ -26,12 +26,14 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply any additional filters
-  Object.entries(filter).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      query = query.eq(key, value);
-    }
-  });
+  // Apply any additional filters - simplified to avoid deep type instantiation
+  if (filter && typeof filter === 'object') {
+    Object.entries(filter).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        query = query.eq(key, value);
+      }
+    });
+  }
   
   // Add sorting and pagination
   query = query
@@ -62,12 +64,14 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply any additional filters
-  Object.entries(filter).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      query = query.eq(key, value);
-    }
-  });
+  // Apply any additional filters - simplified to avoid deep type instantiation
+  if (filter && typeof filter === 'object') {
+    Object.entries(filter).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        query = query.eq(key, value);
+      }
+    });
+  }
   
   return query;
 };

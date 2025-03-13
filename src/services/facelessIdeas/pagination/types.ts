@@ -13,6 +13,8 @@ export interface FetchIdeasOptions {
   forceCountRefresh?: boolean;
 }
 
+export type SortOrder = 'asc' | 'desc';
+
 export interface QueryMetadata {
   executionTimeMs?: number;
   cacheHit?: boolean;
@@ -60,3 +62,14 @@ export class ServerError extends FacelessIdeasError {
 }
 
 export type RetryTypeCategory = 'network' | 'server' | 'validation' | 'unknown';
+
+// Add retry types
+export interface RetryOptions {
+  maxRetries?: number;
+  initialDelay?: number;
+  maxDelay?: number;
+  factor?: number;
+  errorFilter?: RetryErrorFilter;
+}
+
+export type RetryErrorFilter = (error: any) => boolean;

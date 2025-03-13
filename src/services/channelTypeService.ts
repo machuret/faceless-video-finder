@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCache, setCache } from "@/utils/cacheUtils";
 
@@ -152,6 +151,66 @@ export const fetchChannelTypeById = async (id: string): Promise<ChannelTypeInfo 
   }
 };
 
+export const createChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
+  try {
+    const { data, error } = await supabase
+      .from("channel_types")
+      .insert(channelType)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    return data;
+  } catch (error: any) {
+    console.error("Error creating channel type:", error.message);
+    throw error;
+  }
+};
+
+export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
+  try {
+    const { data, error } = await supabase
+      .from("channel_types")
+      .update({
+        label: channelType.label,
+        description: channelType.description,
+        production: channelType.production,
+        example: channelType.example,
+        image_url: channelType.image_url
+      })
+      .eq("id", channelType.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    return data;
+  } catch (error: any) {
+    console.error(`Error updating channel type with ID ${channelType.id}:`, error.message);
+    throw error;
+  }
+};
+
+export const deleteChannelType = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("channel_types")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+  } catch (error: any) {
+    console.error(`Error deleting channel type with ID ${id}:`, error.message);
+    throw error;
+  }
+};
+
+export const validateChannelTypeId = (id: string): boolean => {
+  const regex = /^[a-z0-9_]+$/;
+  return regex.test(id);
+};
+
 export const DEFAULT_CHANNEL_TYPES: ChannelTypeInfo[] = [
   {
     id: "compilation",
@@ -186,4 +245,3 @@ export const DEFAULT_CHANNEL_TYPES: ChannelTypeInfo[] = [
     example: "Thunderstorm Sounds, Fireplace with Crackling Sounds, Ocean Waves"
   }
 ];
-
