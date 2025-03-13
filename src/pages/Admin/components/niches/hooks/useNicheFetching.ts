@@ -72,7 +72,7 @@ export const useNicheFetching = () => {
           }
         } else {
           console.error("Error fetching niches from DB:", nichesError);
-          throw new Error(nichesError.message);
+          throw new Error(nichesError.message || "Error fetching niches");
         }
       }
       
