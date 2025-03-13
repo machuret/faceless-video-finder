@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import { supabaseClient } from "../_shared/supabaseClient.ts";
+import { supabaseClient, clearQueryCache } from "../_shared/supabaseClient.ts";
 import { ensureStorageBucketsExist } from "../_shared/createStorageBuckets.ts";
 
 serve(async (req) => {
@@ -11,13 +11,26 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = supabaseClient(req);
+    console.log("[initialize-storage] Starting storage bucket initialization");
+    
+    // Initialize client with advanced options
+    const supabase = supabaseClient(req, {
+      cacheResults: true,
+      auditLog: true
+    });
     
     // Ensure all storage buckets exist
     await ensureStorageBucketsExist(supabase);
     
+    // Clear cache to ensure fresh state
+    const clearedItems = clearQueryCache();
+    
     return new Response(
-      JSON.stringify({ success: true, message: "Storage buckets initialized successfully" }),
+      JSON.stringify({ 
+        success: true, 
+        message: "Storage buckets initialized successfully",
+        cacheCleared: clearedItems
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

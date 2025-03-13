@@ -4,7 +4,7 @@ import { FetchIdeasOptions, SortOrder, FilterObject } from './types';
 import { DEFAULT_PAGE_SIZE } from './constants';
 
 interface QueryResult {
-  query: any; // Using a more generic type to avoid type recursion issues
+  query: any; // Using a generic 'any' type to avoid type recursion issues
   from: number;
   to: number;
 }
