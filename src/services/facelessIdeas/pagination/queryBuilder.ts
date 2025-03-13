@@ -26,7 +26,7 @@ export const buildQuery = (options: FetchIdeasOptions): QueryResult => {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
   
-  // Start building the query with an explicit type
+  // Start building the query
   let query = supabase
     .from("faceless_ideas")
     .select("*", { count: 'exact' });
