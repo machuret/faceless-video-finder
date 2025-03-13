@@ -26,20 +26,15 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters
+  // Apply additional filters - completely avoid TypeScript analysis
   let hasFilters = false;
   
-  // Bypass TypeScript's type checking completely by treating filter as a plain object
-  // First convert to JSON and back to break any type references
-  const plainFilter = JSON.parse(JSON.stringify(filter));
+  // Create a simple array of entries to avoid TypeScript recursively analyzing the object
+  const filterEntries: [string, any][] = Object.entries(filter);
   
-  // Now extract keys and iterate manually
-  const keys = Object.keys(plainFilter);
-  
-  // Apply each filter using the keys array to avoid TypeScript analyzing the object structure
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    const value = plainFilter[key];
+  // Process filters directly from the entries array
+  for (let i = 0; i < filterEntries.length; i++) {
+    const [key, value] = filterEntries[i];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
@@ -80,14 +75,12 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Use the same JSON trick to completely break type relationships
-  const plainFilter = JSON.parse(JSON.stringify(filter));
-  const keys = Object.keys(plainFilter);
+  // Use the same approach as above to avoid TypeScript analysis
+  const filterEntries: [string, any][] = Object.entries(filter);
   
-  // Apply each filter using the array of keys
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    const value = plainFilter[key];
+  // Process filters directly from the entries array
+  for (let i = 0; i < filterEntries.length; i++) {
+    const [key, value] = filterEntries[i];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
