@@ -24,8 +24,8 @@ export {
   createFacelessIdea,
   updateFacelessIdea,
   deleteFacelessIdea,
-  processCsvImport,
-  validateFacelessIdeaId
+  processCsvImport
+  // validateFacelessIdeaId is already exported above, don't need to re-export
 };
 
 // Export default fallback data

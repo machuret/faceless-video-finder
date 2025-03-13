@@ -25,6 +25,10 @@ export const setCachedFacelessIdeas = <T>(cacheKey: string, data: T, expiryMs: n
   setCache(cacheKey, data, { expiry: expiryMs, version: CACHE_VERSION });
 };
 
+// Export aliases for compatibility with fetchService
+export const getCachedResults = getCachedFacelessIdeas;
+export const setCachedResults = setCachedFacelessIdeas;
+
 // Invalidate all faceless ideas caches
 export const invalidateFacelessIdeasCache = (): void => {
   // This is a simple approach - we could be more targeted if needed
