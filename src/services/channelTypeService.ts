@@ -13,13 +13,25 @@ export interface ChannelTypeInfo {
 }
 
 export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
+  console.log("fetchChannelTypes service called");
   try {
-    // First try to get from database with error handling
+    // First try to get from database with error handling and timeout
     try {
-      const { data, error } = await supabase
+      console.log("Fetching channel types from database");
+      const fetchPromise = supabase
         .from('channel_types')
         .select('*')
         .order('label');
+      
+      // Add a timeout to prevent hanging requests
+      const timeoutPromise = new Promise<{data: null, error: Error}>((resolve) => 
+        setTimeout(() => resolve({
+          data: null, 
+          error: new Error('Database request timed out after 5 seconds')
+        }), 5000)
+      );
+      
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       
       if (error) {
         console.error('Database error fetching channel types:', error);
@@ -27,7 +39,10 @@ export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
       }
       
       if (data && data.length > 0) {
+        console.log(`Successfully fetched ${data.length} channel types from database`);
         return data;
+      } else {
+        console.log("No channel types found in database");
       }
     } catch (dbError) {
       console.warn('Falling back to local channel types due to database error:', dbError);

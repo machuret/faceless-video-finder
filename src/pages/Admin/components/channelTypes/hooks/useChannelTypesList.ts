@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ChannelTypeInfo, fetchChannelTypes, deleteChannelType } from "@/services/channelTypeService";
 import { toast } from "sonner";
 
@@ -10,7 +10,9 @@ export const useChannelTypesList = () => {
   const loadChannelTypes = useCallback(async () => {
     setLoading(true);
     try {
+      console.log("Fetching channel types in useChannelTypesList");
       const types = await fetchChannelTypes();
+      console.log(`Received ${types.length} channel types from service`);
       setChannelTypes(types);
     } catch (error) {
       console.error("Error loading channel types:", error);
@@ -21,7 +23,7 @@ export const useChannelTypesList = () => {
   }, []);
 
   // Load channel types on mount
-  useCallback(() => {
+  useEffect(() => {
     loadChannelTypes();
   }, [loadChannelTypes]);
 

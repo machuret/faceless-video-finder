@@ -163,6 +163,11 @@ export function useLinkChecker() {
         window.location.origin + '/channel-types',
         window.location.origin + '/niches',
         window.location.origin + '/calculators',
+        window.location.origin + '/channels', // Add channels page
+        window.location.origin + '/faceless-ideas', // Add faceless ideas page
+        window.location.origin + '/about-us', // Add about us page
+        window.location.origin + '/how-it-works', // Add how it works page
+        window.location.origin + '/admin/channel-types' // Add admin channel types page
       ];
       
       setTotalPages(initialPages.length);
@@ -200,8 +205,14 @@ export function useLinkChecker() {
             const url = link.getAttribute('href') || '';
             const linkText = link.textContent || url;
             
-            // Skip empty links
+            // Skip empty links, anchors, and javascript links
             if (!url || url === '#' || url.startsWith('javascript:')) {
+              checkedLinksCount++;
+              continue;
+            }
+            
+            // Skip non-http links (like mailto: or tel:)
+            if (!url.startsWith('http') && !url.startsWith('/')) {
               checkedLinksCount++;
               continue;
             }

@@ -42,11 +42,19 @@ const fetchChannelTypes = async (): Promise<ChannelTypeData[]> => {
       // Continue to direct DB query
     }
     
-    // Direct database query as fallback
-    const { data, error } = await supabase
-      .from('channel_types')
-      .select('*')
-      .order('label');
+    // Direct database query as fallback with explicit timeout
+    const { data, error } = await Promise.race([
+      supabase
+        .from('channel_types')
+        .select('*')
+        .order('label'),
+      new Promise<{data: null, error: Error}>((resolve) => 
+        setTimeout(() => resolve({
+          data: null, 
+          error: new Error('Database query timeout')
+        }), 5000)
+      )
+    ]);
       
     if (error) {
       console.error("Database query error:", error);
@@ -90,7 +98,8 @@ const ChannelTypes = () => {
     queryFn: fetchChannelTypes,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
-    retry: 2,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(attempt * 1000, 5000),
   });
   
   // Sort types by label and memoize to prevent unnecessary rerenders
@@ -133,44 +142,56 @@ const ChannelTypes = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedTypes.map((type) => (
-              <Card key={type.id} className="hover:shadow-lg transition-shadow h-full overflow-hidden">
-                {type.image_url ? (
-                  <div className="w-full h-48 overflow-hidden">
-                    <img 
-                      src={type.image_url} 
-                      alt={type.label}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full h-48 overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-center">
-                    <span className="text-blue-600 text-xl font-semibold">{type.label}</span>
-                  </div>
-                )}
-                <CardContent className={`p-6 flex flex-col ${type.image_url ? 'h-auto' : 'h-full'}`}>
-                  <CardTitle className="font-crimson text-xl mb-3">{type.label}</CardTitle>
-                  <p className="font-lato text-sm text-gray-600 mb-4 flex-grow">
-                    {typeof type.description === 'string' ? 
-                      (type.description.replace(/<[^>]*>?/gm, '').length > 120 ? 
-                        type.description.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 
-                        type.description.replace(/<[^>]*>?/gm, '')
-                      ) : 
-                      'No description available'}
-                  </p>
-                  <Link 
-                    to={`/channel-types/${type.id}`} 
-                    className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-medium font-montserrat mt-auto"
-                  >
-                    View details <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
+            {sortedTypes.length === 0 ? (
+              <div className="col-span-full text-center py-10">
+                <p className="text-gray-600 mb-4">No channel types found</p>
+                <button 
+                  onClick={() => refetch()}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                >
+                  Refresh
+                </button>
+              </div>
+            ) : (
+              sortedTypes.map((type) => (
+                <Card key={type.id} className="hover:shadow-lg transition-shadow h-full overflow-hidden">
+                  {type.image_url ? (
+                    <div className="w-full h-48 overflow-hidden">
+                      <img 
+                        src={type.image_url} 
+                        alt={type.label}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-48 overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-center">
+                      <span className="text-blue-600 text-xl font-semibold">{type.label}</span>
+                    </div>
+                  )}
+                  <CardContent className={`p-6 flex flex-col ${type.image_url ? 'h-auto' : 'h-full'}`}>
+                    <CardTitle className="font-crimson text-xl mb-3">{type.label}</CardTitle>
+                    <p className="font-lato text-sm text-gray-600 mb-4 flex-grow">
+                      {typeof type.description === 'string' ? 
+                        (type.description.replace(/<[^>]*>?/gm, '').length > 120 ? 
+                          type.description.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 
+                          type.description.replace(/<[^>]*>?/gm, '')
+                        ) : 
+                        'No description available'}
+                    </p>
+                    <Link 
+                      to={`/channel-types/${type.id}`} 
+                      className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-medium font-montserrat mt-auto"
+                    >
+                      View details <ArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         )}
       </div>
