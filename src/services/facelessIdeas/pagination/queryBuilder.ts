@@ -26,26 +26,26 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters using an approach that avoids TypeScript type recursion
+  // Apply additional filters - use a primitive approach to avoid TypeScript analyzing the structure
   let hasFilters = false;
   
-  // Cast to 'any' to completely bypass TypeScript type checking
-  const filterObj = filter as any;
+  // Create a plain JS object with no TypeScript typing
+  const filterKeys = Object.keys(filter);
   
-  // Use basic JavaScript iteration to avoid TypeScript analyzing the object structure
-  for (const key in filterObj) {
-    if (Object.prototype.hasOwnProperty.call(filterObj, key)) {
-      const value = filterObj[key];
-      
-      // Skip empty values
-      if (value === undefined || value === null || value === '') {
-        continue;
-      }
-      
-      // Apply the filter
-      query = query.eq(key, value);
-      hasFilters = true;
+  // Loop through keys using index access to avoid type inference
+  for (let i = 0; i < filterKeys.length; i++) {
+    const key = filterKeys[i];
+    // Use bracket notation to access values which doesn't trigger deep type checking
+    const value = filter[key as keyof typeof filter];
+    
+    // Skip empty values
+    if (value === undefined || value === null || value === '') {
+      continue;
     }
+    
+    // Apply the filter
+    query = query.eq(key, value);
+    hasFilters = true;
   }
   
   // Add sorting and pagination
@@ -77,23 +77,23 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters using the same approach as above
-  // Cast to 'any' to completely bypass TypeScript type checking
-  const filterObj = filter as any;
+  // Apply additional filters using the same primitive approach
+  // Create a plain JS object with no TypeScript typing
+  const filterKeys = Object.keys(filter);
   
-  // Use basic JavaScript iteration
-  for (const key in filterObj) {
-    if (Object.prototype.hasOwnProperty.call(filterObj, key)) {
-      const value = filterObj[key];
-      
-      // Skip empty values
-      if (value === undefined || value === null || value === '') {
-        continue;
-      }
-      
-      // Apply the filter
-      query = query.eq(key, value);
+  // Loop through keys using index access to avoid type inference
+  for (let i = 0; i < filterKeys.length; i++) {
+    const key = filterKeys[i];
+    // Use bracket notation to access values which doesn't trigger deep type checking
+    const value = filter[key as keyof typeof filter];
+    
+    // Skip empty values
+    if (value === undefined || value === null || value === '') {
+      continue;
     }
+    
+    // Apply the filter
+    query = query.eq(key, value);
   }
   
   return query;
