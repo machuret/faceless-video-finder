@@ -24,7 +24,7 @@ const SiteScanner: React.FC<SiteScannerProps> = ({
     if (linkChecker.brokenLinks.length > 0) {
       // Prepare data for CSV export
       const csvData = linkChecker.brokenLinks.map(link => ({
-        source: link.source,
+        source: link.source || '',
         url: link.url,
         status: link.status,
         statusText: link.statusText || ''

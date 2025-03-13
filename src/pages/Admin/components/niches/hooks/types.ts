@@ -4,5 +4,5 @@ export interface NicheInfo {
   description: string | null;
   example: string | null;
   image_url: string | null;
-  cpm?: number | null;
+  cpm: number | null;
 }

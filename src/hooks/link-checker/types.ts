@@ -5,6 +5,8 @@ export type BrokenLink = {
   status: number;
   pageUrl?: string; // Add page URL to track where link was found
   error?: string;
+  source: string; // Link source page
+  statusText?: string; // HTTP status text
 };
 
 export type ScannedPage = {

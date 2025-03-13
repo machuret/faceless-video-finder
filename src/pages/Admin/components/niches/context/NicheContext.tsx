@@ -1,15 +1,7 @@
-
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-export interface NicheInfo {
-  name: string;
-  description: string | null;
-  example: string | null;
-  image_url: string | null;
-  cpm: number | null;
-}
+import { NicheInfo } from "../hooks/types";
 
 interface NicheContextType {
   isEditing: boolean;
