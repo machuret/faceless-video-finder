@@ -16,6 +16,8 @@ export async function getPublicChannels(req: Request, {
   fields = [] 
 }) {
   try {
+    console.log("getPublicChannels called with:", { limit, offset, fields });
+    
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     
@@ -39,6 +41,8 @@ export async function getPublicChannels(req: Request, {
       selectClause = 'id, channel_title, description, total_subscribers, total_views, screenshot_url, niche';
     }
     
+    console.log(`Fetching channels with select clause: ${selectClause}`);
+    
     // Fetch channels with service role, bypassing RLS with optimized field selection
     const { data, error, count } = await supabase
       .from("youtube_channels")
@@ -51,7 +55,7 @@ export async function getPublicChannels(req: Request, {
       return { error: error.message };
     }
     
-    console.log(`Successfully fetched ${data?.length || 0} channels via Edge Function`);
+    console.log(`Successfully fetched ${data?.length || 0} channels via Edge Function (total count: ${count})`);
     
     return {
       channels: data || [],

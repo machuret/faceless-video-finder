@@ -30,10 +30,12 @@ const FacelessChannelIdeas = () => {
   const { data: ideas, isLoading, error, refetch } = useQuery({
     queryKey: ['faceless-ideas'], 
     queryFn: fetchFacelessIdeas,
-    staleTime: 10 * 60 * 1000, // Cache data for 10 minutes
-    retry: 2,
+    staleTime: 60000, // Cache data for 1 minute (reduced from 10 minutes)
+    retry: 3,         // Increase retry attempts
     refetchOnWindowFocus: false,
   });
+
+  console.log("Faceless ideas loading state:", { isLoading, error, ideasCount: ideas?.length });
 
   // Memoize to prevent rerenders
   const sortedIdeas = useMemo(() => {

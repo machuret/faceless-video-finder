@@ -23,13 +23,14 @@ export const useDataFetching = () => {
       setError(errorMessage);
       toast.error(`Error loading faceless ideas: ${errorMessage}`);
       
-      // Auto-retry once after a short delay if we haven't already
-      if (retryCount < 1) {
-        toast.info("Attempting to reload faceless ideas...");
-        setRetryCount(prev => prev + 1);
+      // Auto-retry twice after a short delay if we haven't already
+      if (retryCount < 2) {
+        const nextRetry = retryCount + 1;
+        setRetryCount(nextRetry);
+        toast.info(`Attempting to reload faceless ideas... (Retry ${nextRetry}/2)`);
         setTimeout(() => {
           loadFacelessIdeas();
-        }, 2000);
+        }, 2000 * nextRetry); // Incremental backoff
       }
     } finally {
       setLoading(false);

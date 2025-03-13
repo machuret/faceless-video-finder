@@ -5,12 +5,18 @@ import { FacelessIdeaInfo } from "./types";
 // Fetch all faceless ideas
 export const fetchFacelessIdeas = async (): Promise<FacelessIdeaInfo[]> => {
   try {
+    console.log("Fetching faceless ideas from database...");
     const { data, error } = await supabase
       .from("faceless_ideas")
       .select("*")
       .order("label");
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase error fetching faceless ideas:", error);
+      throw error;
+    }
+    
+    console.log(`Successfully fetched ${data?.length || 0} faceless ideas`);
     
     // Ensure all returned records have the required image_url property
     return (data || []).map(item => ({
@@ -33,25 +39,24 @@ export const fetchFacelessIdeaById = async (id: string): Promise<FacelessIdeaInf
       .from("faceless_ideas")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();  // Use maybeSingle instead of single to avoid errors when no row is found
 
     if (error) {
-      // If we get an error and it's not a "not found" error, log and throw
-      if (error.code !== 'PGRST116') {
-        console.error(`Error fetching faceless idea with ID ${id}:`, error.message);
-        throw error;
-      }
-      
-      // If the idea wasn't found by UUID, it might be a string ID, so log this info
-      console.log(`Faceless idea not found with ID ${id}, this might not be an error if using string IDs`);
+      // If we get an error that's not about "not found", log and throw
+      console.error(`Error fetching faceless idea with ID ${id}:`, error.message);
+      throw error;
+    }
+    
+    if (!data) {
+      console.log(`No faceless idea found with ID ${id}`);
       return null;
     }
     
     // Ensure the returned record has the required image_url property
-    return data ? {
+    return {
       ...data,
       image_url: data.image_url || null
-    } as FacelessIdeaInfo : null;
+    } as FacelessIdeaInfo;
   } catch (error: any) {
     console.error(`Error fetching faceless idea with ID ${id}:`, error.message);
     throw error;

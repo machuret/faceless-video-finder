@@ -22,42 +22,45 @@ const ChannelSearch = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const channelsPerPage = 18;
 
-  useEffect(() => {
-    const performSearch = async () => {
-      if (!searchQuery) {
-        setChannels([]);
-        setLoading(false);
-        return;
-      }
+  // Search function
+  const performSearch = async (query: string) => {
+    if (!query) {
+      setChannels([]);
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log("Searching for:", query);
+      const results = await searchChannel(query);
+      console.log("Search results:", results?.length || 0, "channels found");
       
-      try {
-        console.log("Searching for:", searchQuery);
-        const results = await searchChannel(searchQuery);
-        console.log("Search results:", results);
-        
-        if (results && Array.isArray(results)) {
-          setChannels(results);
-          if (results.length === 0) {
-            // Not an error, just no results
-            console.log("No results found for:", searchQuery);
-          }
-        } else {
-          throw new Error("Invalid search results format");
+      if (results && Array.isArray(results)) {
+        setChannels(results);
+        if (results.length === 0) {
+          // Not an error, just no results
+          console.log("No results found for:", query);
         }
-      } catch (err: any) {
-        console.error('Search error:', err);
-        const errorMessage = err?.message || 'Failed to perform search. Please try again.';
-        setError(errorMessage);
-        toast.error('Search failed. Please try again.');
-      } finally {
-        setLoading(false);
+      } else {
+        throw new Error("Invalid search results format");
       }
-    };
+    } catch (err: any) {
+      console.error('Search error:', err);
+      const errorMessage = err?.message || 'Failed to perform search. Please try again.';
+      setError(errorMessage);
+      toast.error('Search failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    performSearch();
+  useEffect(() => {
+    if (searchQuery) {
+      performSearch(searchQuery);
+    }
   }, [searchQuery]);
 
   const handleSearch = (query: string) => {
@@ -88,7 +91,7 @@ const ChannelSearch = () => {
     <div className="flex flex-col min-h-screen bg-background">
       <MainNavbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 mt-16">
         <h1 className="text-3xl font-bold mb-6">
           {loading ? 'Searching...' : searchQuery ? `Search Results: ${searchQuery}` : 'Search Channels'}
         </h1>
