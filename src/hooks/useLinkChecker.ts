@@ -32,7 +32,7 @@ export const useLinkChecker = () => {
     scanPageLinks: () => pageScanner.scanPageLinks(window.location.href, extractLinksFromCurrentPage()),
     
     // Site scanning
-    scanSite: () => siteScanner.scanSite(window.location.origin),
+    scanSite: (domain = window.location.origin) => siteScanner.scanSite(domain),
     isSiteScanning: siteScanner.isSiteScanning,
     scannedPages: siteScanner.scannedPages,
     totalPages: siteScanner.totalPages,

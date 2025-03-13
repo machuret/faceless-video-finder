@@ -36,8 +36,44 @@ export const useNicheFetching = () => {
         .order('name');
         
       if (nichesError) {
-        console.error("Error fetching niches from DB:", nichesError);
-        throw new Error(nichesError.message);
+        // Check if it's a column does not exist error
+        if (nichesError.message?.includes("column 'example' does not exist")) {
+          // Try a simpler query without the missing columns
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('niches')
+            .select('name, description, image_url, cpm')
+            .order('name');
+            
+          if (fallbackError) {
+            console.error("Error fetching niches with fallback query:", fallbackError);
+            throw new Error(fallbackError.message);
+          }
+          
+          if (fallbackData && fallbackData.length > 0) {
+            const niches = fallbackData.map(niche => niche.name as string);
+            const nicheDetails: Record<string, any> = {};
+            
+            fallbackData.forEach(niche => {
+              if (niche && typeof niche === 'object') {
+                const { name, description, image_url, cpm } = niche as Partial<NicheInfo>;
+                nicheDetails[name as string] = {
+                  name,
+                  description,
+                  example: null,
+                  image_url,
+                  cpm: typeof cpm === 'number' ? cpm : 4
+                };
+              }
+            });
+            
+            setNichesData({ niches, nicheDetails });
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          console.error("Error fetching niches from DB:", nichesError);
+          throw new Error(nichesError.message);
+        }
       }
       
       if (nichesData && nichesData.length > 0) {

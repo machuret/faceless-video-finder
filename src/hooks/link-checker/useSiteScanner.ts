@@ -8,7 +8,7 @@ export const useSiteScanner = (
     isScanning: boolean;
   },
   sitemapExtractor: {
-    extractAllPagesFromSitemap: () => Promise<string[]>;
+    extractAllPagesFromSitemap: (domain: string) => Promise<string[]>;
     isExtracting: boolean;
   }
 ) => {
@@ -74,7 +74,7 @@ export const useSiteScanner = (
     
     try {
       // Get all pages from sitemap
-      const urls = await sitemapExtractor.extractAllPagesFromSitemap();
+      const urls = await sitemapExtractor.extractAllPagesFromSitemap(domain);
       setTotalPages(urls.length);
       
       // Initialize scannedPages with the URLs from the sitemap

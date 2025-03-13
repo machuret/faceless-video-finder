@@ -1,24 +1,48 @@
 
-// This file doesn't exist in the allowed files list, so I'll need to create it:
-
 import { useState } from "react";
 import { useNicheFormState } from "./useNicheFormState";
 import { useNicheOperations } from "./useNicheOperations";
 import { useImageHandling } from "./useImageHandling";
 
-export const useNicheForm = (onNicheAdded: () => void) => {
-  const { isEditing, formData, setEditingNiche, cancelEditing, handleInputChange, handleRichTextChange } = useNicheFormState();
+export const useNicheForm = (onNicheAdded: () => Promise<void> | void) => {
+  const { 
+    isEditing, 
+    formData, 
+    setEditingNiche, 
+    cancelEditing, 
+    handleInputChange, 
+    handleRichTextChange,
+    updateFormData 
+  } = useNicheFormState();
   
-  // Pass the extra argument to useNicheOperations
-  const { submitting, isDeleting, saveNicheDetails, handleDeleteNiche } = useNicheOperations(
+  // Convert the callback to ensure it returns a Promise
+  const wrappedCallback = async () => {
+    const result = onNicheAdded();
+    // If it's not a Promise, wrap it in a resolved Promise
+    if (!(result instanceof Promise)) {
+      return Promise.resolve();
+    }
+    return result;
+  };
+  
+  // Pass the Promise-returning callback to useNicheOperations
+  const { 
+    submitting, 
+    isDeleting, 
+    saveNicheDetails, 
+    handleDeleteNiche 
+  } = useNicheOperations(
     formData, 
     cancelEditing,
-    onNicheAdded // Pass the third argument
+    wrappedCallback
   );
   
-  const { uploading, uploadError, handleImageUpload, handleDeleteImage } = useImageHandling(formData, setFormData => {
-    // Implementation would depend on the component's needs
-  });
+  const { 
+    uploading, 
+    uploadError, 
+    handleImageUpload, 
+    handleDeleteImage 
+  } = useImageHandling(formData, updateFormData);
 
   return {
     isEditing,
