@@ -26,27 +26,28 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - Use primitive JavaScript to avoid TypeScript analysis
+  // Apply filters - completely new approach
   let hasFilters = false;
   
-  // Convert filter to a plain JavaScript object without any TypeScript type information
-  // This effectively breaks the type reference chain
-  const filterKeys = Object.keys(filter as object);
+  // Manual filter application without recursion
+  // Convert object to primitive array first to avoid TypeScript analyzing the structure
+  const safeFilter = JSON.parse(JSON.stringify(filter));
   
-  // Process each filter key manually
-  for (let i = 0; i < filterKeys.length; i++) {
-    const key = filterKeys[i];
-    // Use bracket notation and cast to any to completely bypass TypeScript
-    const value = (filter as any)[key];
-    
-    // Skip empty values
-    if (value === undefined || value === null || value === '') {
-      continue;
+  // Apply each filter explicitly
+  for (const key in safeFilter) {
+    // Using 'in' operator and skipping prototype chain
+    if (Object.prototype.hasOwnProperty.call(safeFilter, key)) {
+      const value = safeFilter[key];
+      
+      // Skip undefined, null or empty values
+      if (value === undefined || value === null || value === '') {
+        continue;
+      }
+      
+      // Apply the filter directly without type analysis
+      query = query.eq(key, value);
+      hasFilters = true;
     }
-    
-    // Apply the filter
-    query = query.eq(key, value);
-    hasFilters = true;
   }
   
   // Add sorting and pagination
@@ -78,22 +79,21 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Use the same technique as above to avoid TypeScript analysis
-  const filterKeys = Object.keys(filter as object);
+  // Use same new approach for filters
+  const safeFilter = JSON.parse(JSON.stringify(filter));
   
-  // Process each filter key manually
-  for (let i = 0; i < filterKeys.length; i++) {
-    const key = filterKeys[i];
-    // Use bracket notation and cast to any to completely bypass TypeScript
-    const value = (filter as any)[key];
-    
-    // Skip empty values
-    if (value === undefined || value === null || value === '') {
-      continue;
+  for (const key in safeFilter) {
+    if (Object.prototype.hasOwnProperty.call(safeFilter, key)) {
+      const value = safeFilter[key];
+      
+      // Skip undefined, null or empty values
+      if (value === undefined || value === null || value === '') {
+        continue;
+      }
+      
+      // Apply the filter directly
+      query = query.eq(key, value);
     }
-    
-    // Apply the filter
-    query = query.eq(key, value);
   }
   
   return query;
