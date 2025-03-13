@@ -25,6 +25,14 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
+    
+    // Check if it's a module loading error
+    if (error.message && error.message.includes("Failed to fetch dynamically imported module")) {
+      console.warn("Module loading error detected. Will attempt to reload the page in 3 seconds.");
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    }
   }
 
   public render() {
@@ -32,6 +40,8 @@ class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) {
         return this.props.fallback;
       }
+
+      const isLoadingError = this.state.error?.message?.includes("Failed to fetch dynamically imported module");
 
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -41,6 +51,11 @@ class ErrorBoundary extends Component<Props, State> {
             <p className="text-gray-600 mb-4">
               {this.state.error?.message || "An unexpected error occurred"}
             </p>
+            {isLoadingError && (
+              <p className="text-blue-600 mb-4">
+                Attempting to reload the page in a moment...
+              </p>
+            )}
             <Button
               onClick={() => {
                 this.setState({ hasError: false, error: null });

@@ -1,11 +1,11 @@
 
 import { lazy } from 'react';
 import { lazyLoad } from './loaders';
+import FacelessIdeas from '../pages/FacelessIdeas'; // Import directly instead of lazy loading
 
-// Lazy load content-related components
+// Lazy load other content-related components
 const Niches = lazy(() => import('../pages/Niches'));
 const NicheDetails = lazy(() => import('../pages/NicheDetails'));
-const FacelessIdeas = lazy(() => import('../pages/FacelessIdeas'));
 const FacelessIdeaDetails = lazy(() => import('../pages/FacelessIdeaDetails'));
 const FacelessChannelIdeas = lazy(() => import('../pages/FacelessChannelIdeas'));
 
@@ -27,7 +27,7 @@ export const contentRoutes = [
   // Faceless Ideas
   {
     path: "/faceless-ideas",
-    element: lazyLoad(FacelessIdeas),
+    element: <FacelessIdeas />, // Use directly imported component
   },
   {
     path: "/faceless-idea/:id",

@@ -21,9 +21,9 @@ const wrapWithErrorBoundary = (routes) => {
 const routes = [
   ...wrapWithErrorBoundary(publicRoutes),
   ...wrapWithErrorBoundary(calculatorRoutes),
-  ...wrapWithErrorBoundary(channelRoutes),
-  ...wrapWithErrorBoundary(channelTypeRoutes), // Make sure this comes before contentRoutes
+  ...wrapWithErrorBoundary(channelTypeRoutes), // Move this up in the order
   ...wrapWithErrorBoundary(contentRoutes),
+  ...wrapWithErrorBoundary(channelRoutes),
   ...wrapWithErrorBoundary(adminRoutes),
   ...wrapWithErrorBoundary(authRoutes),
   // 404 route should always be last
