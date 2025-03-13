@@ -26,20 +26,16 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - avoid TypeScript's type analysis completely
+  // Apply additional filters - using a completely typeless approach
   let hasFilters = false;
   
-  // Convert filter to plain array of entries to bypass TypeScript's deep analysis
-  const entries: [string, any][] = [];
-  for (const key in filter) {
-    if (Object.prototype.hasOwnProperty.call(filter, key)) {
-      entries.push([key, filter[key as keyof typeof filter]]);
-    }
-  }
+  // Get an array of plain objects with no TypeScript typing to avoid the deep recursion
+  const filterEntries: Array<[string, unknown]> = Object.entries(filter);
   
-  // Process entries directly with no complex type analysis
-  for (let i = 0; i < entries.length; i++) {
-    const [key, value] = entries[i];
+  // Loop through entries without any complex type references
+  for (let i = 0; i < filterEntries.length; i++) {
+    const key = filterEntries[i][0];
+    const value = filterEntries[i][1];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
@@ -80,17 +76,13 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters using the same approach as above to avoid TypeScript analysis
-  const entries: [string, any][] = [];
-  for (const key in filter) {
-    if (Object.prototype.hasOwnProperty.call(filter, key)) {
-      entries.push([key, filter[key as keyof typeof filter]]);
-    }
-  }
+  // Apply additional filters using the same approach as above
+  const filterEntries: Array<[string, unknown]> = Object.entries(filter);
   
-  // Process entries directly
-  for (let i = 0; i < entries.length; i++) {
-    const [key, value] = entries[i];
+  // Loop through entries without any complex type references
+  for (let i = 0; i < filterEntries.length; i++) {
+    const key = filterEntries[i][0];
+    const value = filterEntries[i][1];
     
     // Skip empty values
     if (value === undefined || value === null || value === '') {
