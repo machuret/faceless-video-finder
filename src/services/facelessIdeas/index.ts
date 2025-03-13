@@ -1,10 +1,32 @@
 
 import { fetchFacelessIdeas, fetchFacelessIdeaById } from './fetchService';
-import { FacelessIdeaInfo } from './types';
+import { createFacelessIdea, updateFacelessIdea, deleteFacelessIdea } from './mutationService';
+import { processCsvImport } from './importService';
+import { FacelessIdeaInfo, FacelessIdeaCreateInput, FacelessIdeaUpdateInput, CsvImportResult } from './types';
+
+// Validate faceless idea ID format (only lowercase letters, numbers, and underscores)
+export const validateFacelessIdeaId = (id: string): boolean => {
+  const regex = /^[a-z0-9_]+$/;
+  return regex.test(id);
+};
 
 // Re-export the types and functions
-export type { FacelessIdeaInfo };
-export { fetchFacelessIdeas, fetchFacelessIdeaById };
+export type { 
+  FacelessIdeaInfo, 
+  FacelessIdeaCreateInput, 
+  FacelessIdeaUpdateInput,
+  CsvImportResult
+};
+
+export { 
+  fetchFacelessIdeas, 
+  fetchFacelessIdeaById,
+  createFacelessIdea,
+  updateFacelessIdea,
+  deleteFacelessIdea,
+  processCsvImport,
+  validateFacelessIdeaId
+};
 
 // Export default fallback data
 export const DEFAULT_FACELESS_IDEAS: FacelessIdeaInfo[] = [

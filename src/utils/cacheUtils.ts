@@ -89,6 +89,14 @@ export function clearCache(): void {
   }
 }
 
+// Alias for clearCache to fix the import error
+export const clearAllCache = clearCache;
+
+// Invalidate specific cache item
+export function invalidateCache(key: string): void {
+  localStorage.removeItem(`cache_${key}`);
+}
+
 // Clear specific cache item
 export function clearCacheItem(key: string): void {
   localStorage.removeItem(`cache_${key}`);

@@ -1,59 +1,47 @@
 
-import { getCache, setCache, invalidateCache } from "@/utils/cacheUtils";
-import { FetchIdeasOptions, PaginatedResponse } from './types';
-import { CACHE_PREFIX, DEFAULT_PAGE_SIZE } from './constants';
+import { getCache, setCache, clearCacheItem, invalidateCache } from "@/utils/cacheUtils";
+import { FetchIdeasOptions } from "./types";
 
-/**
- * Generates a cache key based on query parameters
- */
-export const generateCacheKey = (options: FetchIdeasOptions): string => {
-  const {
-    page = 1,
-    pageSize = DEFAULT_PAGE_SIZE,
-    search = '',
-    sortBy = 'label',
-    sortOrder = 'asc',
-    filter = {}
-  } = options;
+// Cache keys
+const CACHE_PREFIX = "faceless_ideas";
+const CACHE_VERSION = "1.0";
+
+// Get cache key for specific query options
+export const getFacelessIdeasCacheKey = (options: FetchIdeasOptions): string => {
+  const { page, pageSize, sortBy, sortOrder, search, filter } = options;
   
-  // Create a deterministic string representation of filters
-  const filterStr = Object.entries(filter)
-    .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-    .map(([key, value]) => `${key}:${value}`)
-    .join(',');
-  
-  return `${CACHE_PREFIX}${page}_${pageSize}_${search}_${sortBy}_${sortOrder}_${filterStr}`;
+  // Create a deterministic key from the options
+  const filterString = filter ? JSON.stringify(filter) : "";
+  return `${CACHE_PREFIX}_${page}_${pageSize}_${sortBy}_${sortOrder}_${search}_${filterString}`;
 };
 
-/**
- * Get data from cache for a specific query
- */
-export const getCachedResults = <T>(options: FetchIdeasOptions): PaginatedResponse<T> | null => {
-  const cacheKey = generateCacheKey(options);
-  return getCache<PaginatedResponse<T>>(cacheKey);
+// Get cached faceless ideas
+export const getCachedFacelessIdeas = <T>(cacheKey: string): T | null => {
+  return getCache<T>(cacheKey, { version: CACHE_VERSION });
 };
 
-/**
- * Set data to cache for a specific query
- */
-export const setCachedResults = <T>(
-  options: FetchIdeasOptions, 
-  data: PaginatedResponse<T>,
-  ttl: number
-): void => {
-  const cacheKey = generateCacheKey(options);
-  setCache(cacheKey, data, { expiry: ttl });
+// Set cached faceless ideas
+export const setCachedFacelessIdeas = <T>(cacheKey: string, data: T, expiryMs: number = 5 * 60 * 1000): void => {
+  setCache(cacheKey, data, { expiry: expiryMs, version: CACHE_VERSION });
 };
 
-/**
- * Invalidate cache for faceless ideas
- */
+// Invalidate all faceless ideas caches
 export const invalidateFacelessIdeasCache = (): void => {
-  try {
-    // Invalidate all faceless ideas caches
-    console.log(`Invalidating cache with prefix: ${CACHE_PREFIX}`);
-    invalidateCache(CACHE_PREFIX);
-  } catch (error) {
-    console.error("Error invalidating faceless ideas cache:", error);
+  // This is a simple approach - we could be more targeted if needed
+  // For now, we'll just remove all faceless ideas caches
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(`cache_${CACHE_PREFIX}`)) {
+      clearCacheItem(key.substring(6)); // Remove the "cache_" prefix
+    }
   }
+};
+
+// Invalidate a specific faceless ideas cache
+export const invalidateFacelessIdeaCache = (ideaId: string): void => {
+  // Find and clear any cache that might contain this idea
+  invalidateCache(`${CACHE_PREFIX}_idea_${ideaId}`);
+  
+  // Also invalidate all list caches since they might include this idea
+  invalidateFacelessIdeasCache();
 };
