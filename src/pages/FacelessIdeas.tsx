@@ -159,7 +159,7 @@ const FacelessIdeas = () => {
                 items={memoizedIdeas}
                 keyExtractor={(idea) => idea.id}
                 itemHeight={380}
-                containerClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                containerClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6"
                 renderItem={(idea) => (
                   <IdeaCard key={idea.id} idea={idea} />
                 )}
