@@ -26,25 +26,26 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - using a completely typeless approach
+  // Apply additional filters using an approach that avoids TypeScript type recursion
   let hasFilters = false;
   
-  // Get an array of plain objects with no TypeScript typing to avoid the deep recursion
-  const filterEntries: Array<[string, unknown]> = Object.entries(filter);
+  // Cast to 'any' to completely bypass TypeScript type checking
+  const filterObj = filter as any;
   
-  // Loop through entries without any complex type references
-  for (let i = 0; i < filterEntries.length; i++) {
-    const key = filterEntries[i][0];
-    const value = filterEntries[i][1];
-    
-    // Skip empty values
-    if (value === undefined || value === null || value === '') {
-      continue;
+  // Use basic JavaScript iteration to avoid TypeScript analyzing the object structure
+  for (const key in filterObj) {
+    if (Object.prototype.hasOwnProperty.call(filterObj, key)) {
+      const value = filterObj[key];
+      
+      // Skip empty values
+      if (value === undefined || value === null || value === '') {
+        continue;
+      }
+      
+      // Apply the filter
+      query = query.eq(key, value);
+      hasFilters = true;
     }
-    
-    // Apply the filter
-    query = query.eq(key, value);
-    hasFilters = true;
   }
   
   // Add sorting and pagination
@@ -77,20 +78,22 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
   }
   
   // Apply additional filters using the same approach as above
-  const filterEntries: Array<[string, unknown]> = Object.entries(filter);
+  // Cast to 'any' to completely bypass TypeScript type checking
+  const filterObj = filter as any;
   
-  // Loop through entries without any complex type references
-  for (let i = 0; i < filterEntries.length; i++) {
-    const key = filterEntries[i][0];
-    const value = filterEntries[i][1];
-    
-    // Skip empty values
-    if (value === undefined || value === null || value === '') {
-      continue;
+  // Use basic JavaScript iteration
+  for (const key in filterObj) {
+    if (Object.prototype.hasOwnProperty.call(filterObj, key)) {
+      const value = filterObj[key];
+      
+      // Skip empty values
+      if (value === undefined || value === null || value === '') {
+        continue;
+      }
+      
+      // Apply the filter
+      query = query.eq(key, value);
     }
-    
-    // Apply the filter
-    query = query.eq(key, value);
   }
   
   return query;
