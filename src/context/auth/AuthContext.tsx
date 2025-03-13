@@ -37,17 +37,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   
-  // Use localStorage to persist auth state between page refreshes
   const [sessionToken, setSessionToken] = useLocalStorage<string | null>("supabase_auth_token", null);
   
-  // Use refs for caches to ensure they persist across renders
   const adminCacheRef = useRef(new Map<string, boolean>());
   const profileCacheRef = useRef(new Map<string, UserProfile>());
   const roleCacheRef = useRef(new Map<string, UserRole[]>());
   
-  // Fetch the user profile
   const fetchUserProfile = useCallback(async (userId: string) => {
-    // Check cache first
     if (profileCacheRef.current.has(userId)) {
       return profileCacheRef.current.get(userId) as UserProfile;
     }
@@ -65,7 +61,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (data) {
-        // Cache the profile
         profileCacheRef.current.set(userId, data as UserProfile);
         return data as UserProfile;
       }
@@ -77,9 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Fetch user roles
   const fetchUserRoles = useCallback(async (userId: string) => {
-    // Check cache first
     if (roleCacheRef.current.has(userId)) {
       return roleCacheRef.current.get(userId) as UserRole[];
     }
@@ -96,7 +89,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (data && data.length > 0) {
-        // Cache the roles
         roleCacheRef.current.set(userId, data as UserRole[]);
         return data as UserRole[];
       }
@@ -108,9 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Check admin status
   const checkAdminStatus = useCallback(async (userId: string) => {
-    // Check cache first
     if (adminCacheRef.current.has(userId)) {
       const isAdmin = adminCacheRef.current.get(userId);
       return isAdmin;
@@ -126,7 +116,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
       
-      // Cache the result
       adminCacheRef.current.set(userId, !!adminData);
       return !!adminData;
     } catch (error) {
@@ -135,14 +124,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Initialize user data
   const initializeUserData = useCallback(async (user: User) => {
     if (!user) return;
     
     setLoading(true);
     
     try {
-      // Run these operations in parallel for better performance
       const [adminStatus, userProfile, userRoles] = await Promise.all([
         checkAdminStatus(user.id),
         fetchUserProfile(user.id),
@@ -159,7 +146,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [checkAdminStatus, fetchUserProfile, fetchUserRoles]);
 
-  // Sign in function
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -184,7 +170,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Sign up function
   const signUp = async (email: string, password: string, metadata?: { [key: string]: any }) => {
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -209,24 +194,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Sign out function
   const signOut = async () => {
     try {
       setLoading(true);
       
-      // Clear client-side state first
       setUser(null);
       setProfile(null);
       setUserRoles([]);
       setIsAdmin(false);
       setSessionToken(null);
       
-      // Clear caches
       adminCacheRef.current.clear();
       profileCacheRef.current.clear();
       roleCacheRef.current.clear();
       
-      // Then sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -242,7 +223,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Reset password function
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -263,7 +243,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Update password function
   const updatePassword = async (password: string) => {
     try {
       const { error } = await supabase.auth.updateUser({
@@ -284,7 +263,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Refresh session
   const refreshSession = async () => {
     try {
       setLoading(true);
@@ -311,7 +289,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Initialize authentication on mount
   useEffect(() => {
     if (initialized) return;
     
@@ -324,7 +301,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         console.log("Initializing auth state...");
         
-        // Try to restore from session token first if available
         if (sessionToken) {
           const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
           
@@ -337,7 +313,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await initializeUserData(sessionData.session.user);
           }
         } else {
-          // Otherwise check for active session
           const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
           
           if (sessionError) {
@@ -367,7 +342,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     initializeAuth();
     
-    // Set up auth state change listener
     authListener = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event);
       
@@ -378,7 +352,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await initializeUserData(session.user);
         }
       } 
-      else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      else if (event === 'SIGNED_OUT') {
         setUser(null);
         setProfile(null);
         setUserRoles([]);
@@ -398,18 +372,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [initialized, sessionToken, initializeUserData]);
 
-  // Refresh token periodically to keep session alive
   useEffect(() => {
     if (!user || !sessionToken) return;
     
     const refreshInterval = setInterval(() => {
       refreshSession();
-    }, 23 * 60 * 1000); // Refresh every 23 minutes to be safe (tokens usually expire in 1 hour)
+    }, 23 * 60 * 1000);
     
     return () => clearInterval(refreshInterval);
   }, [user, sessionToken, refreshSession]);
 
-  // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     user,
     profile,

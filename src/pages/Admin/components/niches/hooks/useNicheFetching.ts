@@ -32,11 +32,11 @@ export const useNicheFetching = () => {
       
       const { data: nichesData, error: nichesError } = await supabase
         .from('niches')
-        .select('name, description, example, image_url, cpm')
+        .select('name, description, image_url, cpm')
         .order('name');
         
       if (nichesError) {
-        // Check if it's a column does not exist error
+        // Fix the error type check - use message property directly
         if (nichesError.message?.includes("column 'example' does not exist")) {
           // Try a simpler query without the missing columns
           const { data: fallbackData, error: fallbackError } = await supabase
@@ -72,7 +72,6 @@ export const useNicheFetching = () => {
           }
         } else {
           console.error("Error fetching niches from DB:", nichesError);
-          // Fix: Use error.message instead of error.name which doesn't exist on this type
           throw new Error(nichesError.message || "Error fetching niches");
         }
       }
@@ -83,11 +82,11 @@ export const useNicheFetching = () => {
         
         nichesData.forEach(niche => {
           if (niche && typeof niche === 'object') {
-            const { name, description, example, image_url, cpm } = niche as NicheInfo;
+            const { name, description, image_url, cpm } = niche as NicheInfo;
             nicheDetails[name] = {
               name,
               description,
-              example,
+              example: null, // Remove example since it doesn't exist in the query
               image_url,
               cpm: typeof cpm === 'number' ? cpm : 4
             };
