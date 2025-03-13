@@ -51,11 +51,13 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     paramIndex++;
   });
   
-  // If we have SQL conditions, apply them using a raw SQL filter if needed
+  // If we have SQL conditions, apply them using a raw SQL filter
   if (sqlConditions.length > 0) {
     // Join all conditions with AND
     const filterText = sqlConditions.join(' AND ');
-    query = query.filter(filterText, params);
+    // Fix: The filter method expects 3 arguments - we need to provide the correct format
+    // The third parameter should be an object with a config property
+    query = query.filter(filterText, params, { foreignTable: null });
   }
   
   // Add sorting and pagination
@@ -106,7 +108,8 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
   
   if (sqlConditions.length > 0) {
     const filterText = sqlConditions.join(' AND ');
-    query = query.filter(filterText, params);
+    // Fix: The filter method expects 3 arguments - add the third parameter
+    query = query.filter(filterText, params, { foreignTable: null });
   }
   
   return query;
