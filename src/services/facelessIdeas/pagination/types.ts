@@ -1,62 +1,79 @@
 
-// Error types for better error handling
-export class FacelessIdeasError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "FacelessIdeasError";
-  }
+// Import types from Supabase
+import { PostgrestError } from "@supabase/supabase-js";
+import { FacelessIdeaInfo } from '../types';
+
+// Define sort order type separately
+export type SortOrder = 'asc' | 'desc';
+
+// Define filter object type explicitly
+export interface FilterObject {
+  [key: string]: any;
 }
 
-export class NetworkError extends FacelessIdeasError {
-  constructor(message: string) {
-    super(message);
-    this.name = "NetworkError";
-  }
-}
-
-export class ServerError extends FacelessIdeasError {
-  constructor(message: string) {
-    super(message);
-    this.name = "ServerError";
-  }
-}
-
-export class ValidationError extends FacelessIdeasError {
-  constructor(message: string) {
-    super(message);
-    this.name = "ValidationError";
-  }
-}
-
-// Explicitly define the options interface without recursive types
+// Define options for fetching ideas without recursion
 export interface FetchIdeasOptions {
   page?: number;
   pageSize?: number;
   search?: string;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  filter?: Record<string, any>;
+  sortOrder?: SortOrder;
+  filter?: FilterObject;
   useCache?: boolean;
-  cacheTTL?: number; // in milliseconds
+  cacheTTL?: number;
 }
 
+// Define paginated response type
 export interface PaginatedResponse<T> {
   data: T[];
   count: number;
   page: number;
   pageSize: number;
   totalPages: number;
-  executionTime?: number; // Added for performance tracking
+  executionTime?: number;
 }
 
-// Define error filter type independently to avoid recursive definitions
-export type RetryErrorFilter = (error: any) => boolean;
+// Define error classes
+export class FacelessIdeasError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'FacelessIdeasError';
+  }
+}
 
-// Define the retry options without recursive type references
-export interface RetryOptions {
-  maxRetries?: number;
-  initialDelay?: number;
-  maxDelay?: number;
-  factor?: number;
-  errorFilter?: RetryErrorFilter;
+export class ValidationError extends FacelessIdeasError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+export class NetworkError extends FacelessIdeasError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+export class ServerError extends FacelessIdeasError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ServerError';
+  }
+}
+
+// Retry types for error handling
+export type RetryTypeCategory = 'network' | 'server' | 'validation' | 'unknown' | null;
+
+// Options for pagination component
+export interface IdeasPaginationOptions {
+  pageSize?: number;
+  retryLimit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: SortOrder;
+  filter?: FilterObject;
+  useCache?: boolean;
+  cacheTTL?: number;
+  retryDelay?: number;
 }
