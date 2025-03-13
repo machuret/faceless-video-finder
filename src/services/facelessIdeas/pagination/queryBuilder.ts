@@ -26,10 +26,16 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - avoid TypeScript recursion with a type-safe approach
-  const filterEntries = Object.entries(filter) as [string, any][];
+  // Apply additional filters - completely avoid type recursion by using simple types
+  let hasFilters = false;
   
-  for (const [key, value] of filterEntries) {
+  // Using indexed loop instead of for...of to avoid TypeScript type analysis recursion
+  const keys = Object.keys(filter);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    // Use type assertion to any to bypass TypeScript's recursive analysis
+    const value = (filter as any)[key];
+    
     // Skip empty values
     if (value === undefined || value === null || value === '') {
       continue;
@@ -37,6 +43,7 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     
     // Apply the filter
     query = query.eq(key, value);
+    hasFilters = true;
   }
   
   // Add sorting and pagination
@@ -47,7 +54,7 @@ export const buildQuery = (options: FetchIdeasOptions) => {
   // Metadata for debugging
   const queryMetadata = {
     table: 'faceless_ideas',
-    filterApplied: !!search || filterEntries.length > 0,
+    filterApplied: !!search || hasFilters,
     paginationRange: `${from}-${to}`,
     sortApplied: `${sortBy} ${sortOrder}`
   };
@@ -68,10 +75,13 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply additional filters - avoid TypeScript recursion with a type-safe approach
-  const filterEntries = Object.entries(filter) as [string, any][];
-  
-  for (const [key, value] of filterEntries) {
+  // Using the same approach to avoid type recursion
+  const keys = Object.keys(filter);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    // Use type assertion to any to bypass TypeScript's recursive analysis
+    const value = (filter as any)[key];
+    
     // Skip empty values
     if (value === undefined || value === null || value === '') {
       continue;
