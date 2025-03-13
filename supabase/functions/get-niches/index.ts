@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     
     const queryPromise = supabase
       .from('niches')
-      .select('name, description, image_url')
+      .select('name, description, image_url, example, cpm')
       .order('name');
     
     const { data: nichesData, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
@@ -54,8 +54,9 @@ Deno.serve(async (req) => {
         nicheDetails[niche.name] = {
           name: niche.name,
           description: niche.description,
-          example: null,
-          image_url: niche.image_url
+          example: niche.example,
+          image_url: niche.image_url,
+          cpm: niche.cpm
         };
       }
     }

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { NicheInfo } from "./types";
 
 export const useNicheFormState = () => {
@@ -8,40 +8,63 @@ export const useNicheFormState = () => {
     name: "",
     description: null,
     example: null,
-    image_url: null
+    image_url: null,
+    cpm: 4
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
-  const setEditingNiche = (niche: string, description?: string | null, example?: string | null, image_url?: string | null) => {
+  // Set editing state
+  const setEditingNiche = useCallback((
+    niche: string, 
+    description?: string | null, 
+    example?: string | null, 
+    image_url?: string | null, 
+    cpm?: number | null
+  ) => {
     setFormData({
       name: niche,
       description: description || null,
       example: example || null,
-      image_url: image_url || null
+      image_url: image_url || null,
+      cpm: cpm !== undefined ? cpm : 4
     });
     setIsEditing(true);
-  };
+  }, []);
 
-  const cancelEditing = () => {
+  // Cancel editing
+  const cancelEditing = useCallback(() => {
     setFormData({
       name: "",
       description: null,
       example: null,
-      image_url: null
+      image_url: null,
+      cpm: 4
     });
     setIsEditing(false);
-  };
+  }, []);
+
+  // Handle form input changes
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? (value ? parseFloat(value) : null) : value
+    }));
+  }, []);
+
+  // Handle rich text changes
+  const handleRichTextChange = useCallback((name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }, []);
 
   return {
     isEditing,
     formData,
-    submitting,
-    uploading,
-    setFormData,
-    setSubmitting,
-    setUploading,
     setEditingNiche,
-    cancelEditing
+    cancelEditing,
+    handleInputChange,
+    handleRichTextChange
   };
 };

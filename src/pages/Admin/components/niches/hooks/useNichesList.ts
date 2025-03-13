@@ -4,17 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { niches as defaultNiches } from "@/data/niches";
 import { toast } from "sonner";
 import { getCache, setCache } from "@/utils/cacheUtils";
-
-interface NicheDetails {
-  name: string;
-  description: string | null;
-  example: string | null;
-  image_url: string | null;
-}
+import { NicheInfo } from "./types";
 
 export interface NichesData {
   niches: string[];
-  nicheDetails: Record<string, NicheDetails>;
+  nicheDetails: Record<string, NicheInfo>;
 }
 
 // Cache settings
@@ -69,7 +63,7 @@ const fetchNiches = async (): Promise<NichesData> => {
     
     const dbQueryPromise = supabase
       .from('niches')
-      .select('id, name, description, image_url')
+      .select('id, name, description, image_url, example, cpm')
       .order('name');
       
     const dbTimeoutPromise = new Promise((_, reject) => 
@@ -85,14 +79,15 @@ const fetchNiches = async (): Promise<NichesData> => {
     
     if (nichesData && nichesData.length > 0) {
       const niches = nichesData.map(niche => niche.name);
-      const nicheDetails = {};
+      const nicheDetails: Record<string, NicheInfo> = {};
       
       nichesData.forEach(niche => {
         nicheDetails[niche.name] = {
           name: niche.name,
           description: niche.description,
-          example: null,
-          image_url: niche.image_url
+          example: niche.example,
+          image_url: niche.image_url,
+          cpm: niche.cpm
         };
       });
       
