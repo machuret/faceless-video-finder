@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { FetchIdeasOptions, SortOrder, FilterObject } from './types';
 import { DEFAULT_PAGE_SIZE } from './constants';
@@ -128,4 +127,3 @@ export const buildCountQuery = (options: Omit<FetchIdeasOptions, 'page' | 'pageS
   
   return query;
 };
-

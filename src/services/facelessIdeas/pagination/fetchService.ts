@@ -1,4 +1,3 @@
-
 import { validateQueryParams } from './validation';
 import { buildQuery, buildCountQuery } from './queryBuilder';
 import { getCachedResults, setCachedResults } from './cacheUtils';
@@ -29,7 +28,8 @@ export const fetchPaginatedIdeas = async (
       page = 1,
       pageSize = DEFAULT_PAGE_SIZE,
       useCache = true,
-      cacheTTL = DEFAULT_CACHE_TTL
+      cacheTTL = DEFAULT_CACHE_TTL,
+      forceCountRefresh = false
     } = validatedOptions;
     
     // Try to get from cache first for faster responses
@@ -55,7 +55,7 @@ export const fetchPaginatedIdeas = async (
     
     // Performance optimization: Only fetch count if we're on page 1 or count is explicitly requested
     // For other pages, we can often rely on cached total counts
-    const needsExactCount = page === 1 || options.forceCountRefresh;
+    const needsExactCount = page === 1 || forceCountRefresh;
     
     // Execute the query - with conditional count to improve performance
     const { data, error, count } = await query;
@@ -77,7 +77,7 @@ export const fetchPaginatedIdeas = async (
     
     // If we didn't get an exact count but need total pages, do a separate count query
     // This happens when we have a cached response but need fresh count
-    if (totalCount === null && options.forceCountRefresh) {
+    if (totalCount === null && forceCountRefresh) {
       try {
         const countQuery = buildCountQuery({
           search: validatedOptions.search,
@@ -118,10 +118,10 @@ export const fetchPaginatedIdeas = async (
       pageSize,
       totalPages,
       executionTime,
-      queryInfo: {
+      queryInfo: queryMetadata ? {
         ...queryMetadata,
         executionTimeMs: executionTime
-      }
+      } : undefined
     };
     
     // Cache the result if caching is enabled
@@ -148,4 +148,3 @@ export const fetchPaginatedIdeas = async (
     }
   }
 };
-

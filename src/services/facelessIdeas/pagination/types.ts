@@ -1,4 +1,3 @@
-
 // Import types from Supabase
 import { PostgrestError } from "@supabase/supabase-js";
 import { FacelessIdeaInfo } from '../types';
@@ -21,6 +20,7 @@ export interface FetchIdeasOptions {
   filter?: FilterObject;
   useCache?: boolean;
   cacheTTL?: number;
+  forceCountRefresh?: boolean; // Added for conditional count fetching
 }
 
 // Define paginated response type
@@ -31,6 +31,13 @@ export interface PaginatedResponse<T> {
   pageSize: number;
   totalPages: number;
   executionTime?: number;
+  fromCache?: boolean; // Added to indicate cache hits
+  queryInfo?: { // Added for query metadata
+    sortColumn?: string;
+    filterCount?: number;
+    hasSearch?: boolean;
+    executionTimeMs?: number;
+  };
 }
 
 // Define error classes
