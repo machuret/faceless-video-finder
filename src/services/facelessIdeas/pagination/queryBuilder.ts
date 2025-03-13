@@ -1,12 +1,18 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { FetchIdeasOptions } from './types';
+import { FetchIdeasOptions, SortOrder, FilterObject } from './types';
 import { DEFAULT_PAGE_SIZE } from './constants';
+
+interface QueryResult {
+  query: any; // Using any here to avoid the recursive type issue
+  from: number;
+  to: number;
+}
 
 /**
  * Builds a query with all the filters and options
  */
-export const buildQuery = (options: FetchIdeasOptions) => {
+export const buildQuery = (options: FetchIdeasOptions): QueryResult => {
   const {
     page = 1,
     pageSize = DEFAULT_PAGE_SIZE,

@@ -65,6 +65,18 @@ export class ServerError extends FacelessIdeasError {
 // Retry types for error handling
 export type RetryTypeCategory = 'network' | 'server' | 'validation' | 'unknown' | null;
 
+// Define error filter type independently to avoid recursive definitions
+export type RetryErrorFilter = (error: any) => boolean;
+
+// Define the retry options without recursive type references
+export interface RetryOptions {
+  maxRetries?: number;
+  initialDelay?: number;
+  maxDelay?: number;
+  factor?: number;
+  errorFilter?: RetryErrorFilter;
+}
+
 // Options for pagination component
 export interface IdeasPaginationOptions {
   pageSize?: number;

@@ -3,7 +3,8 @@ import { FacelessIdeaInfo } from '@/services/facelessIdeas';
 import { 
   NetworkError, 
   ServerError, 
-  ValidationError
+  ValidationError,
+  SortOrder
 } from '@/services/facelessIdeas/paginatedService';
 
 export interface IdeasPaginationOptions {
@@ -13,7 +14,7 @@ export interface IdeasPaginationOptions {
   retryDelay?: number; 
   search?: string;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: SortOrder;
   filter?: Record<string, any>;
   useCache?: boolean;
   cacheTTL?: number;
@@ -25,7 +26,7 @@ export interface UseIdeasPaginationState {
   totalItems: number;
   ideas: FacelessIdeaInfo[];
   retryCount: number;
-  retryType: 'network' | 'server' | 'validation' | 'unknown';
+  retryType: RetryTypeCategory;
 }
 
 export interface UseIdeasPaginationReturn extends UseIdeasPaginationState {
@@ -36,10 +37,12 @@ export interface UseIdeasPaginationReturn extends UseIdeasPaginationState {
   resetPagination: () => void;
   refreshData: (bustCache?: boolean) => void;
   smartRetry: <T>(fetcher: () => Promise<T>) => Promise<T>;
+  invalidateIdeasCache: () => void;
+  prefetchNextPage: () => void;
   queryKey: any[];
   rawQueryResponse: any;
   dataUpdatedAt: number;
   pageSize: number;
 }
 
-export type RetryTypeCategory = 'network' | 'server' | 'validation' | 'unknown';
+export type RetryTypeCategory = 'network' | 'server' | 'validation' | 'unknown' | null;
