@@ -2,10 +2,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { FetchIdeasOptions, SortOrder, FilterObject } from './types';
 import { DEFAULT_PAGE_SIZE } from './constants';
-import { PostgrestQueryBuilder } from "@supabase/supabase-js";
 
 interface QueryResult {
-  query: ReturnType<typeof supabase.from>;
+  query: any; // Using a more generic type to avoid type recursion issues
   from: number;
   to: number;
 }
