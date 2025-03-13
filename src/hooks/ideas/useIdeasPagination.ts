@@ -7,7 +7,8 @@ import {
   NetworkError, 
   ServerError, 
   ValidationError,
-  retryWithBackoff
+  retryWithBackoff,
+  RetryOptions
 } from '@/services/facelessIdeas/paginatedService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
