@@ -1,191 +1,91 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { channelTypes as localChannelTypes } from "@/components/youtube/channel-list/constants";
 
 export interface ChannelTypeInfo {
   id: string;
   label: string;
-  description: string | null;
-  production: string | null;
-  example: string | null;
-  image_url: string | null;
+  description?: string;
+  image_url?: string;
+  example_channels?: string[];
 }
+
+// Default channel types for fallback
+const DEFAULT_CHANNEL_TYPES: ChannelTypeInfo[] = [
+  {
+    id: "compilation",
+    label: "Compilation Channel",
+    description: "Channels that compile content from various sources into themed videos",
+    image_url: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=1000"
+  },
+  {
+    id: "educational",
+    label: "Educational Content",
+    description: "Channels focused on teaching skills, concepts, or providing knowledge",
+    image_url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000"
+  },
+  {
+    id: "automation",
+    label: "Automation Videos",
+    description: "Videos showing automated processes, machines, or AI-generated content",
+    image_url: "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?q=80&w=1000"
+  },
+  {
+    id: "shorts",
+    label: "Shorts Channel",
+    description: "Channels focused on short-form vertical video content",
+    image_url: "https://images.unsplash.com/photo-1611162616475-46b635cb6868?q=80&w=1000"
+  }
+];
 
 export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
   console.log("fetchChannelTypes service called");
+  
   try {
-    // First try to get from database with error handling and timeout
-    try {
-      console.log("Fetching channel types from database");
-      const fetchPromise = supabase
-        .from('channel_types')
-        .select('*')
-        .order('label');
-      
-      // Add a timeout to prevent hanging requests
-      const timeoutPromise = new Promise<{data: null, error: Error}>((resolve) => 
-        setTimeout(() => resolve({
-          data: null, 
-          error: new Error('Database request timed out after 8 seconds')
-        }), 8000)
-      );
-      
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
-      
-      if (error) {
-        console.error('Database error fetching channel types:', error);
-        throw error;
-      }
-      
-      if (data && data.length > 0) {
-        console.log(`Successfully fetched ${data.length} channel types from database`);
-        return data;
-      } else {
-        console.log("No channel types found in database or empty response");
-        throw new Error("No channel types found in database");
-      }
-    } catch (dbError) {
-      console.warn('Falling back to local channel types due to database error:', dbError);
-      
-      // Try using the edge function as a fallback
-      try {
-        console.log("Attempting to fetch channel types via edge function");
-        const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-channel-types');
-        
-        if (!edgeError && edgeData?.channelTypes && Array.isArray(edgeData.channelTypes) && edgeData.channelTypes.length > 0) {
-          console.log(`Successfully fetched ${edgeData.channelTypes.length} channel types via edge function`);
-          return edgeData.channelTypes;
-        }
-      } catch (edgeError) {
-        console.warn("Edge function fallback failed:", edgeError);
-      }
-    }
-    
-    // Return local types as fallback
-    console.info('Using local channel types fallback');
-    return localChannelTypes.map(type => ({
-      id: type.id,
-      label: type.label,
-      description: type.description,
-      production: type.production,
-      example: type.example,
-      image_url: null
-    }));
-  } catch (err) {
-    console.error('Exception fetching channel types:', err);
-    // Return local types as fallback
-    return localChannelTypes.map(type => ({
-      id: type.id,
-      label: type.label,
-      description: type.description,
-      production: type.production,
-      example: type.example,
-      image_url: null
-    }));
-  }
-};
+    console.log("Fetching channel types from database");
+    // Set up a timeout for the database request
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Database request timed out after 8 seconds"));
+      }, 8000);
+    });
 
-export const fetchChannelTypeById = async (id: string): Promise<ChannelTypeInfo | null> => {
-  try {
-    // First try to get from database
-    try {
-      const { data, error } = await supabase
-        .from('channel_types')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error(`Error fetching channel type with id ${id}:`, error);
-        throw error;
-      }
-      
-      if (data) return data;
-    } catch (dbError) {
-      console.warn("Database error, falling back to local channel types:", dbError);
+    // Database query promise
+    const dbQueryPromise = supabase
+      .from("channel_types")
+      .select("id, label, description, image_url, example_channels")
+      .order("label");
+
+    // Race the database query against the timeout
+    const result = await Promise.race([dbQueryPromise, timeoutPromise]);
+    
+    if ('data' in result && result.data && Array.isArray(result.data) && result.data.length > 0) {
+      console.log(`Successfully fetched ${result.data.length} channel types`);
+      return result.data as ChannelTypeInfo[];
     }
     
-    // If not found in database or if there was an error, check local constants
-    const localType = localChannelTypes.find(type => type.id === id);
-    if (localType) {
-      // Convert to match ChannelTypeInfo interface
-      return {
-        id: localType.id,
-        label: localType.label,
-        description: localType.description,
-        production: localType.production,
-        example: localType.example,
-        image_url: null
-      };
+    // If no data returned, try edge function
+    console.log("No data from direct query, attempting to fetch channel types via edge function");
+    const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('get-channel-types');
+    
+    if (edgeFunctionError) {
+      console.error("Edge function error:", edgeFunctionError);
+      throw new Error(edgeFunctionError.message);
     }
     
-    // If not found in either place, return null
-    return null;
+    if (edgeFunctionData && Array.isArray(edgeFunctionData) && edgeFunctionData.length > 0) {
+      console.log(`Successfully fetched ${edgeFunctionData.length} channel types via edge function`);
+      return edgeFunctionData as ChannelTypeInfo[];
+    }
+    
+    // If all else fails, return default types
+    console.warn("Falling back to local channel types due to empty results");
+    return DEFAULT_CHANNEL_TYPES;
   } catch (error) {
-    console.error(`Error in fetchChannelTypeById for id ${id}:`, error);
+    console.error("Database error fetching channel types:", error);
+    console.warn("Falling back to local channel types due to database error:", error);
     
-    // Final fallback to local types
-    const localType = localChannelTypes.find(type => type.id === id);
-    if (localType) {
-      return {
-        id: localType.id,
-        label: localType.label,
-        description: localType.description,
-        production: localType.production,
-        example: localType.example,
-        image_url: null
-      };
-    }
-    
-    return null;
+    // Return default types if database query fails
+    return DEFAULT_CHANNEL_TYPES;
   }
-};
-
-export const createChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
-  const { data, error } = await supabase
-    .from('channel_types')
-    .insert(channelType)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating channel type:', error);
-    throw new Error(error.message);
-  }
-  
-  return data;
-};
-
-export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
-  const { data, error } = await supabase
-    .from('channel_types')
-    .update(channelType)
-    .eq('id', channelType.id)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error(`Error updating channel type with id ${channelType.id}:`, error);
-    throw new Error(error.message);
-  }
-  
-  return data;
-};
-
-export const deleteChannelType = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('channel_types')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error(`Error deleting channel type with id ${id}:`, error);
-    throw new Error(error.message);
-  }
-};
-
-export const validateChannelTypeId = (id: string): boolean => {
-  const regex = /^[a-z0-9_]+$/;
-  return regex.test(id);
 };

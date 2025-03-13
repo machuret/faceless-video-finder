@@ -1,17 +1,15 @@
 
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState } from 'react';
 import { useHomePageData } from '@/hooks/useHomePageData';
 import HeroSection from '@/components/home/HeroSection';
 import ToolsSection from '@/components/home/ToolsSection';
 import PageFooter from '@/components/home/PageFooter';
+import FeaturedVideos from '@/components/home/FeaturedVideos';
+import ChannelSection from '@/components/home/ChannelSection';
 import { Loader2 } from 'lucide-react';
 import { ErrorState } from '@/components/youtube/channel-list/components/ErrorState';
 
-// Lazy load non-critical components
-const FeaturedVideos = lazy(() => import('@/components/home/FeaturedVideos'));
-const ChannelSection = lazy(() => import('@/components/home/ChannelSection'));
-
-// Loading component for suspense fallback
+// Loading component for fallback
 const SectionLoader = () => (
   <div className="flex justify-center items-center py-12">
     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -60,12 +58,19 @@ const Index = () => {
       
       {/* Only show videos if we have data and not in loading state */}
       {allVideos.length > 0 && !isLoading && (
-        <Suspense fallback={<SectionLoader />}>
-          <FeaturedVideos videos={allVideos} />
-        </Suspense>
+        <FeaturedVideos videos={allVideos} />
       )}
       
-      <Suspense fallback={<SectionLoader />}>
+      {isLoading ? (
+        <SectionLoader />
+      ) : isError ? (
+        <div className="container mx-auto px-4 py-8">
+          <ErrorState 
+            error={error || new Error("Failed to load content")} 
+            onRetry={handleRefetch} 
+          />
+        </div>
+      ) : (
         <ChannelSection 
           channels={channels}
           featuredChannels={featuredChannels}
@@ -77,7 +82,7 @@ const Index = () => {
           channelsPerPage={channelsPerPage}
           setCurrentPage={handlePageChange}
         />
-      </Suspense>
+      )}
       
       <ToolsSection />
       <PageFooter />

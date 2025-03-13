@@ -27,9 +27,29 @@ class ErrorBoundary extends Component<Props, State> {
     console.error("Uncaught error:", error, errorInfo);
     
     // Check if it's a module loading error
-    if (error.message && error.message.includes("Failed to fetch dynamically imported module")) {
+    const isLoadingError = 
+      error.message && (
+        error.message.includes("Failed to fetch dynamically imported module") ||
+        error.message.includes("Loading chunk") ||
+        error.message.includes("Loading CSS chunk") ||
+        error.message.includes("Network error")
+      );
+    
+    if (isLoadingError) {
       console.warn("Module loading error detected. Will attempt to reload the page in 3 seconds.");
+      
+      // Force clear the browser cache for this page and then reload
       setTimeout(() => {
+        // Try to clear the cache for the page
+        if ('caches' in window) {
+          caches.keys().then(cacheNames => {
+            cacheNames.forEach(cacheName => {
+              caches.delete(cacheName);
+            });
+          });
+        }
+        
+        // Hard reload the page
         window.location.reload();
       }, 3000);
     }
@@ -41,7 +61,8 @@ class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      const isLoadingError = this.state.error?.message?.includes("Failed to fetch dynamically imported module");
+      const isLoadingError = this.state.error?.message?.includes("Failed to fetch dynamically imported module") || 
+                            this.state.error?.message?.includes("Loading chunk");
 
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">

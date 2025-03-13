@@ -18,6 +18,11 @@ export const useChannelTypesData = () => {
     refetchOnWindowFocus: false,
     retry: 3,
     retryDelay: (attempt) => Math.min(attempt * 1000, 5000),
+    // Catch and handle errors
+    onError: (err) => {
+      console.error("Error fetching channel types:", err);
+      toast.error("Failed to load channel types");
+    }
   });
   
   // Sort types by label and memoize to prevent unnecessary rerenders

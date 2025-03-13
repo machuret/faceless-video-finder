@@ -43,7 +43,10 @@ export const navigationItems = [
 
 // Function to check if "Ideas" is active
 export const isIdeasActive = (pathname: string): boolean => {
-  return pathname.startsWith('/faceless-ideas') || pathname === '/faceless-ideas';
+  return pathname.startsWith('/faceless-ideas') || 
+         pathname === '/faceless-ideas' || 
+         pathname.startsWith('/faceless-channel-ideas') || 
+         pathname === '/faceless-channel-ideas';
 };
 
 // Function to check if "Admin" is active

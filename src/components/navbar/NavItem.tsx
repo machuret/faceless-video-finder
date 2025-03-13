@@ -18,6 +18,14 @@ const NavItem = ({ to, isActive, icon, label, onClick, isMobile = false, isExter
   // Extra check to ensure active state works correctly
   const checkIsActive = () => {
     if (isActive) return true;
+    
+    // Special handling for faceless channel ideas
+    if (label === "Ideas" && 
+        (location.pathname === "/faceless-channel-ideas" || 
+         location.pathname.startsWith("/faceless-channel-ideas/"))) {
+      return true;
+    }
+    
     return location.pathname === to || location.pathname.startsWith(`${to}/`);
   };
   

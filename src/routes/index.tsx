@@ -17,13 +17,13 @@ const wrapWithErrorBoundary = (routes) => {
   }));
 };
 
-// Combine all route groups with error boundaries
+// Order matters - more specific routes should come before less specific ones
 const routes = [
   ...wrapWithErrorBoundary(publicRoutes),
   ...wrapWithErrorBoundary(calculatorRoutes),
-  ...wrapWithErrorBoundary(channelTypeRoutes), // Move this up in the order
-  ...wrapWithErrorBoundary(contentRoutes),
-  ...wrapWithErrorBoundary(channelRoutes),
+  ...wrapWithErrorBoundary(contentRoutes),      // Content routes (niches, ideas)
+  ...wrapWithErrorBoundary(channelTypeRoutes),  // Channel types routes
+  ...wrapWithErrorBoundary(channelRoutes),      // Channel routes
   ...wrapWithErrorBoundary(adminRoutes),
   ...wrapWithErrorBoundary(authRoutes),
   // 404 route should always be last
