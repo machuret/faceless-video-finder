@@ -19,19 +19,28 @@ export const buildQuery = (options: FetchIdeasOptions) => {
   // Start with the base query
   let query = supabase.from('faceless_ideas').select('*', { count: 'exact' });
   
-  // Apply search filter using the query builder's or method (this works well)
+  // Apply search filter using the query builder's or method
   if (search) {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply filters using multiple individual filter operations
-  // This approach avoids TypeScript recursion depth issues
+  // Apply filters one at a time - but handle filter manually to avoid TypeScript issues
   if (Object.keys(filter).length > 0) {
-    for (const [key, value] of Object.entries(filter)) {
+    // Safe way to apply filters without TypeScript recursion issues
+    let filterString = '';
+    const filterValues: any[] = [];
+    
+    Object.entries(filter).forEach(([key, value], index) => {
       if (value !== undefined && value !== null && value !== '') {
-        // Use type assertion to avoid TypeScript recursion errors
-        query = query.filter(key, 'eq', value);
+        if (filterString.length > 0) {
+          filterString += ' and ';
+        }
+        filterString += `${key}.eq.${value}`;
       }
+    });
+    
+    if (filterString) {
+      query = query.or(filterString);
     }
   }
   
@@ -59,18 +68,26 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     .from('faceless_ideas')
     .select('id', { count: 'exact', head: true });
   
-  // Apply search filter using the query builder's or method
+  // Apply search filter
   if (search) {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply filters using the same approach as in the main query
+  // Apply filters - same approach as main query
   if (Object.keys(filter).length > 0) {
-    for (const [key, value] of Object.entries(filter)) {
+    let filterString = '';
+    
+    Object.entries(filter).forEach(([key, value], index) => {
       if (value !== undefined && value !== null && value !== '') {
-        // Use type assertion to avoid TypeScript recursion errors
-        query = query.filter(key, 'eq', value);
+        if (filterString.length > 0) {
+          filterString += ' and ';
+        }
+        filterString += `${key}.eq.${value}`;
       }
+    });
+    
+    if (filterString) {
+      query = query.or(filterString);
     }
   }
   
