@@ -2,24 +2,25 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
-import { lazy } from 'react';
 import { lazyLoad } from './loaders';
 
-// Lazy load admin components
-const AdminLogin = lazy(() => import('../pages/Admin/AdminLogin'));
-const AdminDashboard = lazy(() => import('../pages/Admin/Dashboard'));
-const AddChannel = lazy(() => import('../pages/Admin/AddChannel'));
-const ManageNiches = lazy(() => import('../pages/Admin/ManageNiches'));
-const ManageChannelTypes = lazy(() => import('../pages/Admin/ManageChannelTypes'));
-const ManageFacelessIdeas = lazy(() => import('../pages/Admin/ManageFacelessIdeas'));
-const ManageDidYouKnowFacts = lazy(() => import('../pages/Admin/ManageDidYouKnowFacts'));
-const LinkCheckerPage = lazy(() => import('../pages/Admin/components/tools/LinkCheckerPage'));
-const ManageUsers = lazy(() => import('../pages/Admin/ManageUsers'));
+// Import AdminLogin directly instead of lazy loading it to fix the import error
+import AdminLogin from '../pages/Admin/AdminLogin';
+
+// Continue lazy loading other admin components
+const AdminDashboard = React.lazy(() => import('../pages/Admin/Dashboard'));
+const AddChannel = React.lazy(() => import('../pages/Admin/AddChannel'));
+const ManageNiches = React.lazy(() => import('../pages/Admin/ManageNiches'));
+const ManageChannelTypes = React.lazy(() => import('../pages/Admin/ManageChannelTypes'));
+const ManageFacelessIdeas = React.lazy(() => import('../pages/Admin/ManageFacelessIdeas'));
+const ManageDidYouKnowFacts = React.lazy(() => import('../pages/Admin/ManageDidYouKnowFacts'));
+const LinkCheckerPage = React.lazy(() => import('../pages/Admin/components/tools/LinkCheckerPage'));
+const ManageUsers = React.lazy(() => import('../pages/Admin/ManageUsers'));
 
 export const adminRoutes = [
   {
     path: "/admin/login",
-    element: lazyLoad(AdminLogin)
+    element: <AdminLogin />
   },
   {
     path: "/admin",
