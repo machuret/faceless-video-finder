@@ -66,3 +66,12 @@ verify_jwt = false
 
 [functions.initialize-storage]
 verify_jwt = false
+
+[functions.get-users]
+verify_jwt = false
+
+[functions.update-user-admin-status]
+verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false

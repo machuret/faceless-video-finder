@@ -14,6 +14,7 @@ const ManageChannelTypes = lazy(() => import('../pages/Admin/ManageChannelTypes'
 const ManageFacelessIdeas = lazy(() => import('../pages/Admin/ManageFacelessIdeas'));
 const ManageDidYouKnowFacts = lazy(() => import('../pages/Admin/ManageDidYouKnowFacts'));
 const LinkCheckerPage = lazy(() => import('../pages/Admin/components/tools/LinkCheckerPage'));
+const ManageUsers = lazy(() => import('../pages/Admin/ManageUsers'));
 
 export const adminRoutes = [
   {
@@ -89,6 +90,14 @@ export const adminRoutes = [
     element: (
       <ProtectedRoute requireAdmin={true}>
         {lazyLoad(LinkCheckerPage)}
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/admin/users",
+    element: (
+      <ProtectedRoute requireAdmin={true}>
+        {lazyLoad(ManageUsers)}
       </ProtectedRoute>
     ),
   },

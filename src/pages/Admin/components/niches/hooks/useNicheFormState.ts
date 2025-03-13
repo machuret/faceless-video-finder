@@ -25,7 +25,7 @@ export const useNicheFormState = () => {
       description: description || null,
       example: example || null,
       image_url: image_url || null,
-      cpm: cpm !== undefined ? cpm : 4
+      cpm: cpm !== null && cpm !== undefined ? cpm : 4
     });
     setIsEditing(true);
   }, []);
@@ -58,6 +58,14 @@ export const useNicheFormState = () => {
       [name]: value
     }));
   }, []);
+  
+  // Expose the setFormData function for use by other hooks
+  const updateFormData = useCallback((update: Partial<NicheInfo>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...update
+    }));
+  }, []);
 
   return {
     isEditing,
@@ -65,6 +73,8 @@ export const useNicheFormState = () => {
     setEditingNiche,
     cancelEditing,
     handleInputChange,
-    handleRichTextChange
+    handleRichTextChange,
+    updateFormData,
+    setFormData
   };
 };

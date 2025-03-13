@@ -1,51 +1,43 @@
 
 import { useNicheFormState } from "./useNicheFormState";
-import { useFormInputHandlers } from "./useFormInputHandlers";
+import { useNicheOperations } from "./useNicheOperations";
 import { useImageHandling } from "./useImageHandling";
-import { useNicheSubmission } from "./useNicheSubmission";
-import { NicheInfo } from "./types";
-
-// Use export type for re-exporting types when isolatedModules is enabled
-export type { NicheInfo };
 
 export const useNicheForm = () => {
-  const {
-    isEditing,
-    formData,
-    submitting,
-    uploading,
-    setFormData,
-    setSubmitting,
-    setUploading,
-    setEditingNiche,
-    cancelEditing
+  // Get form state management
+  const { 
+    isEditing, 
+    formData, 
+    setEditingNiche, 
+    cancelEditing, 
+    handleInputChange, 
+    handleRichTextChange,
+    updateFormData
   } = useNicheFormState();
-
-  const { handleInputChange, handleRichTextChange } = useFormInputHandlers(setFormData);
   
-  const { handleImageUpload, handleDeleteImage } = useImageHandling(
-    formData,
-    setFormData,
-    setUploading
-  );
+  // Get niche operations
+  const { submitting, isDeleting, saveNicheDetails, handleDeleteNiche } = useNicheOperations(formData, cancelEditing);
   
-  const { saveNicheDetails } = useNicheSubmission(
-    formData,
-    setSubmitting,
-    cancelEditing
-  );
+  // Get image handling
+  const { uploading, uploadError, handleImageUpload, handleDeleteImage } = useImageHandling(formData, updateFormData);
 
   return {
+    // Form state
     isEditing,
     formData,
     submitting,
     uploading,
-    handleInputChange,
-    handleRichTextChange,
+    isDeleting,
+    uploadError,
+    
+    // Actions
     setEditingNiche,
     cancelEditing,
+    handleInputChange,
+    handleRichTextChange,
     saveNicheDetails,
     handleImageUpload,
-    handleDeleteImage
+    handleDeleteImage,
+    handleDeleteNiche
   };
 };

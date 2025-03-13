@@ -1,102 +1,75 @@
 
 import { useState, useCallback } from "react";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getCache, setCache } from "@/utils/cacheUtils";
+import { toast } from "sonner";
 import { niches as defaultNiches } from "@/data/niches";
 
-// Cache settings
-const CACHE_KEY = 'niches_data';
-const CACHE_VERSION = '1.0';
-const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours
-
-export interface NichesData {
-  niches: string[];
-  nicheDetails: Record<string, any>;
-}
-
 export const useNicheFetching = () => {
-  const [nichesData, setNichesData] = useState<NichesData | null>(null);
+  const [nichesData, setNichesData] = useState<{ niches: string[], nicheDetails: Record<string, any> } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch niches data from Supabase
   const fetchNiches = useCallback(async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      // Try edge function first
+      const { data, error } = await supabase.functions.invoke("get-niches");
       
-      // Try to get from cache first
-      const cachedData = getCache<NichesData>(CACHE_KEY, { version: CACHE_VERSION });
-      if (cachedData) {
-        console.log("Using cached niches data");
-        setNichesData(cachedData);
+      if (error) {
+        console.error("Error from get-niches function:", error);
+        throw new Error(error.message);
+      }
+      
+      if (data?.niches && Array.isArray(data.niches) && data.niches.length > 0) {
+        setNichesData(data);
         setIsLoading(false);
         return;
       }
       
-      try {
-        const { data, error } = await supabase.functions.invoke("get-niches");
-        
-        if (error) {
-          throw new Error(error.message);
-        }
-        
-        if (data?.niches && Array.isArray(data.niches)) {
-          const result = {
-            niches: data.niches,
-            nicheDetails: data.nicheDetails || {}
-          };
-          
-          setNichesData(result);
-          
-          // Cache the successful response
-          setCache(CACHE_KEY, result, { 
-            expiry: CACHE_DURATION,
-            version: CACHE_VERSION
-          });
-          
-          return;
-        }
-      } catch (edgeError) {
-        console.warn("Edge function error, falling back to direct query:", edgeError);
-      }
+      // Fallback to direct database query
+      console.warn("Edge function returned empty niches array, trying direct DB query");
       
-      // Fallback to direct query
-      const { data, error } = await supabase
+      const { data: nichesData, error: nichesError } = await supabase
         .from('niches')
-        .select('name, description, image_url, example, cpm')
+        .select('name, description, example, image_url, cpm')
         .order('name');
         
-      if (error) {
-        throw error;
+      if (nichesError) {
+        console.error("Error fetching niches from DB:", nichesError);
+        throw new Error(nichesError.message);
       }
       
-      if (data && Array.isArray(data)) {
-        const niches = data.map(niche => niche.name);
+      if (nichesData && nichesData.length > 0) {
+        const niches = nichesData.map(niche => niche.name);
         const nicheDetails: Record<string, any> = {};
         
-        data.forEach(niche => {
-          nicheDetails[niche.name] = {
-            name: niche.name,
-            description: niche.description,
-            example: niche.example,
-            image_url: niche.image_url,
-            cpm: niche.cpm
-          };
+        nichesData.forEach(niche => {
+          if (niche && typeof niche === 'object') {
+            const { name, description, example, image_url, cpm } = niche;
+            nicheDetails[name as string] = {
+              name,
+              description,
+              example,
+              image_url,
+              cpm: typeof cpm === 'number' ? cpm : 4
+            };
+          }
         });
         
-        const result = { niches, nicheDetails };
-        setNichesData(result);
-        
-        // Cache the successful database response
-        setCache(CACHE_KEY, result, { 
-          expiry: CACHE_DURATION,
-          version: CACHE_VERSION
+        setNichesData({ niches, nicheDetails });
+      } else {
+        // Fallback to default niches if both approaches fail
+        console.warn("No niches found in database, using default list");
+        setNichesData({
+          niches: defaultNiches,
+          nicheDetails: {}
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching niches:", error);
-      toast.error("Failed to load niches");
+      toast.error("Failed to load niches. Using default list.");
       
-      // Fallback to default niches
+      // Fallback to default niches on error
       setNichesData({
         niches: defaultNiches,
         nicheDetails: {}
@@ -106,6 +79,7 @@ export const useNicheFetching = () => {
     }
   }, []);
 
+  // Refetch niches
   const refetchNiches = useCallback(async () => {
     await fetchNiches();
   }, [fetchNiches]);

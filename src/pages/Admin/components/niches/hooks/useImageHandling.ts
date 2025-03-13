@@ -1,10 +1,10 @@
 
 import { useState, useCallback } from "react";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { NicheInfo } from "./types";
 
-export const useImageHandling = (formData: NicheInfo, setFormData: React.Dispatch<React.SetStateAction<NicheInfo>>) => {
+export const useImageHandling = (formData: NicheInfo, setFormData: (update: Partial<NicheInfo>) => void) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -17,40 +17,34 @@ export const useImageHandling = (formData: NicheInfo, setFormData: React.Dispatc
     try {
       setUploading(true);
       setUploadError(null);
-      toast.info("Uploading image...");
 
       const file = e.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const fileName = `niche_${formData.name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.${fileExt}`;
+      const fileName = `${formData.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
+      const filePath = `niche-images/${fileName}`;
 
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('niche-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+      // Upload to Storage
+      const { error: uploadError } = await supabase.storage
+        .from('public')
+        .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
         throw uploadError;
       }
 
       // Get public URL
-      const { data } = supabase.storage
-        .from('niche-images')
-        .getPublicUrl(fileName);
+      const { data: urlData } = await supabase.storage
+        .from('public')
+        .getPublicUrl(filePath);
 
-      // Update form data
-      setFormData(prev => ({
-        ...prev,
-        image_url: data.publicUrl
-      }));
-
-      toast.success("Image uploaded successfully");
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      setUploadError(error instanceof Error ? error.message : 'Unknown error');
-      toast.error("Failed to upload image");
+      if (urlData) {
+        setFormData({ image_url: urlData.publicUrl });
+        toast.success("Image uploaded successfully");
+      }
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      setUploadError(error.message);
+      toast.error(`Upload failed: ${error.message}`);
     } finally {
       setUploading(false);
     }
@@ -63,30 +57,24 @@ export const useImageHandling = (formData: NicheInfo, setFormData: React.Dispatc
     try {
       setUploading(true);
       
-      // Extract file name from URL
-      const fileName = formData.image_url.split('/').pop();
-      
-      if (fileName) {
-        // Delete from storage
-        const { error } = await supabase.storage
-          .from('niche-images')
-          .remove([fileName]);
-        
-        if (error) {
-          throw error;
-        }
+      // Extract file path from URL
+      const fileUrl = new URL(formData.image_url);
+      const filePath = fileUrl.pathname.split('/').slice(2).join('/');
+
+      // Delete from Storage
+      const { error } = await supabase.storage
+        .from('public')
+        .remove([filePath]);
+
+      if (error) {
+        throw error;
       }
-      
-      // Update form data
-      setFormData(prev => ({
-        ...prev,
-        image_url: null
-      }));
-      
-      toast.success("Image removed successfully");
-    } catch (error) {
-      console.error("Error removing image:", error);
-      toast.error("Failed to remove image");
+
+      setFormData({ image_url: null });
+      toast.success("Image deleted successfully");
+    } catch (error: any) {
+      console.error('Error deleting image:', error);
+      toast.error(`Delete failed: ${error.message}`);
     } finally {
       setUploading(false);
     }

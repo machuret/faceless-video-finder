@@ -1,182 +1,149 @@
 
 import { useState, useCallback } from 'react';
 import { BrokenLink, ScannedPage } from './types';
-import { useLinkValidator } from './useLinkValidator';
-import { useSitemapExtractor } from './useSitemapExtractor';
 
-export const useSiteScanner = () => {
-  const [isSiteScanning, setIsSiteScanning] = useState(false);
+export const useSiteScanner = (
+  pageScanner: {
+    scanPageLinks: (url: string, links: { url: string; text: string }[]) => Promise<{ url: string; brokenLinks: BrokenLink[]; totalLinks: number }>;
+    isScanning: boolean;
+  },
+  sitemapExtractor: {
+    extractAllPagesFromSitemap: () => Promise<string[]>;
+    isExtracting: boolean;
+  }
+) => {
   const [scannedPages, setScannedPages] = useState<ScannedPage[]>([]);
-  const [totalPages, setTotalPages] = useState(0);
   const [pagesScanned, setPagesScanned] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [brokenLinks, setBrokenLinks] = useState<BrokenLink[]>([]);
   const [totalLinks, setTotalLinks] = useState(0);
   const [checkedLinks, setCheckedLinks] = useState(0);
+  const [isSiteScanning, setIsSiteScanning] = useState(false);
   
-  const { validateLinks } = useLinkValidator();
-  const { extractSitemapUrls } = useSitemapExtractor();
-  
+  // Reset scan state
   const resetScan = useCallback(() => {
-    setIsSiteScanning(false);
     setScannedPages([]);
-    setTotalPages(0);
     setPagesScanned(0);
+    setTotalPages(0);
     setBrokenLinks([]);
     setTotalLinks(0);
     setCheckedLinks(0);
   }, []);
   
-  const extractLinksFromPage = useCallback(async (url: string) => {
+  // Extract all links from a page
+  const extractLinksFromPage = useCallback(async (url: string): Promise<{ url: string; text: string }[]> => {
     try {
-      // Fetch the page HTML
       const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch page: ${response.status} ${response.statusText}`);
+      }
+      
       const html = await response.text();
       
-      // Create a DOM parser and parse the HTML
+      // Parse HTML
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
       // Get all links
-      const links = Array.from(doc.querySelectorAll('a[href]'));
+      const links: { url: string; text: string }[] = [];
+      const anchorElements = doc.querySelectorAll('a[href]');
       
-      return links.map(link => {
-        const href = link.getAttribute('href') || '';
-        let absoluteUrl = href;
-        
-        // Convert relative URLs to absolute
-        if (!href.startsWith('http') && !href.startsWith('mailto:') && 
-            !href.startsWith('tel:') && !href.startsWith('#') && 
-            !href.startsWith('javascript:')) {
-          
-          try {
-            absoluteUrl = new URL(href, url).href;
-          } catch (e) {
-            console.warn(`Could not convert to absolute URL: ${href}`);
-            return null;
-          }
+      anchorElements.forEach(anchor => {
+        const href = anchor.getAttribute('href');
+        if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+          // Convert relative URLs to absolute
+          const absoluteUrl = new URL(href, url).href;
+          links.push({
+            url: absoluteUrl,
+            text: anchor.textContent?.trim() || absoluteUrl
+          });
         }
-        
-        return {
-          url: absoluteUrl,
-          text: link.textContent || '',
-          pageUrl: url
-        };
-      }).filter(link => link !== null && link.url.startsWith('http'));
+      });
+      
+      return links;
     } catch (error) {
       console.error(`Error extracting links from ${url}:`, error);
       return [];
     }
   }, []);
   
+  // Scan a site for broken links
   const scanSite = useCallback(async (domain: string) => {
+    resetScan();
+    setIsSiteScanning(true);
+    
     try {
-      setIsSiteScanning(true);
-      resetScan();
+      // Get all pages from sitemap
+      const urls = await sitemapExtractor.extractAllPagesFromSitemap();
+      setTotalPages(urls.length);
       
-      // Extract sitemap URLs
-      const sitemapUrl = `${domain.replace(/\/$/, '')}/sitemap.xml`;
-      const pageUrls = await extractSitemapUrls(sitemapUrl);
+      // Initialize scannedPages with the URLs from the sitemap
+      setScannedPages(urls.map(url => ({
+        url,
+        brokenLinks: [],
+        totalLinks: 0,
+        scanned: false
+      })));
       
-      if (pageUrls.length === 0) {
-        console.warn('No URLs found in sitemap, scanning homepage only');
-        pageUrls.push(domain);
-      }
+      // Scan each page in parallel, but limit concurrency
+      const concurrencyLimit = 3;
+      const results: ScannedPage[] = [];
       
-      setTotalPages(pageUrls.length);
-      
-      // Track all links to avoid duplicates
-      const allLinks: Array<{ url: string, text: string, pageUrl: string }> = [];
-      const scannedUrls: string[] = [];
-      
-      // Scan each page in the sitemap
-      for (const pageUrl of pageUrls) {
-        try {
-          if (scannedUrls.includes(pageUrl)) continue;
-          scannedUrls.push(pageUrl);
-          
-          // Create a pending entry for this page
-          setScannedPages(prev => [
-            ...prev, 
-            { url: pageUrl, linkCount: 0, brokenCount: 0, status: 'pending' }
-          ]);
-          
+      for (let i = 0; i < urls.length; i += concurrencyLimit) {
+        const batch = urls.slice(i, i + concurrencyLimit);
+        
+        // Process batch in parallel
+        const batchPromises = batch.map(async (url) => {
           // Extract links from the page
-          const links = await extractLinksFromPage(pageUrl);
+          const links = await extractLinksFromPage(url);
           
-          // Remove duplicates within this page
-          const uniqueLinks = links.filter((link, index, self) => 
-            self.findIndex(l => l?.url === link?.url) === index
-          );
+          // Scan the page for broken links
+          const result = await pageScanner.scanPageLinks(url, links);
           
-          // Add links to our overall collection
-          allLinks.push(...uniqueLinks);
+          // Update total links count
+          setTotalLinks(prevTotal => prevTotal + result.totalLinks);
+          setCheckedLinks(prevChecked => prevChecked + result.totalLinks);
           
-          // Update the scanned page to success status
-          setScannedPages(prev => 
-            prev.map(page => 
-              page.url === pageUrl 
-                ? { ...page, linkCount: uniqueLinks.length, status: 'success' } 
-                : page
+          // Update broken links array
+          setBrokenLinks(prevLinks => [...prevLinks, ...result.brokenLinks]);
+          
+          // Update the scanned page
+          const scannedPage: ScannedPage = {
+            url,
+            brokenLinks: result.brokenLinks,
+            totalLinks: result.totalLinks,
+            scanned: true
+          };
+          
+          // Update pages scanned count
+          setPagesScanned(prevScanned => prevScanned + 1);
+          
+          // Update the scannedPages array
+          setScannedPages(prevPages => 
+            prevPages.map(page => 
+              page.url === url ? scannedPage : page
             )
           );
           
-          setPagesScanned(prev => prev + 1);
-        } catch (error) {
-          console.error(`Error scanning page ${pageUrl}:`, error);
-          
-          // Update the scanned page to error status
-          setScannedPages(prev => 
-            prev.map(page => 
-              page.url === pageUrl 
-                ? { ...page, status: 'error' } 
-                : page
-            )
-          );
-          
-          setPagesScanned(prev => prev + 1);
-        }
+          return scannedPage;
+        });
+        
+        // Wait for all pages in this batch to be scanned
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
       }
       
-      // De-duplicate all links across all pages
-      const uniqueAllLinks = allLinks.filter((link, index, self) => 
-        self.findIndex(l => l.url === link.url) === index
-      );
-      
-      setTotalLinks(uniqueAllLinks.length);
-      
-      // Validate all links in batches to avoid overwhelming the browser
-      const BATCH_SIZE = 10;
-      const totalBatches = Math.ceil(uniqueAllLinks.length / BATCH_SIZE);
-      let collectedBrokenLinks: BrokenLink[] = [];
-      
-      for (let i = 0; i < totalBatches; i++) {
-        const batch = uniqueAllLinks.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
-        const brokenBatch = await validateLinks(batch);
-        
-        collectedBrokenLinks = [...collectedBrokenLinks, ...brokenBatch];
-        setBrokenLinks(collectedBrokenLinks);
-        setCheckedLinks((i + 1) * BATCH_SIZE > uniqueAllLinks.length ? uniqueAllLinks.length : (i + 1) * BATCH_SIZE);
-        
-        // Update broken links count for each page
-        for (const brokenLink of brokenBatch) {
-          setScannedPages(prev => 
-            prev.map(page => 
-              page.url === brokenLink.source 
-                ? { ...page, brokenCount: page.brokenCount + 1 } 
-                : page
-            )
-          );
-        }
-      }
-      
+      return results;
     } catch (error) {
-      console.error('Error scanning site:', error);
+      console.error("Error scanning site:", error);
+      throw error;
     } finally {
       setIsSiteScanning(false);
     }
-  }, [extractLinksFromPage, extractSitemapUrls, resetScan, validateLinks]);
+  }, [resetScan, sitemapExtractor, pageScanner, extractLinksFromPage]);
   
   return {
+    scanSite,
     isSiteScanning,
     scannedPages,
     totalPages,
@@ -184,7 +151,6 @@ export const useSiteScanner = () => {
     brokenLinks,
     totalLinks,
     checkedLinks,
-    scanSite,
     resetScan
   };
 };

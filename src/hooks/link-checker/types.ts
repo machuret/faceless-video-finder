@@ -1,37 +1,41 @@
 
-export type BrokenLink = {
+export interface BrokenLink {
   url: string;
   text: string;
+  pageUrl: string;
   status: number;
-  pageUrl?: string; // Add page URL to track where link was found
-  error?: string;
-  source: string; // Link source page
-  statusText?: string; // HTTP status text
-};
+  statusText: string; // Add this missing property
+  source: string;   // Add this missing property
+}
 
-export type ScannedPage = {
+export interface ValidatedLink {
   url: string;
-  linkCount: number;
-  brokenCount: number;
-  status: 'success' | 'error' | 'pending';
-};
+  text: string;
+  pageUrl: string;
+  isValid: boolean;
+  status?: number;
+  statusText?: string;
+  source?: string;
+}
 
-export type LinkCheckerState = {
-  isChecking: boolean;
-  progress: number;
+export interface ScannedPage {
+  url: string;
   brokenLinks: BrokenLink[];
-  checkedCount: number;
   totalLinks: number;
+  scanned: boolean;
+}
+
+export interface PageScannerState {
+  validationResults: BrokenLink[];
+  isValidating: boolean;
+}
+
+export interface SiteScannerState {
+  scannedPages: ScannedPage[];
   pagesScanned: number;
   totalPages: number;
+  brokenLinks: BrokenLink[];
+  totalLinks: number;
+  checkedLinks: number;
   isSiteScanning: boolean;
-  scannedPages: ScannedPage[];
-};
-
-export type LinkCheckerActions = {
-  scanPageLinks: () => Promise<void>;
-  scanSiteLinks: () => Promise<void>;
-  reset: () => void;
-};
-
-export type LinkCheckerResult = LinkCheckerState & LinkCheckerActions;
+}

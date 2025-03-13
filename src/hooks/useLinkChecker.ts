@@ -1,71 +1,52 @@
 
-import { useCallback } from 'react';
-import { useCheckerState } from './link-checker/useCheckerState';
+import { useMemo } from 'react';
 import { usePageScanner } from './link-checker/usePageScanner';
 import { useSiteScanner } from './link-checker/useSiteScanner';
-import { LinkCheckerResult } from './link-checker/types';
+import { useSitemapExtractor } from './link-checker/useSitemapExtractor';
+import { useLinkValidator } from './link-checker/useLinkValidator';
 
-export function useLinkChecker(): LinkCheckerResult {
-  const [state, {
-    setIsChecking,
-    setProgress,
-    setBrokenLinks,
-    setCheckedCount,
-    setTotalLinks,
-    setPagesScanned,
-    setTotalPages,
-    setIsSiteScanning,
-    setScannedPages,
-    resetState
-  }] = useCheckerState();
+export const useLinkChecker = () => {
+  // Get link validation functionality
+  const linkValidator = useLinkValidator();
   
-  const { scanPageLinks: scanPage } = usePageScanner();
-  const { scanSiteLinks: scanSite } = useSiteScanner();
-
-  const scanPageLinks = useCallback(async () => {
-    // Reset state
-    resetState();
-    await scanPage(
-      setIsChecking,
-      setTotalLinks,
-      setCheckedCount,
-      setProgress,
-      setBrokenLinks
-    );
-  }, [resetState, scanPage, setIsChecking, setTotalLinks, setCheckedCount, setProgress, setBrokenLinks]);
-
-  const scanSiteLinks = useCallback(async () => {
-    // Reset state
-    resetState();
-    await scanSite(
-      setIsChecking,
-      setIsSiteScanning,
-      setTotalPages,
-      setPagesScanned,
-      setTotalLinks,
-      setCheckedCount,
-      setProgress,
-      setScannedPages,
-      setBrokenLinks
-    );
-  }, [
-    resetState,
-    scanSite,
-    setIsChecking,
-    setIsSiteScanning,
-    setTotalPages,
-    setPagesScanned,
-    setTotalLinks, 
-    setCheckedCount,
-    setProgress,
-    setScannedPages,
-    setBrokenLinks
+  // Get page scanner functionality
+  const pageScanner = usePageScanner(linkValidator);
+  
+  // Get sitemap extractor functionality
+  const sitemapExtractor = useSitemapExtractor();
+  
+  // Get site scanner functionality
+  const siteScanner = useSiteScanner(pageScanner, sitemapExtractor);
+  
+  // Combine all functionality
+  return useMemo(() => ({
+    // Link validation
+    validateLink: linkValidator.validateLink,
+    validateLinks: linkValidator.validateLinks,
+    validationResults: linkValidator.validationResults,
+    isValidating: linkValidator.isValidating,
+    clearResults: linkValidator.clearResults,
+    
+    // Page scanning
+    scanPageLinks: pageScanner.scanPageLinks,
+    
+    // Site scanning
+    scanSite: siteScanner.scanSite,
+    isSiteScanning: siteScanner.isSiteScanning,
+    scannedPages: siteScanner.scannedPages,
+    totalPages: siteScanner.totalPages,
+    pagesScanned: siteScanner.pagesScanned,
+    brokenLinks: siteScanner.brokenLinks,
+    totalLinks: siteScanner.totalLinks,
+    checkedLinks: siteScanner.checkedLinks,
+    resetScan: siteScanner.resetScan,
+    
+    // Sitemap extraction
+    extractSitemapUrls: sitemapExtractor.extractAllPagesFromSitemap
+  }), [
+    linkValidator, 
+    pageScanner, 
+    siteScanner, 
+    sitemapExtractor
   ]);
-
-  return {
-    ...state,
-    scanPageLinks,
-    scanSiteLinks,
-    reset: resetState
-  };
-}
+};
