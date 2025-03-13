@@ -1,9 +1,6 @@
 
 import ChannelTypes from '../pages/ChannelTypes';
-import { lazy } from 'react';
-import { lazyLoad } from './loaders';
-
-const ChannelTypeDetails = lazy(() => import('../pages/ChannelTypeDetails'));
+import ChannelTypeDetails from '../pages/ChannelTypeDetails';
 
 export const channelTypeRoutes = [
   {
@@ -12,10 +9,10 @@ export const channelTypeRoutes = [
   },
   {
     path: "/channel-type/:typeId",
-    element: lazyLoad(ChannelTypeDetails),
+    element: <ChannelTypeDetails />,
   },
   {
     path: "/channel-types/:typeId",
-    element: lazyLoad(ChannelTypeDetails),
+    element: <ChannelTypeDetails />,
   }
 ];
