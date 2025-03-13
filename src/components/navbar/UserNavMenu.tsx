@@ -35,7 +35,7 @@ export function UserNavMenu() {
   // Loading state when auth is being initialized
   if (loading && !user) {
     return (
-      <Button variant="outline" disabled className="animate-pulse">
+      <Button variant="outline" disabled className="animate-pulse min-w-[80px]">
         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
         Loading
       </Button>
@@ -60,7 +60,7 @@ export function UserNavMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button variant="outline" className="flex items-center gap-2 min-w-[100px]">
           {isSigningOut ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (

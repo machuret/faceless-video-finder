@@ -17,7 +17,7 @@ const DashboardHeader = () => {
   };
 
   return (
-    <div className="sticky top-0 z-10 bg-white border-b border-gray-200 py-4 px-4 mb-6">
+    <div className="sticky top-[4rem] md:top-[5rem] z-40 bg-white border-b border-gray-200 py-4 px-4 mb-6">
       <div className="container mx-auto">
         <div className="flex justify-between items-center">
           <div>

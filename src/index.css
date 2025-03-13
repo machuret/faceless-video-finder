@@ -113,6 +113,17 @@
   margin-top: 1rem;
   margin-bottom: 0.5rem;
 }
+
+/* Add padding to body to account for fixed navbar */
+body {
+  padding-top: 4rem; /* For mobile */
+}
+
+@media (min-width: 768px) {
+  body {
+    padding-top: 5rem; /* For larger screens */
+  }
+}
  
 @layer base {
   * {
