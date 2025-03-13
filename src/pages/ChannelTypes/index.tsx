@@ -1,4 +1,5 @@
 
+import React from "react";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
 import ChannelTypesHeader from "./components/ChannelTypesHeader";

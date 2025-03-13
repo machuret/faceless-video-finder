@@ -1,6 +1,5 @@
 
-import { Home, Calculator, Lightbulb, Layers, GraduationCap, HelpCircle, Tag } from "lucide-react";
-import { matchPath } from "react-router-dom";
+import React from "react";
 
 // Define navigation items with emoji icons
 export const navigationItems = [
@@ -44,15 +43,15 @@ export const navigationItems = [
 
 // Function to check if "Ideas" is active
 export const isIdeasActive = (pathname: string): boolean => {
-  return !!matchPath({ path: "/faceless-ideas/*", end: false }, pathname) || pathname === '/faceless-ideas';
+  return pathname.startsWith('/faceless-ideas') || pathname === '/faceless-ideas';
 };
 
 // Function to check if "Admin" is active
 export const isAdminActive = (pathname: string): boolean => {
-  return !!matchPath({ path: "/admin/*", end: false }, pathname) || pathname === '/admin';
+  return pathname.startsWith('/admin') || pathname === '/admin';
 };
 
 // Function to check if "Niches" is active
 export const isNichesActive = (pathname: string): boolean => {
-  return !!matchPath({ path: "/niches/*", end: false }, pathname) || pathname === '/niches';
+  return pathname.startsWith('/niches') || pathname === '/niches';
 };

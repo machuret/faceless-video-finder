@@ -1,15 +1,16 @@
 
 import { lazy } from 'react';
 import { lazyLoad } from './loaders';
+import { Navigate } from 'react-router-dom';
 
-// Lazy load channel type components
-const ChannelTypes = lazy(() => import('../pages/ChannelTypes'));
+// Import directly instead of lazy loading to troubleshoot the issue
+import ChannelTypes from '../pages/ChannelTypes';
 const ChannelTypeDetails = lazy(() => import('../pages/ChannelTypeDetails'));
 
 export const channelTypeRoutes = [
   {
     path: "/channel-types",
-    element: lazyLoad(ChannelTypes),
+    element: <ChannelTypes />,
   },
   {
     path: "/channel-type/:typeId",
