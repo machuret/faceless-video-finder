@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { FacelessIdeaInfo } from "./types";
 import { getCache, setCache, invalidateCache } from "@/utils/cacheUtils";
