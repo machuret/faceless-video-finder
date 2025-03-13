@@ -3,8 +3,6 @@ import { lazy } from 'react';
 import { lazyLoad } from './loaders';
 
 // Lazy load content-related components
-const ChannelTypes = lazy(() => import('../pages/ChannelTypes'));
-const ChannelTypeDetailsPage = lazy(() => import('../pages/ChannelTypeDetails/components/ChannelTypeDetailsPage'));
 const Niches = lazy(() => import('../pages/Niches'));
 const NicheDetails = lazy(() => import('../pages/NicheDetails'));
 const FacelessIdeas = lazy(() => import('../pages/FacelessIdeas'));
@@ -12,20 +10,6 @@ const FacelessIdeaDetails = lazy(() => import('../pages/FacelessIdeaDetails'));
 const FacelessChannelIdeas = lazy(() => import('../pages/FacelessChannelIdeas'));
 
 export const contentRoutes = [
-  // Channel Types
-  {
-    path: "/channel-types",
-    element: lazyLoad(ChannelTypes),
-  },
-  {
-    path: "/channel-types/:typeId",
-    element: lazyLoad(ChannelTypeDetailsPage),
-  },
-  {
-    path: "/channel-type/:typeId",
-    element: lazyLoad(ChannelTypeDetailsPage),
-  },
-  
   // Niches
   {
     path: "/niches",

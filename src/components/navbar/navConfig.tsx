@@ -1,43 +1,43 @@
 
-import { Home, Calculator, Lightbulb, Layers, GraduationCap, HelpCircle, Tag, Settings } from "lucide-react";
+import { Home, Calculator, Lightbulb, Layers, GraduationCap, HelpCircle, Tag } from "lucide-react";
 import { matchPath } from "react-router-dom";
 
-// Define navigation items
+// Define navigation items with emoji icons
 export const navigationItems = [
   {
     path: "/",
-    icon: <Home className="h-4 w-4" />,
+    icon: <span className="mr-1">🏠</span>,
     label: "Home",
   },
   {
     path: "/calculators",
-    icon: <Calculator className="h-4 w-4" />,
+    icon: <span className="mr-1">🧮</span>,
     label: "Calculators",
   },
   {
     path: "/faceless-ideas",
-    icon: <Lightbulb className="h-4 w-4" />,
+    icon: <span className="mr-1">💡</span>,
     label: "Ideas",
   },
   {
     path: "/channel-types",
-    icon: <Layers className="h-4 w-4" />,
+    icon: <span className="mr-1">📺</span>,
     label: "Channel Types",
   },
   {
     path: "/niches",
-    icon: <Tag className="h-4 w-4" />,
+    icon: <span className="mr-1">🏷️</span>,
     label: "Niches",
   },
   {
     path: "https://facelesstraining.com/",
-    icon: <GraduationCap className="h-4 w-4" />,
+    icon: <span className="mr-1">🎓</span>,
     label: "Training",
     isExternal: true,
   },
   {
     path: "/how-it-works",
-    icon: <HelpCircle className="h-4 w-4" />,
+    icon: <span className="mr-1">❓</span>,
     label: "How It Works",
   },
 ];

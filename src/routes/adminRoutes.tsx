@@ -7,10 +7,10 @@ import { lazyLoad } from './loaders';
 // Import components directly instead of lazy loading to fix import errors
 import AdminLogin from '../pages/Admin/AdminLogin';
 import AdminDashboard from '../pages/Admin/Dashboard';
+import ManageNiches from '../pages/Admin/components/niches/ManageNiches';
 
 // Continue lazy loading other admin components
 const AddChannel = React.lazy(() => import('../pages/Admin/AddChannel'));
-const ManageNiches = React.lazy(() => import('../pages/Admin/components/niches/ManageNiches'));
 const ManageChannelTypes = React.lazy(() => import('../pages/Admin/ManageChannelTypes'));
 const ManageFacelessIdeas = React.lazy(() => import('../pages/Admin/ManageFacelessIdeas'));
 const ManageDidYouKnowFacts = React.lazy(() => import('../pages/Admin/ManageDidYouKnowFacts'));
@@ -18,7 +18,7 @@ const LinkCheckerPage = React.lazy(() => import('../pages/Admin/components/tools
 const ManageUsers = React.lazy(() => import('../pages/Admin/ManageUsers'));
 
 export const adminRoutes = [
-  // Redirect root admin path to dashboard
+  // Root admin path should redirect to dashboard
   {
     path: "/admin",
     element: (
@@ -59,7 +59,7 @@ export const adminRoutes = [
     path: "/admin/niches",
     element: (
       <ProtectedRoute requireAdmin={true}>
-        {lazyLoad(ManageNiches)}
+        <ManageNiches />
       </ProtectedRoute>
     ),
   },

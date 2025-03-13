@@ -13,9 +13,9 @@ const routes = [
   ...publicRoutes,
   ...calculatorRoutes,
   ...channelRoutes,
+  ...channelTypeRoutes, // Make sure this comes before contentRoutes to avoid path conflicts
   ...contentRoutes,
   ...adminRoutes,
-  ...channelTypeRoutes,
   ...authRoutes,
   // 404 route should always be last
   {
