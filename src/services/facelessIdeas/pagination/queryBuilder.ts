@@ -26,14 +26,17 @@ export const buildQuery = (options: FetchIdeasOptions) => {
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply any additional filters - using primitive approach to avoid TypeScript recursion
+  // Apply any additional filters - avoiding TypeScript recursion with simple loops
   if (filter) {
-    const filterKeys = Object.keys(filter);
-    for (let i = 0; i < filterKeys.length; i++) {
-      const key = filterKeys[i];
-      const value = filter[key];
-      if (value !== undefined && value !== null && value !== '') {
-        query = query.eq(key, value);
+    // Cast filter to any to avoid TypeScript deep analysis
+    const filterObj = filter as Record<string, any>;
+    const keys = Object.keys(filterObj);
+    
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const val = filterObj[key];
+      if (val !== undefined && val !== null && val !== '') {
+        query = query.eq(key, val);
       }
     }
   }
@@ -67,14 +70,17 @@ export const buildCountQuery = (options: Pick<FetchIdeasOptions, 'search' | 'fil
     query = query.or(`label.ilike.%${search}%,description.ilike.%${search}%`);
   }
   
-  // Apply any additional filters - using primitive approach to avoid TypeScript recursion
+  // Apply any additional filters - avoiding TypeScript recursion with simple loops
   if (filter) {
-    const filterKeys = Object.keys(filter);
-    for (let i = 0; i < filterKeys.length; i++) {
-      const key = filterKeys[i];
-      const value = filter[key];
-      if (value !== undefined && value !== null && value !== '') {
-        query = query.eq(key, value);
+    // Cast filter to any to avoid TypeScript deep analysis
+    const filterObj = filter as Record<string, any>;
+    const keys = Object.keys(filterObj);
+    
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const val = filterObj[key];
+      if (val !== undefined && val !== null && val !== '') {
+        query = query.eq(key, val);
       }
     }
   }
