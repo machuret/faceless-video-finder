@@ -6,9 +6,18 @@ export interface ChannelTypeInfo {
   id: string;
   label: string;
   description?: string;
-  image_url?: string;
+  image_url?: string | null;
+  production?: string;
+  example?: string;
   example_channels?: string[];
 }
+
+// Validate channel type ID format
+export const validateChannelTypeId = (id: string): boolean => {
+  // Only allow lowercase letters, numbers, and underscores
+  const regex = /^[a-z0-9_]+$/;
+  return regex.test(id);
+};
 
 // Default channel types for fallback
 const DEFAULT_CHANNEL_TYPES: ChannelTypeInfo[] = [
@@ -50,11 +59,10 @@ export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
       }, 8000);
     });
 
-    // Database query promise
+    // Database query promise - update to select only fields that exist in the table
     const dbQueryPromise = supabase
       .from("channel_types")
-      .select("id, label, description, image_url, example_channels")
-      .order("label");
+      .select("id, label, description, image_url");
 
     // Race the database query against the timeout
     const result = await Promise.race([dbQueryPromise, timeoutPromise]);
@@ -87,5 +95,112 @@ export const fetchChannelTypes = async (): Promise<ChannelTypeInfo[]> => {
     
     // Return default types if database query fails
     return DEFAULT_CHANNEL_TYPES;
+  }
+};
+
+// Add the missing functions that are being imported in other components
+
+// Fetch a single channel type by ID
+export const fetchChannelTypeById = async (id: string): Promise<ChannelTypeInfo | null> => {
+  try {
+    console.log(`Fetching channel type with ID: ${id}`);
+    
+    // First try the database
+    const { data, error } = await supabase
+      .from("channel_types")
+      .select("id, label, description, image_url")
+      .eq("id", id)
+      .single();
+    
+    if (error) {
+      console.error("Error fetching channel type:", error);
+      
+      // If not found in the database, check if it's in the default types
+      const defaultType = DEFAULT_CHANNEL_TYPES.find(type => type.id === id);
+      if (defaultType) {
+        return defaultType;
+      }
+      
+      return null;
+    }
+    
+    return data as ChannelTypeInfo;
+  } catch (error) {
+    console.error(`Error fetching channel type with ID ${id}:`, error);
+    
+    // Check if it's in the default types as fallback
+    const defaultType = DEFAULT_CHANNEL_TYPES.find(type => type.id === id);
+    if (defaultType) {
+      return defaultType;
+    }
+    
+    return null;
+  }
+};
+
+// Create a new channel type
+export const createChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
+  try {
+    const { data, error } = await supabase
+      .from("channel_types")
+      .insert([{
+        id: channelType.id,
+        label: channelType.label,
+        description: channelType.description || null,
+        image_url: channelType.image_url || null
+      }])
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data as ChannelTypeInfo;
+  } catch (error) {
+    console.error("Error creating channel type:", error);
+    throw new Error(`Failed to create channel type: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
+
+// Update an existing channel type
+export const updateChannelType = async (channelType: ChannelTypeInfo): Promise<ChannelTypeInfo> => {
+  try {
+    const { data, error } = await supabase
+      .from("channel_types")
+      .update({
+        label: channelType.label,
+        description: channelType.description || null,
+        image_url: channelType.image_url || null
+      })
+      .eq("id", channelType.id)
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data as ChannelTypeInfo;
+  } catch (error) {
+    console.error("Error updating channel type:", error);
+    throw new Error(`Failed to update channel type: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
+
+// Delete a channel type
+export const deleteChannelType = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("channel_types")
+      .delete()
+      .eq("id", id);
+    
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error deleting channel type:", error);
+    throw new Error(`Failed to delete channel type: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
