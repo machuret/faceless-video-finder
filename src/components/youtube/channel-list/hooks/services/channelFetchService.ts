@@ -70,46 +70,7 @@ export const fetchChannelData = async (offset: number = 0, limit: number = 10): 
   const finalLimit = limit;
   const finalOffset = offset;
   
-  // Try edge function first for better performance
-  try {
-    const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
-      body: { 
-        limit: finalLimit,
-        offset: finalOffset,
-        fields: requiredFields
-      }
-    });
-    
-    if (edgeError) {
-      console.error("Edge function error:", edgeError);
-    } else if (edgeData?.channels && Array.isArray(edgeData.channels)) {
-      // Validate the data returned to ensure it's not an error array
-      const isValidData = edgeData.channels.length === 0 || 
-        (edgeData.channels[0] && 'id' in edgeData.channels[0]);
-      
-      if (isValidData) {
-        // Transform the channel data to ensure proper typing of metadata
-        const typedChannels = transformChannelData(edgeData.channels as { metadata?: Json }[]);
-        console.log(`Fetched ${typedChannels.length} channels from edge function`);
-        
-        // Update count if it seems more accurate
-        if (edgeData.totalCount && edgeData.totalCount > count) {
-          count = edgeData.totalCount;
-        }
-        
-        return {
-          channels: typedChannels,
-          totalCount: count
-        };
-      } else {
-        console.warn("Edge function returned invalid data format:", edgeData.channels);
-      }
-    }
-  } catch (edgeErr) {
-    console.error("Error in edge function call:", edgeErr);
-  }
-  
-  // Fallback to direct query if edge function failed
+  // Try direct query first for better reliability
   try {
     const { data, error } = await supabase
       .from("youtube_channels")
@@ -140,6 +101,49 @@ export const fetchChannelData = async (offset: number = 0, limit: number = 10): 
     };
   } catch (directErr) {
     console.error("Error in direct query:", directErr);
-    throw directErr;
+    
+    // If direct query fails, try the edge function as fallback
+    try {
+      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-public-channels', {
+        body: { 
+          limit: finalLimit,
+          offset: finalOffset,
+          fields: requiredFields
+        }
+      });
+      
+      if (edgeError) {
+        console.error("Edge function error:", edgeError);
+        throw edgeError;
+      }
+      
+      if (edgeData?.channels && Array.isArray(edgeData.channels)) {
+        // Validate the data returned to ensure it's not an error array
+        const isValidData = edgeData.channels.length === 0 || 
+          (edgeData.channels[0] && 'id' in edgeData.channels[0]);
+        
+        if (isValidData) {
+          // Transform the channel data to ensure proper typing of metadata
+          const typedChannels = transformChannelData(edgeData.channels as { metadata?: Json }[]);
+          console.log(`Fetched ${typedChannels.length} channels from edge function`);
+          
+          // Update count if it seems more accurate
+          if (edgeData.totalCount && edgeData.totalCount > count) {
+            count = edgeData.totalCount;
+          }
+          
+          return {
+            channels: typedChannels,
+            totalCount: count
+          };
+        }
+      }
+      
+      // If we get here, both methods failed
+      throw new Error("Failed to fetch channels data from both direct query and edge function");
+    } catch (fallbackErr) {
+      console.error("Error in fallback fetch:", fallbackErr);
+      throw fallbackErr;
+    }
   }
 };
