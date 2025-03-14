@@ -1,23 +1,22 @@
 
+import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
+import { ChannelTypeInfo } from "@/services/channelTypeService";
 
 interface ChannelTypeCardProps {
-  id: string;
-  label: string;
-  description: string | null;
-  image_url?: string | null;
+  type: ChannelTypeInfo;
 }
 
-const ChannelTypeCard = ({ id, label, description, image_url }: ChannelTypeCardProps) => {
+const ChannelTypeCard = ({ type }: ChannelTypeCardProps) => {
   return (
-    <Card key={id} className="hover:shadow-lg transition-shadow h-full overflow-hidden">
-      {image_url ? (
-        <div className="w-full h-48 overflow-hidden">
+    <Card key={type.id} className="hover:shadow-lg transition-shadow h-full overflow-hidden">
+      {type.image_url ? (
+        <div className="w-full h-48 overflow-hidden bg-gray-100">
           <img 
-            src={image_url} 
-            alt={label}
+            src={type.image_url} 
+            alt={type.label}
             className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
             loading="lazy"
             onError={(e) => {
@@ -26,23 +25,21 @@ const ChannelTypeCard = ({ id, label, description, image_url }: ChannelTypeCardP
           />
         </div>
       ) : (
-        <div className="w-full h-48 overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-center">
-          <span className="text-blue-600 text-xl font-semibold">{label}</span>
+        <div className="w-full h-48 overflow-hidden bg-gradient-to-r from-blue-100 to-indigo-100">
+          <div className="flex items-center justify-center h-full text-blue-600 text-xl font-semibold">
+            {type.label}
+          </div>
         </div>
       )}
-      
-      <CardContent className={`p-6 flex flex-col ${image_url ? 'h-auto' : 'h-full'}`}>
-        <CardTitle className="font-crimson text-xl mb-3">{label}</CardTitle>
+      <CardContent className="p-6 flex flex-col h-auto">
+        <CardTitle className="font-crimson text-xl mb-3">{type.label}</CardTitle>
         <p className="font-lato text-sm text-gray-600 mb-4 flex-grow">
-          {typeof description === 'string' ? 
-            (description.replace(/<[^>]*>?/gm, '').length > 120 ? 
-              description.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 
-              description.replace(/<[^>]*>?/gm, '')
-            ) : 
-            'No description available'}
+          {type.description ? (
+            type.description.length > 120 ? `${type.description.substring(0, 120)}...` : type.description
+          ) : "No description available."}
         </p>
         <Link 
-          to={`/channel-types/${id}`} 
+          to={`/channel-types/${type.id}`} 
           className="text-blue-600 hover:text-blue-800 flex items-center text-sm font-medium font-montserrat mt-auto"
         >
           View details <ArrowRight className="ml-1 h-4 w-4" />
