@@ -63,12 +63,20 @@ export const useRegisterForm = () => {
     try {
       setIsLoading(true);
       
+      // Split full name into first and last name for profile data
+      const nameParts = values.fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       const { error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
           data: {
             full_name: values.fullName,
+            first_name: firstName,
+            last_name: lastName,
+            email: values.email
           },
         },
       });
