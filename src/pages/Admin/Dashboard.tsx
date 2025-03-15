@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, createContext, useContext } from "react";
 import AdminHeader from "./components/AdminHeader";
 import DashboardHeader from "./components/dashboard/DashboardHeader";
@@ -49,9 +50,9 @@ const AdminLinks = React.memo(() => (
         <BookOpen className="h-5 w-5 mr-2 text-green-600" />
         <span>Manage Did You Know Facts</span>
       </Link>
-      <Link to="/admin/users" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+      <Link to="/admin/users" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors bg-red-50">
         <Users className="h-5 w-5 mr-2 text-red-600" />
-        <span>Manage Users</span>
+        <span className="font-semibold">Manage Users</span>
       </Link>
     </div>
   </Card>

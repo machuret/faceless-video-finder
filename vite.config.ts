@@ -30,6 +30,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['zod'],
+    include: ['zod', '@hookform/resolvers', 'react-hook-form'],
   }
 }));
