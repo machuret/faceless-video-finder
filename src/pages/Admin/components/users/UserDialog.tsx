@@ -1,36 +1,16 @@
 
 import React from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-
-interface User {
-  id: string;
-  email: string;
-  display_name: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  created_at: string;
-}
+import { Form } from "@/components/ui/form";
+import { useUserForm, User } from "./hooks/useUserForm";
+import UserFormFields from "./components/UserFormFields";
+import UserDialogFooter from "./components/UserDialogFooter";
 
 interface UserDialogProps {
   isOpen: boolean;
@@ -40,56 +20,19 @@ interface UserDialogProps {
   isEditing: boolean;
 }
 
-const UserDialog = ({ isOpen, onClose, onSave, user, isEditing }: UserDialogProps) => {
-  const formSchema = z.object({
-    first_name: z.string().min(2, "First name must be at least 2 characters"),
-    last_name: z.string().min(2, "Last name must be at least 2 characters"),
-    display_name: z.string().min(2, "Display name must be at least 2 characters"),
-    email: isEditing 
-      ? z.string().optional() 
-      : z.string().email("Invalid email address"),
-    password: isEditing 
-      ? z.string().optional() 
-      : z.string().min(6, "Password must be at least 6 characters"),
+const UserDialog = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  user, 
+  isEditing 
+}: UserDialogProps) => {
+  const { form, isSubmitting, handleSubmit } = useUserForm({
+    user,
+    isEditing,
+    isOpen,
+    onSave
   });
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      first_name: user?.first_name || "",
-      last_name: user?.last_name || "",
-      display_name: user?.display_name || "",
-      email: user?.email || "",
-      password: "",
-    },
-  });
-  
-  const isSubmitting = form.formState.isSubmitting;
-
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    await onSave(values);
-    form.reset();
-  };
-
-  React.useEffect(() => {
-    if (isOpen && user) {
-      form.reset({
-        first_name: user.first_name || "",
-        last_name: user.last_name || "",
-        display_name: user.display_name || "",
-        email: user.email || "",
-        password: "",
-      });
-    } else if (isOpen && !user) {
-      form.reset({
-        first_name: "",
-        last_name: "",
-        display_name: "",
-        email: "",
-        password: "",
-      });
-    }
-  }, [isOpen, user, form]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -105,125 +48,17 @@ const UserDialog = ({ isOpen, onClose, onSave, user, isEditing }: UserDialogProp
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            {!isEditing && (
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="user@example.com" 
-                        type="email" 
-                        disabled={isSubmitting || isEditing} 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            
-            <FormField
-              control={form.control}
-              name="first_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First Name</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="John" 
-                      disabled={isSubmitting} 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <UserFormFields 
+              form={form}
+              isSubmitting={isSubmitting}
+              isEditing={isEditing}
             />
             
-            <FormField
-              control={form.control}
-              name="last_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Doe" 
-                      disabled={isSubmitting} 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <UserDialogFooter
+              isSubmitting={isSubmitting}
+              isEditing={isEditing}
+              onCancel={onClose}
             />
-            
-            <FormField
-              control={form.control}
-              name="display_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Display Name</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="John Doe" 
-                      disabled={isSubmitting} 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {!isEditing && (
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="••••••••" 
-                        type="password" 
-                        disabled={isSubmitting || isEditing} 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            
-            <DialogFooter className="mt-6">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isEditing ? "Updating..." : "Creating..."}
-                  </>
-                ) : (
-                  isEditing ? "Update" : "Create"
-                )}
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
