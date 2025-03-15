@@ -3,6 +3,7 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, RotateCw, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface UserSearchBarProps {
   searchTerm: string;
@@ -31,16 +32,37 @@ const UserSearchBar: React.FC<UserSearchBarProps> = ({
         />
       </div>
       
-      {selectedCount > 0 && (
-        <Button 
-          variant="destructive" 
-          onClick={onBulkDelete}
-          className="gap-2"
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete Selected ({selectedCount})
-        </Button>
-      )}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {selectedCount > 0 ? (
+              <Button 
+                variant="destructive" 
+                onClick={onBulkDelete}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected ({selectedCount})
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                disabled
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Bulk Delete
+              </Button>
+            )}
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{selectedCount > 0 
+              ? `Delete ${selectedCount} selected users` 
+              : "Select users to enable bulk delete"}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       
       <Button variant="outline" onClick={onRefresh}>
         <RotateCw className="h-4 w-4" />
