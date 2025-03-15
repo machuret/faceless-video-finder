@@ -1,13 +1,10 @@
 
-import React, { useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+import PasswordInput from "./PasswordInput";
+import { useRegisterForm } from "../hooks/useRegisterForm";
 import {
   Form,
   FormControl,
@@ -17,84 +14,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-const formSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
-const RegisterForm = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      fullName: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  const addUserToSendFox = async (email: string, fullName: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('add-to-sendfox', {
-        body: { 
-          email,
-          first_name: fullName,
-          list_id: 1191 // Your Faceless Finder list ID
-        }
-      });
-
-      if (error) {
-        console.error("Error adding user to SendFox:", error);
-        // Don't show this error to the user as registration was successful
-      } else {
-        console.log("User added to SendFox successfully:", data);
-      }
-    } catch (error) {
-      console.error("Exception adding user to SendFox:", error);
-      // Don't show this error to the user as registration was successful
-    }
-  };
-
-  const onSubmit = async (values: FormValues) => {
-    try {
-      setIsLoading(true);
-      
-      const { error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            full_name: values.fullName,
-          },
-        },
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Add user to SendFox list
-      await addUserToSendFox(values.email, values.fullName);
-      
-      toast.success("Registration successful! Please check your email to confirm your account.");
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      toast.error(error.message || "Failed to register");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const RegisterForm: React.FC = () => {
+  const {
+    form,
+    isLoading,
+    showPassword,
+    showConfirmPassword,
+    togglePasswordVisibility,
+    toggleConfirmPasswordVisibility,
+    onSubmit
+  } = useRegisterForm();
 
   return (
     <Form {...form}>
@@ -142,29 +71,12 @@ const RegisterForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Password</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input 
-                    placeholder="••••••••" 
-                    type={showPassword ? "text" : "password"} 
-                    disabled={isLoading} 
-                    {...field} 
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 text-gray-400"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </FormControl>
+              <PasswordInput
+                field={field}
+                isVisible={showPassword}
+                toggleVisibility={togglePasswordVisibility}
+                disabled={isLoading}
+              />
               <FormMessage />
             </FormItem>
           )}
@@ -176,29 +88,12 @@ const RegisterForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Confirm Password</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input 
-                    placeholder="••••••••" 
-                    type={showConfirmPassword ? "text" : "password"} 
-                    disabled={isLoading} 
-                    {...field} 
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 text-gray-400"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </FormControl>
+              <PasswordInput
+                field={field}
+                isVisible={showConfirmPassword}
+                toggleVisibility={toggleConfirmPasswordVisibility}
+                disabled={isLoading}
+              />
               <FormMessage />
             </FormItem>
           )}
