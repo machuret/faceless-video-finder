@@ -9,7 +9,7 @@
       "use": "@vercel/static-build"
     }
   ],
-  "installCommand": "npm install --legacy-peer-deps",
+  "installCommand": "npm install --no-audit --no-fund",
   "buildCommand": "npm run build",
   "framework": "vite",
   "trailingSlash": false,

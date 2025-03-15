@@ -27,9 +27,17 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       // Make sure external packages that shouldn't be bundled are listed here
       external: [],
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-label', '@radix-ui/react-slot'],
+          form: ['react-hook-form', '@hookform/resolvers', 'zod']
+        }
+      }
     },
   },
   optimizeDeps: {
-    include: ['zod', '@hookform/resolvers', 'react-hook-form'],
+    include: ['zod', '@hookform/resolvers', 'react-hook-form', 'sonner'],
+    force: true
   }
 }));
