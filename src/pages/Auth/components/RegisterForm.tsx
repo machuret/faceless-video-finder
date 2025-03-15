@@ -44,6 +44,28 @@ const RegisterForm = () => {
     },
   });
 
+  const addUserToSendFox = async (email: string, fullName: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('add-to-sendfox', {
+        body: { 
+          email,
+          first_name: fullName,
+          list_id: 1191 // Your Faceless Finder list ID
+        }
+      });
+
+      if (error) {
+        console.error("Error adding user to SendFox:", error);
+        // Don't show this error to the user as registration was successful
+      } else {
+        console.log("User added to SendFox successfully:", data);
+      }
+    } catch (error) {
+      console.error("Exception adding user to SendFox:", error);
+      // Don't show this error to the user as registration was successful
+    }
+  };
+
   const onSubmit = async (values: FormValues) => {
     try {
       setIsLoading(true);
@@ -61,6 +83,9 @@ const RegisterForm = () => {
       if (error) {
         throw error;
       }
+      
+      // Add user to SendFox list
+      await addUserToSendFox(values.email, values.fullName);
       
       toast.success("Registration successful! Please check your email to confirm your account.");
     } catch (error: any) {
