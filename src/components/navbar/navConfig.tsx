@@ -9,7 +9,7 @@ const navConfig = [
     icon: <Home className="h-[1.2rem] w-[1.2rem]" />,
   },
   {
-    title: "Search Channels",
+    title: "Channels",
     path: "/channel-search",
     icon: <Search className="h-[1.2rem] w-[1.2rem]" />,
   },
