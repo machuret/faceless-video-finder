@@ -59,11 +59,8 @@ const LoginForm = () => {
         console.log("Login successful, user:", data.user.email);
         toast.success("Logged in successfully");
         
-        // Force a page reload to ensure auth state is properly recognized
-        // This helps fix issues where the UI doesn't reflect the authenticated state
-        setTimeout(() => {
-          navigate("/", { replace: true });
-        }, 500);
+        // Redirect to external website after successful login
+        window.location.href = "https://www.facelessfinder.com/";
       } else {
         console.error("No user data returned from login");
         setLoginError("Login failed. Please try again.");

@@ -30,12 +30,13 @@ const Auth = () => {
   }, []);
 
   useEffect(() => {
-    // Only redirect if we've finished the initial loading check
-    if (!loading && !isChecking && user) {
+    // Only redirect if we've finished the initial loading check and if not using LoginForm
+    // This prevents local redirects when we want to redirect to external site
+    if (!loading && !isChecking && user && activeTab !== "login") {
       console.log("User is authenticated, redirecting to:", from);
       navigate(from, { replace: true });
     }
-  }, [user, loading, navigate, from, isChecking]);
+  }, [user, loading, navigate, from, isChecking, activeTab]);
 
   // Show loading spinner while checking auth status
   if (loading || isChecking) {

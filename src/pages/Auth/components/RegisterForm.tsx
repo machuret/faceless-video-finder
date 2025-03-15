@@ -1,10 +1,13 @@
 
-import React from "react";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, CheckCircle } from "lucide-react";
-import PasswordInput from "./PasswordInput";
-import { useRegisterForm } from "../hooks/useRegisterForm";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Form,
   FormControl,
@@ -13,42 +16,74 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const RegisterForm: React.FC = () => {
-  const {
-    form,
-    isLoading,
-    showPassword,
-    showConfirmPassword,
-    registrationSuccess,
-    togglePasswordVisibility,
-    toggleConfirmPasswordVisibility,
-    onSubmit
-  } = useRegisterForm();
+const formSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
 
-  if (registrationSuccess) {
-    return (
-      <div className="space-y-6 text-center">
-        <div className="flex justify-center">
-          <CheckCircle className="h-16 w-16 text-green-500" />
-        </div>
-        <h2 className="text-2xl font-bold">Registration Successful!</h2>
-        <Alert className="bg-green-50 border-green-200">
-          <AlertDescription className="text-center text-base">
-            Please check your email to confirm your account.
-          </AlertDescription>
-        </Alert>
-        <p className="text-gray-500 text-sm">
-          You can close this page and check your inbox for the confirmation email.
-        </p>
-      </div>
-    );
-  }
+type FormValues = z.infer<typeof formSchema>;
+
+const RegisterForm = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registerError, setRegisterError] = useState("");
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  const onSubmit = async (values: FormValues) => {
+    try {
+      setIsLoading(true);
+      setRegisterError("");
+      
+      console.log("Attempting registration with:", values.email);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        console.log("Registration successful");
+        toast.success("Registration successful! Please check your email to confirm your account.");
+        
+        // Redirect to external website after successful registration
+        window.location.href = "https://www.facelessfinder.com/";
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      setRegisterError(error.message || "Failed to register");
+      toast.error(error.message || "Failed to register");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {registerError && (
+          <div className="p-3 rounded-md bg-red-50 text-red-600 text-sm">
+            {registerError}
+          </div>
+        )}
+        
         <FormField
           control={form.control}
           name="email"
@@ -70,34 +105,33 @@ const RegisterForm: React.FC = () => {
         
         <FormField
           control={form.control}
-          name="fullName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full Name</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="John Doe" 
-                  disabled={isLoading} 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Password</FormLabel>
-              <PasswordInput
-                field={field}
-                isVisible={showPassword}
-                toggleVisibility={togglePasswordVisibility}
-                disabled={isLoading}
-              />
+              <FormControl>
+                <div className="relative">
+                  <Input 
+                    placeholder="••••••••" 
+                    type={showPassword ? "text" : "password"} 
+                    disabled={isLoading} 
+                    {...field} 
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 text-gray-400"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -109,12 +143,29 @@ const RegisterForm: React.FC = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Confirm Password</FormLabel>
-              <PasswordInput
-                field={field}
-                isVisible={showConfirmPassword}
-                toggleVisibility={toggleConfirmPasswordVisibility}
-                disabled={isLoading}
-              />
+              <FormControl>
+                <div className="relative">
+                  <Input 
+                    placeholder="••••••••" 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    disabled={isLoading} 
+                    {...field} 
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 text-gray-400"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -128,10 +179,10 @@ const RegisterForm: React.FC = () => {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating account...
+              Registering...
             </>
           ) : (
-            "Create account"
+            "Register"
           )}
         </Button>
       </form>
