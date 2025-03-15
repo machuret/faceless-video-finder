@@ -23,6 +23,7 @@ export const useRegisterForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
@@ -88,7 +89,8 @@ export const useRegisterForm = () => {
       // Add user to SendFox list
       await addUserToSendFox(values.email, values.fullName);
       
-      toast.success("Registration successful! Please check your email to confirm your account.");
+      // Display success message on screen instead of toast
+      setRegistrationSuccess(true);
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.message || "Failed to register");
@@ -102,6 +104,7 @@ export const useRegisterForm = () => {
     isLoading,
     showPassword,
     showConfirmPassword,
+    registrationSuccess,
     togglePasswordVisibility,
     toggleConfirmPasswordVisibility,
     onSubmit
