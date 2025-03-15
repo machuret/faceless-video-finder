@@ -3,7 +3,7 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Plus, Upload, FileText, Calculator, Users } from "lucide-react";
+import { Plus, Upload, FileText, Calculator, Users, UserCog } from "lucide-react";
 
 const AdminActionCards = () => {
   const cards = [
@@ -42,13 +42,17 @@ const AdminActionCards = () => {
       icon: <Users className="h-8 w-8 text-red-500" />,
       link: "/admin/users",
       buttonText: "Manage Users",
+      highlight: true,
     },
   ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
       {cards.map((card) => (
-        <Card key={card.title} className="p-6 flex flex-col justify-between">
+        <Card 
+          key={card.title} 
+          className={`p-6 flex flex-col justify-between ${card.highlight ? 'border-red-500 shadow-md' : ''}`}
+        >
           <div>
             <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-gray-50 mb-4">
               {card.icon}
@@ -62,7 +66,9 @@ const AdminActionCards = () => {
             </a>
           ) : (
             <Link to={card.link}>
-              <Button className="w-full">{card.buttonText}</Button>
+              <Button className={`w-full ${card.highlight ? 'bg-red-500 hover:bg-red-600' : ''}`}>
+                {card.buttonText}
+              </Button>
             </Link>
           )}
         </Card>

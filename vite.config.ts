@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -19,4 +20,16 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+    },
+    rollupOptions: {
+      // Make sure external packages that shouldn't be bundled are listed here
+      external: [],
+    },
+  },
+  optimizeDeps: {
+    include: ['zod'],
+  }
 }));
