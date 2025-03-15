@@ -38,34 +38,105 @@ serve(async (req: Request) => {
       );
     }
 
-    // Parse the request body to get the userId
-    const { userId } = await req.json();
+    // Parse the request body to get the userId or userIds for bulk delete
+    const requestData = await req.json();
     
-    if (!userId) {
+    // Check if this is a bulk delete operation
+    if (requestData.userIds && Array.isArray(requestData.userIds)) {
+      if (requestData.userIds.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "No user IDs provided for deletion" }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
+      // Process bulk deletion
+      const results = [];
+      const errors = [];
+      
+      // Process user deletions sequentially to avoid rate limiting
+      for (const userId of requestData.userIds) {
+        try {
+          const { error } = await supabase.auth.admin.deleteUser(userId);
+          if (error) {
+            errors.push({ userId, error: error.message });
+          } else {
+            results.push(userId);
+          }
+        } catch (error) {
+          errors.push({ userId, error: error.message || "Unknown error" });
+        }
+      }
+      
+      // If all deletions failed, return an error
+      if (results.length === 0 && errors.length > 0) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Failed to delete any users", 
+            details: errors 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
+      // Return partial success if some deletions succeeded
       return new Response(
-        JSON.stringify({ error: "User ID is required" }),
+        JSON.stringify({ 
+          success: true, 
+          message: `Successfully deleted ${results.length} of ${requestData.userIds.length} users`,
+          deleted: results,
+          errors: errors.length > 0 ? errors : undefined
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    } 
+    // Single user deletion
+    else if (requestData.userId) {
+      const userId = requestData.userId;
+      
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: "User ID is required" }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
+      // Delete the user from auth.users (this will cascade to profiles due to foreign key)
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      return new Response(
+        JSON.stringify({ success: true, message: "User deleted successfully" }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    else {
+      return new Response(
+        JSON.stringify({ error: "Invalid request: Either userId or userIds array is required" }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
-    
-    // Delete the user from auth.users (this will cascade to profiles due to foreign key)
-    const { error } = await supabase.auth.admin.deleteUser(userId);
-    
-    if (error) {
-      throw error;
-    }
-    
-    return new Response(
-      JSON.stringify({ success: true, message: "User deleted successfully" }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-    
   } catch (error) {
     console.error("Error in admin-delete-user function:", error);
     

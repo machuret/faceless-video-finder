@@ -20,16 +20,23 @@ const UserManagement = () => {
     selectedUser,
     isDialogOpen,
     isDeleteDialogOpen,
+    isBulkDeleteDialogOpen,
     isEditing,
+    selectedUserIds,
     setSearchTerm,
     fetchUsers,
     handleOpenDialog,
     handleOpenDeleteDialog,
+    handleOpenBulkDeleteDialog,
     handleUserSave,
     handleUserDelete,
+    handleBulkDelete,
+    handleSelectUser,
+    handleSelectAllUsers,
     getFullName,
     setIsDialogOpen,
-    setIsDeleteDialogOpen
+    setIsDeleteDialogOpen,
+    setIsBulkDeleteDialogOpen
   } = useUserManagement();
   
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -56,6 +63,8 @@ const UserManagement = () => {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           onRefresh={() => fetchUsers(debouncedSearchTerm)}
+          selectedCount={selectedUserIds.length}
+          onBulkDelete={handleOpenBulkDeleteDialog}
         />
         
         <Card>
@@ -65,6 +74,9 @@ const UserManagement = () => {
             getFullName={getFullName}
             onEdit={(user) => handleOpenDialog(user, true)}
             onDelete={handleOpenDeleteDialog}
+            selectedUsers={selectedUserIds}
+            onSelectUser={handleSelectUser}
+            onSelectAllUsers={handleSelectAllUsers}
           />
         </Card>
       </div>
@@ -83,6 +95,14 @@ const UserManagement = () => {
         onConfirm={handleUserDelete}
         title="Delete User"
         description={`Are you sure you want to delete the user ${selectedUser?.email}? This action cannot be undone.`}
+      />
+      
+      <ConfirmDialog
+        isOpen={isBulkDeleteDialogOpen}
+        onClose={() => setIsBulkDeleteDialogOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="Delete Selected Users"
+        description={`Are you sure you want to delete ${selectedUserIds.length} selected users? This action cannot be undone.`}
       />
     </ProtectedRoute>
   );

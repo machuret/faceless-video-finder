@@ -12,7 +12,9 @@ export const useUserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   
   const fetchUsers = async (debouncedSearchTerm: string) => {
     try {
@@ -33,6 +35,8 @@ export const useUserManagement = () => {
       if (error) throw error;
       
       setUsers(data || []);
+      // Clear selections when users list changes
+      setSelectedUserIds([]);
     } catch (error: any) {
       console.error("Error fetching users:", error);
       toast.error(error.message || "Failed to fetch users");
@@ -51,6 +55,10 @@ export const useUserManagement = () => {
   const handleOpenDeleteDialog = (user: User) => {
     setSelectedUser(user);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleOpenBulkDeleteDialog = () => {
+    setIsBulkDeleteDialogOpen(true);
   };
 
   const handleUserSave = async (userData: UserFormValues) => {
@@ -102,6 +110,43 @@ export const useUserManagement = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedUserIds.length === 0) return;
+    
+    try {
+      // Admin function to delete multiple users
+      const { error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userIds: selectedUserIds }
+      });
+      
+      if (error) throw error;
+      
+      toast.success(`${selectedUserIds.length} users deleted successfully`);
+      setIsBulkDeleteDialogOpen(false);
+      setSelectedUserIds([]);
+      fetchUsers("");
+    } catch (error: any) {
+      console.error("Error deleting users:", error);
+      toast.error(error.message || "Failed to delete users");
+    }
+  };
+
+  const handleSelectUser = (userId: string, isSelected: boolean) => {
+    if (isSelected) {
+      setSelectedUserIds(prev => [...prev, userId]);
+    } else {
+      setSelectedUserIds(prev => prev.filter(id => id !== userId));
+    }
+  };
+
+  const handleSelectAllUsers = (isSelected: boolean) => {
+    if (isSelected) {
+      setSelectedUserIds(users.map(user => user.id));
+    } else {
+      setSelectedUserIds([]);
+    }
+  };
+
   const getFullName = (user: User) => {
     if (user.display_name) return user.display_name;
     if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
@@ -117,15 +162,22 @@ export const useUserManagement = () => {
     selectedUser,
     isDialogOpen,
     isDeleteDialogOpen,
+    isBulkDeleteDialogOpen,
     isEditing,
+    selectedUserIds,
     setSearchTerm,
     fetchUsers,
     handleOpenDialog,
     handleOpenDeleteDialog,
+    handleOpenBulkDeleteDialog,
     handleUserSave,
     handleUserDelete,
+    handleBulkDelete,
+    handleSelectUser,
+    handleSelectAllUsers,
     getFullName,
     setIsDialogOpen,
-    setIsDeleteDialogOpen
+    setIsDeleteDialogOpen,
+    setIsBulkDeleteDialogOpen
   };
 };
