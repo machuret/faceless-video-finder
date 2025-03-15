@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -58,7 +57,6 @@ const UserManagement = () => {
       
       if (error) throw error;
       
-      // No need to fetch emails separately now, they're already in the profiles table
       setUsers(data || []);
     } catch (error: any) {
       console.error("Error fetching users:", error);

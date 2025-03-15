@@ -1,6 +1,5 @@
 
-import { Home, Search, Calculator, Lightbulb, Award, BarChart2, BookOpen, User } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Home, Search, Calculator, Lightbulb, Award, BarChart2, BookOpen, User, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const navConfig = [
@@ -62,15 +61,7 @@ export const getNavigationItems = () => {
       isExternal: false,
     });
     
-    // Add admin links for admin users
-    if (isAdmin) {
-      items.push({
-        path: "/admin/users",
-        label: "User Management",
-        icon: <User className="h-[1.2rem] w-[1.2rem]" />,
-        isExternal: false,
-      });
-    }
+    // Add admin links for admin users - moved to admin section, not in main nav
   } else {
     // Add login link for logged out users
     items.push({

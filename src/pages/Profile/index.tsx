@@ -66,7 +66,7 @@ const Profile = () => {
                            (data.first_name || ""));
                            
           form.setValue("fullName", fullName);
-          // Fall back to email if username doesn't exist
+          // Use email for username since we don't have a username field
           form.setValue("username", data.email || "");
         }
       } catch (error) {
