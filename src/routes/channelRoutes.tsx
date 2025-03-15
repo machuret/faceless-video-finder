@@ -1,18 +1,32 @@
 
-import { lazy } from 'react';
-import { lazyLoad } from './loaders';
+import { lazy } from "react";
+import ChannelDetails, { getChannelSlug } from "../pages/ChannelDetails";
+import ChannelTypes from "../pages/ChannelTypes";
+import ChannelTypeDetails from "../pages/ChannelTypeDetails";
+import ChannelRankings from "../pages/ChannelRankings";
 
-// Lazy load channel components
-const ChannelSearch = lazy(() => import('../pages/ChannelSearch'));
-const ChannelDetails = lazy(() => import('../pages/ChannelDetails'));
+// Use lazy loading for user-facing pages to improve performance
+const ChannelSearch = lazy(() => import("../pages/ChannelSearch"));
 
 export const channelRoutes = [
   {
-    path: "/channels",
-    element: lazyLoad(ChannelSearch),
+    path: "/channel-search",
+    element: <ChannelSearch />,
   },
   {
     path: "/channel/:slug",
-    element: lazyLoad(ChannelDetails),
+    element: <ChannelDetails />,
   },
+  {
+    path: "/channel-types",
+    element: <ChannelTypes />,
+  },
+  {
+    path: "/channel-types/:typeId",
+    element: <ChannelTypeDetails />,
+  },
+  {
+    path: "/channel-rankings",
+    element: <ChannelRankings />,
+  }
 ];

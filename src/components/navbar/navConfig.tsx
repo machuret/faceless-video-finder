@@ -1,58 +1,42 @@
 
-import { Home, Calculator, Lightbulb, Layers, GraduationCap, HelpCircle, Tag, Settings } from "lucide-react";
-import { matchPath } from "react-router-dom";
+import { Home, Search, Calculator, Lightbulb, Award, BarChart2, BookOpen } from "lucide-react";
 
-// Define navigation items
-export const navigationItems = [
+const navConfig = [
   {
+    title: "Home",
     path: "/",
-    icon: <Home className="h-4 w-4" />,
-    label: "Home",
+    icon: <Home className="h-[1.2rem] w-[1.2rem]" />,
   },
   {
-    path: "/calculators",
-    icon: <Calculator className="h-4 w-4" />,
-    label: "Calculators",
+    title: "Search Channels",
+    path: "/channel-search",
+    icon: <Search className="h-[1.2rem] w-[1.2rem]" />,
   },
   {
-    path: "/faceless-ideas",
-    icon: <Lightbulb className="h-4 w-4" />,
-    label: "Ideas",
+    title: "Channel Rankings",
+    path: "/channel-rankings",
+    icon: <BarChart2 className="h-[1.2rem] w-[1.2rem]" />,
   },
   {
+    title: "Channel Types",
     path: "/channel-types",
-    icon: <Layers className="h-4 w-4" />,
-    label: "Channel Types",
+    icon: <Award className="h-[1.2rem] w-[1.2rem]" />,
   },
   {
+    title: "YouTube Ideas",
+    path: "/faceless-ideas",
+    icon: <Lightbulb className="h-[1.2rem] w-[1.2rem]" />,
+  },
+  {
+    title: "Niches",
     path: "/niches",
-    icon: <Tag className="h-4 w-4" />,
-    label: "Niches",
+    icon: <BookOpen className="h-[1.2rem] w-[1.2rem]" />,
   },
   {
-    path: "https://facelesstraining.com/",
-    icon: <GraduationCap className="h-4 w-4" />,
-    label: "Training",
-    isExternal: true,
-  },
-  {
-    path: "/how-it-works",
-    icon: <HelpCircle className="h-4 w-4" />,
-    label: "How It Works",
+    title: "Calculators",
+    path: "/calculators",
+    icon: <Calculator className="h-[1.2rem] w-[1.2rem]" />,
   },
 ];
 
-// Function to check if "Ideas" is active
-export const isIdeasActive = (pathname: string): boolean => {
-  return !!matchPath({ path: "/faceless-ideas/*", end: false }, pathname) || pathname === '/faceless-ideas';
-};
-
-// Function to check if "Admin" is active
-export const isAdminActive = (pathname: string): boolean => {
-  return !!matchPath({ path: "/admin/*", end: false }, pathname) || pathname === '/admin';
-};
-
-// Function to check if "Niches" is active
-export const isNichesActive = (pathname: string): boolean => {
-  return !!matchPath({ path: "/niches/*", end: false }, pathname) || pathname === '/niches';
-};
+export default navConfig;
