@@ -1,50 +1,64 @@
-
 import { Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import Logo from "./navbar/Logo";
 import DesktopNav from "./navbar/DesktopNav";
 import MobileMenu from "./navbar/MobileMenu";
+import AccountDropdown from "./navbar/AccountDropdown";
+import { useAuth } from "@/context/AuthContext";
+import Button from "@/components/ui/Button";
 
 const MainNavbar = () => {
   const location = useLocation();
-  const isActive = (path: string) => location.pathname === path;
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isActivePath = (path: string) => location.pathname === path;
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
+  const { user } = useAuth();
+
   return (
-    <div className="sticky top-0 z-50 w-full bg-white border-b shadow-sm">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <Logo />
           
-          <DesktopNav isActive={isActive} />
+          <DesktopNav isActive={isActivePath} />
+        </div>
+        
+        <div className="flex items-center gap-4">
+          {user ? (
+            <AccountDropdown />
+          ) : (
+            <Button asChild variant="default" size="sm">
+              <Link to="/auth">Login</Link>
+            </Button>
+          )}
           
-          <div className="flex items-center gap-4">
-            <button className="md:hidden text-gray-700" onClick={toggleMobileMenu} aria-label="Toggle menu">
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={toggleMobileMenu}
+          >
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Toggle menu</span>
+          </Button>
         </div>
       </div>
       
       <MobileMenu 
-        isOpen={mobileMenuOpen} 
-        isActive={isActive} 
+        isOpen={isMobileMenuOpen} 
+        isActive={isActivePath} 
         onItemClick={closeMobileMenu} 
       />
-    </div>
+    </header>
   );
 };
 

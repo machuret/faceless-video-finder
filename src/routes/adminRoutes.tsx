@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
@@ -14,6 +13,7 @@ const ManageChannelTypes = lazy(() => import('../pages/Admin/ManageChannelTypes'
 const ManageFacelessIdeas = lazy(() => import('../pages/Admin/ManageFacelessIdeas'));
 const ManageDidYouKnowFacts = lazy(() => import('../pages/Admin/ManageDidYouKnowFacts'));
 const LinkCheckerPage = lazy(() => import('../pages/Admin/components/tools/LinkCheckerPage'));
+const UserManagement = lazy(() => import('../pages/Admin/UserManagement'));
 
 export const adminRoutes = [
   {
@@ -91,5 +91,9 @@ export const adminRoutes = [
         {lazyLoad(LinkCheckerPage)}
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/admin/users",
+    element: <UserManagement />,
   },
 ];

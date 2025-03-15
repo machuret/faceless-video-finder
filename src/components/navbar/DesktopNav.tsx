@@ -1,7 +1,7 @@
 
 import { useLocation } from "react-router-dom";
 import NavItem from "./NavItem";
-import { navigationItems, isIdeasActive, isAdminActive, isNichesActive } from "./navConfig";
+import { getNavigationItems, isIdeasActive, isAdminActive, isNichesActive, isAuthActive } from "./navConfig";
 
 interface DesktopNavProps {
   isActive: (path: string) => boolean;
@@ -9,6 +9,7 @@ interface DesktopNavProps {
 
 const DesktopNav = ({ isActive }: DesktopNavProps) => {
   const location = useLocation();
+  const navigationItems = getNavigationItems();
   
   return (
     <nav className="hidden md:flex items-center gap-6">
@@ -17,9 +18,10 @@ const DesktopNav = ({ isActive }: DesktopNavProps) => {
           key={item.label}
           to={item.path} 
           isActive={
-            item.label === "Ideas" ? isIdeasActive(location.pathname) : 
-            item.label === "Admin" ? isAdminActive(location.pathname) :
+            item.label === "YouTube Ideas" ? isIdeasActive(location.pathname) : 
+            item.label === "User Management" ? isAdminActive(location.pathname) :
             item.label === "Niches" ? isNichesActive(location.pathname) :
+            item.label === "Login" || item.label === "Profile" ? isAuthActive(location.pathname) :
             isActive(item.path)
           } 
           icon={item.icon} 

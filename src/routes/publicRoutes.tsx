@@ -1,33 +1,48 @@
-
-import { lazy } from 'react';
-import { lazyLoad } from './loaders';
-
-// Lazy load public page components
-const Index = lazy(() => import('../pages/Index'));
-const AboutUs = lazy(() => import('../pages/AboutUs'));
-const ContactUs = lazy(() => import('../pages/ContactUs'));
-const HowItWorks = lazy(() => import('../pages/HowItWorks'));
-const Training = lazy(() => import('../pages/Training'));
+import Home from "../pages/Home";
+import Contact from "../pages/Contact";
+import Calculators from "../pages/Calculators";
+import FacelessIdeas from "../pages/FacelessIdeas";
+import Niches from "../pages/Niches";
+import PrivacyPolicy from "../pages/PrivacyPolicy";
+import TermsOfService from "../pages/TermsOfService";
+import Auth from "../pages/Auth";
+import Profile from "../pages/Profile";
 
 export const publicRoutes = [
   {
     path: "/",
-    element: lazyLoad(Index),
-  },
-  {
-    path: "/about",
-    element: lazyLoad(AboutUs),
+    element: <Home />,
   },
   {
     path: "/contact",
-    element: lazyLoad(ContactUs),
+    element: <Contact />,
   },
   {
-    path: "/how-it-works",
-    element: lazyLoad(HowItWorks),
+    path: "/calculators",
+    element: <Calculators />,
   },
   {
-    path: "/training",
-    element: lazyLoad(Training),
+    path: "/faceless-ideas",
+    element: <FacelessIdeas />,
+  },
+  {
+    path: "/niches",
+    element: <Niches />,
+  },
+  {
+    path: "/privacy-policy",
+    element: <PrivacyPolicy />,
+  },
+  {
+    path: "/terms-of-service",
+    element: <TermsOfService />,
+  },
+  {
+    path: "/auth",
+    element: <Auth />,
+  },
+  {
+    path: "/profile",
+    element: <Profile />,
   },
 ];

@@ -1,6 +1,7 @@
 
-import { Home, Search, Calculator, Lightbulb, Award, BarChart2, BookOpen } from "lucide-react";
+import { Home, Search, Calculator, Lightbulb, Award, BarChart2, BookOpen, User } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const navConfig = [
   {
@@ -40,6 +41,49 @@ const navConfig = [
   },
 ];
 
+// Create a function to generate navigation items based on auth state
+export const getNavigationItems = () => {
+  const { user, isAdmin } = useAuth();
+  
+  const items = navConfig.map(item => ({
+    path: item.path,
+    label: item.title,
+    icon: item.icon,
+    isExternal: false,
+  }));
+  
+  // Add auth-related items
+  if (user) {
+    // Add profile link for logged in users
+    items.push({
+      path: "/profile",
+      label: "Profile",
+      icon: <User className="h-[1.2rem] w-[1.2rem]" />,
+      isExternal: false,
+    });
+    
+    // Add admin links for admin users
+    if (isAdmin) {
+      items.push({
+        path: "/admin/users",
+        label: "User Management",
+        icon: <User className="h-[1.2rem] w-[1.2rem]" />,
+        isExternal: false,
+      });
+    }
+  } else {
+    // Add login link for logged out users
+    items.push({
+      path: "/auth",
+      label: "Login",
+      icon: <User className="h-[1.2rem] w-[1.2rem]" />,
+      isExternal: false,
+    });
+  }
+  
+  return items;
+};
+
 // Create navigation items for the navbar
 export const navigationItems = navConfig.map(item => ({
   path: item.path,
@@ -52,5 +96,6 @@ export const navigationItems = navConfig.map(item => ({
 export const isIdeasActive = (pathname: string) => pathname.includes("/faceless-ideas");
 export const isAdminActive = (pathname: string) => pathname.includes("/admin");
 export const isNichesActive = (pathname: string) => pathname.includes("/niches");
+export const isAuthActive = (pathname: string) => pathname.includes("/auth") || pathname.includes("/profile");
 
 export default navConfig;
