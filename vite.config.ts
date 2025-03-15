@@ -38,6 +38,12 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ['zod', '@hookform/resolvers', 'react-hook-form', 'sonner'],
-    force: true
+    force: true,
+    esbuildOptions: {
+      // Node.js global to browser globalThis
+      define: {
+        global: 'globalThis'
+      }
+    }
   }
 }));
