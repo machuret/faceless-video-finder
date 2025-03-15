@@ -11,11 +11,12 @@ import { Form } from "@/components/ui/form";
 import { useUserForm, User } from "./hooks/useUserForm";
 import UserFormFields from "./components/UserFormFields";
 import UserDialogFooter from "./components/UserDialogFooter";
+import { UserFormValues } from "./schema/userFormSchema";
 
 interface UserDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (userData: any) => void;
+  onSave: (userData: UserFormValues) => Promise<void>;
   user: User | null;
   isEditing: boolean;
 }

@@ -94,6 +94,10 @@ export const adminRoutes = [
   },
   {
     path: "/admin/users",
-    element: <UserManagement />,
+    element: (
+      <ProtectedRoute requireAdmin={true}>
+        {lazyLoad(UserManagement)}
+      </ProtectedRoute>
+    ),
   },
 ];
