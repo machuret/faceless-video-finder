@@ -59,8 +59,15 @@ const Profile = () => {
         if (error) throw error;
         
         if (data) {
-          form.setValue("fullName", data.full_name || "");
-          form.setValue("username", data.username || "");
+          // Use display_name or first_name + last_name for fullName
+          const fullName = data.display_name || 
+                           (data.first_name && data.last_name ? 
+                           `${data.first_name} ${data.last_name}` : 
+                           (data.first_name || ""));
+                           
+          form.setValue("fullName", fullName);
+          // Fall back to email if username doesn't exist
+          form.setValue("username", data.email || "");
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -82,8 +89,8 @@ const Profile = () => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: values.fullName,
-          username: values.username,
+          display_name: values.fullName,
+          email: values.username,
         })
         .eq("id", user.id);
       

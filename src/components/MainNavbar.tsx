@@ -1,3 +1,4 @@
+
 import { Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -6,7 +7,7 @@ import DesktopNav from "./navbar/DesktopNav";
 import MobileMenu from "./navbar/MobileMenu";
 import AccountDropdown from "./navbar/AccountDropdown";
 import { useAuth } from "@/context/AuthContext";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 const MainNavbar = () => {
   const location = useLocation();

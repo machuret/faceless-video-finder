@@ -23,8 +23,9 @@ import ConfirmDialog from "./components/users/ConfirmDialog";
 interface User {
   id: string;
   email: string;
-  full_name: string | null;
-  username: string | null;
+  display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   created_at: string;
 }
 
@@ -45,11 +46,11 @@ const UserManagement = () => {
       
       let query = supabase
         .from("profiles")
-        .select("id, username, full_name, created_at");
+        .select("id, first_name, last_name, display_name, email, created_at");
       
       if (debouncedSearchTerm) {
         query = query.or(
-          `username.ilike.%${debouncedSearchTerm}%,full_name.ilike.%${debouncedSearchTerm}%`
+          `first_name.ilike.%${debouncedSearchTerm}%,last_name.ilike.%${debouncedSearchTerm}%,email.ilike.%${debouncedSearchTerm}%`
         );
       }
         
@@ -57,27 +58,8 @@ const UserManagement = () => {
       
       if (error) throw error;
       
-      // Get email addresses from auth.users (this requires admin privileges)
-      const userIds = (data || []).map((user) => user.id);
-      
-      if (userIds.length > 0) {
-        const { data: authData, error: authError } = await supabase
-          .rpc('admin_get_users', { user_ids: userIds });
-        
-        if (authError) throw authError;
-        
-        const emailMap = new Map();
-        (authData || []).forEach((user: any) => {
-          emailMap.set(user.id, user.email);
-        });
-        
-        setUsers((data || []).map((user) => ({
-          ...user,
-          email: emailMap.get(user.id) || "No email found",
-        })));
-      } else {
-        setUsers([]);
-      }
+      // No need to fetch emails separately now, they're already in the profiles table
+      setUsers(data || []);
     } catch (error: any) {
       console.error("Error fetching users:", error);
       toast.error(error.message || "Failed to fetch users");
@@ -109,8 +91,9 @@ const UserManagement = () => {
         const { error } = await supabase
           .from("profiles")
           .update({
-            username: userData.username,
-            full_name: userData.full_name
+            display_name: userData.display_name,
+            first_name: userData.first_name,
+            last_name: userData.last_name
           })
           .eq("id", selectedUser.id);
         
@@ -151,6 +134,14 @@ const UserManagement = () => {
     }
   };
 
+  const getFullName = (user: User) => {
+    if (user.display_name) return user.display_name;
+    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
+    if (user.first_name) return user.first_name;
+    if (user.last_name) return user.last_name;
+    return "-";
+  };
+
   return (
     <ProtectedRoute requireAdmin>
       <div className="p-6 space-y-6">
@@ -185,7 +176,6 @@ const UserManagement = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Email</TableHead>
-                  <TableHead>Username</TableHead>
                   <TableHead>Full Name</TableHead>
                   <TableHead>Created At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -194,7 +184,7 @@ const UserManagement = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={4} className="text-center py-8">
                       <div className="flex justify-center">
                         <RotateCw className="h-6 w-6 animate-spin text-primary" />
                       </div>
@@ -202,7 +192,7 @@ const UserManagement = () => {
                   </TableRow>
                 ) : users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={4} className="text-center py-8">
                       No users found
                     </TableCell>
                   </TableRow>
@@ -210,8 +200,7 @@ const UserManagement = () => {
                   users.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.username || "-"}</TableCell>
-                      <TableCell>{user.full_name || "-"}</TableCell>
+                      <TableCell>{getFullName(user)}</TableCell>
                       <TableCell>
                         {new Date(user.created_at).toLocaleDateString()}
                       </TableCell>

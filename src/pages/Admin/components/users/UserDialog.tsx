@@ -26,8 +26,10 @@ import {
 interface User {
   id: string;
   email: string;
-  full_name: string | null;
-  username: string | null;
+  display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: string;
 }
 
 interface UserDialogProps {
@@ -40,8 +42,9 @@ interface UserDialogProps {
 
 const UserDialog = ({ isOpen, onClose, onSave, user, isEditing }: UserDialogProps) => {
   const formSchema = z.object({
-    username: z.string().min(3, "Username must be at least 3 characters"),
-    full_name: z.string().min(2, "Full name must be at least 2 characters"),
+    first_name: z.string().min(2, "First name must be at least 2 characters"),
+    last_name: z.string().min(2, "Last name must be at least 2 characters"),
+    display_name: z.string().min(2, "Display name must be at least 2 characters"),
     email: isEditing 
       ? z.string().optional() 
       : z.string().email("Invalid email address"),
@@ -53,8 +56,9 @@ const UserDialog = ({ isOpen, onClose, onSave, user, isEditing }: UserDialogProp
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: user?.username || "",
-      full_name: user?.full_name || "",
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
+      display_name: user?.display_name || "",
       email: user?.email || "",
       password: "",
     },
@@ -70,15 +74,17 @@ const UserDialog = ({ isOpen, onClose, onSave, user, isEditing }: UserDialogProp
   React.useEffect(() => {
     if (isOpen && user) {
       form.reset({
-        username: user.username || "",
-        full_name: user.full_name || "",
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        display_name: user.display_name || "",
         email: user.email || "",
         password: "",
       });
     } else if (isOpen && !user) {
       form.reset({
-        username: "",
-        full_name: "",
+        first_name: "",
+        last_name: "",
+        display_name: "",
         email: "",
         password: "",
       });
@@ -122,13 +128,13 @@ const UserDialog = ({ isOpen, onClose, onSave, user, isEditing }: UserDialogProp
             
             <FormField
               control={form.control}
-              name="username"
+              name="first_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel>First Name</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="username" 
+                      placeholder="John" 
                       disabled={isSubmitting} 
                       {...field} 
                     />
@@ -140,10 +146,28 @@ const UserDialog = ({ isOpen, onClose, onSave, user, isEditing }: UserDialogProp
             
             <FormField
               control={form.control}
-              name="full_name"
+              name="last_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>Last Name</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Doe" 
+                      disabled={isSubmitting} 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="display_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Display Name</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="John Doe" 

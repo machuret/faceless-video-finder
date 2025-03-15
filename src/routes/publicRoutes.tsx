@@ -1,41 +1,46 @@
-import Home from "../pages/Home";
-import Contact from "../pages/Contact";
-import Calculators from "../pages/Calculators";
-import FacelessIdeas from "../pages/FacelessIdeas";
-import Niches from "../pages/Niches";
-import PrivacyPolicy from "../pages/PrivacyPolicy";
-import TermsOfService from "../pages/TermsOfService";
+
+import { lazy } from 'react';
+import { lazyLoad } from './loaders';
 import Auth from "../pages/Auth";
 import Profile from "../pages/Profile";
+
+// Lazy load page components
+const Home = lazy(() => import('../pages/Index'));
+const Contact = lazy(() => import('../pages/ContactUs'));
+const Calculators = lazy(() => import('../pages/Calculators'));
+const FacelessIdeas = lazy(() => import('../pages/FacelessIdeas'));
+const Niches = lazy(() => import('../pages/Niches'));
+const PrivacyPolicy = lazy(() => import('../pages/NotFound')); // Temporary placeholder
+const TermsOfService = lazy(() => import('../pages/NotFound')); // Temporary placeholder
 
 export const publicRoutes = [
   {
     path: "/",
-    element: <Home />,
+    element: lazyLoad(Home),
   },
   {
     path: "/contact",
-    element: <Contact />,
+    element: lazyLoad(Contact),
   },
   {
     path: "/calculators",
-    element: <Calculators />,
+    element: lazyLoad(Calculators),
   },
   {
     path: "/faceless-ideas",
-    element: <FacelessIdeas />,
+    element: lazyLoad(FacelessIdeas),
   },
   {
     path: "/niches",
-    element: <Niches />,
+    element: lazyLoad(Niches),
   },
   {
     path: "/privacy-policy",
-    element: <PrivacyPolicy />,
+    element: lazyLoad(PrivacyPolicy),
   },
   {
     path: "/terms-of-service",
-    element: <TermsOfService />,
+    element: lazyLoad(TermsOfService),
   },
   {
     path: "/auth",
