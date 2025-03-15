@@ -6,11 +6,18 @@
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/node"
+      "use": "@vercel/static-build"
     }
   ],
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run build",
   "framework": "vite",
+  "routes": [
+    {
+      "src": "/[^.]+",
+      "dest": "/",
+      "status": 200
+    }
+  ],
   "trailingSlash": false
 }
