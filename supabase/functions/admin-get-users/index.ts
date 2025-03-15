@@ -38,52 +38,100 @@ serve(async (req: Request) => {
       );
     }
 
-    // Parse the request body to get the userIds
-    const { user_ids } = await req.json();
+    // Parse the request to get filters
+    const requestBody = await req.json();
+    const { user_ids } = requestBody;
     
-    if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
+    // If user_ids are provided, fetch only those specific users
+    if (user_ids && Array.isArray(user_ids) && user_ids.length > 0) {
+      const userData = [];
+      
+      // Process in batches to avoid potential limitations
+      const batchSize = 50;
+      for (let i = 0; i < user_ids.length; i += batchSize) {
+        const batch = user_ids.slice(i, i + batchSize);
+        
+        for (const userId of batch) {
+          try {
+            const { data, error } = await supabase.auth.admin.getUserById(userId);
+            
+            if (!error && data.user) {
+              userData.push({
+                id: data.user.id,
+                email: data.user.email,
+                created_at: data.user.created_at
+              });
+            }
+          } catch (err) {
+            console.error(`Error fetching user ${userId}:`, err);
+            // Continue with other users even if one fails
+          }
+        }
+      }
+      
       return new Response(
-        JSON.stringify({ error: "User IDs are required as an array" }),
+        JSON.stringify(userData),
         { 
-          status: 400, 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    } 
+    // If no user_ids provided, fetch all users
+    else {
+      console.log("Fetching all users");
+      
+      // Use the listUsers API to get all users
+      // This is a paginated API, so we need to fetch all pages
+      const allUsers = [];
+      let page = 1;
+      const perPage = 100;
+      let hasMore = true;
+      
+      while (hasMore) {
+        try {
+          const { data, error } = await supabase.auth.admin.listUsers({
+            page: page,
+            perPage: perPage
+          });
+          
+          if (error) {
+            console.error("Error fetching users:", error);
+            break;
+          }
+          
+          if (data.users && data.users.length > 0) {
+            // Map the user data to a simpler format
+            const mappedUsers = data.users.map(user => ({
+              id: user.id,
+              email: user.email,
+              created_at: user.created_at
+            }));
+            
+            allUsers.push(...mappedUsers);
+            
+            // Check if we need to fetch more pages
+            hasMore = data.users.length === perPage;
+            page++;
+          } else {
+            hasMore = false;
+          }
+        } catch (err) {
+          console.error("Error in pagination:", err);
+          hasMore = false;
+        }
+      }
+      
+      console.log(`Fetched ${allUsers.length} users total`);
+      
+      return new Response(
+        JSON.stringify(allUsers),
+        { 
+          status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
-    
-    // Fetch users from auth.users using the admin API
-    const userData = [];
-    
-    // Process in batches to avoid potential limitations
-    const batchSize = 50;
-    for (let i = 0; i < user_ids.length; i += batchSize) {
-      const batch = user_ids.slice(i, i + batchSize);
-      
-      for (const userId of batch) {
-        try {
-          const { data, error } = await supabase.auth.admin.getUserById(userId);
-          
-          if (!error && data.user) {
-            userData.push({
-              id: data.user.id,
-              email: data.user.email,
-            });
-          }
-        } catch (err) {
-          console.error(`Error fetching user ${userId}:`, err);
-          // Continue with other users even if one fails
-        }
-      }
-    }
-    
-    return new Response(
-      JSON.stringify(userData),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-    
   } catch (error) {
     console.error("Error in admin-get-users function:", error);
     
