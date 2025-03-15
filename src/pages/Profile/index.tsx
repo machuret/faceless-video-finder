@@ -1,110 +1,15 @@
 
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/context/AuthContext";
+import { useProfileForm } from "./hooks/useProfileForm";
+import ProfileForm from "./components/ProfileForm";
 import MainNavbar from "@/components/MainNavbar";
 import PageFooter from "@/components/home/PageFooter";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-
-// Define the form schema
-const formSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  username: z.string().min(3, "Username must be at least 3 characters"),
-});
-
-type FormValues = z.infer<typeof formSchema>;
 
 const Profile = () => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
-  const navigate = useNavigate();
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      fullName: "",
-      username: "",
-    },
-  });
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-      
-      try {
-        setIsFetching(true);
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-        
-        if (error) throw error;
-        
-        if (data) {
-          // Use display_name or first_name + last_name for fullName
-          const fullName = data.display_name || 
-                           (data.first_name && data.last_name ? 
-                           `${data.first_name} ${data.last_name}` : 
-                           (data.first_name || ""));
-                           
-          form.setValue("fullName", fullName);
-          // Use email for username since we don't have a username field
-          form.setValue("username", data.email || "");
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        toast.error("Failed to load profile");
-      } finally {
-        setIsFetching(false);
-      }
-    };
-    
-    fetchProfile();
-  }, [user, form]);
-
-  const onSubmit = async (values: FormValues) => {
-    if (!user) return;
-    
-    try {
-      setIsLoading(true);
-      
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          display_name: values.fullName,
-          email: values.username,
-        })
-        .eq("id", user.id);
-      
-      if (error) throw error;
-      
-      toast.success("Profile updated successfully");
-    } catch (error: any) {
-      console.error("Update error:", error);
-      toast.error(error.message || "Failed to update profile");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { form, isLoading, isFetching, onSubmit } = useProfileForm();
 
   return (
     <ProtectedRoute>
@@ -128,68 +33,11 @@ const Profile = () => {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : (
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                      <FormField
-                        control={form.control}
-                        name="fullName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Full Name</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="John Doe" 
-                                disabled={isLoading} 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="johndoe" 
-                                disabled={isLoading} 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="flex justify-end space-x-4">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          onClick={() => navigate("/")}
-                        >
-                          Cancel
-                        </Button>
-                        <Button 
-                          type="submit" 
-                          disabled={isLoading}
-                        >
-                          {isLoading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Saving...
-                            </>
-                          ) : (
-                            "Save changes"
-                          )}
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
+                  <ProfileForm 
+                    form={form} 
+                    isLoading={isLoading} 
+                    onSubmit={onSubmit}
+                  />
                 )}
               </CardContent>
             </Card>
