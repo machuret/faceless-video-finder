@@ -45,6 +45,11 @@ const UserManagement = () => {
   React.useEffect(() => {
     fetchUsers(debouncedSearchTerm);
   }, [debouncedSearchTerm]);
+  
+  // Initial fetch of users when component mounts
+  React.useEffect(() => {
+    fetchUsers("");
+  }, []);
 
   return (
     <ProtectedRoute requireAdmin>

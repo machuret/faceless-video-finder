@@ -30,11 +30,22 @@ export const useUserManagement = () => {
         );
       }
         
-      const { data, error } = await query.order("created_at", { ascending: false });
+      const { data: profilesData, error: profilesError } = await query.order("created_at", { ascending: false });
       
-      if (error) throw error;
+      if (profilesError) throw profilesError;
       
-      setUsers(data || []);
+      // Ensure we have email and other fields for all users
+      // Some recently registered users might not have complete profiles yet
+      const usersData = profilesData?.map(profile => ({
+        id: profile.id,
+        email: profile.email || "",
+        display_name: profile.display_name || "",
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
+        created_at: profile.created_at
+      })) || [];
+      
+      setUsers(usersData);
       // Clear selections when users list changes
       setSelectedUserIds([]);
     } catch (error: any) {
