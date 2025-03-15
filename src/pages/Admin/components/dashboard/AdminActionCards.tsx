@@ -1,120 +1,72 @@
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, UploadCloud, Upload, List, Tag, BookOpen, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Plus, Upload, FileText, Calculator, Users } from "lucide-react";
 
-const AdminActionCards: React.FC = () => {
+const AdminActionCards = () => {
+  const cards = [
+    {
+      title: "Add Channel",
+      description: "Add a new YouTube channel to the database",
+      icon: <Plus className="h-8 w-8 text-blue-500" />,
+      link: "/admin/channels/add",
+      buttonText: "Add Channel",
+    },
+    {
+      title: "Bulk Upload",
+      description: "Upload multiple channels at once",
+      icon: <Upload className="h-8 w-8 text-purple-500" />,
+      link: "#bulk-upload", // Links to section on same page
+      buttonText: "Upload CSV",
+      isAnchor: true,
+    },
+    {
+      title: "Link Checker",
+      description: "Check for broken links on your site",
+      icon: <FileText className="h-8 w-8 text-emerald-500" />,
+      link: "/admin/tools/link-checker",
+      buttonText: "Check Links",
+    },
+    {
+      title: "Calculators",
+      description: "Access YouTube channel calculators",
+      icon: <Calculator className="h-8 w-8 text-amber-500" />,
+      link: "/calculators",
+      buttonText: "View Calculators",
+    },
+    {
+      title: "User Management",
+      description: "Manage users and permissions",
+      icon: <Users className="h-8 w-8 text-red-500" />,
+      link: "/admin/users",
+      buttonText: "Manage Users",
+    },
+  ];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <PlusCircle className="w-5 h-5 mr-2 text-primary" />
-            Add New Channel
-          </CardTitle>
-          <CardDescription>Add a new YouTube channel entry</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm">Create a new channel record with detailed information about a YouTube channel.</p>
-        </CardContent>
-        <CardFooter>
-          <Button asChild className="w-full">
-            <Link to="/admin/channels/add">Add Channel</Link>
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <UploadCloud className="w-5 h-5 mr-2 text-primary" />
-            Bulk Upload Channels
-          </CardTitle>
-          <CardDescription>Upload multiple channels at once</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm">Process a CSV file with multiple YouTube channels to add them in a batch.</p>
-        </CardContent>
-        <CardFooter>
-          <Button variant="outline" className="w-full">
-            Bulk Upload
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <List className="w-5 h-5 mr-2 text-primary" />
-            Manage Channel Types
-          </CardTitle>
-          <CardDescription>Edit channel type definitions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm">Add, edit or remove channel type definitions with detailed information.</p>
-        </CardContent>
-        <CardFooter>
-          <Button asChild className="w-full" variant="outline">
-            <Link to="/admin/channel-types">Manage Types</Link>
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <Tag className="w-5 h-5 mr-2 text-primary" />
-            Manage Niches
-          </CardTitle>
-          <CardDescription>Edit channel niche categories</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm">Add, edit or remove niche categories for better channel classification.</p>
-        </CardContent>
-        <CardFooter>
-          <Button asChild className="w-full" variant="outline">
-            <Link to="/admin/niches">Manage Niches</Link>
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <BookOpen className="w-5 h-5 mr-2 text-primary" />
-            Manage Did You Know Facts
-          </CardTitle>
-          <CardDescription>Manage facts shown on channel pages</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm">Add, edit or remove interesting facts that appear on channel detail pages.</p>
-        </CardContent>
-        <CardFooter>
-          <Button asChild className="w-full" variant="outline">
-            <Link to="/admin/did-you-know-facts">Manage Facts</Link>
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <AlertTriangle className="w-5 h-5 mr-2 text-amber-500" />
-            Check Broken Links
-          </CardTitle>
-          <CardDescription>Find and fix broken links</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm">Scan for broken links across the site to ensure all navigation works correctly.</p>
-        </CardContent>
-        <CardFooter>
-          <Button asChild className="w-full" variant="outline">
-            <Link to="/admin/tools/link-checker">Check Links</Link>
-          </Button>
-        </CardFooter>
-      </Card>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+      {cards.map((card) => (
+        <Card key={card.title} className="p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-gray-50 mb-4">
+              {card.icon}
+            </div>
+            <h3 className="text-lg font-semibold mb-1">{card.title}</h3>
+            <p className="text-gray-500 text-sm mb-4">{card.description}</p>
+          </div>
+          {card.isAnchor ? (
+            <a href={card.link}>
+              <Button className="w-full">{card.buttonText}</Button>
+            </a>
+          ) : (
+            <Link to={card.link}>
+              <Button className="w-full">{card.buttonText}</Button>
+            </Link>
+          )}
+        </Card>
+      ))}
     </div>
   );
 };

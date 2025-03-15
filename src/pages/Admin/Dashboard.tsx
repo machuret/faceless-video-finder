@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, createContext, useContext } from "react";
 import AdminHeader from "./components/AdminHeader";
 import DashboardHeader from "./components/dashboard/DashboardHeader";
@@ -13,7 +12,7 @@ import ChannelsToImprove from "./components/dashboard/ChannelsToImprove";
 import CsvChannelUploader from "./components/dashboard/components/CsvChannelUploader";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Database, Layers, BookOpen, Sparkles } from "lucide-react";
+import { Database, Layers, BookOpen, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 
 // Create a dashboard context to avoid prop drilling
@@ -49,6 +48,10 @@ const AdminLinks = React.memo(() => (
       <Link to="/admin/did-you-know-facts" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
         <BookOpen className="h-5 w-5 mr-2 text-green-600" />
         <span>Manage Did You Know Facts</span>
+      </Link>
+      <Link to="/admin/users" className="flex items-center p-2 hover:bg-gray-100 rounded-md transition-colors">
+        <Users className="h-5 w-5 mr-2 text-red-600" />
+        <span>Manage Users</span>
       </Link>
     </div>
   </Card>
