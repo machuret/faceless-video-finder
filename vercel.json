@@ -12,5 +12,8 @@
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run build",
   "framework": "vite",
-  "trailingSlash": false
+  "trailingSlash": false,
+  "env": {
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  }
 }
