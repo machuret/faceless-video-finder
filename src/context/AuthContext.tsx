@@ -1,11 +1,12 @@
 
 import { createContext, useContext, useState, useMemo, useEffect, useRef } from "react";
-import { User } from "@supabase/supabase-js";
+import { User, Session } from "@supabase/supabase-js";
 import { AuthContextType } from "./auth/types";
 import { useAdminCheck } from "./auth/useAdminCheck";
 import { useAuthSignOut } from "./auth/useAuthSignOut";
 import { useAuthInit } from "./auth/useAuthInit";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -24,6 +25,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
@@ -41,6 +43,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setInitialized,
     checkAdminStatus
   );
+
+  // Check and refresh session token periodically
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (user && session) {
+      // Refresh session every 10 minutes to prevent token expiry issues
+      interval = setInterval(async () => {
+        try {
+          const { data, error } = await supabase.auth.refreshSession();
+          if (error) {
+            console.error("Error refreshing session:", error);
+            // If refresh fails, clear session state
+            setUser(null);
+            setSession(null);
+            toast.error("Your session has expired. Please log in again.");
+          } else if (data?.session) {
+            console.log("Session refreshed successfully");
+            setSession(data.session);
+          }
+        } catch (error) {
+          console.error("Exception refreshing session:", error);
+        }
+      }, 10 * 60 * 1000); // 10 minutes
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [user, session]);
 
   // Add a timeout to prevent infinite loading state
   useEffect(() => {
@@ -83,8 +115,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     isAdmin,
     loading,
-    signOut
-  }), [user, isAdmin, loading, signOut]);
+    signOut,
+    session
+  }), [user, isAdmin, loading, signOut, session]);
 
   return (
     <AuthContext.Provider value={contextValue}>

@@ -1,6 +1,6 @@
 
 import { useEffect } from "react";
-import { User, AuthChangeEvent } from "@supabase/supabase-js";
+import { User, AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useAuthInit = (
@@ -31,7 +31,7 @@ export const useAuthInit = (
         
         if (sessionData?.session?.user) {
           if (isMounted) {
-            console.log("Session found, setting user");
+            console.log("Session found, setting user", sessionData.session.user.email);
             setUser(sessionData.session.user);
             
             // Set a timeout for admin check to prevent blocking the UI
@@ -68,13 +68,13 @@ export const useAuthInit = (
       async (event: AuthChangeEvent, session) => {
         if (controller.signal.aborted || !isMounted) return;
         
-        console.log("Auth state changed:", event);
+        console.log("Auth state changed:", event, session?.user?.email);
         
         try {
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             if (session?.user) {
               if (isMounted) {
-                console.log(`${event}: Setting user`);
+                console.log(`${event}: Setting user`, session.user.email);
                 setUser(session.user);
                 
                 // Clear any existing timeout

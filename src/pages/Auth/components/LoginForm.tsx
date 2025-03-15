@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import {
   Form,
   FormControl,
@@ -27,6 +28,8 @@ type FormValues = z.infer<typeof formSchema>;
 const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const navigate = useNavigate();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -39,8 +42,11 @@ const LoginForm = () => {
   const onSubmit = async (values: FormValues) => {
     try {
       setIsLoading(true);
+      setLoginError("");
       
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Attempting login with:", values.email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
@@ -49,9 +55,22 @@ const LoginForm = () => {
         throw error;
       }
       
-      toast.success("Logged in successfully");
+      if (data?.user) {
+        console.log("Login successful, user:", data.user.email);
+        toast.success("Logged in successfully");
+        
+        // Force a page reload to ensure auth state is properly recognized
+        // This helps fix issues where the UI doesn't reflect the authenticated state
+        setTimeout(() => {
+          navigate("/", { replace: true });
+        }, 500);
+      } else {
+        console.error("No user data returned from login");
+        setLoginError("Login failed. Please try again.");
+      }
     } catch (error: any) {
       console.error("Login error:", error);
+      setLoginError(error.message || "Failed to login");
       toast.error(error.message || "Failed to login");
     } finally {
       setIsLoading(false);
@@ -61,6 +80,12 @@ const LoginForm = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {loginError && (
+          <div className="p-3 rounded-md bg-red-50 text-red-600 text-sm">
+            {loginError}
+          </div>
+        )}
+        
         <FormField
           control={form.control}
           name="email"
