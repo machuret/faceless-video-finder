@@ -12,12 +12,5 @@
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run build",
   "framework": "vite",
-  "routes": [
-    {
-      "src": "/[^.]+",
-      "dest": "/",
-      "status": 200
-    }
-  ],
   "trailingSlash": false
 }
