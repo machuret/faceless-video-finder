@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useDebounce } from "@/hooks/useDebounce";
 import UserDialog from "./UserDialog";
 import ConfirmDialog from "./ConfirmDialog";
+import SuspendDialog from "./SuspendDialog";
 import UserSearchBar from "./components/UserSearchBar";
 import UsersTable from "./components/UsersTable";
 import { useUserManagement } from "./hooks/useUserManagement";
@@ -20,6 +21,7 @@ const UserManagement = () => {
     selectedUser,
     isDialogOpen,
     isDeleteDialogOpen,
+    isSuspendDialogOpen,
     isBulkDeleteDialogOpen,
     isEditing,
     selectedUserIds,
@@ -27,15 +29,19 @@ const UserManagement = () => {
     fetchUsers,
     handleOpenDialog,
     handleOpenDeleteDialog,
+    handleOpenSuspendDialog,
     handleOpenBulkDeleteDialog,
     handleUserSave,
     handleUserDelete,
+    handleUserSuspend,
     handleBulkDelete,
     handleSelectUser,
     handleSelectAllUsers,
     getFullName,
+    isUserSuspended,
     setIsDialogOpen,
     setIsDeleteDialogOpen,
+    setIsSuspendDialogOpen,
     setIsBulkDeleteDialogOpen
   } = useUserManagement();
   
@@ -50,6 +56,8 @@ const UserManagement = () => {
   React.useEffect(() => {
     fetchUsers("");
   }, []);
+
+  const isSuspended = selectedUser ? isUserSuspended(selectedUser) : false;
 
   return (
     <ProtectedRoute requireAdmin>
@@ -77,8 +85,10 @@ const UserManagement = () => {
             users={users}
             isLoading={isLoading}
             getFullName={getFullName}
+            isUserSuspended={isUserSuspended}
             onEdit={(user) => handleOpenDialog(user, true)}
             onDelete={handleOpenDeleteDialog}
+            onSuspend={handleOpenSuspendDialog}
             selectedUsers={selectedUserIds}
             onSelectUser={handleSelectUser}
             onSelectAllUsers={handleSelectAllUsers}
@@ -100,6 +110,19 @@ const UserManagement = () => {
         onConfirm={handleUserDelete}
         title="Delete User"
         description={`Are you sure you want to delete the user ${selectedUser?.email}? This action cannot be undone.`}
+      />
+      
+      <SuspendDialog
+        isOpen={isSuspendDialogOpen}
+        onClose={() => setIsSuspendDialogOpen(false)}
+        onSuspend={() => handleUserSuspend(true)}
+        onUnsuspend={() => handleUserSuspend(false)}
+        isCurrentlySuspended={isSuspended}
+        title={isSuspended ? "Unsuspend User" : "Suspend User"}
+        description={isSuspended 
+          ? `Are you sure you want to unsuspend the user ${selectedUser?.email}?` 
+          : `Are you sure you want to suspend the user ${selectedUser?.email}? This will prevent them from logging in.`
+        }
       />
       
       <ConfirmDialog

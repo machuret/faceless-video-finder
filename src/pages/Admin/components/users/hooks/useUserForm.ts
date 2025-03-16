@@ -11,6 +11,7 @@ export interface User {
   first_name: string | null;
   last_name: string | null;
   created_at: string;
+  banned_until: string | null;
 }
 
 interface UseUserFormProps {

@@ -13,6 +13,7 @@ export const useUserManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   
@@ -60,7 +61,8 @@ export const useUserManagement = () => {
           display_name: profile.display_name || "",
           first_name: profile.first_name || "",
           last_name: profile.last_name || "",
-          created_at: profile.created_at
+          created_at: profile.created_at,
+          banned_until: null
         });
       });
       
@@ -75,15 +77,17 @@ export const useUserManagement = () => {
               display_name: "",
               first_name: "",
               last_name: "",
-              created_at: authUser.created_at || new Date().toISOString()
+              created_at: authUser.created_at || new Date().toISOString(),
+              banned_until: authUser.banned_until
             });
           } else {
             // Update existing entry with auth data
             const existingUser = combinedUsers.get(authUser.id)!;
+            existingUser.banned_until = authUser.banned_until;
             if (!existingUser.email && authUser.email) {
               existingUser.email = authUser.email;
-              combinedUsers.set(authUser.id, existingUser);
             }
+            combinedUsers.set(authUser.id, existingUser);
           }
         });
       }
@@ -126,6 +130,11 @@ export const useUserManagement = () => {
   const handleOpenDeleteDialog = (user: User) => {
     setSelectedUser(user);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleOpenSuspendDialog = (user: User) => {
+    setSelectedUser(user);
+    setIsSuspendDialogOpen(true);
   };
 
   const handleOpenBulkDeleteDialog = () => {
@@ -181,6 +190,26 @@ export const useUserManagement = () => {
     }
   };
 
+  const handleUserSuspend = async (suspend: boolean) => {
+    if (!selectedUser) return;
+    
+    try {
+      // Admin function to suspend/unsuspend a user
+      const { error } = await supabase.functions.invoke('admin-update-user-status', {
+        body: { userId: selectedUser.id, suspend }
+      });
+      
+      if (error) throw error;
+      
+      toast.success(suspend ? "User suspended successfully" : "User unsuspended successfully");
+      setIsSuspendDialogOpen(false);
+      fetchUsers("");
+    } catch (error: any) {
+      console.error("Error updating user status:", error);
+      toast.error(error.message || "Failed to update user status");
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (selectedUserIds.length === 0) return;
     
@@ -226,6 +255,12 @@ export const useUserManagement = () => {
     return "-";
   };
 
+  const isUserSuspended = (user: User): boolean => {
+    if (!user.banned_until) return false;
+    const bannedUntil = new Date(user.banned_until);
+    return bannedUntil > new Date();
+  };
+
   return {
     users,
     isLoading,
@@ -234,21 +269,26 @@ export const useUserManagement = () => {
     isDialogOpen,
     isDeleteDialogOpen,
     isBulkDeleteDialogOpen,
+    isSuspendDialogOpen,
     isEditing,
     selectedUserIds,
     setSearchTerm,
     fetchUsers,
     handleOpenDialog,
     handleOpenDeleteDialog,
+    handleOpenSuspendDialog,
     handleOpenBulkDeleteDialog,
     handleUserSave,
     handleUserDelete,
+    handleUserSuspend,
     handleBulkDelete,
     handleSelectUser,
     handleSelectAllUsers,
     getFullName,
+    isUserSuspended,
     setIsDialogOpen,
     setIsDeleteDialogOpen,
-    setIsBulkDeleteDialogOpen
+    setIsBulkDeleteDialogOpen,
+    setIsSuspendDialogOpen
   };
 };

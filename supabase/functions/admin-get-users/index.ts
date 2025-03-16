@@ -59,7 +59,8 @@ serve(async (req: Request) => {
               userData.push({
                 id: data.user.id,
                 email: data.user.email,
-                created_at: data.user.created_at
+                created_at: data.user.created_at,
+                banned_until: data.user.banned_until
               });
             }
           } catch (err) {
@@ -105,7 +106,8 @@ serve(async (req: Request) => {
             const mappedUsers = data.users.map(user => ({
               id: user.id,
               email: user.email,
-              created_at: user.created_at
+              created_at: user.created_at,
+              banned_until: user.banned_until
             }));
             
             allUsers.push(...mappedUsers);
