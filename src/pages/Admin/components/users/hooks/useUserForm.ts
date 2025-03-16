@@ -27,6 +27,7 @@ export const useUserForm = ({ user, isEditing, isOpen, onSave }: UseUserFormProp
   const form = useForm<UserFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: "",
       first_name: "",
       last_name: "",
       display_name: "",
@@ -46,6 +47,7 @@ export const useUserForm = ({ user, isEditing, isOpen, onSave }: UseUserFormProp
   useEffect(() => {
     if (isOpen && user) {
       form.reset({
+        id: user.id,
         first_name: user.first_name || "",
         last_name: user.last_name || "",
         display_name: user.display_name || "",
@@ -54,6 +56,7 @@ export const useUserForm = ({ user, isEditing, isOpen, onSave }: UseUserFormProp
       });
     } else if (isOpen && !user) {
       form.reset({
+        id: "",
         first_name: "",
         last_name: "",
         display_name: "",

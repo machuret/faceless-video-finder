@@ -6,6 +6,7 @@ import * as z from "zod";
  */
 export const createUserFormSchema = (isEditing: boolean) => {
   return z.object({
+    id: isEditing ? z.string() : z.string().optional(),
     first_name: z.string().min(2, "First name must be at least 2 characters"),
     last_name: z.string().min(2, "Last name must be at least 2 characters"),
     display_name: z.string().min(2, "Display name must be at least 2 characters"),

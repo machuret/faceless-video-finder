@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -8,7 +7,7 @@ import { UserFormValues } from "../../schema/userFormSchema";
 export const useUserOperations = (fetchUsers: (searchTerm: string) => Promise<any>) => {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
-  const handleUserSave = async (userData: UserFormValues) => {
+  const handleUserSave = async (userData: UserFormValues): Promise<void> => {
     try {
       // Update existing user
       const { error } = await supabase
@@ -25,11 +24,9 @@ export const useUserOperations = (fetchUsers: (searchTerm: string) => Promise<an
       toast.success("User updated successfully");
       
       fetchUsers("");
-      return true;
     } catch (error: any) {
       console.error("Error saving user:", error);
       toast.error(error.message || "Failed to save user");
-      return false;
     }
   };
 
@@ -75,25 +72,23 @@ export const useUserOperations = (fetchUsers: (searchTerm: string) => Promise<an
     }
   };
 
-  const handleBulkDelete = async (userIds: string[]) => {
-    if (userIds.length === 0) return false;
+  const handleBulkDelete = async (): Promise<void> => {
+    if (selectedUserIds.length === 0) return;
     
     try {
       // Admin function to delete multiple users
       const { error } = await supabase.functions.invoke('admin-delete-user', {
-        body: { userIds }
+        body: { userIds: selectedUserIds }
       });
       
       if (error) throw error;
       
-      toast.success(`${userIds.length} users deleted successfully`);
+      toast.success(`${selectedUserIds.length} users deleted successfully`);
       setSelectedUserIds([]);
       fetchUsers("");
-      return true;
     } catch (error: any) {
       console.error("Error deleting users:", error);
       toast.error(error.message || "Failed to delete users");
-      return false;
     }
   };
 
